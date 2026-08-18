@@ -47,6 +47,15 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 | T5 | \<UiModel / UiState\> | render screen | \<visible / hidden elements\> |
 | T6 | \<user gesture\> | tap element | \<navigation / state change\> |
 
+### `<Feature>VisualFlowTest.kt` — Dedicated Visual Flow *(only when `requires_visual_verification == true`)*
+
+> **MANDATORY**: When visual verification is required, write a dedicated `*VisualFlowTest.kt` instrumented test class that renders the active Composable in each critical visual state, calls `composeRule.waitForIdle()`, and captures a screenshot from within the running test via `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()`. Screenshots are saved to `/sdcard/Download/<name>.png` and pulled via `adb pull`. Post-test CLI screencaps (`&& adb exec-out screencap`) are prohibited.
+
+| ID | Visual State | Composable Under Test | Capture Method | Output File |
+|----|-------------|----------------------|----------------|-------------|
+| T-VIS-1 | \<state name (e.g. default content)\> | \<Composable name\> | `takeScreenshot()` during `waitForIdle()` | `visual_evidence/<screen>_<state>.png` |
+| T-VIS-2 | \<state name (e.g. expanded/fullscreen)\> | \<Composable name\> | `takeScreenshot()` during `waitForIdle()` | `visual_evidence/<screen>_<state>.png` |
+
 ---
 
 ## Shared JSON Scenarios

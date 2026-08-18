@@ -47,6 +47,7 @@ List every FR, AC, and documented edge case from the active specification and sp
 | Lifecycle and navigation cleanup | | | PASS / REVISION REQUIRED / N/A |
 | Error and retry behavior | | | PASS / REVISION REQUIRED / N/A |
 | API/data error matrix | | | PASS / REVISION REQUIRED / N/A |
+| Dedicated visual flow test capture (`*VisualFlowTest.kt`) | | When `requires_visual_verification == true`: verify in-test `takeScreenshot()` during `waitForIdle()`, no post-test CLI screencaps | PASS / REVISION REQUIRED / N/A |
 
 ## Coverage Distribution
 

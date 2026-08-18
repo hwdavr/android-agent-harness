@@ -44,7 +44,7 @@
       ],
       "verification": [
         "./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<fully.qualified.TestClass>",
-        "mkdir -p \"$FEATURE_DIR/visual_evidence\" && adb exec-out screencap -p > \"$FEATURE_DIR/visual_evidence/home_screen_success.png\" && test -s \"$FEATURE_DIR/visual_evidence/home_screen_success.png\""
+        "env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#capture<State> && adb -s emulator-5554 pull /sdcard/Download/<screen_id>_<state>.png \"$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png\" && test -s \"$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png\""
       ],
       "evidence": [],
       "notes": ""
