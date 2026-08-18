@@ -72,6 +72,12 @@ Platform-bound exception:
 - The real test must exercise the shipped platform adapter with a deterministic local fixture and assert an observable platform result. A fake adapter, fake recognizer, JVM-only intent assertion, or manually emitted callback is supplemental evidence only.
 - If the required runtime environment is unavailable, the test must fail or report `Blocked`/`Revise`; do not use a skip, warning, or missing result as passing evidence.
 
+Dedicated Visual Verification tests (`*VisualFlowTest.kt`):
+- When a feature introduces or modifies UI screens/components that require visual verification (`requires_visual_verification: true`), write a dedicated visual flow instrumented test (or test methods) that exercises the active Composables in their critical visual states (e.g. default/content, alternative mode, expanded/fullscreen, empty/error).
+- The test must capture visual evidence directly during active rendering using `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()` or `captureToImage()` while the test rule is idling (`waitForIdle()`), saving the file to `/sdcard/Download/<name>.png`.
+- Visual evidence files are then retrieved using `adb pull /sdcard/Download/<name>.png <destination_path>`.
+- **Prohibition**: Post-test external screencaps (such as chaining `&& adb exec-out screencap` after `connectedDebugAndroidTest`) are strictly forbidden because the test Activity/window is already destroyed when the test runner finishes.
+
 Do NOT use instrumented UI tests for:
 - ViewModel + repository + mocked backend verification when JVM integration tests can cover it
 

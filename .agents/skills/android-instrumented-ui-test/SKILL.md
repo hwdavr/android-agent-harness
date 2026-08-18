@@ -48,7 +48,32 @@ If a shared JSON scenario exists:
 - **Rule:** Use `createAndroidComposeRule<ComponentActivity>()`.
 - **Setup:**
     - Override the ViewModel with a mock or fake.
-    - Provide the ViewModel through Hilt or manual injection into the `Screen` wrapper.
+### 3. Dedicated Visual Flow Testing (`*VisualFlowTest.kt`)
+**Goal:** Verify visual states of components/screens and produce genuine screenshot evidence for UI verification.
+- **Rule:** Write a dedicated visual test class (or test methods) exercising each critical visual state.
+- **In-Test Capture Helper:**
+```kotlin
+private fun captureVisualEvidence(fileName: String) {
+    composeRule.waitForIdle()
+    val bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+        ?: error("Could not capture visual evidence: $fileName")
+    val directory = InstrumentationRegistry.getInstrumentation().targetContext
+        .getExternalFilesDir("visual_evidence")
+        ?: error("External files directory unavailable")
+    directory.mkdirs()
+    val screenshot = File(directory, "$fileName.png")
+    screenshot.outputStream().use { output ->
+        check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+            "Could not write visual evidence: $fileName"
+        }
+    }
+    InstrumentationRegistry.getInstrumentation().uiAutomation
+        .executeShellCommand("cp ${screenshot.absolutePath} /sdcard/Download/$fileName.png")
+        .use { }
+}
+```
+- **Pulling Screenshots:** Retrieve files via `adb pull /sdcard/Download/<name>.png <destination>`.
+- **Constraint:** Never use post-test CLI screencaps (e.g. `&& adb screencap`) because the Composable is unmounted before the command runs.
 
 ## Rules
 - Target device selection: Use an Android emulator for instrumented UI tests (e.g. `ANDROID_SERIAL=emulator-5554`). Only when an emulator is missing/not connected, use a connected physical device.

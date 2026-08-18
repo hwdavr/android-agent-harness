@@ -54,6 +54,10 @@ For each changed Composable, verify:
 - [ ] CTAs are visible and correctly enabled/disabled
 - [ ] Navigation triggers work as expected
 
+**Screenshot Capture Requirement:**
+- Visual screenshots MUST be captured from within the test runner during `composeRule.waitForIdle()` via `takeScreenshot()`, saving to `/sdcard/Download/<name>.png` and pulled via `adb pull`.
+- Do NOT use post-test CLI screencaps (`&& adb exec-out screencap`) which capture the device home screen after the test activity has already unmounted.
+
 ---
 
 ### Phase 1 — Normalize screenshots
