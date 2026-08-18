@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd plist: run harness/scripts/auto-harness-generator.sh every hour.
+
+  The script tries codex first; if codex token/quota is exhausted, falls back
+  to agy. When there is no pending task, it exits 2 without launching anything,
+  so this scheduler is cheap to run on a quiet repo.
+
+  Available scripts (edit the <string> below to choose):
+    auto-harness-generator.sh  — codex first, agy fallback (default)
+    agy-harness-generator.sh   — agy only
+    codex-harness-generator.sh — codex only
+
+  INSTALL (one-time):
+    cd /path/to/project
+    sed -e "s|__PROJECT_ROOT__|$(pwd)|g" \
+        -e "s|__HOME__|$HOME|g" \
+      harness/scripts/com.android.harness-generator.plist.template \
+      > ~/Library/LaunchAgents/com.android.harness-generator.plist
+    launchctl load ~/Library/LaunchAgents/com.android.harness-generator.plist
+
+  UNINSTALL:
+    launchctl unload ~/Library/LaunchAgents/com.android.harness-generator.plist
+    rm ~/Library/LaunchAgents/com.android.harness-generator.plist
+
+  RUN ONCE IMMEDIATELY (without waiting for the interval):
+    launchctl start com.android.harness-generator
+
+  TAIL THE LOG:
+    tail -f ~/Library/Logs/com.android.harness-generator.log
+
+  PRINT JOB INFO:
+    launchctl print gui/$(id -u)/com.android.harness-generator
+
+  Notes:
+  - RunAtLoad is false so it does NOT fire the moment you load it; the first run
+    fires at the next StartInterval tick (within 1 hour). Use `launchctl start`
+    if you want an immediate run.
+  - launchd jobs have no terminal, so the script opens Terminal.app with the
+    interactive CLI and records that CLI as the harness-lock owner. A later
+    scheduler tick starts the next task after the lifecycle state reports
+    completion.
+  - Add `--headless` to the ProgramArguments below when non-interactive execution
+    is preferred.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.android.harness-generator</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__PROJECT_ROOT__/harness/scripts/auto-harness-generator.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Run every 1800 seconds = 30 minutes -->
+    <key>StartInterval</key>
+    <integer>1800</integer>
+
+    <!-- Do not fire on load; wait for the next interval tick. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- Persist output for debugging in user's Library/Logs directory. -->
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/com.android.harness-generator.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/com.android.harness-generator.log</string>
+
+    <!-- Run only while the user is logged in at the GUI session. -->
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+
+    <!-- If the job was running when the system was shut down, do not relaunch
+         on the next boot. The next scheduled tick will start it fresh. -->
+    <key>AbandonProcessGroup</key>
+    <true/>
+</dict>
+</plist>

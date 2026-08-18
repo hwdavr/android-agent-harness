@@ -1,0 +1,4 @@
+interface:
+  display_name: "Competitor Analysis"
+  short_description: "Evidence-backed product gap analysis"
+  default_prompt: "Use $competitor-analysis to compare this repository with current competitors and recommend one PR-sized next feature."
