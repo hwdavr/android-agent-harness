@@ -121,6 +121,10 @@ if [ "$MODE" = "--evaluate" ]; then
     esac
     [ -s "$FEATURE_DIR/$SCREENSHOT_PATH" ] \
       || fail "$test_id is missing non-empty screenshot $SCREENSHOT_PATH"
+    SCREENSHOT_SIZE=$(wc -c < "$FEATURE_DIR/$SCREENSHOT_PATH" | tr -d ' ')
+    MIN_SCREENSHOT_BYTES=5120
+    [ "$SCREENSHOT_SIZE" -ge "$MIN_SCREENSHOT_BYTES" ] \
+      || fail "$test_id screenshot $SCREENSHOT_PATH is only ${SCREENSHOT_SIZE} bytes (minimum ${MIN_SCREENSHOT_BYTES}); likely a blank or transparent capture"
 
     REPORT_ROWS=$(grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" "$ANCHOR_REPORT" || true)
     REPORT_ROW_COUNT=$(printf '%s\n' "$REPORT_ROWS" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')

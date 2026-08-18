@@ -181,3 +181,4 @@ Catches integration bugs earlier. Use real database, domain mappers, or in-memor
 | Testing framework code | Verifying Room or Retrofit libraries actually save/fetch | Rely on libraries being tested by their authors. Only test your custom business code and mappings |
 | Lack of test isolation | Test class state carrying over between runs | Recreate mock objects and databases in `@Before` setup blocks |
 | Mocking everything | Mocking domain models or standard library lists | Use real objects for simple models. Mock only boundaries |
+| Envelope-only assertions | Asserting `contains("<svg")` or `contains("<html")` on rendered output without checking semantic content | Assert specific visual elements: node labels (`>Label</text>`), structural shapes (`<rect`, `<line`), and connectors. Run `bash harness/scripts/check-test-assertions-quality.sh` |

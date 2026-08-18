@@ -11,7 +11,7 @@ write_valid_fixture() {
   local feature_dir="$1"
   mkdir -p "$feature_dir/design" "$feature_dir/visual_evidence"
   printf 'reference mockup' > "$feature_dir/design/mockup_picker.png"
-  printf 'actual screenshot' > "$feature_dir/visual_evidence/emoji_picker_content.png"
+  printf '%6000s' 'x' > "$feature_dir/visual_evidence/emoji_picker_content.png"
   printf '%s\n' \
     '# Sprint Contract' \
     '' \
@@ -88,6 +88,12 @@ mv "$missing_screenshot/visual_evidence/emoji_picker_content.png" \
 expect_failure "is missing non-empty screenshot visual_evidence/emoji_picker_content.png" \
   bash "$VALIDATOR" "$missing_screenshot"
 
+tiny_screenshot="$fixture_root/tiny-screenshot"
+write_valid_fixture "$tiny_screenshot"
+printf 'too small' > "$tiny_screenshot/visual_evidence/emoji_picker_content.png"
+expect_failure "likely a blank or transparent capture" \
+  bash "$VALIDATOR" "$tiny_screenshot"
+
 missing_contract_row="$fixture_root/missing-contract-row"
 write_valid_fixture "$missing_contract_row"
 jq '.features[0].verification += ["env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerExpandsToAvailableHeightWhenKeyboardIsVisible"]' \
@@ -116,4 +122,4 @@ jq '.features[0].verification = []' \
 mv "$missing_verification/feature_list.tmp" "$missing_verification/feature_list.json"
 expect_failure "is not listed in feature_list.json verification" bash "$VALIDATOR" "$missing_verification"
 
-echo "PASS: visual evidence validator rejects missing anchor proof and aligns methods, contract rows, screenshots, and evidence."
+echo "PASS: visual evidence validator rejects missing anchor proof, blank screenshots, and aligns methods, contract rows, screenshots, and evidence."
