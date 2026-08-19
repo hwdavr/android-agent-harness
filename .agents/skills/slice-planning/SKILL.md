@@ -59,6 +59,19 @@ For every acceptance criterion, define a uniquely identified acceptance test cas
 - *Too broad*: "Implement the shopping cart"
 - *Too narrow*: "Create the name field on the Cart model"
 
+**Apply the Vertical Slice Test (reject horizontal slices)**: For every planned feature, complete this sentence using an *already-reachable* production entry point, not one a later slice will build:
+
+> "After this slice ships alone, a user can observe \<observable delta\> through the existing entry point \<screen or action already in the app\>."
+
+If the sentence cannot be completed — because the slice's only consumer is a Composable, screen, or caller that a later slice introduces — the slice is **horizontal** and MUST be merged into the slice that first makes it user-visible.
+
+A slice fails the test when any of the following hold:
+- `affects_ui` is `false` and the slice's only caller is UI or a feature added by a later slice (e.g. a tokenizer, repository, or formatter with no in-slice production consumer).
+- `user_visible_behavior` describes a capability observable only *after* a later slice ships, rather than a delta visible after this slice alone.
+- The slice's acceptance tests can only prove an internal helper or use case, invoking no production entry point.
+
+A `affects_ui: false` slice is still vertical when an *existing* reachable entry point exposes its change (e.g. persistence or export behavior observed through an already-shipped screen). "Risky" or "foundational" is not a reason to carve out an internal engine: merge it into the slice that consumes it.
+
 ### 4. Define Features inside `feature_list.json`
 
 For each slice, you must populate the `features` list in the `feature_list.json` schema. Define each task completely, ensuring that each field is explained and adheres to the following definitions:
@@ -90,6 +103,7 @@ Before finalizing, verify the bidirectional mapping is complete:
 5. **No invented scope**: Every planned capability, acceptance criterion, and verification requirement traces back to the source spec or an explicitly recorded user decision.
 6. **`requires_visual_verification` ↔ `TC-US-*-VIS` consistency**: For every feature with `"requires_visual_verification": true`, the matching `US-*` user story in `sprint-contract.md` MUST contain the visual-state rows needed to assess the completed flow, and each row's state-verifying `Exact command` MUST appear verbatim in the feature's `verification` array. A feature with `"requires_visual_verification": false` MUST contain no `TC-US-*-VIS` row. `affects_ui` alone does not require a screenshot gate.
 7. **One visual-verification owner**: If the planned feature contains UI changes, select exactly one final, user-reachable slice as the visual-verification owner. Its acceptance tests must navigate through the completed production flow before capturing. Do not attach screenshot rows to intermediate slices merely because they change a Composable.
+8. **No horizontal slices**: Every feature passes the Vertical Slice Test from step 3 — it has an observable, already-reachable entry point when shipped alone. A slice whose only consumer is a later slice's UI is horizontal and must be merged into that later slice.
 
 If a user story is too large to fit into a single feature slice, **split the user story** in the sprint contract first, then create the corresponding feature. If a feature slice doesn't map to any user story, either the sprint contract is missing a story or the slice should be merged into another feature.
 
@@ -131,5 +145,6 @@ The user must confirm:
 - [ ] Every sprint contract user story maps to exactly one feature list item (1:1, no orphans on either side)
 - [ ] Every source `FR-*` and `AC-*` appears in the Spec Coverage Matrix with a primary slice and acceptance-test owner
 - [ ] All edge cases, non-functional constraints, verification expectations, and changed design requirements are either mapped to a slice or explicitly approved as out of scope
+- [ ] Every slice passes the Vertical Slice Test: it has an observable, already-reachable entry point when shipped alone (no slice whose only consumer is a later slice's UI)
 
 **APPROVED by user →** Return to the active workflow file and proceed to the next stage.
