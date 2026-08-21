@@ -57,6 +57,7 @@ After reading, summarise the key constraints and open decisions you will verify 
 ### Stage 4: Execute Runtime Verification
 - Execute local unit and integration tests to verify correctness: `./gradlew testDebugUnitTest`.
 - Run instrumented Compose UI tests to check interactivity and transitions: target an emulator first (e.g. `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest`), using a connected physical device only if no emulator is present.
+- **If the feature touches the UI**, **INVOKE** the `ui-verification` skill via the Skill tool (name: `ui-verification`) to verify the implemented UI matches the approved mockup/design. Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Compare runtime screenshots against the design assets in `docs/current/design/` and `docs/product/design_system.md`; any Critical or unresolved Major deviation (wrong layout, spacing, typography, color, clipped text) is a review finding. Record the outcome in `docs/current/ui_verification.json`.
 
 ---
 
