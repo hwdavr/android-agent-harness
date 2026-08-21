@@ -18,7 +18,6 @@ Work in small, vertically-sliced increments: implement one layer, verify the bui
 
 **Always load:**
 - `docs/product/design_system.md` — mandatory visual tokens and reusable component contracts for UI-affecting work
-- `skills/ui-verification/SKILL.md`
 - `rules/android-architecture.md`
 - `rules/api-contract-rules.md`
 - `rules/compose-rules.md`
@@ -126,6 +125,7 @@ If local storage is affected:
 4. Use `stringResource()` for all user-visible text — **no hardcoded strings**
 5. Add `Modifier.testTag("stable_name")` to all interactive elements and key content areas
 6. Map every visual choice to `docs/product/design_system.md` semantic tokens/shared components or to an explicit approved exception in the active `design.md`; do not introduce raw colors or a parallel component family
+7. **Visual-verification owner**: if this slice owns `requires_visual_verification: true` in `feature_list.json`, implement its `*VisualFlowTest` capture per the sprint contract's visual-verification gate (the `TC-US-*-VIS` rows) — in-test `takeScreenshot()` during `waitForIdle()`, `adb pull` to `visual_evidence/` with a non-empty check, `reference-anchor-verification.md`; never a post-test CLI `screencap`
 
 #### 3.4 Navigation, Analytics & String resources
 1. Update the navigation graph if new routes are added — use serializable argument types only

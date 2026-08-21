@@ -12,7 +12,6 @@ Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composab
 
 ## Load
 - `docs/product/design_system.md` — mandatory project-wide visual tokens and component contracts
-- `skills/ui-verification/SKILL.md`
 - `rules/compose-rules.md`
 - `rules/navigation-rules.md`
 - `rules/analytics-rules.md`
