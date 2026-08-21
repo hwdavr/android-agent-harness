@@ -14,17 +14,9 @@
     "passing": "Required verification has passed and evidence is recorded."
   },
   "platform_validation": {
-    "required": true,
-    "capability_matrix": "platform-capability-matrix.md",
+    "required": false,
     "unsupported_environment_policy": "fail_loudly",
-    "real_boundary_test_required": true,
-    "real_boundary_test_ids": [
-      "TC-US-1-PLATFORM"
-    ],
-    "real_boundary_test_files": [
-      "app/src/androidTest/java/<package_path>/<Feature>PlatformTest.kt"
-    ],
-    "real_boundary_test_signal": "<production boundary class or Android API>"
+    "reason": "<why this feature has no Android/device/platform boundary — e.g. standard Jetpack Compose + Room on-device only>"
   },
   "features": [
     {

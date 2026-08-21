@@ -60,7 +60,7 @@ When **any** gate check fails during this pipeline (verification commands, check
     1. Run `bash harness/scripts/check-feature-lifecycle.sh`; confirm the active feature row is `To be fixed`. Stop if validation fails.
     2. Read, in order:
         1. `$FEATURE_DIR/sprint-contract.md` — Acceptance Test Cases and verification commands (the gates that must stay green).
-        2. `$FEATURE_DIR/platform-capability-matrix.md` — API/runtime contract and unsupported-environment policy.
+        2. `$FEATURE_DIR/platform-capability-matrix.md` — API/runtime contract and unsupported-environment policy (platform-bound features only).
         3. `$FEATURE_DIR/evaluator-rubric.md` — overall score, category scores, verdict, and Required Follow-Up.
         4. `$FEATURE_DIR/code_review_{feature_id}.md` — every `REVISION REQUIRED` / `FAIL` item.
         5. `$FEATURE_DIR/test_review_{feature_id}.md` — every coverage gap, missing assertion, or failing scenario.

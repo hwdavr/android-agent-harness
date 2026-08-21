@@ -35,7 +35,7 @@ When **any** gate check fails during the pipeline (verification commands, checkl
 ### Stage 1 — Orient
 Before making any changes or planning code, gather complete session and git context. Select the next task to implement.
 *   **Action**: **INVOKE** the `feature-orient` skill via the Skill tool (name: `feature-orient`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-*   **Objective**: Run `bash harness/scripts/check-feature-lifecycle.sh`, select the approved `docs/product/` workspace from the Harness Feature Tracker by status, reconstruct the prior session, establish the per-slice source of truth (`$FEATURE_DIR/summary_{feature_id}.md`), read and validate `$FEATURE_DIR/platform-capability-matrix.md`, and select one task from `$FEATURE_DIR/feature_list.json`. If the slice affects UI, read `docs/product/design_system.md`, the approved feature `design.md`, and its mockups before implementation.
+*   **Objective**: Run `bash harness/scripts/check-feature-lifecycle.sh`, select the approved `docs/product/` workspace from the Harness Feature Tracker by status, reconstruct the prior session, establish the per-slice source of truth (`$FEATURE_DIR/summary_{feature_id}.md`), read and validate `$FEATURE_DIR/platform-capability-matrix.md` when the feature is platform-bound (`platform_validation.required: true`), and select one task from `$FEATURE_DIR/feature_list.json`. If the slice affects UI, read `docs/product/design_system.md`, the approved feature `design.md`, and its mockups before implementation.
 
 ### Stage 2 — Setup
 Verify target emulator/device runtime environment readiness.

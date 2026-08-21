@@ -120,7 +120,9 @@ case "$WORKFLOW/$STAGE" in
     require_file "feature_list.json" "feature list"
     require_file "sprint-contract.md" "sprint contract"
     require_file "progress.md" "progress tracker"
-    require_file "platform-capability-matrix.md" "platform capability matrix"
+    if jq -e '.platform_validation.required == true' "$DOCS_DIR/feature_list.json" >/dev/null 2>&1; then
+      require_file "platform-capability-matrix.md" "platform capability matrix (platform-bound features only)"
+    fi
     if [ -f "$DOCS_DIR/design.md" ]; then
       bash "$SCRIPT_DIR/check-keyboard-mockup-contract.sh" "$DOCS_DIR"
     fi

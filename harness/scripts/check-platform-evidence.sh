@@ -39,8 +39,28 @@ CONTRACT="$FEATURE_DIR/sprint-contract.md"
 jq -e '.platform_validation | type == "object"' "$FEATURE_JSON" >/dev/null \
   || fail "feature_list.json must declare a platform_validation object"
 
+POLICY=$(jq -r '.platform_validation.unsupported_environment_policy // empty' "$FEATURE_JSON")
+[ "$POLICY" = "fail_loudly" ] \
+  || fail "platform_validation.unsupported_environment_policy must be fail_loudly"
+
+REQUIRED=$(jq -r 'if (.platform_validation | has("required")) then .platform_validation.required else empty end' "$FEATURE_JSON")
+if [ "$REQUIRED" != "true" ] && [ "$REQUIRED" != "false" ]; then
+  fail "platform_validation.required must be boolean"
+fi
+
+# Non-platform features need no matrix artifact: the JSON declaration plus a
+# reason is the whole contract. The platform capability matrix is generated
+# only for platform-bound features, where API rows and a real boundary test
+# are the edge case.
+if [ "$REQUIRED" = "false" ]; then
+  REASON=$(jq -r '.platform_validation.reason // empty' "$FEATURE_JSON")
+  [ -n "$REASON" ] || fail "non-platform feature must explain why platform validation is not required"
+  echo "PASS: platform validation is explicitly not required: $REASON"
+  exit 0
+fi
+
 MATRIX_RELATIVE=$(jq -r '.platform_validation.capability_matrix // empty' "$FEATURE_JSON")
-[ -n "$MATRIX_RELATIVE" ] || fail "platform_validation.capability_matrix is required"
+[ -n "$MATRIX_RELATIVE" ] || fail "platform_validation.capability_matrix is required for platform-bound features"
 
 MATRIX="$FEATURE_DIR/$MATRIX_RELATIVE"
 [ -f "$MATRIX" ] || fail "platform capability matrix is missing: $MATRIX"
@@ -59,22 +79,6 @@ grep -Eiq 'API[[:space:]_-]*[0-9]+' "$MATRIX" \
   || fail "platform matrix must contain explicit API-level rows"
 grep -Eiq 'fail_loudly|fail loudly|non-zero|nonzero|blocked|revise' "$MATRIX" \
   || fail "platform matrix must define a loud failure policy"
-
-POLICY=$(jq -r '.platform_validation.unsupported_environment_policy // empty' "$FEATURE_JSON")
-[ "$POLICY" = "fail_loudly" ] \
-  || fail "platform_validation.unsupported_environment_policy must be fail_loudly"
-
-REQUIRED=$(jq -r 'if (.platform_validation | has("required")) then .platform_validation.required else empty end' "$FEATURE_JSON")
-if [ "$REQUIRED" != "true" ] && [ "$REQUIRED" != "false" ]; then
-  fail "platform_validation.required must be boolean"
-fi
-
-if [ "$REQUIRED" = "false" ]; then
-  REASON=$(jq -r '.platform_validation.reason // empty' "$FEATURE_JSON")
-  [ -n "$REASON" ] || fail "non-platform feature must explain why platform validation is not required"
-  echo "PASS: platform validation is explicitly not required: $REASON"
-  exit 0
-fi
 
 REAL_REQUIRED=$(jq -r '.platform_validation.real_boundary_test_required // empty' "$FEATURE_JSON")
 [ "$REAL_REQUIRED" = "true" ] \

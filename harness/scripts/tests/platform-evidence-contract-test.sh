@@ -112,6 +112,49 @@ write_matrix "$fake_only" "Verified"
 printf '%s\n' 'class PlatformTest { val recognizer = FakeTranscriptRecognizer() }' > "$fake_only/app/src/androidTest/java/example/PlatformTest.kt"
 expect_failure "no real-platform signal" bash "$VALIDATOR" "$fake_only" --evaluate
 
+# required: false — the common case — needs no matrix artifact; the JSON
+# declaration plus an explicit reason is the whole contract
+not_platform="$fixture_root/not-platform"
+mkdir -p "$not_platform"
+write_contract "$not_platform"
+write_feature_list "$not_platform"
+jq '.platform_validation = {"required": false, "unsupported_environment_policy": "fail_loudly", "reason": "standard Compose and Room on-device only"}' \
+  "$not_platform/feature_list.json" > "$not_platform/feature_list.json.tmp"
+mv "$not_platform/feature_list.json.tmp" "$not_platform/feature_list.json"
+(cd "$not_platform" && bash "$VALIDATOR" . --planning) | grep -Fq "explicitly not required"
+(cd "$not_platform" && bash "$VALIDATOR" . --evaluate)
+
+# required: false without a reason must fail at the JSON level
+not_platform_no_reason="$fixture_root/not-platform-no-reason"
+mkdir -p "$not_platform_no_reason"
+write_contract "$not_platform_no_reason"
+write_feature_list "$not_platform_no_reason"
+jq '.platform_validation = {"required": false, "unsupported_environment_policy": "fail_loudly"}' \
+  "$not_platform_no_reason/feature_list.json" > "$not_platform_no_reason/feature_list.json.tmp"
+mv "$not_platform_no_reason/feature_list.json.tmp" "$not_platform_no_reason/feature_list.json"
+expect_failure "must explain why platform validation is not required" bash "$VALIDATOR" "$not_platform_no_reason" --planning
+
+# legacy workspaces that already shipped a matrix for a non-platform feature still pass
+not_platform_legacy="$fixture_root/not-platform-legacy-matrix"
+mkdir -p "$not_platform_legacy"
+write_contract "$not_platform_legacy"
+write_feature_list "$not_platform_legacy"
+write_matrix "$not_platform_legacy" "Planned"
+jq '.platform_validation.required = false | .platform_validation.reason = "standard Compose and Room on-device only"' \
+  "$not_platform_legacy/feature_list.json" > "$not_platform_legacy/feature_list.json.tmp"
+mv "$not_platform_legacy/feature_list.json.tmp" "$not_platform_legacy/feature_list.json"
+(cd "$not_platform_legacy" && bash "$VALIDATOR" . --evaluate)
+
+# platform-bound features must still declare the matrix field
+platform_missing_matrix_field="$fixture_root/platform-missing-matrix-field"
+mkdir -p "$platform_missing_matrix_field"
+write_contract "$platform_missing_matrix_field"
+write_feature_list "$platform_missing_matrix_field"
+jq 'del(.platform_validation.capability_matrix)' \
+  "$platform_missing_matrix_field/feature_list.json" > "$platform_missing_matrix_field/feature_list.json.tmp"
+mv "$platform_missing_matrix_field/feature_list.json.tmp" "$platform_missing_matrix_field/feature_list.json"
+expect_failure "capability_matrix is required" bash "$VALIDATOR" "$platform_missing_matrix_field" --planning
+
 valid="$fixture_root/valid"
 mkdir -p "$valid/app/src/androidTest/java/example"
 write_contract "$valid"
@@ -120,4 +163,4 @@ write_matrix "$valid" "Verified"
 printf '%s\n' 'class PlatformTest { val recognizer = SpeechRecognizer.createSpeechRecognizer(context) }' > "$valid/app/src/androidTest/java/example/PlatformTest.kt"
 (cd "$valid" && bash "$VALIDATOR" . --evaluate)
 
-echo "PASS: platform evidence validator defers non-owning slices and rejects missing matrices, unavailable runtimes, fake-only tests, and boundary owners without evidence."
+echo "PASS: platform evidence validator accepts reason-only non-platform features, defers non-owning slices, and rejects missing matrices, unavailable runtimes, fake-only tests, and boundary owners without evidence."

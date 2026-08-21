@@ -27,9 +27,9 @@ Use this template when producing the sprint contract in the **Requirement Analys
 
 ## Platform Capability & Environment Contract *(required)*
 
-Link the feature workspace artifact: `platform-capability-matrix.md`.
+Every feature declares the root `platform_validation` object in `feature_list.json` — `required`, `unsupported_environment_policy: "fail_loudly"`, and, for non-platform features, an explicit `reason`. The `platform-capability-matrix.md` artifact is generated **only for platform-bound features** (`platform_validation.required: true`); for all others the JSON declaration plus reason is the whole contract and no matrix is written.
 
-The matrix MUST declare the minimum API, target API, every important API boundary, the single owner of each device resource, the input/output contract, and the required fallback for unsupported platforms. A missing emulator, device, model, locale, permission, hardware capability, or platform service is an evidence failure—not a passing skip. The exact failure policy is `fail_loudly`: the command must exit non-zero or the feature must be marked `Blocked`/`Revise`.
+When the feature is platform-bound, link the workspace artifact `platform-capability-matrix.md`. The matrix MUST declare the minimum API, target API, every important API boundary, the single owner of each device resource, the input/output contract, and the required fallback for unsupported platforms. A missing emulator, device, model, locale, permission, hardware capability, or platform service is an evidence failure—not a passing skip. The exact failure policy is `fail_loudly`: the command must exit non-zero or the feature must be marked `Blocked`/`Revise`.
 
 Platform-bound features MUST declare at least one real instrumented boundary test. A fake adapter, fake recognizer, JVM-only intent test, or manually emitted callback is supplemental evidence and cannot satisfy the platform gate by itself. The test must exercise the shipped Android boundary and record a successful `connectedDebugAndroidTest` result in `feature_list.json` evidence.
 
