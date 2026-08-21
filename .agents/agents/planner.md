@@ -10,7 +10,7 @@
 
 To execute its stages with maximum rigour, the Planner loads and applies the following core skills from the `.agents/skills/` index:
 
-*   **`spec-driven-development/`**: Used during *Requirement & Design Analysis* to build clear specifications, define state flows, and verify contracts.
+*   **`spec-driven-development/`**: Its Phase 1 (Specify) and Phase 2 (Plan) discipline is embedded directly in `requirement-analysis`, `requirement-capture`, `feature-orient`, and `feature-specification` — used during *Requirement & Design Analysis* to surface assumptions, clarify requirements, and orient to the approved plan.
 *   **`feature-specification/`**: Used during harness planning to clarify requirements and produce `spec.md` (always) and `design.md` (for new screens) before slice planning.
 *   **`incremental-implementation/`**: Used during *Slice & Implementation Planning* to decompose large features into thin, manageable, and vertical slices.
 *   **`karpathy-guidelines/`**: Invoked across all planning stages to maintain extreme coding discipline, avoid overcomplication, and enforce explicit verification criteria.

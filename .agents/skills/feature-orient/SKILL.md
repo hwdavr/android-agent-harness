@@ -12,7 +12,6 @@ Gather complete session, requirement, and git context, establishing a single sou
 ---
 
 ## Load
-- `skills/spec-driven-development/SKILL.md`
 - `rules/android-architecture.md`
 - `rules/api-contract-rules.md`
 - `rules/navigation-rules.md`
@@ -21,6 +20,8 @@ Gather complete session, requirement, and git context, establishing a single sou
 ---
 
 ## Execute
+
+This is a gated spec-driven workflow: `$FEATURE_DIR/spec.md` (Phase 1: Specify) and `$FEATURE_DIR/sprint-contract.md` (Phase 2: Plan) are already user-approved. Orient to them — never re-open approved requirements or re-plan the sprint contract. The sprint contract's acceptance tests and gates are the plan's verification checkpoints; the active slice's `acceptance_test_ids` and `verification` commands are where this session proves completion.
 
 Before making any changes or planning code, gather complete session and git context:
 

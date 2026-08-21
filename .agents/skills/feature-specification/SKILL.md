@@ -30,7 +30,6 @@ This skill ends only when every material question has been answered by the user 
 
 - `docs/product/design_system.md` — mandatory for every UI-affecting specification and design
 - `rules/compose-rules.md` — **Keyboard / IME Behavior** section: when screen content or a bottom sheet has text input, the bottom toolbar must dismiss while the keyboard is visible
-- `skills/spec-driven-development/SKILL.md`
 - `harness/templates/feature-spec-template.md`
 - `harness/templates/feature-design-template.md`
 
@@ -64,6 +63,8 @@ State the classification to the user and confirm before proceeding.
 
 Ask targeted questions before writing the artifacts. Prefer 3–7 questions per round.
 Questions must be concrete and answerable, not broad prompts like "anything else?"
+
+**Surface assumptions first** — state what you are assuming about the request before asking about behavior; every assumption is a question until the user confirms it.
 
 **Always cover:**
 1. **User and goal**: who uses the feature, what they are trying to complete, and what success means.
@@ -116,6 +117,8 @@ The spec file must always describe:
 - Traceability to `design.md`
 
 Do not include an "Open Questions" section with unresolved items. If there are unresolved items, return to Step 3 instead.
+
+The spec is a living document — if a clarified answer changes a decision, update `spec.md` (and `design.md`, if produced) before proceeding.
 
 ### 6. Generate Design & Mockups (New Screen or UI Enhancement)
 

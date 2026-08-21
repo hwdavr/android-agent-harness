@@ -12,7 +12,6 @@ Do not write any code in this stage.
 ---
 
 ## Load
-- `skills/spec-driven-development/SKILL.md`
 - `rules/android-architecture.md`
 - `rules/api-contract-rules.md`
 - `rules/navigation-rules.md`
@@ -102,6 +101,9 @@ Mark the first row as ✅ Complete when this stage's gate passes.
 
 Produce **`spec_v<N>.md`** (inside `docs/current/`).
 Use the template from `harness/templates/spec-template.md`.
+- Record every assumption the analysis required — never silently fill an ambiguous requirement.
+- Reframe vague requests into concrete, testable verification expectations the user can confirm.
+- Keep the spec alive — when scope or decisions change, update `spec_v<N>.md` first.
 
 ---
 

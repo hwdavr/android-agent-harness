@@ -14,7 +14,6 @@ This stage ends only when every open question has been answered by the user.
 ---
 
 ## Load
-- `skills/spec-driven-development/SKILL.md`
 - `harness/templates/requirement-summary-template.md`
 
 ---
@@ -23,7 +22,7 @@ This stage ends only when every open question has been answered by the user.
 
 ### 1. Read and Understand the Request
 
-Read the user's feature request in full. Do not assume anything that is not explicitly stated.
+Read the user's feature request in full. Do not assume anything that is not explicitly stated. Anything you must assume to proceed is written down and flagged as a risk (Explicit Assumptions) — never silently filled.
 
 ### 2. Draft the Requirement Summary
 
@@ -39,7 +38,7 @@ What does the user want to achieve? Write from the user's perspective.
 _"As a [user type], I want to [action] so that [outcome]."_
 
 **Expected Behavior**
-A numbered list of concrete, observable behaviors. Each item should be independently testable.
+A numbered list of concrete, observable behaviors. Each item should be independently testable. Vague wording (e.g. "make search faster") must be reframed into concrete, verifiable outcomes the user can confirm or reject.
 
 **Business Rules**
 Constraints imposed by business logic (e.g. "a note can only belong to one folder", "free users cannot create more than 10 notes").
