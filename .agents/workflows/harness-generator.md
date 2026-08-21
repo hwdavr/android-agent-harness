@@ -30,7 +30,7 @@ When **any** gate check fails during the pipeline (verification commands, checkl
 
 ## 🔄 Stage Execution Pipeline
 
-> **Routing**: If the active feature's tracker status is `To be fixed`, **stop here** — this workflow does not apply. Instead, follow the **[harness-fix workflow](harness-fix.md)** in full. It runs the Fix Mode Pipeline (resolve every `code_review` / `test_review` finding and update the per-finding status inside those reports, then transition to `To be human reviewed`). Stages 1–9 below apply only when implementing a new slice (status `In Progress` / `Awaiting implementation approval`).
+> **Routing**: If the active feature's tracker status is `To be fixed`, **stop here** — this workflow does not apply. Instead, follow the **[harness-fix workflow](harness-fix.md)** in full. It runs the Fix Mode Pipeline (resolve every `code_review` / `test_review` finding and update the per-finding status inside those reports, then transition to `To be human reviewed`). Stages 1–8 below apply only when implementing a new slice (status `In Progress` / `Awaiting implementation approval`).
 
 ### Stage 1 — Orient
 Before making any changes or planning code, gather complete session and git context. Select the next task to implement.
@@ -79,8 +79,8 @@ Run all static check suites, lint rules, and custom compliance rules, and resolv
 *   **Action**: **INVOKE** the `code-quality-fix` skill via the Skill tool (name: `code-quality-fix`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 *   **Objective**: Diagnose and resolve all formatting, quality, localization, and architectural style guidelines issues, logging check success in `$FEATURE_DIR/summary_{feature_id}.md`.
 
-### Stage 7 — Update State
-Update repository history, project task logs, and product documentation to reflect completion.
+### Stage 7 — Finalize & Exit
+Verify all acceptance criteria, update project state, commit, and prepare for handoff.
 
 > [!IMPORTANT]
 > **Strict Verification Gate**: You **CANNOT** directly or arbitrarily change a feature's status to `passing` in `feature_list.json`. Transitioning a feature to `passing` is a gate controlled exclusively by executing successful verification commands.
@@ -97,36 +97,26 @@ Update repository history, project task logs, and product documentation to refle
 >    *   A visual-verification owner cannot transition to `passing` unless `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"` exits `0`. This requires a non-empty screenshot and a `visual_evidence/reference-anchor-verification.md` row for every visual Test ID; the row must connect the approved reference to a visual bounds `testTag`, a runtime assertion, and a concrete measured relationship.
 
 *   **Action**:
-    1. Once verification passes and evidence is attached, update `$FEATURE_DIR/feature_list.json` and `$FEATURE_DIR/progress.md`.
-    2. Update `docs/product/product.md` directly:
+    1. Execute the verification gate (see Gate Check Policy above). Attach evidence to `feature_list.json`.
+    2. Once verification passes and evidence is attached, update `$FEATURE_DIR/feature_list.json` and `$FEATURE_DIR/progress.md`.
+    3. Update `docs/product/product.md` directly:
         *   Update the **Product Portfolio Summary** to reflect the delivered slice.
         *   Add the feature to **Current Product Capabilities** with its delivered behavior and notable implementation notes.
         *   Remove the feature from the **Roadmap — Planned Features** section if it is fully delivered, or update its priority column to reflect remaining sub-features.
         *   Update the `*Document last updated*` date at the bottom of the file.
         *   If every feature in `$FEATURE_DIR/feature_list.json` is now `passing`, update the Harness Feature Tracker status to `To be reviewed` in place and update its date/notes (do not move or rename the workspace). **NEVER transition directly to `To be human reviewed`** — only the Evaluator agent (via `harness-evaluation`) is authorized to make that transition after scoring. Otherwise, keep the Harness Feature Tracker `In Progress` while slices remain.
         *   Run `bash harness/scripts/check-feature-lifecycle.sh` after the tracker update. Do not claim completion or commit if it fails.
-    3. Commit only the **source code, test changes, and product documentation** for the implemented feature:
+    4. Commit only the **source code, test changes, and product documentation** for the implemented feature:
         ```bash
         git commit -m "feat(<area>): <short description of implemented feature>"
         ```
-    4. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Update State** stage status to completed (✅), logging the commit hash and verification execution outcome.
-*   **Objective**: Ensure all state updates are backed by mechanical, verifiable evidence. The stable product workspace remains at the same path throughout delivery.
+    5. Review the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)** — architecture & standards (§2), observability (§5), and cleanliness (§6) items are code-review checks. Build, test, and quality checks (§1, §3, §4) are already covered by the verification gate above — reference that evidence, do not re-run commands. If any review item fails, apply the **Gate Failure Resolution Policy**.
+    6. Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**. Detail what is working, what changed, unverified paths, risks, unresolved gate items, and next steps.
+    7. **Never move the feature directory.** Its `docs/product/` path is stable; only tracker and per-slice statuses change.
+    8. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Finalize & Exit** stage status to completed (✅), transition the selected slice summary to Complete, and document key outcomes, open items, and handoff decisions.
+*   **Objective**: Ensure all state updates are backed by mechanical, verifiable evidence. Leave the repository in a completely green, stable, and self-documenting state that a fresh session can immediately pick up and resume.
 
-### Stage 8 — Clean Exit
-Ensure that the final repository state is clean, verified, and fully prepared for the next developer or agent session.
-
-> [!IMPORTANT]
-> **Checklist & Handoff Policy**:
-> 1. **Run Clean State Checklist**: Execute and verify every single item in the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Process each checklist item **one by one**. If any item fails, **do not stop** — apply the **Gate Failure Resolution Policy** (diagnose → fix → re-run, up to 3 attempts per item) before moving to the next checklist item. After processing all items, all checks **SHOULD** pass; any remaining `⚠️ unresolved` items must be documented in the session handoff.
-> 2. **Produce Session Handoff**: Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following the format and fields defined in **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**. Detail what is working, what changed, unverified paths, risks, unresolved gate items, and next steps.
-> 3. **Never move the feature directory.** Its `docs/product/` path is stable; only tracker and per-slice statuses change.
-
-*   **Action**:
-    1. Execute the verification command one last time to ensure no regression was introduced, verify all checklist criteria, and write `$FEATURE_DIR/session-handoff.md`.
-    2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Clean Exit** stage status to completed (✅), transition the selected slice summary to Complete, and document key outcomes, open items, and handoff decisions.
-*   **Objective**: Leave the repository in a completely green, stable, and self-documenting state that a fresh session can immediately pick up and resume.
-
-### Stage 9 — Install App To Device
+### Stage 8 — Install App To Device
 Install the completed debug build to all connected devices and emulators as the final generator step.
 
 *   **Action**:
