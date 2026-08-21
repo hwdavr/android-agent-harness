@@ -12,7 +12,6 @@ This is the final gate before implementation begins.
 ---
 
 ## Load
-- `skills/incremental-implementation/SKILL.md`
 - `rules/testing-strategy.md`
 - `harness/templates/implementation-plan-template.md`
 - `harness/templates/test-plan-template.md`
@@ -23,7 +22,7 @@ This is the final gate before implementation begins.
 ## Execute
 
 ### Step 1: Generate Implementation Plan
-Using all outputs from the **Requirement, Impact & Design Analysis** stage, compile a complete implementation plan. 
+Using all outputs from the **Requirement, Impact & Design Analysis** stage, compile a complete implementation plan.
 
 > [!IMPORTANT]
 > You **MUST** follow the structure and sections in [implementation-plan-template.md](../../harness/templates/implementation-plan-template.md) exactly.

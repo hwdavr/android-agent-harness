@@ -25,7 +25,7 @@ Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composab
 ## Execute
 
 ### 1. ViewModel
-1. Implement or update the ViewModel using the ViewModel pattern in `skills/android-feature/SKILL.md`
+1. Implement or update the ViewModel using the ViewModel pattern in `rules/android-architecture.md`
 2. Expose screen state as `StateFlow<UiState>` — one state object per screen
 3. Handle all states: loading, success, empty, error, retry, permission
 4. Emit one-off events (navigation, toast, dialog) via a separate `Channel<Event>`
