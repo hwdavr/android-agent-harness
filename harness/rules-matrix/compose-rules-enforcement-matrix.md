@@ -100,6 +100,15 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 ---
 
+## Section 9 — Keyboard / IME Behavior
+
+| # | Rule | Enforcement | Script Check | Notes |
+|---|------|-------------|-------------|-------|
+| 9.1 | When screen content (or a bottom sheet) has text input, the bottom toolbar must dismiss while the keyboard/IME is visible (never behind the keyboard; use `imePadding()` + `WindowInsets.isImeVisible`) | 🧠 Evaluator + 👁️ Human | — | Runtime/visual behavior — verified during runtime verification (does the bar dismiss?) and code review (insets + `isImeVisible` handling); script heuristics are too noisy |
+| 9.2 | Tapping text input inside a bottom sheet must not dismiss the sheet — it stays open above the keyboard (only scrim tap / swipe-down / close action dismisses) | 🧠 Evaluator + 👁️ Human | — | Runtime/visual behavior — verified during runtime verification (does the sheet stay open when its field is focused?) and code review (`onDismissRequest` + `imePadding()` handling) |
+
+---
+
 ## Enforcement Summary
 
 | Category | Count | Rules |
@@ -108,9 +117,9 @@ A rule can carry more than one badge when layered enforcement is needed.
 | 🧠 Evaluator only | 12 | 1.2, 1.5, 2.1, 2.3, 3.2, 4.2, 5.3, 5.4, 6.2, 7.3, 8.2, 8.3 |
 | 👁️ Human only | 0 | — |
 | 🤖 + 🧠 Scripted + Evaluator | 6 | 1.3, 1.4, 2.2, 3.1, 3.3, 8.4 |
-| 👁️ + 🧠 Human + Evaluator | 5 | 5.5, 6.1, 6.3, 7.1, 7.2 |
+| 👁️ + 🧠 Human + Evaluator | 7 | 5.5, 6.1, 6.3, 7.1, 7.2, 9.1, 9.2 |
 | 🤖 Scripted (via localization script) | 2 | 1.6, 4.1 |
-| **Total rules** | **29** | |
+| **Total rules** | **31** | |
 
 > [!NOTE]
 > No rule is **Human-only**. Every rule can be at least partially enforced by AI review. Rules marked 👁️ Human still benefit from human design review as a final sanity check — the AI coverage alone is not considered sufficient confidence.

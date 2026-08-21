@@ -46,14 +46,13 @@ Objective:
 - Write `$FEATURE_DIR/spec.md` (always) and `$FEATURE_DIR/design.md` (for new screens or UI enhancements/flows).
 - For UI work, read `docs/product/design_system.md` before design decisions, link it from `$FEATURE_DIR/design.md`, and record every explicit user-approved exception. Generated mockups must use its exact applicable tokens and component patterns.
 
-Output: `$FEATURE_DIR/spec.md` + `$FEATURE_DIR/design.md` + `$FEATURE_DIR/design/mockup_*.png` visual mockup images (user-provided or AI-generated, if the change includes UI modifications). If a bottom sheet contains a textbox, text field, search field, or other text input, `design.md` must also define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup.
+Output: `$FEATURE_DIR/spec.md` + `$FEATURE_DIR/design.md` + `$FEATURE_DIR/design/mockup_*.png` visual mockup images (user-provided or AI-generated, if the change includes UI modifications). Conditional requirements — design-system conformance and the keyboard-visible state/mockups for text-input surfaces — are defined in the `feature-specification` skill's Output section.
 Gate: Update the tracker status to `Awaiting specification approval`, then run `bash harness/scripts/check-stage-artifacts.sh harness-planning feature-specification "$FEATURE_DIR"` — it validates stage artifacts, lifecycle state, and the keyboard-visible mockup contract and must exit 0. For UI work, also verify `design.md` cites `docs/product/design_system.md`. **STOP — present specification, design document, and visual mockup images to user for review. Do not proceed until user explicitly approves.**
 
 ### Stage 2 — Slice Planning ⛔ STOP FOR APPROVAL
 **INVOKE** the `slice-planning` skill via the Skill tool (name: `slice-planning`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 Input: `$FEATURE_DIR/spec.md` (+ `$FEATURE_DIR/design.md` if present)
-Output: `$FEATURE_DIR/feature_list.json`, `$FEATURE_DIR/progress.md`, `$FEATURE_DIR/sprint-contract.md`, and `$FEATURE_DIR/platform-capability-matrix.md`.
-The feature list MUST include a root `platform_validation` object. For platform-bound work set `required: true`, `unsupported_environment_policy: "fail_loudly"`, and declare at least one real instrumented boundary test. For work with no Android/device/platform boundary, set `required: false`, provide a reason, and still create the matrix artifact with an explicit N/A statement.
+Output: `$FEATURE_DIR/feature_list.json`, `$FEATURE_DIR/progress.md`, `$FEATURE_DIR/sprint-contract.md`, and `$FEATURE_DIR/platform-capability-matrix.md`. Artifact requirements — including the root `platform_validation` contract and the platform capability matrix — are defined in the `slice-planning` skill's Output section.
 Gate: Update the tracker status to `Awaiting implementation approval`, then run `bash harness/scripts/check-stage-artifacts.sh harness-planning slice-planning "$FEATURE_DIR"` and `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --planning` — both validate the artifacts and must exit 0. **STOP — present `feature_list.json`, `sprint-contract.md`, and `platform-capability-matrix.md` to user. Do not proceed until user explicitly approves the task breakdown, platform contract, and sprint contract.**
 
 ---

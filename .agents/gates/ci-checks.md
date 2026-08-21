@@ -80,11 +80,11 @@ bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"
 ```
 **Must pass.** Every visual verification method in the final owner's `feature_list.json` must have a matching `TC-*-VIS-*` row in `sprint-contract.md`, an acceptance-test ID, successful connected-test evidence, a non-empty screenshot, and one matching reference-anchor row in `visual_evidence/reference-anchor-verification.md`. Each row names the approved design asset, visual bounds `testTag`, runtime test, concrete bounds relationship, and screenshot.
 
-### 10. Keyboard-Visible Planning Mockup (when a planned bottom sheet has text input)
+### 10. Keyboard-Visible Planning Mockup (when a planned screen or bottom sheet has text input)
 ```bash
 bash harness/scripts/check-keyboard-mockup-contract.sh "$FEATURE_DIR"
 ```
-**Must pass during harness planning.** A design with a bottom-sheet textbox, text field, search field, or other text input must describe the keyboard-visible state and reference distinct non-empty base and keyboard-visible mockup assets.
+**Must pass during harness planning.** A design with a bottom-sheet textbox, text field, search field, or other text input — or screen content with text input and a bottom toolbar — must describe the keyboard-visible state and reference distinct non-empty base and keyboard-visible mockup assets. For a bottom sheet, the keyboard-visible state must state that the sheet stays open (tapping the text input must not dismiss it). When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must state that the bottom toolbar is dismissed while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `.agents/rules/compose-rules.md`.
 
 ---
 

@@ -29,6 +29,7 @@ This skill ends only when every material question has been answered by the user 
 ## Load
 
 - `docs/product/design_system.md` — mandatory for every UI-affecting specification and design
+- `rules/compose-rules.md` — **Keyboard / IME Behavior** section: when screen content or a bottom sheet has text input, the bottom toolbar must dismiss while the keyboard is visible
 - `skills/spec-driven-development/SKILL.md`
 - `harness/templates/feature-spec-template.md`
 - `harness/templates/feature-design-template.md`
@@ -134,12 +135,18 @@ Before handling either design-input path, read `docs/product/design_system.md`. 
 Input: The clarified requirements from Steps 1–5, the active artifact directory, and the task type classification.
 Output: `design.md` + `design/mockup_*.png` AI-generated visual mockup images in the active artifact directory.
 
+**Keyboard-visible state (any screen or bottom sheet with text input):** If the screen content or a bottom sheet contains a text box, text field, search field, or other text input, `design.md` must define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup. For a bottom sheet, that mockup must show the sheet **still open** with the keyboard — tapping the text input must not dismiss the sheet; only a scrim tap, swipe-down, or close action does (per the Keyboard / IME Behavior rule in `rules/compose-rules.md`). When the screen has a bottom toolbar, the keyboard-visible state must show the bottom toolbar **dismissed** while the keyboard is visible, per the same rule. The bottom toolbar must never be depicted behind the keyboard.
+
 ---
 
 ## Output
 
 - Ad-hoc workflows: `docs/current/spec.md`, `docs/current/design.md`, and `docs/current/design/` mockup assets (user-provided or generated)
 - Harness planning: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/design.md`, and `$FEATURE_DIR/design/` mockup assets (user-provided or generated)
+
+**Design-system conformance:** for UI work, `design.md` must link `docs/product/design_system.md` and list every explicit user-approved exception (or state that none exist).
+
+**Keyboard-visible state (conditional — mechanics in Step 6):** if a bottom sheet contains text input, or screen content has text input with a bottom toolbar, `design.md` must define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup. For a bottom sheet, the keyboard-visible mockup must show the sheet **still open** with the keyboard — tapping the text input must not dismiss the sheet; only a scrim tap, swipe-down, or close action does. When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must show the bottom toolbar **dismissed** while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `rules/compose-rules.md`.
 
 ---
 

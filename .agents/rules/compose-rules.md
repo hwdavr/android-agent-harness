@@ -194,3 +194,20 @@ Avoid `remember` in tests by keeping stateless content Composables as the primar
 - Avoid unnecessary recompositions: pass stable types as parameters
 - Use `key()` in lazy lists when items have stable IDs
 - Avoid creating lambdas inside the composable body — pass them as parameters
+
+---
+
+## Keyboard / IME Behavior
+
+**When screen content (or a bottom sheet) contains text input, the bottom toolbar must dismiss while the keyboard (IME) is visible.**
+
+- A bottom toolbar / bottom bar must never sit behind the keyboard, overlap the focused field, or shrink the visible typing area.
+- Dismiss the bottom toolbar while `WindowInsets.isImeVisible` is `true` and restore it when the IME hides.
+- Apply `imePadding()` to the content (or an equivalent insets strategy) so the focused field and remaining controls stay visible and reachable above the keyboard.
+- This rule applies to full screens and bottom sheets alike. The design (`design.md`) must depict the keyboard-visible state for every screen or sheet whose content has text input; when the screen has a bottom toolbar, that state must show the bottom toolbar dismissed. (A modal bottom sheet already hides the screen's toolbar behind it, so no dismissal is needed there.)
+
+### Bottom Sheets with Text Input
+
+- Tapping a text box, text field, or search field inside a bottom sheet must **not** dismiss the sheet. The sheet stays open and expands above the keyboard while the IME is visible; only a scrim tap, swipe-down, or an explicit close action dismisses it.
+- Apply `imePadding()` to the sheet content so the focused field and remaining controls stay visible above the keyboard, and keep the sheet's results region scrollable.
+- The design (`design.md`) must include a distinct keyboard-visible mockup showing the sheet **still open** with the keyboard, alongside the base mockup — never a dismissed sheet.

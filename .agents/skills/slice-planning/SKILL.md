@@ -21,6 +21,7 @@ For trivially small changes, skip this stage and go directly to the Implementati
 - `harness/templates/feature_list_template.json`
 - `harness/templates/progress-template.md`
 - `harness/templates/sprint-contract-template.md`
+- `harness/templates/platform-capability-matrix-template.md`
 - **Requirement input** — read the path from the active workflow's `Input:` line:
   - harness-planning workflow → `$FEATURE_DIR/spec.md` (+ `$FEATURE_DIR/design.md` if present)
   - Other workflows → `docs/current/spec_v<N>.md`
@@ -74,6 +75,8 @@ A `affects_ui: false` slice is still vertical when an *existing* reachable entry
 
 ### 4. Define Features inside `feature_list.json`
 
+The `feature_list.json` root MUST include a `platform_validation` object alongside `features`. For platform-bound work set `required: true`, `unsupported_environment_policy: "fail_loudly"`, `capability_matrix: "platform-capability-matrix.md"`, and declare at least one real instrumented boundary test in the owning slice's `acceptance_test_ids`. For work with no Android/device/platform boundary, set `required: false`, provide a `reason`, and still create the matrix artifact with an explicit N/A statement.
+
 For each slice, you must populate the `features` list in the `feature_list.json` schema. Define each task completely, ensuring that each field is explained and adheres to the following definitions:
 
 - **`id`**: The user story ID from the sprint contract (e.g. `US-1`, `US-2`). This directly links the feature to its sprint contract user story, enforcing a strict 1:1 mapping. **Each feature `id` MUST match exactly one user story heading in `sprint-contract.md`, and every user story MUST have a corresponding feature.**
@@ -119,10 +122,13 @@ Express the dependency order explicitly (linear or branching).
 Write the **feature list** following `harness/templates/feature_list_template.json`.
 Write the **progress file** following `harness/templates/progress-template.md`.
 Write the **sprint contract** following `harness/templates/sprint-contract-template.md`.
+Write the **platform capability matrix** following `harness/templates/platform-capability-matrix-template.md`.
+
+Every `feature_list.json` MUST include the root `platform_validation` object described in Step 4 — `required`, `unsupported_environment_policy: "fail_loudly"`, and `capability_matrix` — with at least one real instrumented boundary test for platform-bound work, or `required: false` plus a `reason` and an N/A matrix otherwise.
 
 Output paths are defined by the calling workflow:
-- **harness-planning workflow** → `$FEATURE_DIR/feature_list.json`, `$FEATURE_DIR/progress.md`, and `$FEATURE_DIR/sprint-contract.md`
-- **Other workflows** → `docs/current/feature_list.json`, `docs/current/progress.md`, and `docs/current/sprint-contract.md`
+- **harness-planning workflow** → `$FEATURE_DIR/feature_list.json`, `$FEATURE_DIR/progress.md`, `$FEATURE_DIR/sprint-contract.md`, and `$FEATURE_DIR/platform-capability-matrix.md`
+- **Other workflows** → `docs/current/feature_list.json`, `docs/current/progress.md`, and `docs/current/sprint-contract.md` (matrix path per the calling workflow)
 
 Pre-populate the task list with all slices.
 Set Feature 1 to `in_progress`, all others to `not_started`.
