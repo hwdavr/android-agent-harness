@@ -142,7 +142,7 @@ while IFS= read -r test_id; do
   printf '%s\n' "$CONTRACT_ROW" | grep -Fq 'connectedDebugAndroidTest' \
     || fail "real platform test $test_id must use connectedDebugAndroidTest"
 
-  EVIDENCE_COUNT=$(jq --arg id "$test_id" '[.features[]?.evidence[]? | select(.test_id == $id and .exit_status == 0 and ((.executed_command // "") | contains("connectedDebugAndroidTest")))] | length' "$FEATURE_JSON")
+  EVIDENCE_COUNT=$(jq --arg id "$test_id" '[.features[]?.evidence[]? | select(type == "object" and .test_id == $id and .exit_status == 0 and ((.executed_command // "") | contains("connectedDebugAndroidTest")))] | length' "$FEATURE_JSON")
   [ "$EVIDENCE_COUNT" -gt 0 ] \
     || fail "real platform test $test_id has no successful connected-test evidence"
 done <<EOF
