@@ -48,6 +48,7 @@ Mark a row **REVISION REQUIRED** when any of the following is true:
 - The test clicks a control but does not assert the callback result, state transition, navigation result, system permission result, or user-visible outcome required by the source requirement.
 - The test asserts a callback was invoked but does not assert the resulting UI or lifecycle effect where the requirement is user-visible.
 - The test is the only caller of a completion callback or state transition that has no production call site.
+- The FR names multiple outcomes (e.g. a serialization round-trip *and* graceful fallback for missing/unknown fields, or a happy path *and* an error/fallback path) but only one of them is mapped to a test — the untested outcome must be marked `REVISION REQUIRED`, even when the happy-path test passes.
 
 ### B3. Review test quality and boundaries
 
@@ -92,6 +93,7 @@ The report must include evidence provenance, the complete traceability matrix, t
 All of the following are mechanically verifiable:
 
 - [ ] Every FR, AC, and documented edge case in the active baseline has a traceability row.
+- [ ] Every named outcome within an FR (happy path, fallback, error, boundary, compatibility) is covered by its own test; no FR is approved on a happy-path test alone when it promises more.
 - [ ] Every row identifies a real production trigger and an observable assertion, or is explicitly marked `REVISION REQUIRED`.
 - [ ] Test, coverage, and runtime-check evidence records command, exit code, provenance, and scope.
 - [ ] No mapped test is approved when it is setter-only, assertion-free, test-only callback wiring, or otherwise detached from the specified behavior.

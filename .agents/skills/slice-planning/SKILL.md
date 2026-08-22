@@ -35,6 +35,8 @@ Read the complete requirement input document (path defined by the calling workfl
 
 Create a **Spec Coverage Matrix** before defining slices. Every `FR-*` and `AC-*` in the spec must map to exactly one primary user story and acceptance-test ID; explicitly map edge cases, non-functional constraints, and design requirements to a user story or mark them `out_of_scope` with the approved reason. Do not omit a requirement because it appears foundational, duplicated, or non-user-visible.
 
+An FR that names multiple outcomes (happy path plus fallback, error, boundary, or persistence/compatibility behavior) must decompose into one AC per outcome. A single happy-path acceptance-test ID is a coverage gap when the FR text promises additional behaviors — if the spec failed to decompose it, add the missing ACs here rather than silently mapping only the happy path.
+
 Then answer:
 - How many distinct areas of the codebase are touched?
 - Is there a natural dependency order (e.g. DB schema must exist before the ViewModel can query it)?
@@ -47,6 +49,8 @@ Decompose the high-level requirement into a detailed scope, acceptance criteria,
 The Spec Coverage Matrix is mandatory. It must include the source requirement ID, concise requirement text, primary user-story ID, acceptance-test ID, and handling. A requirement may map to multiple secondary tests, but it must have exactly one primary owner. Preserve the source requirement ID verbatim so the planning gate can verify coverage.
 
 For every acceptance criterion, define a uniquely identified acceptance test case in the contract. Each row must name the test layer, proposed test file and method, fixture/action, observable assertions, and exact Gradle command. The test must invoke the production entry point for the user story; an isolated helper/use-case test cannot be the sole proof of an end-to-end or user-visible criterion.
+
+Do not let one AC bundle multiple named outcomes — split a multi-outcome AC so each outcome has its own test. A fallback, error, boundary, or compatibility path promised by an FR needs its own AC and test, not a secondary assertion inside the happy-path test.
 
 **Each user story MUST have a unique ID** (e.g. `US-1`, `US-2`, `US-3`). This ID is the cross-reference key used in `feature_list.json` to enforce a 1:1 mapping between user stories and feature slices.
 
@@ -102,10 +106,11 @@ Before finalizing, verify the bidirectional mapping is complete:
 2. **No orphan features**: Every feature `id` in `feature_list.json` must match a `US-*` heading in `sprint-contract.md`.
 3. **No duplicates**: Feature IDs are unique by definition — no two features may share the same `id`.
 4. **No dropped spec requirements**: Every `FR-*` and `AC-*` in the source spec appears in the Spec Coverage Matrix and maps to a user story and primary acceptance-test ID, unless it is explicitly approved as out of scope with its reason.
-5. **No invented scope**: Every planned capability, acceptance criterion, and verification requirement traces back to the source spec or an explicitly recorded user decision.
-6. **`requires_visual_verification` ↔ `TC-US-*-VIS` consistency**: For every feature with `"requires_visual_verification": true`, the matching `US-*` user story in `sprint-contract.md` MUST contain the visual-state rows needed to assess the completed flow, and each row's state-verifying `Exact command` MUST appear verbatim in the feature's `verification` array. A feature with `"requires_visual_verification": false` MUST contain no `TC-US-*-VIS` row. `affects_ui` alone does not require a screenshot gate.
-7. **One visual-verification owner**: If the planned feature contains UI changes, select exactly one final, user-reachable slice as the visual-verification owner. Its acceptance tests must navigate through the completed production flow before capturing. Do not attach screenshot rows to intermediate slices merely because they change a Composable.
-8. **No horizontal slices**: Every feature passes the Vertical Slice Test from step 3 — it has an observable, already-reachable entry point when shipped alone. A slice whose only consumer is a later slice's UI is horizontal and must be merged into that later slice.
+5. **No under-covered FR outcomes**: Every distinct behavior named in an `FR-*` (happy path, fallback, error, boundary, backward/forward compatibility, graceful fallback) maps to its own AC and test. One happy-path test is insufficient when the FR text promises additional behaviors.
+6. **No invented scope**: Every planned capability, acceptance criterion, and verification requirement traces back to the source spec or an explicitly recorded user decision.
+7. **`requires_visual_verification` ↔ `TC-US-*-VIS` consistency**: For every feature with `"requires_visual_verification": true`, the matching `US-*` user story in `sprint-contract.md` MUST contain the visual-state rows needed to assess the completed flow, and each row's state-verifying `Exact command` MUST appear verbatim in the feature's `verification` array. A feature with `"requires_visual_verification": false` MUST contain no `TC-US-*-VIS` row. `affects_ui` alone does not require a screenshot gate.
+8. **One visual-verification owner**: If the planned feature contains UI changes, select exactly one final, user-reachable slice as the visual-verification owner. Its acceptance tests must navigate through the completed production flow before capturing. Do not attach screenshot rows to intermediate slices merely because they change a Composable.
+9. **No horizontal slices**: Every feature passes the Vertical Slice Test from step 3 — it has an observable, already-reachable entry point when shipped alone. A slice whose only consumer is a later slice's UI is horizontal and must be merged into that later slice.
 
 If a user story is too large to fit into a single feature slice, **split the user story** in the sprint contract first, then create the corresponding feature. If a feature slice doesn't map to any user story, either the sprint contract is missing a story or the slice should be merged into another feature.
 
@@ -146,6 +151,7 @@ The user must confirm:
 - [ ] Verification steps are concrete, machine-executable shell commands (returning binary PASS/FAIL)
 - [ ] The sprint-contract is compiled with explicit acceptance criteria and a corresponding verification plan
 - [ ] Every AC has exactly one primary acceptance test case with an ID, test layer, test target, setup/action, observable assertions, and exact command
+- [ ] Every named outcome in each FR (happy path, fallback, error, boundary, compatibility, graceful fallback) has its own AC and test — no FR is covered by a happy-path test alone when it promises more
 - [ ] Every cross-layer or user-visible AC has an integration or instrumented acceptance test that exercises the production entry point
 - [ ] Every sprint contract user story maps to exactly one feature list item (1:1, no orphans on either side)
 - [ ] Every source `FR-*` and `AC-*` appears in the Spec Coverage Matrix with a primary slice and acceptance-test owner

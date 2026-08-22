@@ -39,6 +39,8 @@ Platform-bound features MUST declare at least one real instrumented boundary tes
 
 Map every `FR-*` and `AC-*` from the approved source spec. Also map each edge case, non-functional constraint, verification expectation, and changed design requirement to a user story, or record the approved out-of-scope reason. Preserve source IDs verbatim.
 
+An `FR-*` that promises multiple outcomes (happy path plus fallback/error/boundary/compatibility) must have one `AC-*` per outcome, each with its own acceptance test. A single AC for a multi-outcome FR is a coverage gap; if the spec did not decompose it, add the missing ACs here rather than silently mapping only the happy path.
+
 | Source requirement | Requirement summary | Primary user story | Primary acceptance test | Handling |
 |---|---|---|---|---|
 | FR-001 | `{concise requirement text}` | US-1 | TC-US-1-01 | In scope |
@@ -66,7 +68,7 @@ Map every `FR-*` and `AC-*` from the approved source spec. Also map each edge ca
 
 **Acceptance Test Cases** *(required for implementation authorization)*:
 
-Every acceptance criterion must have exactly one primary automated test case. A secondary test may be listed only when it verifies a distinct layer. Do not use manual inspection as the sole proof of a user-visible criterion.
+Every acceptance criterion must have exactly one primary automated test case. A secondary test may be listed only when it verifies a distinct layer. Do not use manual inspection as the sole proof of a user-visible criterion. Do not let one AC bundle multiple named outcomes — split it so each outcome gets its own test; a fallback, error, boundary, or compatibility path promised by an FR needs its own AC and test, not a secondary assertion inside the happy-path test.
 
 | Test ID | Covers AC | Test layer | Test file and method | Setup and action | Required assertions | Exact command |
 |---|---|---|---|---|---|---|
