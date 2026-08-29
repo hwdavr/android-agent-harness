@@ -62,6 +62,13 @@ visual bounds `testTag` (not only the outer touch target) and record the measure
 tolerance. A broad screenshot with a statement such as “matches design” is not sufficient proof
 of placement.
 
+For version 2+ evidence-backed reports, declare a `visual_contract` with the visual-risk roles
+present in the changed surface (for example `icon_identity`, `layout_relationship`, and
+`action_presence`). Each role must name a runtime-backed `testTag`, the producing instrumented
+test method, and the concrete visual assertion being proved. A button's existence or 48dp
+touch-target frame is not proof of its visible icon, label treatment, relative placement, or
+presence of a secondary action.
+
 **Loop rule — if verification FAILS:**
 - Return to **Stage 1 — UI Implementation** to fix the implementation.
 - Re-run **Stage 2 — UI Verification** after each fix.

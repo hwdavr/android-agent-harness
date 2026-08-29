@@ -81,6 +81,16 @@ mv "$missing_anchor_tag/visual_evidence/reference-anchor-verification.tmp" \
   "$missing_anchor_tag/visual_evidence/reference-anchor-verification.md"
 expect_failure "must name a visual bounds testTag" bash "$VALIDATOR" "$missing_anchor_tag"
 
+target_only_handle_anchor="$fixture_root/target-only-handle-anchor"
+write_valid_fixture "$target_only_handle_anchor"
+sed 's/emoji_picker_visual/emoji_picker_handle/' \
+  "$target_only_handle_anchor/visual_evidence/reference-anchor-verification.md" \
+  > "$target_only_handle_anchor/visual_evidence/reference-anchor-verification.tmp"
+mv "$target_only_handle_anchor/visual_evidence/reference-anchor-verification.tmp" \
+  "$target_only_handle_anchor/visual_evidence/reference-anchor-verification.md"
+expect_failure "must name the handle's visual shape identifier, not interactive target emoji_picker_handle" \
+  bash "$VALIDATOR" "$target_only_handle_anchor"
+
 missing_screenshot="$fixture_root/missing-screenshot"
 write_valid_fixture "$missing_screenshot"
 mv "$missing_screenshot/visual_evidence/emoji_picker_content.png" \

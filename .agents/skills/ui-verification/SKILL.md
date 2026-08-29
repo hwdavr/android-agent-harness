@@ -58,6 +58,21 @@ For each changed Composable, verify:
 - Visual screenshots MUST be captured from within the test runner during `composeRule.waitForIdle()` via `takeScreenshot()`, saving to `/sdcard/Download/<name>.png` and pulled via `adb pull`.
 - Do NOT use post-test CLI screencaps (`&& adb exec-out screencap`) which capture the device home screen after the test activity has already unmounted.
 
+**Machine-readable evidence contract:**
+- New reports may declare `design_anchors: "design/design_anchors.json"` and
+  `runtime_evidence: "evidence/ui_frames.json"`. When either path is present, both are required
+  and `check-ui-verification-artifact.sh` calculates every structural delta from the captured
+  Compose test frames in dp.
+- Store expected geometry only in `design/design_anchors.json`; structural checks identify the
+  screen, visual `testTag`, and metric without self-reported expected/actual/result fields.
+- For version 2+ evidence-backed PASS reports, declare a non-empty `visual_contract` with
+  explicit roles for the changed surface (for example `icon_identity`, `layout_relationship`,
+  and `action_presence`). Each check names a runtime-backed `testTag`, producing test method, and
+  concrete visible assertion. A large interactive target is not proof of the compact visual
+  inside it; use a distinct visual-shape tag such as `*_handle_visual` for handle anchors.
+- Existing reports without the two evidence paths remain readable for migration compatibility;
+  do not create new reports in the legacy shape.
+
 ---
 
 ### Phase 1 — Normalize screenshots
@@ -416,6 +431,21 @@ Produce `docs/current/ui_verification.json` from
 {
   "version": "<N>",
   "reference_design": "design/<approved_mockup_or_screenshot>.png",
+  "design_anchors": "design/design_anchors.json",
+  "runtime_evidence": "evidence/ui_frames.json",
+
+  "visual_contract": {
+    "required_roles": ["icon_identity", "layout_relationship", "action_presence"],
+    "checks": [
+      {
+        "screen": "<screen_name>",
+        "element_id": "<runtime-backed testTag>",
+        "role": "<declared visual-risk role>",
+        "runtime_test": "<ComposeUiTest class/method producing the evidence>",
+        "assertion": "<concrete visible icon, label, layout, or action assertion>"
+      }
+    ]
+  },
 
   "build_and_static_checks": {
     "assembleDebug": "PASS / FAIL",
@@ -465,20 +495,41 @@ Produce `docs/current/ui_verification.json` from
   ],
 
   "structural_verification": {
-    "tolerances": {
-      "position_dp": 4,
-      "size_percent": 5,
-      "spacing_dp": 4
-    },
     "checks": [
       {
         "region": "<region>",
-        "element": "<element>",
-        "property": "<property>",
-        "expected": "<value>",
-        "actual": "<value>",
-        "within_tolerance": true,
-        "result": "PASS / FAIL"
+        "screen": "<screen_name_in_runtime_evidence>",
+        "element_id": "<visual_bounds_testTag>",
+        "metric": "<x / y / width / height>",
+        "note": "<what this anchor proves; numeric expected/tolerance live only in design/design_anchors.json>"
+      }
+    ]
+  },
+
+  "design_anchors_schema": {
+    "coordinate_space": { "unit": "dp", "reference_resolution": { "width": 390, "height": 844 } },
+    "anchors": [
+      {
+        "screen": "<screen_name>",
+        "element_id": "<visual_bounds_testTag>",
+        "metric": "<x / y / width / height>",
+        "expected": "<number measured from approved design>",
+        "tolerance_dp": "<non-negative number>"
+      }
+    ]
+  },
+
+  "runtime_evidence_schema": {
+    "producer": { "kind": "ComposeUiTest", "test_name": "<test class/method>" },
+    "coordinate_space": { "unit": "dp" },
+    "normalization": { "theme": "light", "font_scale": 1.0, "locale": "en-US" },
+    "screens": [
+      {
+        "name": "<screen_name>",
+        "screenshot": "evidence/<screen>.png",
+        "elements": {
+          "<testTag>": { "x": 0, "y": 0, "width": 0, "height": 0 }
+        }
       }
     ]
   },

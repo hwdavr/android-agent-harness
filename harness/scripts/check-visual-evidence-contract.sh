@@ -133,6 +133,12 @@ if [ "$MODE" = "--evaluate" ]; then
     REPORT_ROW=$(printf '%s\n' "$REPORT_ROWS" | sed '/^[[:space:]]*$/d')
     printf '%s\n' "$REPORT_ROW" | grep -Eq 'testTag:[[:space:]]*`[^`]+`' \
       || fail "$test_id reference-anchor row must name a visual bounds testTag"
+    VISUAL_TAG=$(printf '%s\n' "$REPORT_ROW" | sed -n 's/.*testTag:[[:space:]]*`\([^`]*\)`.*/\1/p')
+    case "$VISUAL_TAG" in
+      *_handle|*-handle)
+        fail "$test_id reference-anchor row must name the handle's visual shape identifier, not interactive target $VISUAL_TAG"
+        ;;
+    esac
     printf '%s\n' "$REPORT_ROW" | grep -Eq '`[^`]*#[A-Za-z_][A-Za-z0-9_]*`' \
       || fail "$test_id reference-anchor row must name the runtime test method"
     printf '%s\n' "$REPORT_ROW" | grep -Eq '[A-Za-z]+Bounds(\.[A-Za-z]+)?[[:space:]]*(==|>=|<=|>|<)' \
