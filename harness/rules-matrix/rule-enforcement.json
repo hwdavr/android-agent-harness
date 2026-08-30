@@ -1,0 +1,93 @@
+{
+  "matrices": [
+    {
+      "id": "architecture",
+      "path": "harness/rules-matrix/architecture-rules-enforcement-matrix.md",
+      "groups": [
+        {
+          "summary_label": "🤖 Scripted only",
+          "matrix_enforcement": "🤖 Scripted",
+          "ids": ["1.5", "1.6", "2.6", "2.9", "3.1", "3.2", "3.3", "3.4", "3.5", "4.1", "4.2", "6.3", "7.2", "7.4", "8.1", "8.4", "9.1", "9.2", "9.3", "9.4"],
+          "owners": {
+            "1.5": "architecture-script", "1.6": "detekt", "2.6": "detekt", "2.9": "detekt", "3.1": "detekt", "3.2": "detekt", "3.3": "detekt", "3.4": "detekt", "3.5": "detekt", "4.1": "detekt", "4.2": "architecture-script", "6.3": "detekt", "7.2": "architecture-script", "7.4": "architecture-script", "8.1": "architecture-script", "8.4": "architecture-script", "9.1": "architecture-script", "9.2": "architecture-script", "9.3": "architecture-script", "9.4": "architecture-script"
+          }
+        },
+        {
+          "summary_label": "🧠 Evaluator only",
+          "matrix_enforcement": "🧠 Evaluator",
+          "ids": ["1.2", "1.3", "2.1", "2.2", "2.3", "2.4", "2.7", "2.8", "4.3", "5.1", "5.2", "6.2", "6.4", "7.1", "7.3", "9.5"]
+        },
+        {
+          "summary_label": "👁️ Human only",
+          "matrix_enforcement": "👁️ Human",
+          "ids": ["8.5"]
+        },
+        {
+          "summary_label": "🤖 + 🧠 Scripted + Evaluator",
+          "matrix_enforcement": "🤖 Scripted + 🧠 Evaluator",
+          "ids": ["1.1", "1.4", "2.5", "3.6", "5.3", "5.4", "6.1", "8.2", "8.3"],
+          "owners": {
+            "1.1": "architecture-script", "1.4": "detekt", "2.5": "architecture-script", "3.6": "detekt", "5.3": "architecture-script", "5.4": "architecture-script", "6.1": "detekt", "8.2": "architecture-script", "8.3": "architecture-script"
+          }
+        }
+      ]
+    },
+    {
+      "id": "compose",
+      "path": "harness/rules-matrix/compose-rules-enforcement-matrix.md",
+      "groups": [
+        {
+          "summary_label": "🤖 Scripted only",
+          "matrix_enforcement": "🤖 Scripted",
+          "ids": ["1.7", "5.1", "5.2", "8.1"],
+          "owners": {"1.7": "compose-script", "5.1": "compose-script", "5.2": "compose-script", "8.1": "compose-script"}
+        },
+        {
+          "summary_label": "🧠 Evaluator only",
+          "matrix_enforcement": "🧠 Evaluator",
+          "ids": ["1.1", "1.2", "1.5", "2.1", "2.3", "3.2", "4.2", "5.3", "5.4", "5.5", "6.2", "7.3", "8.2", "8.3", "8.4"]
+        },
+        {
+          "summary_label": "🤖 + 🧠 Scripted + Evaluator",
+          "matrix_enforcement": "🤖 Scripted + 🧠 Evaluator",
+          "ids": ["1.3", "1.4", "2.2", "3.1", "3.3"],
+          "owners": {"1.3": "compose-script", "1.4": "compose-script", "2.2": "compose-script", "3.1": "compose-script", "3.3": "compose-script"}
+        },
+        {
+          "summary_label": "👁️ + 🧠 Human + Evaluator",
+          "matrix_enforcement": "👁️ Human + 🧠 Evaluator",
+          "ids": ["6.1", "6.3", "7.1", "7.2", "9.1", "9.2"]
+        },
+        {
+          "summary_label": "🤖 Scripted (via localization script)",
+          "matrix_enforcement": "🤖 Scripted",
+          "ids": ["1.6", "4.1"],
+          "owners": {"1.6": "localization-script", "4.1": "localization-script"}
+        }
+      ]
+    },
+    {
+      "id": "localization",
+      "path": "harness/rules-matrix/localization-rules-enforcement-matrix.md",
+      "groups": [
+        {
+          "summary_label": "🤖 Scripted only",
+          "matrix_enforcement": "🤖 Scripted",
+          "ids": ["1.1", "1.2", "1.3", "6.2"],
+          "owners": {"1.1": "localization-script", "1.2": "localization-script", "1.3": "localization-script", "6.2": "localization-script"}
+        },
+        {
+          "summary_label": "🧠 Evaluator only",
+          "matrix_enforcement": "🧠 Evaluator",
+          "ids": ["2.1", "3.1", "4.1", "4.2", "5.1", "5.2"]
+        },
+        {
+          "summary_label": "🤖 + 🧠 Scripted + Evaluator",
+          "matrix_enforcement": "🤖 Scripted + 🧠 Evaluator",
+          "ids": ["6.1"],
+          "owners": {"6.1": "localization-script"}
+        }
+      ]
+    }
+  ]
+}

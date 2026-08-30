@@ -6,7 +6,7 @@ Rules from [`android-architecture.md`](../../.agents/rules/android-architecture.
 
 | Badge | Meaning |
 |---|---|
-| 🤖 **Scripted** | [`check-architecture-rules.sh`](../scripts/check-architecture-rules.sh) or Windows [`check-architecture-rules.cmd`](../scripts/check-architecture-rules.cmd) detects this automatically on every CI run |
+| 🤖 **Scripted** | [`check-architecture-rules.sh`](../scripts/check-architecture-rules.sh), Detekt `ForbiddenImport` rules, or their Windows launcher detects this automatically on every CI run. The canonical owner is recorded in `rule-enforcement.json`. |
 | 🧠 **Evaluator** | AI code review can reliably identify this — pattern recognition, semantic understanding |
 | 👁️ **Human** | Requires design judgement, visual inspection, or context that neither script nor AI can fully substitute |
 
@@ -127,11 +127,11 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | Category | Count | Rules |
 |---|---|---|
-| 🤖 Scripted only | 12 | 1.5, 1.6, 2.6, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 8.1, 8.4, 9.1, 9.2, 9.3, 9.4 |
-| 🧠 Evaluator only | 13 | 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.7, 2.8, 3.6\*, 4.3, 6.2, 6.4, 7.1, 7.3, 9.5 |
+| 🤖 Scripted only | 20 | 1.5, 1.6, 2.6, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 6.3, 7.2, 7.4, 8.1, 8.4, 9.1, 9.2, 9.3, 9.4 |
+| 🧠 Evaluator only | 16 | 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.7, 2.8, 4.3, 5.1, 5.2, 6.2, 6.4, 7.1, 7.3, 9.5 |
 | 👁️ Human only | 1 | 8.5 |
-| 🤖 + 🧠 Scripted + Evaluator | 9 | 1.1, 1.4, 2.5, 3.6, 5.3, 5.4, 6.1, 8.2, 8.3, 7.2\* |
-| **Total rules** | **35** | |
+| 🤖 + 🧠 Scripted + Evaluator | 9 | 1.1, 1.4, 2.5, 3.6, 5.3, 5.4, 6.1, 8.2, 8.3 |
+| **Total rules** | **46** | |
 
 > [!NOTE]
 > Only rule **8.5** (AI-generated code reviewed before merge) is Human-only — it is a process gate enforced by the review workflow, not detectable by any automated tool.

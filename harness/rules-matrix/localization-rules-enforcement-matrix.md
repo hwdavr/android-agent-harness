@@ -71,11 +71,11 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | Category | Count | Rules |
 |---|---|---|
-| 🤖 Scripted only | 2 | 1.1, 1.2, 1.3, 6.2 |
-| 🧠 Evaluator only | 7 | 2.1, 3.1, 4.1, 4.2, 5.1, 5.2 |
+| 🤖 Scripted only | 4 | 1.1, 1.2, 1.3, 6.2 |
+| 🧠 Evaluator only | 6 | 2.1, 3.1, 4.1, 4.2, 5.1, 5.2 |
 | 👁️ Human only | 0 | — |
 | 🤖 + 🧠 Scripted + Evaluator | 1 | 6.1 |
-| **Total rules** | **10** | |
+| **Total rules** | **11** | |
 
 > [!NOTE]
 > No rule is **Human-only**. Every localization rule can be at least partially enforced by scripted regex or AI semantic review.  

@@ -32,6 +32,7 @@ if [[ "${1:-}" == "--all" ]]; then
 fi
 
 SOURCE_ROOT="${1:-$PROJECT_ROOT/app/src/main/java}"
+TAG_REGISTRY="${DOCUMENTED_DYNAMIC_TAGS_REGISTRY:-$PROJECT_ROOT/harness/rules-matrix/documented-dynamic-test-tags.json}"
 
 # Determine which files to scan
 kt_files=()
@@ -175,6 +176,54 @@ _run_check() {
     fi
 }
 
+validate_tag_registry() {
+    if [[ ! -f "$TAG_REGISTRY" ]]; then
+        echo -e "    ${RED}Missing documented dynamic test-tag registry: $TAG_REGISTRY${RESET}"
+        return 1
+    fi
+
+    if ! jq -e '
+        type == "object" and
+        (.entries | type == "array" and length > 0) and
+        all(
+            .entries[];
+            (.id | type == "string" and length > 0) and
+            (.file | type == "string" and length > 0) and
+            (.documentation | type == "string" and length > 0) and
+            (.template | type == "string" and length > 0) and
+            (.source_type | IN("immutable-domain-id", "fixed-catalog-key")) and
+            (.line_pattern | type == "string" and length > 0)
+        )
+    ' "$TAG_REGISTRY" >/dev/null 2>&1; then
+        echo -e "    ${RED}Invalid documented dynamic test-tag registry: $TAG_REGISTRY${RESET}"
+        return 1
+    fi
+
+    local entry_id documentation template
+    while IFS=$'\t' read -r entry_id documentation template; do
+        [[ -n "$entry_id" ]] || continue
+        if [[ ! -f "$PROJECT_ROOT/$documentation" ]]; then
+            echo -e "    ${RED}Registry entry $entry_id references missing documentation: $documentation${RESET}"
+            return 1
+        fi
+        if ! grep -Fq "$template" "$PROJECT_ROOT/$documentation"; then
+            echo -e "    ${RED}Registry entry $entry_id is not documented by template '$template' in $documentation${RESET}"
+            return 1
+        fi
+    done < <(jq -r '.entries[] | [.id, .documentation, .template] | @tsv' "$TAG_REGISTRY")
+}
+
+is_documented_dynamic_tag() {
+    local relative_file="$1"
+    local source_line="$2"
+
+    jq -e --arg file "$relative_file" --arg line "$source_line" '
+        .entries[]
+        | select(.file == $file)
+        | select(.line_pattern as $pattern | $line | test($pattern))
+    ' "$TAG_REGISTRY" >/dev/null 2>&1
+}
+
 # =============================================================================
 # CHECKS
 # =============================================================================
@@ -251,21 +300,29 @@ _run_check \
 _header "5 · Unstable testTag Values"
 echo -e "  ${YELLOW}testTag values must be descriptive; dynamic values require immutable, documented IDs.${RESET}"
 
-# Key content containers use item-specific tags keyed by stable model IDs.
-# Exclude dynamic list item tags (e.g. note_item_*, folder_item_*) if required.
-# The emoji picker also uses immutable IDs from the bundled catalog. These
-# prefixes are intentionally explicit so transient indexes/random values do
-# not become an accidental test-tag convention.
-
-_run_check \
-    'testTag with unapproved string interpolation (unstable, ID-dependent)' \
-    'testTag\s*\(\s*"(?!note_item_|folder_item_|collection_item_|emoji_category_|emoji_picker_item_|emoji_skin_tone_selector_|emoji_skin_tone_variant_)[^"]*\$\{?' \
-    --type kotlin --pcre2 --exclude LayerManagerControl.kt
-
-_run_check \
-    'testTag with unapproved string concatenation or derived value (unstable, ID-dependent)' \
-    'testTag\s*\(\s*("[^"]*"\s*\+|[A-Za-z_][A-Za-z0-9_]*\s*\+|[^)]*(lowercase|replace)\s*\()' \
-    --type kotlin --pcre2
+_rule_header 'Dynamic testTag expression must be registry-backed and documented'
+if ! validate_tag_registry; then
+    (( TOTAL_VIOLATIONS++ ))
+else
+    dynamic_tag_violations=0
+    for f in "${kt_files[@]}"; do
+        relative_file="${f#$PROJECT_ROOT/}"
+        dynamic_lines=$(grep -nE 'testTag[[:space:]]*\([[:space:]]*("[^"]*(\$\{|\$[[:alpha:]_])|"[^"]*"[[:space:]]*\+|[[:alpha:]_][[:alnum:]_]*[[:space:]]*\+)' "$f" 2>/dev/null || true)
+        while IFS= read -r dynamic_line; do
+            [[ -n "$dynamic_line" ]] || continue
+            line_number="${dynamic_line%%:*}"
+            source_line="${dynamic_line#*:}"
+            if ! is_documented_dynamic_tag "$relative_file" "$source_line"; then
+                _print_match "$relative_file:$line_number: dynamic testTag is not an approved documented immutable identifier: $source_line"
+                (( TOTAL_VIOLATIONS++ ))
+                (( dynamic_tag_violations++ ))
+            fi
+        done <<< "$dynamic_lines"
+    done
+    if [[ "$dynamic_tag_violations" -eq 0 ]]; then
+        echo -e "    ${GREEN}✓ All dynamic testTags are documented immutable identifiers${RESET}"
+    fi
+fi
 
 # ── 6. Performance — Column + forEach Instead of LazyColumn ──────────────────
 _header "6 · Performance — Column + forEach Instead of LazyColumn"

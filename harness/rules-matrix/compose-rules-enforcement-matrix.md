@@ -44,7 +44,7 @@ A rule can carry more than one badge when layered enforcement is needed.
 |---|------|-------------|-------------|-------|
 | 3.1 | All interactive elements have `Modifier.testTag(...)` | 🤖 Scripted + 🧠 Evaluator | Check 3: files with interactive elements but no testTag | Script is file-level heuristic; AI audits at element level |
 | 3.2 | Key content containers have `testTag` (note card, list items, empty/error states, loading indicators, navigation) | 🧠 Evaluator | — | Requires understanding of "key" — AI applies the rule contextually |
-| 3.3 | testTag names are descriptive and stable (no `"btn"`, no `"button_${id}"`) | 🤖 Scripted + 🧠 Evaluator | Check 6: string interpolation in testTag | Script flags interpolation; AI flags non-descriptive names like `"btn"` |
+| 3.3 | testTag names are descriptive and stable (no `"btn"`, no `"button_${id}"`) | 🤖 Scripted + 🧠 Evaluator | Check 5: registry-backed documented expression match | Script rejects every unregistered dynamic expression; AI flags non-descriptive static names like `"btn"` |
 
 ---
 
@@ -65,7 +65,7 @@ A rule can carry more than one badge when layered enforcement is needed.
 | 5.2 | No named `Color.*` constants (`Color.Red`, `Color.White`, etc.) outside `AppColors.kt` | 🤖 Scripted | Check 2b | |
 | 5.3 | All colors accessed via `LocalAppColors.current.<token>` | 🧠 Evaluator | — | Script catches the negative (hardcoded); AI verifies the positive (token usage) |
 | 5.4 | Color named by semantic purpose, not by value (`textSecondary` not `gray`) | 🧠 Evaluator | — | Naming intent requires human/AI judgement |
-| 5.5 | New color added to **both** `LightAppColors` and `DarkAppColors` | 🤖 Scripted + 🧠 Evaluator | Verify both entries exist with grep | Script can check symmetry; AI confirms semantic pairing makes sense |
+| 5.5 | New color added to **both** `LightAppColors` and `DarkAppColors` | 🧠 Evaluator | — | No reliable symmetry checker exists yet; evaluator verifies semantic pairing in the changed color models. |
 
 ---
 
@@ -104,8 +104,8 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
-| 9.1 | When screen content (or a bottom sheet) has text input, the bottom toolbar must dismiss while the keyboard/IME is visible (never behind the keyboard; use `imePadding()` + `WindowInsets.isImeVisible`) | 🧠 Evaluator + 👁️ Human | — | Runtime/visual behavior — verified during runtime verification (does the bar dismiss?) and code review (insets + `isImeVisible` handling); script heuristics are too noisy |
-| 9.2 | Tapping text input inside a bottom sheet must not dismiss the sheet — it stays open above the keyboard (only scrim tap / swipe-down / close action dismisses) | 🧠 Evaluator + 👁️ Human | — | Runtime/visual behavior — verified during runtime verification (does the sheet stay open when its field is focused?) and code review (`onDismissRequest` + `imePadding()` handling) |
+| 9.1 | When screen content (or a bottom sheet) has text input, the bottom toolbar must dismiss while the keyboard/IME is visible (never behind the keyboard; use `imePadding()` + `WindowInsets.isImeVisible`) | 👁️ Human + 🧠 Evaluator | — | Runtime/visual behavior — verified during runtime verification (does the bar dismiss?) and code review (insets + `isImeVisible` handling); script heuristics are too noisy |
+| 9.2 | Tapping text input inside a bottom sheet must not dismiss the sheet — it stays open above the keyboard (only scrim tap / swipe-down / close action dismisses) | 👁️ Human + 🧠 Evaluator | — | Runtime/visual behavior — verified during runtime verification (does the sheet stay open when its field is focused?) and code review (`onDismissRequest` + `imePadding()` handling) |
 
 ---
 
@@ -114,12 +114,12 @@ A rule can carry more than one badge when layered enforcement is needed.
 | Category | Count | Rules |
 |---|---|---|
 | 🤖 Scripted only | 4 | 1.7, 5.1, 5.2, 8.1 |
-| 🧠 Evaluator only | 12 | 1.2, 1.5, 2.1, 2.3, 3.2, 4.2, 5.3, 5.4, 6.2, 7.3, 8.2, 8.3 |
+| 🧠 Evaluator only | 15 | 1.1, 1.2, 1.5, 2.1, 2.3, 3.2, 4.2, 5.3, 5.4, 5.5, 6.2, 7.3, 8.2, 8.3, 8.4 |
 | 👁️ Human only | 0 | — |
-| 🤖 + 🧠 Scripted + Evaluator | 6 | 1.3, 1.4, 2.2, 3.1, 3.3, 8.4 |
-| 👁️ + 🧠 Human + Evaluator | 7 | 5.5, 6.1, 6.3, 7.1, 7.2, 9.1, 9.2 |
+| 🤖 + 🧠 Scripted + Evaluator | 5 | 1.3, 1.4, 2.2, 3.1, 3.3 |
+| 👁️ + 🧠 Human + Evaluator | 6 | 6.1, 6.3, 7.1, 7.2, 9.1, 9.2 |
 | 🤖 Scripted (via localization script) | 2 | 1.6, 4.1 |
-| **Total rules** | **31** | |
+| **Total rules** | **32** | |
 
 > [!NOTE]
 > No rule is **Human-only**. Every rule can be at least partially enforced by AI review. Rules marked 👁️ Human still benefit from human design review as a final sanity check — the AI coverage alone is not considered sufficient confidence.
@@ -132,13 +132,12 @@ The [`check-compose-rules.sh`](../scripts/check-compose-rules.sh) script current
 
 | Script Check | Rules Covered |
 |---|---|
-| **Check 1** — `Color(0x...)` outside `AppColors.kt` | 1.7 · 5.1 |
-| **Check 2** — Named `Color.*` constants outside `AppColors.kt` | 1.7 · 5.2 |
-| **Check 3** — Files with interactive elements but no `testTag` | 3.1 |
-| **Check 4** — `hiltViewModel()` / `viewModel()` in `*Content` composables | 1.3 · 2.2 |
-| **Check 5** — `Repository`/`UseCase`/`DataSource` call inside `@Composable` | 1.4 |
-| **Check 6** — String interpolation in `testTag` values | 3.3 |
-| **Check 7** — `Column { ... .forEach {` pattern | 8.1 |
+| **Check 1** — Color literals/constants outside `AppColors.kt` | 1.7 · 5.1 · 5.2 |
+| **Check 2** — Files with interactive elements but no `testTag` | 3.1 |
+| **Check 3** — `hiltViewModel()` / `viewModel()` in `*Content` composables | 1.3 · 2.2 |
+| **Check 4** — `Repository`/`UseCase`/`DataSource` call inside `@Composable` | 1.4 |
+| **Check 5** — Dynamic test tags match documented registry entries | 3.3 |
+| **Check 6** — `Column { ... .forEach {` pattern | 8.1 |
 
 > [!NOTE]
 > String-resource checks (rules 1.6 · 4.1) are now owned by [`check-localization-rules.sh`](../scripts/check-localization-rules.sh). See the [Localization Rules Enforcement Matrix](localization-rules-enforcement-matrix.md) for details.
