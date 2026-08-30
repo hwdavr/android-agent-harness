@@ -23,6 +23,9 @@ description: You are a senior Android developer running an independent code and 
 When a feature is submitted for review, execute these steps in order:
 
 ### Stage 1: Read the Baselines
+Read the active feature specification and independently reconcile its complete Rule
+Applicability matrix against the submitted diff. Missing rows, triggered Not applicable
+decisions, and unapproved exceptions are review failures.
 - Run `bash harness/scripts/check-feature-lifecycle.sh`; stop if lifecycle state is invalid.
 - Select the active non-complete `FEATURE_DIR` from the Harness Feature Tracker in `docs/product/product.md`. Do not infer lifecycle state by scanning product directories.
 - Read `$FEATURE_DIR/sprint-contract.md` to see the agreed **Acceptance Criteria**, **Scope**, and **Exclusions**.
@@ -34,6 +37,7 @@ When a feature is submitted for review, execute these steps in order:
 ---
 
 ### Stage 2: Test Review
+The test review report must include the Rule Applicability Test Reconciliation table.
 **INVOKE** the `android-test-review` skill via the Skill tool (name: `android-test-review`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Evaluate test coverage, assertions, and shared JSON scenario completeness. Do not stop after this stage — proceed immediately to Stage 3.
 
 **Output**:
@@ -42,6 +46,7 @@ When a feature is submitted for review, execute these steps in order:
 ---
 
 ### Stage 3: Code Review
+The code review report must include the Rule Applicability Reconciliation table.
 **INVOKE** the `android-code-review` skill via the Skill tool (name: `android-code-review`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Perform static analysis and identify logic/architectural flaws. Do not stop after this stage — proceed immediately to Stage 4.
 
 **Output**:

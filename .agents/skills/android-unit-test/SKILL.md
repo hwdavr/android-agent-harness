@@ -10,6 +10,10 @@ This skill defines the standards for unit and integration testing in the Android
 
 ## Coverage Requirements
 
+The Kover XML report is the machine-readable source for the coverage gate. Run
+`./gradlew :app:koverXmlReportDebug` followed by
+`bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml`.
+
 ### 1. Overall Project Coverage
 - The overall application line coverage must be at least **80%**.
 - Verified by running `./gradlew :app:koverLog` or checking the Kover HTML report.

@@ -23,7 +23,9 @@ Load before starting (android-test-review SKILL.md context should already be loa
 - `rules/api-contract-rules.md` *(if API or data layer changed)*
 - `rules/analytics-rules.md`   *(if analytics events changed)*
 - `rules/implementation-rules.md`
+- `rules/observability.md`
 - `gates/review-checklist.md`
+- `harness/templates/rule-applicability-template.md`
 - Ad-hoc workflows: `docs/current/spec_v<N>.md`, `implementation_plan_v<N>.md`, `test_plan_v<N>.md`, and `test_review_v<N>.md`
 - Harness evaluation: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/design.md` (if present), `$FEATURE_DIR/sprint-contract.md`, the active slice summary, and `test_review_{feature_id}.md`
 - The active diff, its merge base or prior reviewed commit, all changed production files, and the tests mapped to the changed behavior
@@ -31,6 +33,14 @@ Load before starting (android-test-review SKILL.md context should already be loa
 ---
 
 ## Execute
+
+### 0. Rule Applicability Reconciliation
+
+Before reviewing code, read the approved Rule Applicability matrix and implementation/test
+plans. Reconcile all nine rows — ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, and ANL —
+against the diff. A triggered rule marked `Not applicable` or an exception without the
+cited user approval is **REVISION REQUIRED**. Do not add analytics or logging solely to
+avoid a valid non-applicable decision.
 
 ### 1. Build and Static Quality Checks
 
@@ -43,6 +53,9 @@ Run all checks and record results:
 bash harness/scripts/check-compose-rules.sh
 bash harness/scripts/check-localization-rules.sh
 bash harness/scripts/check-architecture-rules.sh
+bash harness/scripts/check-navigation-rules.sh
+./gradlew :app:koverXmlReportDebug
+bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 
 On Windows (using PowerShell or Command Prompt), run the native script launchers instead:

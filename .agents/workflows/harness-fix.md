@@ -23,7 +23,7 @@ Every review finding carries one of three fix statuses, set by you during this w
 | Fix Status | Meaning |
 |---|---|
 | `Fixed ✅` | Root-cause fix applied, re-verification passed. Append the commit hash and the verification command that proves it. |
-| `Unresolved ⚠️` | Could not be fixed within the 3-attempt Gate Failure Resolution Policy. Append the last error and the reason it remains open. |
+| `Unresolved ⚠️` | The required gate remains failing after the targeted fix or a prerequisite is unavailable. Append the last error and the reason it remains open. |
 | `Won't fix — see note` | Only when the finding is a documented false positive **and** the user explicitly approves waiving it. Never use this to skip a real issue. |
 
 ### Where to write the status
@@ -38,18 +38,12 @@ A finding is not considered resolved until its in-report status line exists and 
 
 ---
 
-## 🔁 Gate Failure Resolution Policy
+## Gate Semantics
 
-When **any** gate check fails during this pipeline (verification commands, checklist items, lifecycle checks, install commands, etc.), **do not stop the pipeline**. Apply the following loop **for each failing gate item independently**:
+Every required fix-mode gate is a hard stop. A gate may advance only after its command exits `0` and its required evidence is recorded. Any failure or unavailable prerequisite must be recorded as `⚠️ Blocked` or non-passing, and the workflow must stop before the next fix stage.
 
-1. **Diagnose**: Read the full error output. Identify the root cause.
-2. **Fix**: Apply a targeted, minimal fix for that specific failure. Follow all project rules (no suppressions, no workarounds).
-3. **Re-run**: Re-execute **only** the failing gate command to confirm the fix.
-4. **Retry limit**: Up to **3 fix attempts per gate item**. If still failing, mark it `Unresolved ⚠️` (both in the summary and in the relevant review report) and continue to the next item.
-5. **After all gate items are processed**: If any item remains `Unresolved ⚠️`, mark the stage `⚠️ partial` (not ✅) and document the gap. Do **not** block the whole pipeline.
 
-> [!WARNING]
-> Never introduce `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disable comments, baselines, or rule exclusions to force a gate to pass. Only genuine code fixes are acceptable.
+Never introduce `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disable comments, baselines, or rule exclusions to force a gate to pass. Only genuine code fixes are acceptable.
 
 ---
 
@@ -80,27 +74,28 @@ When **any** gate check fails during this pipeline (verification commands, check
         ./gradlew assembleDebug
         ./gradlew testDebugUnitTest
         ```
-    3. If red, stop and fix the regression first (Gate Failure Resolution Policy applies). Do not begin fixing review findings on a broken baseline.
-    4. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Setup & Verify Baseline** stage status to completed (✅) with notes and current timestamp.
+    3. If red, mark the baseline `⚠️ Blocked`, record the failing command and raw output, and stop. Do not begin fixing review findings on a broken baseline.
+    4. If all setup and baseline commands succeed, **update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Setup & Verify Baseline** stage status as completed (✅) with notes and the current timestamp. If any fails, record the stage as `⚠️ Blocked` and stop.
 *   **Objective**: Confirm runtime readiness and verify the repository is in a perfectly stable, compilable, and green baseline before applying fixes.
 
 ### Fix-Stage 3 — Fix Findings & Update Report Status
 *   **Action**:
     1. **INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`) for code changes, and the `android-testing` skill via the Skill tool (name: `android-testing`) for test changes. Reading the SKILL.md manually is not a substitute.
     2. For each item in the fix list, apply a targeted, minimal fix that addresses the root cause. Do **NOT** introduce new scope — fix only what the reports flagged.
-    3. **Update the status inside the review reports** (per the Report Status Update Policy): as each finding is fixed, append its `> **Fix Status:** Fixed ✅ — …` line in `code_review_{feature_id}.md`, and set its `Fix Status` column / row in `test_review_{feature_id}.md`. If a finding cannot be fixed within 3 attempts, mark it `Unresolved ⚠️` in **both** the report and the summary.
+    3. **Update the status inside the review reports** (per the Report Status Update Policy): as each finding is fixed, append its `> **Fix Status:** Fixed ✅ — …` line in `code_review_{feature_id}.md`, and set its `Fix Status` column / row in `test_review_{feature_id}.md`. If a required gate remains failing after the targeted fix, mark it `Unresolved ⚠️` in **both** the report and the summary and stop the pipeline.
     4. Mark each item `fixed` (or `unresolved`) in the summary with the file/commit reference, and mark Fix-Stage 3 ✅.
 *   **Objective**: Every `code_review` and `test_review` finding has a root-cause fix **and** an in-report status line; no suppressions.
 
 ### Fix-Stage 4 — Re-verify
 *   **Action**:
-    1. Re-run, **one by one**, every verification command listed in `$FEATURE_DIR/sprint-contract.md` Acceptance Test Cases. Apply the Gate Failure Resolution Policy on any failure (up to 3 attempts per command).
+    1. Re-run, **one by one**, every verification command listed in `$FEATURE_DIR/sprint-contract.md` Acceptance Test Cases. If any command fails, record its command, exit status, and raw output; keep the feature non-passing and stop the pipeline.
     2. Re-run the global quality gates: `./gradlew ktlintCheck`, `./gradlew detekt`, `./gradlew lint`, and `./gradlew koverLog` (coverage ≥ 80% overall; ≥ 90% for ViewModel & Use Case).
     3. Attach objective evidence (command + exit status + fix attempts) to each Test ID's `evidence` field in `$FEATURE_DIR/feature_list.json`. All slices must remain `passing`.
     4. Run `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate`. Missing matrices, unavailable/pending/skipped environments, and fake-only platform tests remain hard failures; record them as `Unresolved ⚠️` rather than passing them through.
     5. Run `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"` when visual verification is required. Every final visual method must be declared in the sprint contract, have successful connected evidence and a non-empty screenshot, and have reference-anchor proof in `visual_evidence/reference-anchor-verification.md` for the approved design.
     6. Reconcile the in-report statuses with re-verification: any finding whose verification command still fails must read `Unresolved ⚠️` in the report (not `Fixed ✅`).
-    7. Mark Fix-Stage 4 ✅ in `$FEATURE_DIR/summary_{feature_id}.md` detailing test counts, coverage percentages, and platform/visual evidence.
+    7. Reconcile all Rule Applicability rows again. A rule newly triggered by a fix must be recorded in the specification and both review reports before the feature can proceed.
+    8. Mark Fix-Stage 4 ✅ in `$FEATURE_DIR/summary_{feature_id}.md` detailing test counts, coverage percentages, and platform/visual evidence.
 *   **Objective**: All acceptance-test commands and quality gates pass with evidence attached; report statuses are consistent with re-verification results.
 
 ### Fix-Stage 5 — Finalize & Exit
@@ -116,7 +111,7 @@ When **any** gate check fails during this pipeline (verification commands, check
         ```bash
         git commit -m "fix(<area>): resolve evaluator findings from code_review and test_review"
         ```
-    5. Review the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)** — architecture & standards (§2), observability (§5), and cleanliness (§6) items are code-review checks. Build, test, and quality checks (§1, §3, §4) are already covered by Fix-Stage 4 re-verification above — reference that evidence, do not re-run commands. If any review item fails, apply the **Gate Failure Resolution Policy**.
+    5. Review the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)** — architecture & standards (§2), observability (§5), and cleanliness (§6) items are code-review checks. Build, test, and quality checks (§1, §3, §4) are already covered by Fix-Stage 4 re-verification above — reference that evidence, do not re-run commands. If any review item fails, record it and stop the pipeline.
     6. Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**, documenting what was fixed, the re-verification evidence, any `Unresolved ⚠️` findings, residual risks, and that the feature is now `To be human reviewed`.
     7. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Finalize & Exit** stage status to completed (✅), transition the summary to Complete, and log the commit hash and key outcomes.
 *   **Objective**: Tracker transitioned to `To be human reviewed`, backed by mechanical evidence, updated review reports, and a clean self-documenting repository state.
@@ -131,7 +126,7 @@ Install the fixed debug build to all connected devices and emulators as the fina
         ```
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Install App To Device** stage status to completed (✅), logging device IDs, command, timestamp, and exit status.
 *   **Objective**: The fixed build is installed on every connected runtime device for immediate manual review.
-*   **Gate**: The install command exits with code `0`. If the install fails, apply the Gate Failure Resolution Policy. If no device is connected, mark this stage blocked with the `adb devices` output.
+*   **Gate**: The install command must exit with code `0`. If the install fails, mark this stage `⚠️ Blocked` with the command and raw output and stop the pipeline. If no device is connected, mark this stage blocked with the `adb devices` output.
 
 ---
 

@@ -6,7 +6,7 @@
 |---|---|
 | Feature / slice | |
 | Current commit | |
-| Baselines reviewed | `spec.md`, `sprint-contract.md`, `implementation_plan`, `test_plan` |
+| Baselines reviewed | `spec.md`, `sprint-contract.md`, implementation/test plan, and Rule Applicability matrix |
 | Changed production files reviewed | |
 | Changed test files reviewed | |
 
@@ -19,6 +19,25 @@
 | `./gradlew connectedDebugAndroidTest` | | | | Independently executed / Recorded / Up-to-date / Not run | |
 
 Do not label recorded, up-to-date, skipped, or unexecuted evidence as a fresh pass.
+
+## Rule Applicability Test Reconciliation
+
+Copy the approved decisions from the specification and test plan. Confirm the planned
+test, static-check, review evidence, or explicit non-applicable rationale exists and
+remains valid against the diff. Do not invent analytics or logging tests when their
+triggers are absent.
+
+| Rule ID | Approved decision / rationale | Trigger or planned evidence checked | Test / static-check evidence | Result |
+|---|---|---|---|---|
+| ARCH | | | | PASS / REVISION REQUIRED |
+| IMPL | | | | PASS / REVISION REQUIRED |
+| TEST | | | | PASS / REVISION REQUIRED |
+| SUI | | | | PASS / REVISION REQUIRED / N/A |
+| L10N | | | | PASS / REVISION REQUIRED / N/A |
+| NAV | | | | PASS / REVISION REQUIRED / N/A |
+| API | | | | PASS / REVISION REQUIRED / N/A |
+| OBS | | | | PASS / REVISION REQUIRED / N/A |
+| ANL | | | | PASS / REVISION REQUIRED / N/A |
 
 ## Requirement-to-Test Traceability
 

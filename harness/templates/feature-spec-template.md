@@ -24,6 +24,22 @@ As a <user type>, I want to <action> so that <outcome>.
 
 - <explicit non-goal>
 
+## Rule Applicability
+
+Complete every row before approval. Use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`, and cite the evidence expected for every `Required` row.
+
+| Rule ID | Rule document | Decision | Feature-specific evidence or reason |
+|---|---|---|---|
+| ARCH | `android-architecture.md` | <decision> | |
+| IMPL | `implementation-rules.md` | <decision> | |
+| TEST | `testing-strategy.md` | <decision> | |
+| SUI | `compose-rules.md` | <decision> | |
+| L10N | `localization-rules.md` | <decision> | |
+| NAV | `navigation-rules.md` | <decision> | |
+| API | `api-contract-rules.md` | <decision> | |
+| OBS | `observability.md` | <decision> | |
+| ANL | `analytics-rules.md` | <decision> | |
+
 ## Technical Spec
 
 ### Libraries & Dependencies

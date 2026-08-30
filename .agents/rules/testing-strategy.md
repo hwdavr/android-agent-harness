@@ -102,6 +102,8 @@ Verify with:
 ```bash
 ./gradlew koverLog
 ./gradlew :app:koverHtmlReportDebug
+./gradlew :app:koverXmlReportDebug
+bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 
 ---

@@ -25,6 +25,9 @@ Determine scope before running any stage:
 ---
 
 ## Load
+- rules/implementation-rules.md
+- rules/testing-strategy.md
+- harness/templates/rule-applicability-template.md
 - `rules/android-architecture.md`
 - `rules/api-contract-rules.md`
 - `docs/current/implementation_plan_v<N>.md` (once generated in Stage 2)
@@ -40,6 +43,8 @@ Adapt the skill output to cover:
 - API impact classification (additive, breaking, partial)
 - DTO and Domain model changes required
 - Identify which layers are affected (data, domain, UI)
+- The complete Rule Applicability matrix is required for this workflow. API is Required;
+  every other rule needs an explicit decision and evidence plan.
 
 Run `bash harness/scripts/check-stage-artifacts.sh api-contract-update requirement-analysis` — must exit 0 before proceeding.
 
@@ -103,6 +108,7 @@ Only run if the contract change involves a tricky mapping, a breaking change, a 
 - Integration tests for every changed endpoint using shared JSON scenarios
 - `docs/current/coding_report_v<N>.md` updated through each stage
 - `docs/current/summary_v<N>.md` with all completed stages marked
+- Rule Applicability decisions preserved with evidence for every Required row
 
 ---
 
@@ -113,6 +119,7 @@ Only run if the contract change involves a tricky mapping, a breaking change, a 
 - [ ] No DTOs referenced outside the data layer
 - [ ] All changed API endpoints have at least one integration test using shared JSON scenarios
 - [ ] Ktlint, Detekt, and Lint pass with zero new violations
+- [ ] Navigation and coverage harness checks pass when their rules are triggered
 - [ ] Build passes: `./gradlew assembleDebug`
 - [ ] Unit + integration tests pass: `./gradlew testDebugUnitTest`
 - [ ] `summary_v<N>.md` marks all executed stages as complete with artifact references

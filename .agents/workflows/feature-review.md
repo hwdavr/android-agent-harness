@@ -22,6 +22,9 @@ description: You are a senior Android developer running an independent review of
 ---
 
 ## Stage Execution
+The review must read and independently reconcile all nine Rule Applicability decisions
+against the diff and evidence. A missing row, triggered Not applicable decision, or
+unapproved exception is a blocking finding.
 When a feature is submitted for review, execute these steps in order:
 
 ### Stage 1: Read the Baselines
@@ -29,6 +32,7 @@ Read all four baseline documents produced by the `/feature-delivery` workflow be
 
 | Document | Location | What to extract |
 |---|---|---|
+| summary_v<N>.md | docs/current/ | Stage evidence and approved-artifact versions |
 | `spec_v<N>.md` | `docs/current/` | Acceptance Criteria · Scope · Exclusions |
 | `implementation_plan_v<N>.md` | `docs/current/` | Approved architecture · layer breakdown · file list |
 | `test_plan_v<N>.md` | `docs/current/` | Approved test strategy · scenarios · coverage targets |
@@ -41,6 +45,7 @@ After reading, summarise the key constraints and open decisions you will verify 
 ---
 
 ### Stage 2: Test Review
+The test review report must include the Rule Applicability Test Reconciliation table.
 **INVOKE** the `android-test-review` skill via the Skill tool (name: `android-test-review`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Evaluate test coverage, assertions, and shared JSON scenario completeness. Do not stop after this stage — proceed immediately to Stage 3.
 
 - Test review report: `docs/current/test_review_v<N>.md`
@@ -48,6 +53,7 @@ After reading, summarise the key constraints and open decisions you will verify 
 ---
 
 ### Stage 3: Code Review
+The code review report must include the Rule Applicability Reconciliation table.
 **INVOKE** the `android-code-review` skill via the Skill tool (name: `android-code-review`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Perform static analysis and identify logic/architectural flaws. Do not stop after this stage — proceed immediately to Stage 4.
 
 - Code review report: `docs/current/code_review_v<N>.md`
@@ -81,7 +87,7 @@ The Evaluator's primary deliverable is the final quality assessment report.
 >    *   `summary_v<N>.md`
 >    *   `spec_v<N>.md`
 >    *   `implementation_plan_v<N>.md`
->    *   `test_plan_v<N>.mdd`
+>    *   `test_plan_v<N>.md`
 >    *   `evaluator-rubric.md` (This file itself)
 > 4. **Issue Verdict & Follow-Up**: Document the final verdict (`Accept` | `Revise` | `Block`) and explicitly itemize any missing evidence, required fixes, or review triggers in the **Required Follow-Up** block.
 
@@ -94,4 +100,3 @@ The user decides whether findings are acceptable or fixes are required.
 
 1. **After Stage 5 (Quality Assessment)** — user sees all code findings, test findings, and the final evaluator rubric *(mandatory)*
 2. **Nit/Optional findings** — user decides which to accept *(optional but recommended)*
-

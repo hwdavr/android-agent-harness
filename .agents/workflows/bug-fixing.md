@@ -26,6 +26,8 @@ Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan → [
 ## Stage Execution
 
 ### Stage 1 — Bug Context, Localization & Root Cause
+The specification must include the complete nine-row Rule Applicability matrix. Assess
+only the fix scope and preserve an explicit trigger or rationale for every decision.
 **INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Adapt for bugs:
@@ -51,6 +53,8 @@ Gate: test exits RED (non-zero), failure message matches root cause, no applicat
 ---
 
 ### Stage 3 — Fix Plan ⛔ STOP
+The plan must preserve the approved Rule Applicability decisions, including changed
+triggers and verification evidence.
 **INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Adapt — the plan must include:

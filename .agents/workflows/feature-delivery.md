@@ -28,6 +28,8 @@ Pipeline: Requirement, Impact & Design → Plan → [User Approval] → Implemen
 ## Stage Execution
 
 ### Stage 1 — Requirement, Impact & Design Analysis
+The specification must include the complete nine-row Rule Applicability matrix, and the
+stage gate must reject missing or unsupported decisions.
 **INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with requirements, impacted files, API classification, and UiState/Navigation design.
@@ -41,6 +43,8 @@ Gate: requirements clear, impacted files identified, API classified, UiState/Nav
 ---
 
 ### Stage 2 — Implementation Plan ⛔ STOP
+The implementation and test plans must preserve every approved Rule Applicability
+decision and identify evidence for each Required row.
 **INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: `docs/current/implementation_plan_v<N>.md` created; `docs/current/test_plan_v<N>.md` created; `docs/current/summary_v<N>.md` updated.

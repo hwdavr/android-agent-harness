@@ -33,6 +33,22 @@ When the feature is platform-bound, link the workspace artifact `platform-capabi
 
 Platform-bound features MUST declare at least one real instrumented boundary test. A fake adapter, fake recognizer, JVM-only intent test, or manually emitted callback is supplemental evidence and cannot satisfy the platform gate by itself. The test must exercise the shipped Android boundary and record a successful `connectedDebugAndroidTest` result in `feature_list.json` evidence.
 
+## Rule Applicability Contract *(required)*
+
+Copy the approved nine-row matrix from the requirement artifact. The decision must be `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`. Every `Required` row must map to implementation and verification evidence before a slice can pass.
+
+| Rule ID | Rule document | Decision | Slice evidence |
+|---|---|---|---|
+| ARCH | `android-architecture.md` | <decision> | |
+| IMPL | `implementation-rules.md` | <decision> | |
+| TEST | `testing-strategy.md` | <decision> | |
+| SUI | `compose-rules.md` | <decision> | |
+| L10N | `localization-rules.md` | <decision> | |
+| NAV | `navigation-rules.md` | <decision> | |
+| API | `api-contract-rules.md` | <decision> | |
+| OBS | `observability.md` | <decision> | |
+| ANL | `analytics-rules.md` | <decision> | |
+
 ---
 
 ## Spec Coverage Matrix *(required)*
@@ -74,7 +90,7 @@ Every acceptance criterion must have exactly one primary automated test case. A 
 |---|---|---|---|---|---|---|
 | TC-US-1-01 | AC-US-1-01 | JVM integration / Instrumented UI | `app/src/.../[Class]Test.kt#[method]` | Given [fixture], when [event] | Assert [state, output, and observable result] | `./gradlew [task] --tests "[fully.qualified.Class]"` |
 | TC-US-1-02 | AC-US-1-02 | JVM unit / Instrumented UI | `app/src/.../[Class]Test.kt#[method]` | Given [fixture], when [event] | Assert [state, output, and observable result] | `./gradlew [task] --tests "[fully.qualified.Class]"` |
-| TC-US-1-VIS | AC-US-1-01 | Visual verification *(only for the final user-reachable slice with `requires_visual_verification == true`)* | Dedicated `*VisualFlowTest.kt` in-test screenshot capture | Given the production Composable is rendered in the target visual state inside a `createComposeRule()` test, when `composeRule.waitForIdle()` completes and `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()` captures the active window | The in-test capture produces a non-empty PNG on device at `/sdcard/Download/<screen_id>_<state>.png`, pulled to `$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png` via `adb pull` for visual review against `$FEATURE_DIR/design.md` | `env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#capture<State> && adb -s emulator-5554 pull /sdcard/Download/<screen_id>_<state>.png "$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png" && test -s "$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png"` |
+| TC-US-1-VIS | AC-US-1-01 | Visual verification *(only for the final user-reachable slice with `requires_visual_verification == true`)* | Dedicated `*VisualFlowTest.kt#capture<State>` in-test screenshot capture | Given the production Composable is rendered in the target visual state inside a `createComposeRule()` test, when `composeRule.waitForIdle()` completes and `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()` captures the active window | The in-test capture produces a non-empty PNG on device at `/sdcard/Download/<screen_id>_<state>.png`, pulled to `$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png` via `adb pull` for visual review against `$FEATURE_DIR/design.md` | `env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#capture<State> && adb -s emulator-5554 pull /sdcard/Download/<screen_id>_<state>.png "$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png" && test -s "$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png"` |
 
 **Verification Rules**:
 

@@ -40,6 +40,8 @@ Workspace location never represents lifecycle status. Planning must never create
 **INVOKE** the `feature-specification` skill via the Skill tool (name: `feature-specification`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Objective:
+Record the complete Rule Applicability matrix in the feature specification; every row
+needs a supported decision, trigger or rationale, and planned evidence before slicing.
 - Classify the task type (new screen, enhancement, or logic-only change).
 - Ask targeted clarifying questions in chat until every material ambiguity is resolved.
 - Create `FEATURE_DIR=docs/product/<YYYY-MM-DD>-<feature-short-name>` before writing artifacts.

@@ -11,6 +11,7 @@ Use this rubric after implementation and before final acceptance.
 | Maintainability | Is the code and documentation clear enough for the next session? |  |  |
 | Handoff readiness | Can a fresh session continue work from repo artifacts only? |  |  |
 | Code & Test Review | Do the code quality checks (Ktlint, Detekt, Lint) and comprehensive test reviews pass? |  |  |
+| Rule Applicability | Does every approved rule decision have diff-trigger reconciliation and evidence in both review reports? |  |  |
 
 ### Overall: 5.0 / 5
 
@@ -23,6 +24,15 @@ Use this rubric after implementation and before final acceptance.
 - Fake-only or JVM-only evidence used as the sole platform proof: Yes / No
 
 If any required answer is `No`, the evaluator MUST score the feature below `5.0 / 5` and use `Revise` or `Block`. Missing devices, models, locales, permissions, or platform services are failed/blocked evidence, never passing skips.
+
+### Rule Applicability Hard Gate
+
+- Complete approved matrix exists in the feature specification: Yes / No
+- Code review includes all nine reconciliation rows: Yes / No
+- Test review includes all nine reconciliation rows: Yes / No
+- Every `Not applicable` / exception decision is supported by the diff and cited approval: Yes / No
+
+If any required answer is `No`, the evaluator MUST use `Revise`.
 
 ### Visual Verification Hard Gate *(when `requires_visual_verification == true`)*
 

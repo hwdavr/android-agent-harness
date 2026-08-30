@@ -16,13 +16,19 @@ Run all static check suites, lint rules, and custom compliance rules. Resolve an
 - `skills/android-code-quality-checks/SKILL.md`
 - `skills/karpathy-guidelines/SKILL.md`
 - `rules/android-architecture.md`
+- `rules/implementation-rules.md`
 - `rules/testing-strategy.md`
+- `harness/templates/rule-applicability-template.md`
 
 ---
 
 ## Execute
 
 ### 1. Run All Quality Checks
+Read the active specification's Rule Applicability matrix first. Run the baseline checks
+below and the checks needed for every `Required` row; retain explicit non-applicable
+and exception rationales. Do not add analytics or logs merely to change a decision.
+
 Execute the following set of checks to verify complete quality baseline correctness:
 ```bash
 ./gradlew assembleDebug
@@ -32,6 +38,8 @@ Execute the following set of checks to verify complete quality baseline correctn
 bash harness/scripts/check-compose-rules.sh
 bash harness/scripts/check-localization-rules.sh
 bash harness/scripts/check-architecture-rules.sh
+bash harness/scripts/check-navigation-rules.sh
+bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 
 On Windows (using PowerShell or Command Prompt), run the native script launchers instead:
@@ -74,6 +82,9 @@ Clean git status with all formatting and structural violations fixed.
 - [ ] `bash harness/scripts/check-compose-rules.sh` or `harness\scripts\check-compose-rules.cmd` — exit code 0 (or skipped if no UI changed)
 - [ ] `bash harness/scripts/check-localization-rules.sh` or `harness\scripts\check-localization-rules.cmd` — exit code 0
 - [ ] `bash harness/scripts/check-architecture-rules.sh` or `harness\scripts\check-architecture-rules.cmd` — exit code 0
+- [ ] `bash harness/scripts/check-navigation-rules.sh` — exit code 0 when NAV is required
+- [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — exit code 0
+- [ ] Every Rule Applicability decision has required check/review evidence or its approved rationale
 - [ ] `summary_{feature_id}.md` (or `summary_v<N>.md`) updated and marked complete
 
 **APPROVED →** Return to the active workflow file and proceed to the next stage defined there.

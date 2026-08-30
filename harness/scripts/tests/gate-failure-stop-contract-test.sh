@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+PROJECT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+WORKFLOW_DIR="$PROJECT_ROOT/.agents/workflows"
+
+fail_test() {
+  echo "FAIL: $1" >&2
+  exit 1
+}
+
+for workflow in harness-generator.md harness-fix.md; do
+  workflow_path="$WORKFLOW_DIR/$workflow"
+  [ -f "$workflow_path" ] || fail_test "missing workflow: $workflow_path"
+  if rg -n -i "Gate Failure Resolution Policy|3 attempts|do not stop the pipeline|continue to the next item|proceed to the next stage" "$workflow_path"; then
+    fail_test "$workflow still allows a failed gate to advance the pipeline"
+  fi
+done
+
+rg -Fq 'Every required stage gate is a hard stop.' "$WORKFLOW_DIR/harness-generator.md" \
+  || fail_test "generator workflow does not define hard-stop gate semantics"
+rg -Fq 'and stop the pipeline' "$WORKFLOW_DIR/harness-generator.md" \
+  || fail_test "generator workflow does not stop after failed verification"
+rg -Fq 'Every required fix-mode gate is a hard stop.' "$WORKFLOW_DIR/harness-fix.md" \
+  || fail_test "fix workflow does not define hard-stop gate semantics"
+rg -Fq 'keep the feature non-passing and stop the pipeline' "$WORKFLOW_DIR/harness-fix.md" \
+  || fail_test "fix workflow does not stop after failed verification"
+
+echo "PASS: failed generator and fix gates stop the pipeline."

@@ -13,6 +13,10 @@ Use this workflow when:
 
 ## Stages
 
+Before implementation, read the approved Rule Applicability matrix for the change.
+Carry every decision into the implementation plan, verification evidence, and review;
+the UI rules are required only when their triggers are present.
+
 ### Stage 0 — Reference Design Gate
 Before implementation, classify every supplied image as either an approved design reference or
 defect evidence. A screenshot showing the current/wrong behavior is evidence only and is not a

@@ -15,6 +15,8 @@ This stage ends only when every open question has been answered by the user.
 
 ## Load
 - `harness/templates/requirement-summary-template.md`
+- `harness/templates/rule-applicability-template.md`
+- Rule documents listed in the canonical applicability template
 
 ---
 
@@ -49,6 +51,12 @@ Technical or platform constraints already known (e.g. "must support minSdk 24", 
 
 **Non-Goals**
 What is explicitly out of scope for this feature. Be specific.
+
+**Rule Applicability**
+Copy all nine rows from `harness/templates/rule-applicability-template.md`. For every
+row, record a supported decision, trigger or rationale, and planned evidence. If no
+analytics is justified, record `Not applicable — analytics: none`; do not create an
+event or log merely to make a row required.
 
 **Explicit Assumptions**
 Things assumed to be true that have not been confirmed. Each assumption is a risk — flag it.
@@ -89,6 +97,7 @@ Write **`docs/current/requirement-summary.md`** following **`harness/templates/r
 - [ ] Expected behaviors are concrete and independently testable
 - [ ] Non-goals are explicit (scope is bounded)
 - [ ] All assumptions are listed and accepted by the user
+- [ ] All nine Rule Applicability decisions are explicit and supported
 - [ ] User has explicitly confirmed the document is correct
 
 **Do not proceed to Slice Planning until the user approves this document.**

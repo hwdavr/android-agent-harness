@@ -20,6 +20,7 @@ The article principle: write the failing test *before* touching the application 
 - `skills/android-instrumented-ui-test/SKILL.md`
 - `skills/shared-json-scenarios/SKILL.md`
 - `rules/testing-strategy.md`
+- `harness/templates/rule-applicability-template.md`
 
 **Adhoc workflows** (`feature-delivery`, `bug-fixing`):
 - `docs/current/test_plan_v<N>.md` — test cases, layers, and coverage targets approved by user
@@ -33,7 +34,7 @@ The article principle: write the failing test *before* touching the application 
 ## Execute
 
 ### 1. Execute Planned Tests
-For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` entry in `$FEATURE_DIR/feature_list.json`.
+For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` entry in `$FEATURE_DIR/feature_list.json`. Read the approved Rule Applicability matrix. Every required Rule Applicability row must have test, static-check, or review evidence.
 
 ### 2. Unit tests (`app/src/test/`)
 Write unit tests for all new or modified:
@@ -92,6 +93,8 @@ These rules apply to every test file regardless of layer:
 ```bash
 ./gradlew testDebugUnitTest
 ./gradlew koverLog
+./gradlew :app:koverXmlReportDebug
+bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 If instrumented tests were added: run on an emulator (e.g. `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest`), using a connected physical device only if no emulator is present.
 
@@ -113,6 +116,7 @@ Update `summary_{feature_id}.md` (or `summary_v<N>.md` depending on the active w
 **This stage is complete when all of the following are true — all must be mechanically verifiable:**
 - [ ] `./gradlew testDebugUnitTest` — exit code 0
 - [ ] `./gradlew koverLog` — overall ≥ 80%, new classes ≥ 90%
+- [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — weighted line thresholds pass
 - [ ] Total test count `> 0` (not `0/0` — this is a gate failure)
 - [ ] At least one integration test per new or changed API endpoint
 - [ ] Shared JSON scenarios used — no inline mock response data in test files

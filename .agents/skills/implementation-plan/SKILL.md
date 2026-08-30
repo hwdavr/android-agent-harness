@@ -13,6 +13,7 @@ This is the final gate before implementation begins.
 
 ## Load
 - `rules/testing-strategy.md`
+- `harness/templates/rule-applicability-template.md`
 - `harness/templates/implementation-plan-template.md`
 - `harness/templates/test-plan-template.md`
 - `docs/current/spec_v<N>.md` (Requirement, Impact & Design Analysis stage output)
@@ -23,6 +24,11 @@ This is the final gate before implementation begins.
 
 ### Step 1: Generate Implementation Plan
 Using all outputs from the **Requirement, Impact & Design Analysis** stage, compile a complete implementation plan.
+
+Start by reading the approved **Rule Applicability** matrix in the active specification.
+Preserve all nine decisions in the plan. Every `Required` row needs concrete work and
+verification evidence; a `Not applicable` or `Exception` row keeps its approved
+rationale. Do not introduce analytics events or logs solely because their rows exist.
 
 > [!IMPORTANT]
 > You **MUST** follow the structure and sections in [implementation-plan-template.md](../../harness/templates/implementation-plan-template.md) exactly.
@@ -37,6 +43,8 @@ The implementation plan must include:
 - **UiState Implementation**: Define the new fields and states matching the spec's designed state structure.
 - **Navigation Flow**: Reference routes, arguments, and backstack details from the design.
 - **Risks & Mitigations**: Identify technical risks (such as payload changes, synchronization issues, database migration) and document their mitigation strategies.
+- **Rule Applicability Implementation**: Map every required rule to planned files and
+  evidence; carry non-applicable and exception rationales forward unchanged.
 
 ### Step 2: Generate Test Plan
 Create a separate, comprehensive test plan document following [test-plan-template.md](../../harness/templates/test-plan-template.md).
@@ -46,6 +54,8 @@ The test plan must include:
 - **Required Tests Coverage**: Check the active task's "Required tests" table in `docs/current/task-list.md` and ensure all specified test cases are explicitly covered in your test plan.
 - **Test Case Definition**: Define test cases per class (Mapper, ViewModel, UI) with Given/When/Then and a unique ID for each test case.
 - **API Integration Tests**: **MANDATORY** to include at least one integration test using a shared JSON scenario for each affected API endpoint.
+- **Rule-Driven Verification**: Map each required applicability row to test IDs,
+  static checks, review evidence, or an explicit reason no executable test is needed.
 
 ---
 

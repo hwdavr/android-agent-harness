@@ -22,6 +22,10 @@ Load context in layers to keep the context window below 40% fill. More is not be
 | **L3 — On-demand** | When needed | `docs/knowledge/` docs, specific `.agents/rules/` files, `sharedContracts/openapi.yaml` |
 
 Do not preload all rules and all skills at once. Load what the current stage requires.
+Requirements, planning, implementation, and review must preserve the complete Rule
+Applicability matrix from `harness/templates/rule-applicability-template.md`; load
+conditional rule documents only when the approved matrix or feature-specific evidence
+triggers them.
 ---
 ## Harness Structure
 | Folder | Purpose |
@@ -92,6 +96,7 @@ Key skills under `.agents/skills/`:
 - **Implementation authorization must be approved by the user before code is written** — ad-hoc workflows require approval of `implementation_plan_v<N>.md`; the complex harness path uses the approved `feature_list.json` and `sprint-contract.md` from `harness-planning` and must not generate a duplicate implementation plan in `harness-generator`
 - **Every stage gate must pass before advancing** — do not skip gates
 - **Every stage skill must be invoked via the Skill tool** — reading the SKILL.md manually is not a substitute. The workflow's "INVOKE" instruction is a command, not a suggestion
+- **Every requirement artifact must contain the complete Rule Applicability matrix** — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all nine rules, and carry the decisions into plans and review evidence
 - **Memory of prior approval does not bypass workflow stages** — source of truth is on disk. Ad-hoc workflows use `docs/current/`; every complex harness feature uses one stable dated workspace under `docs/product/`. If a required artifact is missing, re-run the stage via its skill. Require the approved `spec.md`, `design.md` when UI is affected, `feature_list.json`, and `sprint-contract.md` in that workspace.
 - **Validate harness lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting a complex feature and after every tracker transition. Folder location never represents status; the tracker and per-slice evidence do.
 - **Stage completion requires evidence** — when marking a stage complete in `summary_v<N>.md`, cite the artifact path and paste a one-line excerpt. A stage is not complete until the artifact exists on disk and is referenced from the summary
@@ -104,7 +109,8 @@ Key skills under `.agents/skills/`:
 ```bash
 ./gradlew assembleDebug              # build check
 ./gradlew testDebugUnitTest          # unit + integration tests
-./gradlew koverLog                   # coverage (must be ≥ 80% overall)
+./gradlew :app:koverXmlReportDebug   # machine-readable coverage report
+bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ./gradlew ktlintCheck                # formatting
 ./gradlew detekt                     # static analysis
 ./gradlew connectedDebugAndroidTest  # instrumented UI tests (when UI changed)

@@ -24,6 +24,24 @@ Use this template when producing the review summary in the relevant stage.
 | Independently executed checks | |
 | Recorded / up-to-date / skipped checks | |
 
+## Rule Applicability Reconciliation
+
+Copy the approved decisions from the specification and implementation plan. Reconcile
+each row against the diff and cite the corresponding check or review evidence. A
+triggered `Not applicable` rule or an unapproved exception is **REVISION REQUIRED**.
+
+| Rule ID | Approved decision / rationale | Trigger observed | Evidence checked | Result |
+|---|---|---|---|---|
+| ARCH | | | | PASS / REVISION REQUIRED |
+| IMPL | | | | PASS / REVISION REQUIRED |
+| TEST | | | | PASS / REVISION REQUIRED |
+| SUI | | | | PASS / REVISION REQUIRED / N/A |
+| L10N | | | | PASS / REVISION REQUIRED / N/A |
+| NAV | | | | PASS / REVISION REQUIRED / N/A |
+| API | | | | PASS / REVISION REQUIRED / N/A |
+| OBS | | | | PASS / REVISION REQUIRED / N/A |
+| ANL | | | | PASS / REVISION REQUIRED / N/A |
+
 ## Requirement-to-Production Traceability
 
 List every FR, AC, and documented edge case from the active specification and sprint contract.

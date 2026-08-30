@@ -12,6 +12,10 @@ This skill provides a unified workflow for running and resolving issues from the
 2. **Detekt**: Performs static code analysis for Kotlin (complexity, smells, etc.).
 3. **Android Lint**: Identifies Android-specific issues (performance, security, usability, API compatibility).
 
+The Rule Applicability Harness Contract is also mandatory: read the approved matrix,
+run every applicable checker, and preserve concrete evidence for non-applicable rows
+or approved exceptions.
+
 ## When to Use
 
 - Before submitting any code change.
@@ -67,6 +71,9 @@ Android Lint checks for Android-specific problems.
    bash harness/scripts/check-compose-rules.sh
    bash harness/scripts/check-localization-rules.sh
    bash harness/scripts/check-architecture-rules.sh
+   bash harness/scripts/check-navigation-rules.sh
+   ./gradlew :app:koverXmlReportDebug
+   bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
    ```
 
    On Windows (using PowerShell or Command Prompt), run the native script launchers instead:
@@ -107,3 +114,6 @@ The task is complete when:
 - [ ] `bash harness/scripts/check-compose-rules.sh` or `harness\scripts\check-compose-rules.cmd` passes (0 violations).
 - [ ] `bash harness/scripts/check-localization-rules.sh` or `harness\scripts\check-localization-rules.cmd` passes (0 violations).
 - [ ] `bash harness/scripts/check-architecture-rules.sh` or `harness\scripts\check-architecture-rules.cmd` passes (0 violations).
+- [ ] `bash harness/scripts/check-navigation-rules.sh` passes when NAV is required.
+- [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` passes weighted coverage thresholds.
+- [ ] Rule Applicability Harness Contract is reconciled with the diff and evidence.

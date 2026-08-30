@@ -16,6 +16,13 @@ Gather complete session, requirement, and git context, establishing a single sou
 - `rules/api-contract-rules.md`
 - `rules/navigation-rules.md`
 - `rules/testing-strategy.md`
+- `rules/android-architecture.md`
+- `rules/implementation-rules.md`
+- `rules/compose-rules.md`
+- `rules/localization-rules.md`
+- `rules/observability.md`
+- `rules/analytics-rules.md`
+- `harness/templates/rule-applicability-template.md`
 
 ---
 
@@ -26,7 +33,7 @@ This is a gated spec-driven workflow: `$FEATURE_DIR/spec.md` (Phase 1: Specify) 
 Before making any changes or planning code, gather complete session and git context:
 
 1. **Validate and select `FEATURE_DIR` first**: run `bash harness/scripts/check-feature-lifecycle.sh`, then read the Harness Feature Tracker in `docs/product/product.md`. Continue an `In Progress` product workspace, or select the approved `Awaiting implementation approval` product workspace. Stop if validation fails; never infer lifecycle state by scanning directories or start a second feature while one is `In Progress`.
-2. **Read `$FEATURE_DIR/spec.md`** for the full functional requirements (`FR-*`), acceptance criteria (`AC-*`), edge cases, and technical decisions. The Spec Coverage Matrix in the sprint contract references these IDs — reading the spec first provides the detailed context behind each reference.
+2. **Read `$FEATURE_DIR/spec.md`** for the full functional requirements (`FR-*`), acceptance criteria (`AC-*`), edge cases, technical decisions, and complete Rule Applicability matrix. Record every decision and trigger in the selected slice summary; do not reopen an approved decision unless the selected work introduces a new trigger.
 3. **Read `$FEATURE_DIR/sprint-contract.md`** for scope, the Spec Coverage Matrix mapping requirements to user stories, acceptance test cases, and verification commands.
 4. **Read `$FEATURE_DIR/evaluator-rubric.md`** when present for final quality evidence and issues that require follow-up.
 5. **Read active logs** in `$FEATURE_DIR/progress.md` (or the session logs).

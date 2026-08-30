@@ -10,6 +10,22 @@ Use this template when producing `spec_v<N>.md` in the **Requirement, Impact & D
 ## Requirement Summary
 <description>
 
+## Rule Applicability
+
+Complete every row before approval. Use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`, and preserve this matrix in the implementation and review artifacts.
+
+| Rule ID | Rule document | Decision | Feature-specific evidence or reason |
+|---|---|---|---|
+| ARCH | `android-architecture.md` | <decision> | |
+| IMPL | `implementation-rules.md` | <decision> | |
+| TEST | `testing-strategy.md` | <decision> | |
+| SUI | `compose-rules.md` | <decision> | |
+| L10N | `localization-rules.md` | <decision> | |
+| NAV | `navigation-rules.md` | <decision> | |
+| API | `api-contract-rules.md` | <decision> | |
+| OBS | `observability.md` | <decision> | |
+| ANL | `analytics-rules.md` | <decision> | |
+
 ## Functional Requirements
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]

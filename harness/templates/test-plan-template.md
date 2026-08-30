@@ -8,6 +8,22 @@ Use this template when producing the test plan in the **Implementation Plan** st
 
 > One line description of what is being tested.
 
+## Rule Applicability Test Reconciliation
+
+Copy the approved nine-row matrix and identify the test or explicit feature-specific reason for each decision. Every `Required` row needs a verification entry or a documented blocking failure.
+
+| Rule ID | Rule document | Decision | Test/evidence |
+|---|---|---|---|
+| ARCH | `android-architecture.md` | <decision> | |
+| IMPL | `implementation-rules.md` | <decision> | |
+| TEST | `testing-strategy.md` | <decision> | |
+| SUI | `compose-rules.md` | <decision> | |
+| L10N | `localization-rules.md` | <decision> | |
+| NAV | `navigation-rules.md` | <decision> | |
+| API | `api-contract-rules.md` | <decision> | |
+| OBS | `observability.md` | <decision> | |
+| ANL | `analytics-rules.md` | <decision> | |
+
 ---
 
 ## Layer Selection
@@ -58,6 +74,10 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 
 ---
 
+Each visual row's sprint-contract command must select the exact method using
+-Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#<method>,
+then pull the in-test screenshot with adb pull and verify it is non-empty.
+
 ## Shared JSON Scenarios
 
 | Scenario File | API Mock | Expected Domain | Expected UI |
@@ -82,6 +102,7 @@ Location: `sharedContracts/test-scenarios/`
 
 ```bash
 ./gradlew testDebugUnitTest          # unit + integration tests
-./gradlew koverLog                   # coverage gate
+./gradlew :app:koverXmlReportDebug   # machine-readable coverage report
+bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ./gradlew connectedDebugAndroidTest  # instrumented UI tests (when UI changed)
 ```

@@ -19,7 +19,7 @@ write_valid_fixture() {
     '' \
     '| Test ID | Covers AC | Test layer | Test file and method | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|' \
-    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme | fixture | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest |' \
+    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme | fixture | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
     > "$feature_dir/sprint-contract.md"
   printf '%s\n' \
     '{' \
@@ -130,6 +130,35 @@ write_valid_fixture "$missing_verification"
 jq '.features[0].verification = []' \
   "$missing_verification/feature_list.json" > "$missing_verification/feature_list.tmp"
 mv "$missing_verification/feature_list.tmp" "$missing_verification/feature_list.json"
-expect_failure "is not listed in feature_list.json verification" bash "$VALIDATOR" "$missing_verification"
+expect_failure "no method-scoped VisualFlowTest verification command" bash "$VALIDATOR" "$missing_verification"
+
+functional_visual_class="$fixture_root/functional-visual-class"
+write_valid_fixture "$functional_visual_class"
+sed 's/EmojiPickerVisualFlowTest/FormattingToolbarTest/g' \
+  "$functional_visual_class/sprint-contract.md" \
+  > "$functional_visual_class/sprint-contract.tmp"
+mv "$functional_visual_class/sprint-contract.tmp" "$functional_visual_class/sprint-contract.md"
+expect_failure "must name a dedicated *VisualFlowTest.kt method" \
+  bash "$VALIDATOR" "$functional_visual_class"
+
+class_scoped_visual_command="$fixture_root/class-scoped-visual-command"
+write_valid_fixture "$class_scoped_visual_command"
+sed 's/EmojiPickerVisualFlowTest#emojiPickerContentLightTheme/EmojiPickerVisualFlowTest/' \
+  "$class_scoped_visual_command/feature_list.json" \
+  > "$class_scoped_visual_command/feature_list.tmp"
+mv "$class_scoped_visual_command/feature_list.tmp" \
+  "$class_scoped_visual_command/feature_list.json"
+expect_failure "no method-scoped VisualFlowTest verification command" \
+  bash "$VALIDATOR" "$class_scoped_visual_command"
+
+duplicate_screenshot="$fixture_root/duplicate-screenshot"
+write_valid_fixture "$duplicate_screenshot"
+sed -i.bak \
+  '/TC-US-3-VIS-001/a\
+| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme | fixture | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
+  "$duplicate_screenshot/sprint-contract.md"
+rm -f "$duplicate_screenshot/sprint-contract.md.bak"
+expect_failure "is used by more than one visual row" \
+  bash "$VALIDATOR" "$duplicate_screenshot"
 
 echo "PASS: visual evidence validator rejects missing anchor proof, blank screenshots, and aligns methods, contract rows, screenshots, and evidence."

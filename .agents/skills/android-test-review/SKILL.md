@@ -16,11 +16,20 @@ Identify the active workflow first. The test-review report is an **output**, nev
 - **Ad-hoc review**: `docs/current/spec_v<N>.md`, `implementation_plan_v<N>.md`, `test_plan_v<N>.md`, `summary_v<N>.md`, and any testing-stage evidence such as `test_report_v<N>.md`.
 - **Harness evaluation**: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/sprint-contract.md`, `$FEATURE_DIR/feature_list.json`, the active slice summary, and testing-stage evidence recorded in `$FEATURE_DIR/progress.md` or the slice summary.
 - All test files mapped by the active plan or sprint contract, plus the production files that implement the mapped behavior.
-- `rules/testing-strategy.md` and `harness/templates/test-review-template.md`.
+- `rules/testing-strategy.md`, `harness/templates/test-review-template.md`, and
+  `harness/templates/rule-applicability-template.md`.
 
 If a required baseline or test-evidence artifact is missing, record it as a blocking finding. Do not substitute a prior `test_review_*.md` for the missing source evidence.
 
 ## Execute
+
+### B0. Rule Applicability Test Reconciliation
+
+Read the approved Rule Applicability matrix and test plan before assessing tests. For
+ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, and ANL, verify that the planned test,
+static-check, review evidence, or explicit non-applicable rationale exists and remains
+valid against the diff. Do not invent analytics or logging tests when their triggers are
+absent; an unsupported decision is **REVISION REQUIRED**.
 
 ### B1. Establish review scope and evidence provenance
 

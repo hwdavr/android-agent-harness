@@ -62,6 +62,36 @@ warn_if_missing() {
   fi
 }
 
+require_rule_applicability() {
+  local artifact="$1"
+  local label="$2"
+  local rule_id
+  local row
+
+  if ! grep -Fq "## Rule Applicability" "$artifact"; then
+    echo "FAIL: $artifact is missing the '## Rule Applicability' section ($label)." >&2
+    exit 1
+  fi
+
+  for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL; do
+    row=$(grep -E "^[[:space:]]*\|[[:space:]]*$rule_id[[:space:]]*\|" "$artifact" | head -n 1 || true)
+    if [ -z "$row" ]; then
+      echo "FAIL: $artifact is missing the $rule_id rule-applicability row ($label)." >&2
+      exit 1
+    fi
+    case "$row" in
+      *"| Required |"* | *"| Not applicable — "* | *"| Exception — approved by "*)
+        ;;
+      *)
+        echo "FAIL: $artifact has no valid decision for $rule_id ($label). Use Required, Not applicable — <reason>, or Exception — approved by <user/date>." >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  echo "OK: $artifact has a complete rule-applicability contract."
+}
+
 latest_versioned_file() {
   local pattern="$1"
   find "$DOCS_DIR" -maxdepth 1 -name "$pattern" -print 2>/dev/null |
@@ -80,6 +110,7 @@ case "$WORKFLOW/$STAGE" in
   feature-delivery/requirement-analysis)
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "requirement/impact/design spec"
+    require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "feature-delivery requirement analysis"
     ;;
   feature-delivery/implementation-plan)
     require_file "implementation_plan_v*.md" "implementation plan"
@@ -88,6 +119,7 @@ case "$WORKFLOW/$STAGE" in
   bug-fixing/requirement-analysis)
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "bug context/root cause spec"
+    require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "bug-fixing requirement analysis"
     ;;
   bug-fixing/implementation-plan)
     require_file "implementation_plan_v*.md" "fix plan"
@@ -96,6 +128,7 @@ case "$WORKFLOW/$STAGE" in
   api-contract-update/requirement-analysis)
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "requirement/impact/design spec"
+    require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "api-contract-update requirement analysis"
     ;;
   api-contract-update/implementation-plan)
     require_file "implementation_plan_v*.md" "implementation plan"
@@ -103,6 +136,7 @@ case "$WORKFLOW/$STAGE" in
     ;;
   harness-planning/feature-specification)
     require_file "spec.md" "feature specification"
+    require_rule_applicability "$DOCS_DIR/spec.md" "harness-planning feature specification"
     if [ -f "$DOCS_DIR/design.md" ] || grep -q "Screen States" "$DOCS_DIR/spec.md" || (git diff --name-only HEAD 2>/dev/null | grep -q "/ui/"); then
       if [ ! -f "docs/product/design_system.md" ]; then
         echo "FAIL: docs/product/design_system.md is required for UI planning." >&2

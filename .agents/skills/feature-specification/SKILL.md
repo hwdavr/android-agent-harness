@@ -30,6 +30,10 @@ This skill ends only when every material question has been answered by the user 
 
 - `docs/product/design_system.md` — mandatory for every UI-affecting specification and design
 - `rules/compose-rules.md` — **Keyboard / IME Behavior** section: when screen content or a bottom sheet has text input, the bottom toolbar must dismiss while the keyboard is visible
+- `rules/android-architecture.md`, `rules/implementation-rules.md`, `rules/testing-strategy.md`
+- `rules/localization-rules.md`, `rules/navigation-rules.md`, `rules/api-contract-rules.md`
+- `rules/observability.md`, `rules/analytics-rules.md`
+- `harness/templates/rule-applicability-template.md`
 - `harness/templates/feature-spec-template.md`
 - `harness/templates/feature-design-template.md`
 
@@ -58,6 +62,15 @@ Before asking questions, determine the task type:
 - **Logic-only**: No UI changes. Requires `spec.md` only (skip all screen-specific sections).
 
 State the classification to the user and confirm before proceeding.
+
+#### Rule applicability decision
+
+Before asking product questions, copy the complete matrix from
+`harness/templates/rule-applicability-template.md` and decide every row. Use only
+`Required`, `Not applicable — <feature-specific reason>`, or
+`Exception — approved by <user/date>`. Record the trigger and evidence for required
+rows. Assess analytics and observability explicitly; they do not require new events or
+logs when their triggers are absent.
 
 ### 3. Ask Clarifying Questions In Chat
 
@@ -92,6 +105,7 @@ Before writing any artifacts, verify:
 - [ ] Every user-visible state has a defined behavior (if UI is involved).
 - [ ] Every destructive or irreversible action has a defined confirmation/recovery behavior.
 - [ ] The user has confirmed the clarified scope is correct.
+- [ ] Every rule-applicability row has a supported decision, rationale, and planned evidence.
 
 If any item fails, ask more questions and do not write the artifacts yet.
 
@@ -110,6 +124,7 @@ The spec file must always describe:
 - Explicit assumptions
 - Open questions (all must be ✅ Answered)
 - Verification expectations
+- The complete **Rule Applicability** matrix, copied from the canonical template
 
 **Outcome decomposition (one AC per named outcome):** Each functional requirement decomposes into acceptance criteria covering every distinct behavior its text promises — the happy path plus each fallback, error, boundary, and persistence/compatibility outcome. A single AC per FR is valid only when the FR names exactly one outcome. In particular, a requirement that promises *backward/forward compatibility* or *graceful fallback for missing/unknown input* must include a dedicated AC for each fallback path — a clean round-trip AC alone does not cover it.
 

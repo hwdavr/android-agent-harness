@@ -38,6 +38,19 @@ CONTRACT_ROWS=$(grep -E "^\|[[:space:]]*TC-${VISUAL_OWNER}-VIS-[^|[:space:]]+[[:
 CONTRACT_IDS=$(printf '%s\n' "$CONTRACT_ROWS" | sed -n 's/^|[[:space:]]*\(TC-[^|[:space:]]*-VIS-[^|[:space:]]*\)[[:space:]]*|.*/\1/p')
 [ -n "$CONTRACT_IDS" ] || fail "visual rows for $VISUAL_OWNER have no parseable Test IDs"
 
+VISUAL_DETAIL_ROWS=$(printf '%s\n' "$CONTRACT_ROWS" | grep -E 'VisualFlowTest(\.kt)?#[A-Za-z_][A-Za-z0-9_]*' || true)
+[ -n "$VISUAL_DETAIL_ROWS" ] \
+  || fail "visual rows for $VISUAL_OWNER must name a dedicated *VisualFlowTest.kt method"
+while IFS= read -r contract_row; do
+  [ -n "$contract_row" ] || continue
+  printf '%s\n' "$contract_row" | grep -Eq 'VisualFlowTest(\.kt)?#[A-Za-z_][A-Za-z0-9_]*' \
+    || fail "every visual row for $VISUAL_OWNER must name a dedicated *VisualFlowTest.kt method"
+  printf '%s\n' "$contract_row" | grep -Eq -- "-Pandroid\.testInstrumentationRunnerArguments\.class=[^[:space:]\"']*VisualFlowTest#[A-Za-z_][A-Za-z0-9_]*" \
+    || fail "every visual row for $VISUAL_OWNER must declare a method-scoped VisualFlowTest command"
+done <<EOF
+$CONTRACT_ROWS
+EOF
+
 FEATURE_IDS=$(jq -r --arg owner "$VISUAL_OWNER" '
   .features[]
   | select(.id == $owner)
@@ -72,8 +85,11 @@ VISUAL_COMMANDS=$(jq -r --arg owner "$VISUAL_OWNER" '
   .features[]
   | select(.id == $owner)
   | (.verification // [])[]
-  | select(test("connectedDebugAndroidTest") and test("testInstrumentationRunnerArguments.class=.*#"))
+  | select(test("connectedDebugAndroidTest")
+    and test("testInstrumentationRunnerArguments.class=.*VisualFlowTest#[A-Za-z_][A-Za-z0-9_]*"))
 ' "$FEATURE_JSON")
+[ -n "$VISUAL_COMMANDS" ] \
+  || fail "visual owner $VISUAL_OWNER has no method-scoped VisualFlowTest verification command"
 VISUAL_METHODS=""
 while IFS= read -r command; do
   [ -n "$command" ] || continue
@@ -111,11 +127,16 @@ if [ "$MODE" = "--evaluate" ]; then
   [ -s "$FEATURE_DIR/$REFERENCE_ASSET" ] \
     || fail "$ANCHOR_REPORT references missing or empty design asset $REFERENCE_ASSET"
 
+  SEEN_SCREENSHOT_PATHS=""
   for test_id in $CONTRACT_IDS; do
     CONTRACT_ROW=$(printf '%s\n' "$CONTRACT_ROWS" | grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" || true)
     SCREENSHOT_PATH=$(printf '%s\n' "$CONTRACT_ROW" | grep -oE 'visual_evidence/[[:alnum:]_./-]+\.png' | head -n 1 || true)
     [ -n "$SCREENSHOT_PATH" ] \
       || fail "$test_id has no visual_evidence PNG artifact path in sprint-contract.md"
+    if printf '%s\n' "$SEEN_SCREENSHOT_PATHS" | grep -Fxq "$SCREENSHOT_PATH"; then
+      fail "${SCREENSHOT_PATH} is used by more than one visual row"
+    fi
+    SEEN_SCREENSHOT_PATHS="${SEEN_SCREENSHOT_PATHS}${SCREENSHOT_PATH}"$'\n'
     case "$SCREENSHOT_PATH" in
       *..*) fail "$test_id visual evidence path must stay under visual_evidence/" ;;
     esac

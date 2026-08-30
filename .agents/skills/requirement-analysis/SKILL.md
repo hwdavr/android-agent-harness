@@ -13,9 +13,15 @@ Do not write any code in this stage.
 
 ## Load
 - `rules/android-architecture.md`
+- `rules/implementation-rules.md`
+- `rules/testing-strategy.md`
+- `rules/compose-rules.md`
+- `rules/localization-rules.md`
 - `rules/api-contract-rules.md`
 - `rules/navigation-rules.md`
-- `rules/testing-strategy.md`
+- `rules/observability.md`
+- `rules/analytics-rules.md`
+- `harness/templates/rule-applicability-template.md`
 
 ---
 
@@ -29,6 +35,11 @@ Do not write any code in this stage.
 5. **API & Contract Check**:
    - Classify API changes and state force update requirement.
    - **Identify needed APIs**: List all existing or new endpoints that must be called to fulfill the requirement.
+6. **Rule Applicability**:
+   - Copy the complete matrix from `harness/templates/rule-applicability-template.md`.
+   - Record a decision for all nine rules before planning: `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`.
+   - For every `Required` row, record the concrete trigger and planned evidence. Do not delete a conditional-rule row when its trigger is absent.
+   - Assess analytics and observability explicitly. Use `Not applicable — analytics: none` when no product event is justified; do not add logging or analytics only to satisfy the matrix.
 
 ### 2. UI State & Navigation Design
 1. **Design UiState**: For any new or modified screen, define all possible states (Loading, Success, Empty, Error).
@@ -40,7 +51,7 @@ Do not write any code in this stage.
 
 ## Output
 
-Create `docs/current/` directory, if there are existing files, remove them inside the folder.
+Create `docs/current/` if needed. Choose the next unused `v<N>` and preserve existing artifacts; never delete an earlier feature's evidence.
 
 If the user provides a design screenshot or mockup, save it to **`docs/current/design/`** so it can be referenced during UI Verification.
 
@@ -103,6 +114,7 @@ Produce **`spec_v<N>.md`** (inside `docs/current/`).
 Use the template from `harness/templates/spec-template.md`.
 - Record every assumption the analysis required — never silently fill an ambiguous requirement.
 - Reframe vague requests into concrete, testable verification expectations the user can confirm.
+- Include the complete **Rule Applicability** matrix with a concrete decision, trigger or rationale, and planned evidence for all nine rules.
 - Keep the spec alive — when scope or decisions change, update `spec_v<N>.md` first.
 
 ---
@@ -115,5 +127,6 @@ Use the template from `harness/templates/spec-template.md`.
 - [ ] Every affected file is listed with a change type.
 - [ ] UiState design covers all visual states.
 - [ ] API change is classified.
+- [ ] Rule Applicability contains all nine rows with no implicit or missing decision.
 
 **APPROVED →** Return to the active workflow file and proceed to the next stage defined there.
