@@ -17,15 +17,13 @@ Load context in layers to keep the context window below 40% fill. More is not be
 
 | Layer | When | What to load |
 |-------|------|-------------|
-| **L1 — Always** | Every session | This file + `.agents/rules/android-architecture.md` + `.agents/rules/testing-strategy.md` |
-| **L2 — Phase-triggered** | Per stage | The skill(s) listed in the current stage's **Load** section; for UI work also load `docs/product/design_system.md` |
-| **L3 — On-demand** | When needed | `docs/knowledge/` docs, specific `.agents/rules/` files, `sharedContracts/openapi.yaml` |
+| **L1 — Always** | Every session | This file + `.agents/rules/android-architecture.md` + `.agents/rules/implementation-rules.md` + `.agents/rules/testing-strategy.md` |
+| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) and, for requirements/planning/review, `harness/templates/rule-applicability-template.md` plus `compose-rules.md`, `localization-rules.md`, `navigation-rules.md`, `api-contract-rules.md`, `observability.md`, and `analytics-rules.md`; for UI work also `docs/product/design_system.md` |
+| **L3 — On-demand** | When needed | `docs/knowledge/` docs, `sharedContracts/openapi.yaml`, and feature-specific evidence or rule detail newly triggered by the approved Rule Applicability matrix |
 
-Do not preload all rules and all skills at once. Load what the current stage requires.
-Requirements, planning, implementation, and review must preserve the complete Rule
-Applicability matrix from `harness/templates/rule-applicability-template.md`; load
-conditional rule documents only when the approved matrix or feature-specific evidence
-triggers them.
+Do not preload unrelated skills. Requirements, planning, and review must load the full
+L1/L2 rule contract so every rule is decided and reconciled; implementation loads only
+the rules marked required plus any newly triggered rule.
 ---
 ## Harness Structure
 | Folder | Purpose |
