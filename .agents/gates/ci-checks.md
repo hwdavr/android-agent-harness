@@ -78,6 +78,14 @@ bash harness/scripts/tests/navigation-rules-contract-test.sh
 **Must pass.** Catches raw route literals and prefixes, unencoded dynamic arguments,
 invalid required/optional argument defaults, and missing production navigation tests.
 
+### 8a. Kotlin AST Checker Contract
+```bash
+bash harness/scripts/tests/ast-checkers-contract-test.sh
+```
+**Must pass.** Verifies the shared AST-backed Compose, localization, architecture,
+navigation, and rendering-assertion entry points ignore rule-shaped comments/literals
+and reject actual violations.
+
 ### 9. Rule Applicability Harness Contract
 ```bash
 bash harness/scripts/tests/rule-applicability-contract-test.sh

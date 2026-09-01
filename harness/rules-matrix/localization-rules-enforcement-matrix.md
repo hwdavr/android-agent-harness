@@ -6,7 +6,7 @@ Rules from [`localization-rules.md`](../../.agents/rules/localization-rules.md),
 
 | Badge | Meaning |
 |---|---|
-| 🤖 **Scripted** | [`check-localization-rules.sh`](../scripts/check-localization-rules.sh) or Windows [`check-localization-rules.cmd`](../scripts/check-localization-rules.cmd) detects this automatically on every CI run |
+| 🤖 **Scripted** | The shared Kotlin AST checker, invoked by [`check-localization-rules.sh`](../scripts/check-localization-rules.sh) or Windows [`check-localization-rules.cmd`](../scripts/check-localization-rules.cmd), detects this automatically on every CI run |
 | 🧠 **Evaluator** | AI code review can reliably identify this — pattern recognition, semantic understanding |
 | 👁️ **Human** | Requires design judgement, visual inspection, or context that neither script nor AI can fully substitute |
 
@@ -18,9 +18,9 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
-| 1.1 | All user-visible text uses `stringResource()` — no raw string literals in `Text()` | 🤖 Scripted | Check 1: `\bText\s*\(\s*"` pattern match | |
-| 1.2 | Composable parameters (`label=`, `title=`, `placeholder=`, `hint=`) use `stringResource()` | 🤖 Scripted | Check 2: `(label\|title\|placeholder\|hint)\s*=\s*"` | |
-| 1.3 | Local UI label variables are not assigned raw string literals | 🤖 Scripted | Check 3: `val *Label/*Text/*Title/*Placeholder` = `"..."` | |
+| 1.1 | All user-visible text uses `stringResource()` — no raw string literals in `Text()` | 🤖 Scripted | AST visitor: `Text` call nodes whose first argument is a string literal | |
+| 1.2 | Composable parameters (`label=`, `title=`, `placeholder=`, `hint=`) use `stringResource()` | 🤖 Scripted | AST visitor: named argument nodes assigned a string literal | |
+| 1.3 | Local UI label variables are not assigned raw string literals | 🤖 Scripted | AST visitor: UI property declaration nodes with label-like names and string initializers | |
 
 ---
 
@@ -62,8 +62,8 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
-| 6.1 | Non-text interactive elements (icons, image buttons) have `contentDescription = stringResource(...)` | 🤖 Scripted + 🧠 Evaluator | Check 4: `contentDescription\s*=\s*null` | Script catches explicit `null`; AI catches missing `contentDescription` entirely |
-| 6.2 | `contentDescription` is never `null` on interactive icons | 🤖 Scripted | Check 4: `contentDescription\s*=\s*null` | |
+| 6.1 | Non-text interactive elements (icons, image buttons) have `contentDescription = stringResource(...)` | 🤖 Scripted + 🧠 Evaluator | AST visitor: `contentDescription = null` in interactive icon call nodes | Script catches explicit `null`; AI catches missing `contentDescription` entirely |
+| 6.2 | `contentDescription` is never `null` on interactive icons | 🤖 Scripted | AST visitor: `contentDescription = null` in interactive icon call nodes | |
 
 ---
 
@@ -85,11 +85,15 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 ## Script Coverage Map
 
+All scripted checks below visit the shared structural AST
+(`harness/scripts/kotlin_ast_checker.py`); comments and string/character literals
+cannot satisfy or trigger a Kotlin rule.
+
 The [`check-localization-rules.sh`](../scripts/check-localization-rules.sh) script and Windows [`check-localization-rules.cmd`](../scripts/check-localization-rules.cmd) launcher currently cover:
 
-| Script Check | Rules Covered |
+| AST visitor | Rules Covered |
 |---|---|
-| **Check 1** — `\bText\s*(\s*"` raw string literal in `Text()` | 1.1 |
-| **Check 2** — `(label\|title\|placeholder\|hint)\s*=\s*"` in Composable params | 1.2 |
-| **Check 3** — `val *Label/*Text/*Title/...` assigned a raw string | 1.3 |
-| **Check 4** — `contentDescription\s*=\s*null` | 6.1 · 6.2 |
+| `Text` call nodes with a raw string argument | 1.1 |
+| label/title/placeholder/hint named argument nodes with raw strings | 1.2 |
+| UI property declaration nodes with label-like names and raw strings | 1.3 |
+| null `contentDescription` in interactive icon call nodes | 6.1 · 6.2 |

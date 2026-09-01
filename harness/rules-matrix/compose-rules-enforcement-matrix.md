@@ -6,7 +6,7 @@ Rules from [`compose-rules.md`](../../.agents/rules/compose-rules.md), categoris
 
 | Badge | Meaning |
 |---|---|
-| 🤖 **Scripted** | [`check-compose-rules.sh`](../scripts/check-compose-rules.sh) or [`check-localization-rules.sh`](../scripts/check-localization-rules.sh) detects this automatically on every CI run |
+| 🤖 **Scripted** | The shared Kotlin AST checker, invoked by [`check-compose-rules.sh`](../scripts/check-compose-rules.sh) or [`check-localization-rules.sh`](../scripts/check-localization-rules.sh), detects this automatically on every CI run |
 | 🧠 **Evaluator** | AI code review can reliably identify this — pattern recognition, semantic understanding |
 | 👁️ **Human** | Requires design judgement, visual inspection, or context that neither script nor AI can fully substitute |
 
@@ -20,11 +20,11 @@ A rule can carry more than one badge when layered enforcement is needed.
 |---|------|-------------|-------------|-------|
 | 1.1 | Composable receives `UiState` + callbacks as parameters | 🧠 Evaluator | — | AI reviews parameter signatures for data/callback split |
 | 1.2 | Composable only renders state — no derived computation | 🧠 Evaluator | — | Requires semantic understanding of what counts as "transformation" |
-| 1.3 | Callbacks called on interaction — Composable never calls ViewModel directly | 🤖 Scripted + 🧠 Evaluator | Check 4: `hiltViewModel()` / `viewModel()` inside `*Content` | Script catches direct hiltViewModel calls; AI catches subtler patterns |
-| 1.4 | No use case or repository calls inside Composable | 🤖 Scripted + 🧠 Evaluator | Check 5: `Repository`/`UseCase`/`DataSource` pattern match | Script is heuristic; AI validates edge cases |
+| 1.3 | Callbacks called on interaction — Composable never calls ViewModel directly | 🤖 Scripted + 🧠 Evaluator | AST visitor: `hiltViewModel()` / `viewModel()` call nodes inside `*Content` | Script catches direct calls; AI catches subtler patterns |
+| 1.4 | No use case or repository calls inside Composable | 🤖 Scripted + 🧠 Evaluator | AST visitor: repository/use-case/data-source call nodes in `@Composable` bodies | AI validates semantic edge cases |
 | 1.5 | No business logic or data transformation inside Composable | 🧠 Evaluator | — | Too semantic for a script; AI checks for sorting, filtering, formatting inside composable bodies |
-| 1.6 | No hardcoded strings — must use `stringResource()` | 🤖 Scripted | `check-localization-rules.sh` / `.cmd` Checks 1–3 | Moved to localization script — compose script no longer owns this |
-| 1.7 | No hardcoded colors — must use `LocalAppColors.current.<token>` | 🤖 Scripted | Check 2: `Color(0x...)` and named `Color.*` constants | `AppColors.kt` is excluded from the check |
+| 1.6 | No hardcoded strings — must use `stringResource()` | 🤖 Scripted | `check-localization-rules.sh` / `.cmd` AST visitors for calls, named arguments, and UI properties | Moved to localization script — compose script no longer owns this |
+| 1.7 | No hardcoded colors — must use `LocalAppColors.current.<token>` | 🤖 Scripted | AST visitor: `Color(0x...)` and named `Color.*` references | `AppColors.kt` is excluded from the check |
 
 ---
 
@@ -33,7 +33,7 @@ A rule can carry more than one badge when layered enforcement is needed.
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
 | 2.1 | Every screen must have a stateful wrapper (`*Screen`) and a stateless content composable (`*Content`) | 🧠 Evaluator | — | AI checks naming convention and that the pair exists |
-| 2.2 | Stateful wrapper is the only place that calls `hiltViewModel()` / `collectAsStateWithLifecycle()` | 🤖 Scripted + 🧠 Evaluator | Check 4 | Script catches `hiltViewModel` in `*Content`; AI verifies `collectAsState` is not in content either |
+| 2.2 | Stateful wrapper is the only place that calls `hiltViewModel()` / `collectAsStateWithLifecycle()` | 🤖 Scripted + 🧠 Evaluator | AST visitor: ViewModel call nodes in `*Content` | AI verifies `collectAsState` is not in content either |
 | 2.3 | UI tests target `*Content`, not `*Screen` | 🧠 Evaluator | — | Checked during test review — not detectable in production source |
 
 ---
@@ -42,9 +42,9 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
-| 3.1 | All interactive elements have `Modifier.testTag(...)` | 🤖 Scripted + 🧠 Evaluator | Check 3: files with interactive elements but no testTag | Script is file-level heuristic; AI audits at element level |
+| 3.1 | All interactive elements have `Modifier.testTag(...)` | 🤖 Scripted + 🧠 Evaluator | AST visitor: interactive call nodes in files without a `testTag` call node | The file-level invariant remains a conservative heuristic; AI audits individual elements |
 | 3.2 | Key content containers have `testTag` (note card, list items, empty/error states, loading indicators, navigation) | 🧠 Evaluator | — | Requires understanding of "key" — AI applies the rule contextually |
-| 3.3 | testTag names are descriptive and stable (no `"btn"`, no `"button_${id}"`) | 🤖 Scripted + 🧠 Evaluator | Check 5: registry-backed documented expression match | Script rejects every unregistered dynamic expression; AI flags non-descriptive static names like `"btn"` |
+| 3.3 | testTag names are descriptive and stable (no `"btn"`, no `"button_${id}"`) | 🤖 Scripted + 🧠 Evaluator | AST visitor: interpolated/concatenated/derived tag expressions plus registry-backed documentation | Script rejects every unregistered dynamic expression; AI flags non-descriptive static names like `"btn"` |
 
 ---
 
@@ -52,7 +52,7 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
-| 4.1 | All user-visible text uses `stringResource()` | 🤖 Scripted | `check-localization-rules.sh` / `.cmd` Checks 1–3 | Owned by localization script |
+| 4.1 | All user-visible text uses `stringResource()` | 🤖 Scripted | `check-localization-rules.sh` / `.cmd` AST visitors for calls, named arguments, and UI properties | Owned by localization script |
 | 4.2 | String resource keys follow `<screen>_<element>_<type>` naming convention | 🧠 Evaluator | — | Naming convention; AI verifies format at review time |
 
 ---
@@ -61,8 +61,8 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
-| 5.1 | No `Color(0x...)` literals outside `AppColors.kt` | 🤖 Scripted | Check 2a | |
-| 5.2 | No named `Color.*` constants (`Color.Red`, `Color.White`, etc.) outside `AppColors.kt` | 🤖 Scripted | Check 2b | |
+| 5.1 | No `Color(0x...)` literals outside `AppColors.kt` | 🤖 Scripted | AST visitor: hexadecimal `Color` call nodes | |
+| 5.2 | No named `Color.*` constants (`Color.Red`, `Color.White`, etc.) outside `AppColors.kt` | 🤖 Scripted | AST visitor: named `Color` reference nodes | |
 | 5.3 | All colors accessed via `LocalAppColors.current.<token>` | 🧠 Evaluator | — | Script catches the negative (hardcoded); AI verifies the positive (token usage) |
 | 5.4 | Color named by semantic purpose, not by value (`textSecondary` not `gray`) | 🧠 Evaluator | — | Naming intent requires human/AI judgement |
 | 5.5 | New color added to **both** `LightAppColors` and `DarkAppColors` | 🧠 Evaluator | — | No reliable symmetry checker exists yet; evaluator verifies semantic pairing in the changed color models. |
@@ -93,7 +93,7 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
-| 8.1 | Use `LazyColumn` instead of `Column` + `forEach` for lists | 🤖 Scripted | Check 7: `Column { ... .forEach {` | |
+| 8.1 | Use `LazyColumn` instead of `Column` + `forEach` for lists | 🤖 Scripted | AST visitor: `.forEach()` call nodes nested in a `Column` call node | |
 | 8.2 | Pass stable types as parameters to avoid unnecessary recompositions | 🧠 Evaluator | — | AI checks for `List<>`, `Map<>`, lambdas created inline that destabilise composition |
 | 8.3 | Use `key()` in lazy lists when items have stable IDs | 🧠 Evaluator | — | AI verifies that `items()` / `itemsIndexed()` calls use a key lambda |
 | 8.4 | Avoid creating lambdas inside the composable body — pass as parameters | 🧠 Evaluator | — | Script was too noisy (false positives on delegation); AI applies intent-level review |
@@ -128,16 +128,20 @@ A rule can carry more than one badge when layered enforcement is needed.
 
 ## Script Coverage Map
 
+All Kotlin checks below are implemented as visitors over the shared structural AST
+(`harness/scripts/kotlin_ast_checker.py`). Comments, string/character literals, and
+unrelated nested text are not treated as Kotlin code.
+
 The [`check-compose-rules.sh`](../scripts/check-compose-rules.sh) script currently covers:
 
-| Script Check | Rules Covered |
+| AST visitor | Rules Covered |
 |---|---|
-| **Check 1** — Color literals/constants outside `AppColors.kt` | 1.7 · 5.1 · 5.2 |
-| **Check 2** — Files with interactive elements but no `testTag` | 3.1 |
-| **Check 3** — `hiltViewModel()` / `viewModel()` in `*Content` composables | 1.3 · 2.2 |
-| **Check 4** — `Repository`/`UseCase`/`DataSource` call inside `@Composable` | 1.4 |
-| **Check 5** — Dynamic test tags match documented registry entries | 3.3 |
-| **Check 6** — `Column { ... .forEach {` pattern | 8.1 |
+| Color call/reference nodes outside `AppColors.kt` | 1.7 · 5.1 · 5.2 |
+| Interactive call nodes in files without a `testTag` call node | 3.1 |
+| `hiltViewModel()` / `viewModel()` call nodes in `*Content` composables | 1.3 · 2.2 |
+| Repository/use-case/data-source call nodes inside `@Composable` | 1.4 |
+| Dynamic testTag expression nodes match documented registry entries | 3.3 |
+| `.forEach()` call nodes nested in `Column` call nodes | 8.1 |
 
 > [!NOTE]
 > String-resource checks (rules 1.6 · 4.1) are now owned by [`check-localization-rules.sh`](../scripts/check-localization-rules.sh). See the [Localization Rules Enforcement Matrix](localization-rules-enforcement-matrix.md) for details.

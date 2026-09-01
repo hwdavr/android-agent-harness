@@ -36,7 +36,9 @@ write_common_fixture() {
         '}' > "$root/app/src/main/java/com/example/notesapp/navigation/Destinations.kt"
     printf '%s\n' \
         'package com.example.notesapp.navigation' \
-        'fun classify(route: String?) = route == Destinations.Editor.route' > "$root/app/src/main/java/com/example/notesapp/navigation/AppNavGraph.kt"
+        'fun classify(route: String?) = route == Destinations.Editor.route' \
+        'val documentation = """route.startsWith("editor") composable("home")"""' \
+        > "$root/app/src/main/java/com/example/notesapp/navigation/AppNavGraph.kt"
     printf '%s\n' \
         'package com.example.notesapp.navigation' \
         'composable(route = Destinations.MoveTo.route, arguments = listOf(' \

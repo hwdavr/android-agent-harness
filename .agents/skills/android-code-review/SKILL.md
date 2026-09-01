@@ -116,16 +116,13 @@ Only run this section if the change touches Compose (UI `*.kt`) files. Otherwise
 The script has already run in step 1. Refer to its output to fill in the 🤖 rows in the Compose Rules Enforcement table. Mark each as ✅ (no violations) or ❌ (violations — list them in the Violations column).
 
 Rules automatically covered by the script:
-- **1.6** No hardcoded strings (`Text()`, `label=`, etc.) → Check 1
-- **1.7** No hardcoded colors `Color(0x...)` / named `Color.*` → Check 2a/2b
-- **1.3 / 2.2** `hiltViewModel()` / `viewModel()` not in `*Content` → Check 4
-- **1.4** No repository/use-case calls inside Composable → Check 5
-- **3.1** Files with interactive elements but no `testTag` → Check 3
-- **3.3** No string interpolation in `testTag` values → Check 6
-- **4.1** All user-visible text uses `stringResource()` → Check 1
-- **5.1** No `Color(0x...)` outside `AppColors.kt` → Check 2a
-- **5.2** No named `Color.*` outside `AppColors.kt` → Check 2b
-- **8.1** `LazyColumn` instead of `Column + forEach` → Check 7
+- **1.6 / 4.1** No hardcoded strings → localization AST visitors for `Text` calls, named UI arguments, and UI label properties
+- **1.7 / 5.1 / 5.2** No hardcoded colors → Compose AST visitors for `Color(0x...)` and named `Color.*` references
+- **1.3 / 2.2** `hiltViewModel()` / `viewModel()` not in `*Content` → Compose AST visitor over function bodies
+- **1.4** No repository/use-case calls inside Composable → Compose AST visitor over `@Composable` bodies
+- **3.1** Files with interactive elements but no `testTag` → Compose AST visitor over interactive call nodes
+- **3.3** Dynamic `testTag` values are documented → Compose AST visitor plus the registry contract
+- **8.1** `LazyColumn` instead of `Column + forEach` → Compose AST visitor over nested call nodes
 
 **Step 2 — Evaluate remaining rules (Evaluator rules)**
 
@@ -164,10 +161,10 @@ Only skip this section if the change adds no user-visible text and no Kotlin UI 
 The script has already run in step 1. Refer to its output to fill in the 🤖 rows in the Localization Rules Enforcement table. Mark each as ✅ (no violations) or ❌ (violations — list them in the Violations column).
 
 Rules automatically covered by the script:
-- **1.1** `Text()` called with a raw string literal → Check 1
-- **1.2** `label=`, `title=`, `placeholder=`, `hint=` set as a raw string → Check 2
-- **1.3** Local UI label variables assigned a raw string → Check 3
-- **6.2** `contentDescription = null` on interactive icons → Check 4
+- **1.1** `Text()` called with a raw string literal → localization AST visitor
+- **1.2** `label=`, `title=`, `placeholder=`, `hint=` set as a raw string → localization AST visitor
+- **1.3** Local UI label variables assigned a raw string → localization AST visitor
+- **6.2** `contentDescription = null` on interactive icons → localization AST visitor
 
 **Step 2 — Evaluate remaining rules (Evaluator rules)**
 
@@ -193,29 +190,19 @@ Only skip this section if the change touches no Kotlin source files. Otherwise m
 The script has already run in step 1. Refer to its output to fill in the 🤖 rows in the Architecture Rules Enforcement table. Mark each as ✅ (no violations) or ❌ (violations — list them in the Violations column).
 
 Rules automatically covered by the script:
-- **1.1 / 1.6** UI files with `data.(remote|local|repository)` imports → §1a
-- **1.4** UI files importing DTO/Entity/Request/Response types → §1b
-- **1.5** UI files calling `ApiService.*` or DAO directly → §1c §1d
-- **2.6** ViewModel importing Retrofit / Room / calling ApiService → §2a §2b §2c
-- **2.9** ViewModel importing `data.(remote|local)` packages → §2d
-- **3.1** Domain files importing `android.*` / `androidx.*` → §3a
-- **3.2** Domain files importing `ui.*` → §3e
-- **3.3** Domain files importing `retrofit2.*` → §3b
-- **3.4** Domain files importing `androidx.room.*` → §3c
-- **3.5** Domain files importing `data.*` → §3d
-- **4.1** Non-data-layer files importing DTO/Entity → §4a
-- **4.2** Data-layer files referencing `UiState` → §4b
-- **5.3** ViewModel with ≥3 `StateFlow<Boolean>` → §5a
-- **2.5 / 5.4** Permanent state fields named `showDialog`, `navigateTo`, etc. → §5b
-- **6.1** Domain files importing DTO types → §6b
-- **6.3** UI files importing DTO/ApiModel types → §6a
-- **7.2** RepositoryImpl missing `@Singleton` → §7b
-- **3.1 / 7.4** Domain constructors receiving `Context` → §7a
-- **8.1** Fully-qualified class names used inline → §8a
-- **8.2** `enqueue` / `execute` / `await` in ViewModel bodies → §8b
-- **8.3** `when/if` on domain model fields inside `@Composable` → §8c
-- **8.4** ViewModel without matching test file → §8d
-- **9.1–9.4** Misplaced ViewModel / UseCase / RepositoryImpl / Mapper files → §9a–d
+- **1.1 / 1.5** UI DAO and repository/use-case/data-source calls → architecture AST visitors over UI files and Composable bodies
+- **1.4 / 1.6 / 2.9 / 3.2–3.5 / 4.1 / 6.1 / 6.3** Import boundaries → Detekt `ForbiddenImport`
+- **2.6** API-service calls in ViewModels → architecture AST visitor; Retrofit/Room imports remain Detekt-owned
+- **4.2** `UiState` references in data files → architecture AST visitor
+- **5.3** ViewModel with ≥3 `StateFlow<Boolean>` → architecture AST property visitor
+- **2.5 / 5.4** Permanent state fields named `showDialog`, `navigateTo`, etc. → architecture AST property visitor
+- **3.1 / 7.4** Domain Android imports and constructor `Context` → architecture AST import/constructor visitors
+- **7.2** RepositoryImpl missing `@Singleton` → architecture AST class/annotation visitor
+- **8.1** Fully-qualified class names used inline → architecture AST expression visitor
+- **8.2** `enqueue` / `execute` / `await` in ViewModel bodies → architecture AST call visitor
+- **8.3** `when/if` on domain model fields inside `@Composable` → architecture AST condition visitor
+- **8.4** ViewModel without matching test file → architecture AST declaration visitor
+- **9.1–9.4** Misplaced ViewModel / UseCase / RepositoryImpl / Mapper files → architecture AST declaration/path visitors
 
 **Step 2 — Evaluate remaining rules (Evaluator rules)**
 

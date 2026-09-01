@@ -102,27 +102,27 @@ For each rule, record how it was checked for **this change** and its outcome.
 |------|-------------|--------|------------|
 | 1.1 Receives `UiState` + callbacks as params | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 1.2 Only renders state — no derived computation | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 1.3 Never calls ViewModel directly | 🤖 Check 4 + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 1.4 No use case / repository calls | 🤖 Check 5 + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
+| 1.3 Never calls ViewModel directly | 🤖 Compose AST checker + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
+| 1.4 No use case / repository calls | 🤖 Compose AST checker + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 1.5 No business logic / data transformation | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 1.6 No hardcoded strings — uses `stringResource()` | 🤖 `check-localization-rules.sh` / `.cmd` | ✅ / ❌ | |
-| 1.7 No hardcoded colors — uses `LocalAppColors` | 🤖 Check 2 | ✅ / ❌ | |
+| 1.7 No hardcoded colors — uses `LocalAppColors` | 🤖 Compose AST checker | ✅ / ❌ | |
 
 ### Section 2 — Stateless / Stateful Pattern
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
 | 2.1 Screen split into `*Screen` + `*Content` pair | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 2.2 Only `*Screen` calls `hiltViewModel()` / `collectAsStateWithLifecycle()` | 🤖 Check 4 + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
+| 2.2 Only `*Screen` calls `hiltViewModel()` / `collectAsStateWithLifecycle()` | 🤖 Compose AST checker + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 2.3 UI tests target `*Content`, not `*Screen` | 🧠 Evaluator | ✅ / ❌ / ⏭ | |
 
 ### Section 3 — Test Tags
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 3.1 All interactive elements have `testTag` | 🤖 Check 3 + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
+| 3.1 All interactive elements have `testTag` | 🤖 Compose AST checker + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 3.2 Key content containers have `testTag` | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 3.3 `testTag` names are descriptive and stable | 🤖 Check 6 + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
+| 3.3 `testTag` names are descriptive and stable | 🤖 Compose AST checker + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 
 ### Section 4 — String Resources
 
@@ -135,8 +135,8 @@ For each rule, record how it was checked for **this change** and its outcome.
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 5.1 No `Color(0x...)` outside `AppColors.kt` | 🤖 Check 2a | ✅ / ❌ | |
-| 5.2 No named `Color.*` outside `AppColors.kt` | 🤖 Check 2b | ✅ / ❌ | |
+| 5.1 No `Color(0x...)` outside `AppColors.kt` | 🤖 Compose AST checker | ✅ / ❌ | |
+| 5.2 No named `Color.*` outside `AppColors.kt` | 🤖 Compose AST checker | ✅ / ❌ | |
 | 5.3 Colors accessed via `LocalAppColors.current.<token>` | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 5.4 Color tokens named by semantic purpose | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 5.5 New color added to both Light **and** Dark theme | 🤖 Script + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
@@ -161,7 +161,7 @@ For each rule, record how it was checked for **this change** and its outcome.
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 8.1 `LazyColumn` instead of `Column` + `forEach` | 🤖 Check 7 | ✅ / ❌ | |
+| 8.1 `LazyColumn` instead of `Column` + `forEach` | 🤖 Compose AST checker | ✅ / ❌ | |
 | 8.2 Stable parameter types to avoid recompositions | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 8.3 `key()` used in lazy lists with stable IDs | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 8.4 Lambdas passed as parameters, not created inline | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
@@ -193,9 +193,9 @@ For each rule, record how it was checked for **this change** and its outcome.
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 1.1 `Text()` uses `stringResource()` — no raw string literals | 🤖 Check 1 | ✅ / ❌ | |
-| 1.2 Composable params (`label=`, `placeholder=`, etc.) use `stringResource()` | 🤖 Check 2 | ✅ / ❌ | |
-| 1.3 Local UI label variables not assigned raw strings | 🤖 Check 3 | ✅ / ❌ | |
+| 1.1 `Text()` uses `stringResource()` — no raw string literals | 🤖 Localization AST checker | ✅ / ❌ | |
+| 1.2 Composable params (`label=`, `placeholder=`, etc.) use `stringResource()` | 🤖 Localization AST checker | ✅ / ❌ | |
+| 1.3 Local UI label variables not assigned raw strings | 🤖 Localization AST checker | ✅ / ❌ | |
 
 ### Section 2 — Where to Define Strings
 
@@ -227,8 +227,8 @@ For each rule, record how it was checked for **this change** and its outcome.
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 6.1 Non-text interactive elements have `contentDescription = stringResource(...)` | 🤖 Check 4 + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 6.2 `contentDescription` never `null` on interactive icons | 🤖 Check 4 | ✅ / ❌ | |
+| 6.1 Non-text interactive elements have `contentDescription = stringResource(...)` | 🤖 Localization AST checker + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
+| 6.2 `contentDescription` never `null` on interactive icons | 🤖 Localization AST checker | ✅ / ❌ | |
 
 ### Localization Rule Violations Detail
 
@@ -257,12 +257,12 @@ For each rule, record how it was checked for **this change** and its outcome.
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 1.1 No repository calls from UI | 🤖 §1a + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
+| 1.1 No repository calls from UI | 🤖 Architecture AST checker + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
 | 1.2 No business rules in UI | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 1.3 No API response parsing in UI | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 1.4 No DTO → domain mapping in UI | 🤖 §1b + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
-| 1.5 No direct data source / DAO access from UI | 🤖 §1c §1d | ✅ / ❌ / ⏭ | |
-| 1.6 No data-layer imports in UI | 🤖 §1a | ✅ / ❌ / ⏭ | |
+| 1.4 No DTO → domain mapping in UI | 🤖 Detekt `ForbiddenImport` + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
+| 1.5 No direct data source / DAO access from UI | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
+| 1.6 No data-layer imports in UI | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
 
 ### Section 2 — Presentation Layer (ViewModel)
 
@@ -272,27 +272,27 @@ For each rule, record how it was checked for **this change** and its outcome.
 | 2.2 Coordinates use cases — not repositories | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 2.3 Domain → UI mapping in Presentation only | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 | 2.4 Loading / success / error states all handled | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 2.5 One-off events via `Channel` / `SharedFlow` | 🤖 §5b + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
-| 2.6 No direct Retrofit / DAO calls in ViewModel | 🤖 §2a §2b §2c | ✅ / ❌ / ⏭ | |
+| 2.5 One-off events via `Channel` / `SharedFlow` | 🤖 Architecture AST checker + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
+| 2.6 No direct Retrofit / DAO calls in ViewModel | 🤖 Architecture AST checker + Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
 | 2.8 No heavy business logic in ViewModel | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 2.9 No data-layer implementation imports in ViewModel | 🤖 §2d | ✅ / ❌ / ⏭ | |
+| 2.9 No data-layer implementation imports in ViewModel | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
 
 ### Section 3 — Domain Layer
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 3.1 No Android framework imports in domain | 🤖 §3a §7a | ✅ / ❌ / ⏭ | |
-| 3.2 No UI imports in domain | 🤖 §3e | ✅ / ❌ / ⏭ | |
-| 3.3 No Retrofit imports in domain | 🤖 §3b | ✅ / ❌ / ⏭ | |
-| 3.4 No Room imports in domain | 🤖 §3c | ✅ / ❌ / ⏭ | |
-| 3.5 No data-layer imports in domain | 🤖 §3d | ✅ / ❌ / ⏭ | |
+| 3.1 No Android framework imports in domain | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
+| 3.2 No UI imports in domain | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
+| 3.3 No Retrofit imports in domain | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
+| 3.4 No Room imports in domain | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
+| 3.5 No data-layer imports in domain | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
 
 ### Section 4 — Data Layer
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 4.1 DTOs not exposed outside data layer | 🤖 §4a | ✅ / ❌ / ⏭ | |
-| 4.2 No `UiState` logic in data layer | 🤖 §4b | ✅ / ❌ / ⏭ | |
+| 4.1 DTOs not exposed outside data layer | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
+| 4.2 No `UiState` logic in data layer | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
 | 4.3 No navigation decisions in data layer | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 
 ### Section 5 — State Management
@@ -300,16 +300,16 @@ For each rule, record how it was checked for **this change** and its outcome.
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
 | 5.1 Single consolidated `UiState` per screen | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 5.3 No scattered boolean flags | 🤖 §5a + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 5.4 One-off events via `Channel` / `SharedFlow` | 🤖 §5b + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
+| 5.3 No scattered boolean flags | 🤖 Architecture AST checker + 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
+| 5.4 One-off events via `Channel` / `SharedFlow` | 🤖 Architecture AST checker + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
 
 ### Section 6 — Mapping Rules
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 6.1 DTO → Domain mapping in data layer only | 🤖 §6b + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
+| 6.1 DTO → Domain mapping in data layer only | 🤖 Detekt `ForbiddenImport` + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
 | 6.2 Domain → UI mapping in presentation only | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 6.3 No DTO → UI direct shortcut | 🤖 §6a | ✅ / ❌ / ⏭ | |
+| 6.3 No DTO → UI direct shortcut | 🤖 Detekt `ForbiddenImport` | ✅ / ❌ / ⏭ | |
 | 6.4 No API response objects passed to Compose | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 
 ### Section 7 — Dependency Injection
@@ -317,28 +317,28 @@ For each rule, record how it was checked for **this change** and its outcome.
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
 | 7.1 Hilt used for all DI | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 7.2 RepositoryImpl annotated `@Singleton` | 🤖 §7b | ✅ / ❌ / ⏭ | |
+| 7.2 RepositoryImpl annotated `@Singleton` | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
 | 7.3 ViewModel-scoped deps use `@ViewModelScoped` | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
-| 7.4 No `Context` injected into domain/data | 🤖 §7a | ✅ / ❌ / ⏭ | |
+| 7.4 No `Context` injected into domain/data | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
 
 ### Section 8 — Forbidden Patterns
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 8.1 No fully-qualified class names inline | 🤖 §8a | ✅ / ❌ | |
-| 8.2 ViewModel does not call Retrofit directly | 🤖 §8b + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
-| 8.3 No business rules inside Composable / Fragment | 🤖 §8c + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
-| 8.4 Every new ViewModel has a test file | 🤖 §8d | ✅ / ❌ | |
+| 8.1 No fully-qualified class names inline | 🤖 Architecture AST checker | ✅ / ❌ | |
+| 8.2 ViewModel does not call Retrofit directly | 🤖 Architecture AST checker + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
+| 8.3 No business rules inside Composable / Fragment | 🤖 Architecture AST checker + 🧠 Evaluator | ✅ / ❌ / ⏭ | |
+| 8.4 Every new ViewModel has a test file | 🤖 Architecture AST checker | ✅ / ❌ | |
 | 8.5 AI-generated code reviewed before merge | 👁️ Human | 👁️ Human | |
 
 ### Section 9 — Package Structure
 
 | Rule | How Checked | Status | Violations |
 |------|-------------|--------|------------|
-| 9.1 ViewModel files in `viewmodel/` folder | 🤖 §9a | ✅ / ❌ / ⏭ | |
-| 9.2 UseCase files in `usecase/` folder | 🤖 §9b | ✅ / ❌ / ⏭ | |
-| 9.3 RepositoryImpl in `data/repository/` | 🤖 §9c | ✅ / ❌ / ⏭ | |
-| 9.4 DTO→Domain mappers not in `domain/` | 🤖 §9d | ✅ / ❌ / ⏭ | |
+| 9.1 ViewModel files in `viewmodel/` folder | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
+| 9.2 UseCase files in `usecase/` folder | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
+| 9.3 RepositoryImpl in `data/repository/` | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
+| 9.4 DTO→Domain mappers not in `domain/` | 🤖 Architecture AST checker | ✅ / ❌ / ⏭ | |
 | 9.5 Domain→UI mappers in `ui/` layer | 🧠 Evaluator | ✅ / ❌ / 👁️ Human | |
 
 ### Architecture Rule Violations Detail
