@@ -93,7 +93,25 @@ bash harness/scripts/tests/rule-applicability-contract-test.sh
 **Must pass.** Ensures requirement artifacts carry all nine rule decisions and that the
 stage gate rejects incomplete matrices.
 
-### 10. Gate Failure Stop Contract
+### 10. Acceptance-Test Traceability Contract
+bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
+bash harness/scripts/tests/acceptance-test-traceability-contract-test.sh
+
+**Must pass** before a harness slice is marked tested or evaluated. It proves that
+each acceptance Test ID maps to one declared Kotlin test method, a suite-scoped Gradle
+or instrumented selector, its declared shared JSON scenario(s), and successful
+evidence.
+
+### 10a. Evaluation/Fix Lifecycle Contract
+bash harness/scripts/check-evaluation-fix-contract.sh "$FEATURE_DIR" --evaluation
+bash harness/scripts/tests/review-lifecycle-contract-test.sh
+
+**Must pass** whenever evaluator/fix workflows, review templates, or their artifact
+validators change. It rejects score/routing mismatches, contradictory successful
+evidence, and fix passes that advance beyond a blocked stage or leave review findings
+without in-report resolution status.
+
+### 10b. Gate Failure Stop Contract
 ```bash
 bash harness/scripts/tests/gate-failure-stop-contract-test.sh
 ```

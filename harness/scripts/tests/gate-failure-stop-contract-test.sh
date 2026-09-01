@@ -18,6 +18,17 @@ for workflow in harness-generator.md harness-fix.md; do
   fi
 done
 
+require_before() {
+  local workflow="$1"
+  local earlier="$2"
+  local later="$3"
+  local earlier_line later_line
+  earlier_line=$(grep -n -m 1 -F "$earlier" "$WORKFLOW_DIR/$workflow" | cut -d: -f1 || true)
+  later_line=$(grep -n -m 1 -F "$later" "$WORKFLOW_DIR/$workflow" | cut -d: -f1 || true)
+  [ -n "$earlier_line" ] && [ -n "$later_line" ] && [ "$earlier_line" -lt "$later_line" ] \
+    || fail_test "$workflow must place '$earlier' before '$later'"
+}
+
 rg -Fq 'Every required stage gate is a hard stop.' "$WORKFLOW_DIR/harness-generator.md" \
   || fail_test "generator workflow does not define hard-stop gate semantics"
 rg -Fq 'and stop the pipeline' "$WORKFLOW_DIR/harness-generator.md" \
@@ -26,5 +37,10 @@ rg -Fq 'Every required fix-mode gate is a hard stop.' "$WORKFLOW_DIR/harness-fix
   || fail_test "fix workflow does not define hard-stop gate semantics"
 rg -Fq 'keep the feature non-passing and stop the pipeline' "$WORKFLOW_DIR/harness-fix.md" \
   || fail_test "fix workflow does not stop after failed verification"
+
+require_before harness-generator.md "### Stage 4 — Test First" "### Stage 5 — Implement"
+require_before harness-generator.md "### Stage 5 — Implement" "### Stage 6 — Verify Tests"
+require_before harness-generator.md "check-acceptance-test-traceability.sh" "### Stage 7 — Code Quality Fix"
+require_before harness-fix.md "check-acceptance-test-traceability.sh" "### Fix-Stage 5 — Finalize"
 
 echo "PASS: failed generator and fix gates stop the pipeline."

@@ -23,7 +23,7 @@ be recorded as `⚠️ Blocked` or non-passing, and the workflow must stop befor
 
 ## 🔄 Stage Execution Pipeline
 
-> **Routing**: If the active feature's tracker status is `To be fixed`, **stop here** — this workflow does not apply. Instead, follow the **[harness-fix workflow](harness-fix.md)** in full. It runs the Fix Mode Pipeline (resolve every `code_review` / `test_review` finding and update the per-finding status inside those reports, then transition to `To be human reviewed`). Stages 1–8 below apply only when implementing a new slice (status `In Progress` / `Awaiting implementation approval`).
+> **Routing**: If the active feature's tracker status is `To be fixed`, **stop here** — this workflow does not apply. Instead, follow the **[harness-fix workflow](harness-fix.md)** in full. It runs the Fix Mode Pipeline (resolve every `code_review` / `test_review` finding and update the per-finding status inside those reports, then transition to `To be human reviewed`). Stages 1–9 below apply only when implementing a new slice (status `In Progress` / `Awaiting implementation approval`).
 
 ### Stage 1 — Orient
 Before making any changes or planning code, gather complete session and git context. Select the next task to implement.
@@ -51,29 +51,38 @@ Ensure that the existing codebase compiles and all tests pass before making any 
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Verify Baseline** stage status to completed (✅) with notes and current timestamp.
 *   **Objective**: Confirm the repository is in a perfectly stable, compilable, and green state. If the baseline is broken, stop and fix existing regressions first! Register status in `$FEATURE_DIR/summary_{feature_id}.md`.
 
-### Stage 4 — Implement
+### Stage 4 — Test First
+Write the selected slice's tests and shared scenarios before application implementation.
+*   **Action**:
+    1. **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Implement every selected `Acceptance Test Cases` row, including its named method and shared JSON scenario.
+    2. Run bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --test "$FEATURE_ID". It must confirm every Test ID names a real Kotlin test method, a suite-scoped Gradle selector, and each declared shared JSON scenario from that method.
+    3. Run each newly written selector and record its expected red output in the feature summary. The failure must identify unimplemented behavior; fixture, test-source syntax, or unavailable-environment failures block the pipeline. A test that passes before implementation must be strengthened.
+*   **Objective**: The approved acceptance contract is executable before implementation, with no untracked scenario or method gap.
+
+### Stage 5 — Implement
 Build out the selected feature across the necessary layers.
 *   **Action**:
     1. **INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Implement** stage status to completed (✅) with list of created/modified files.
 *   **Objective**: All layers successfully implemented, `./gradlew assembleDebug` compiles cleanly, UI changes conform to `docs/product/design_system.md` plus approved feature exceptions, and progress is logged in the summary.
 
-### Stage 5 — Test
+### Stage 6 — Verify Tests
 Verify the correctness of the implemented behavior visually and logically.
 *   **Action**:
-    1. **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Implement every `Acceptance Test Cases` row in the selected user story. The primary acceptance test must exercise the production entry point; an isolated helper or use-case test cannot substitute for user-visible or cross-layer behavior. Verify through the actual UI/API and meet code coverage targets (overall project **≥ 80%**, ViewModel & Use Case **≥ 90%**). Read the approved Rule Applicability decisions and preserve evidence for every `Required` row.
+    1. **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Execute and verify every `Acceptance Test Cases` row in the selected user story. The primary acceptance test must exercise the production entry point; an isolated helper or use-case test cannot substitute for user-visible or cross-layer behavior. Verify through the actual UI/API and meet code coverage targets (overall project **≥ 80%**, ViewModel & Use Case **≥ 90%**). Read the approved Rule Applicability decisions and preserve evidence for every `Required` row.
     2. Run the mechanical coverage gate after generating the Kover XML report: `./gradlew :app:koverXmlReportDebug` followed by `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml`.
     3. For every `platform_validation.real_boundary_test_ids` entry listed in the selected slice's `acceptance_test_ids`, run the declared instrumented test against the required runtime using the real shipped Android boundary. Do not replace it with a fake recognizer, JVM-only intent assertion, or manually emitted callback. If the emulator, device, model, locale, permission, or platform service is unavailable, let the command fail and record the gate as `Blocked`/`Revise`; do not mark it skipped or passing. A slice that does not own a declared real-boundary test validates the contract without being blocked on a later slice's unimplemented boundary.
     4. Run `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate --slice "$FEATURE_ID"` and attach its exit status and output to the feature evidence. The no-slice command remains mandatory during final feature evaluation after every boundary-owning slice is complete.
-    5. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Test** stage status to completed (✅) detailing coverage percentages, passed test counts, platform matrix results, and any blocked runtime explicitly.
+    5. Run bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --test "$FEATURE_ID" after test methods are implemented and before marking the slice tested.
+    6. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Verify Tests** stage status to completed (✅) detailing coverage percentages, passed test counts, platform matrix results, and any blocked runtime explicitly.
 *   **Objective**: All local tests pass cleanly, coverage targets are fully met, and verification evidence is documented in the summary.
 
-### Stage 6 — Code Quality Fix
+### Stage 7 — Code Quality Fix
 Run all static check suites, lint rules, and custom compliance rules, and resolve all violations.
 *   **Action**: **INVOKE** the `code-quality-fix` skill via the Skill tool (name: `code-quality-fix`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 *   **Objective**: Diagnose and resolve all formatting, quality, localization, and architectural style guidelines issues, logging check success in `$FEATURE_DIR/summary_{feature_id}.md`.
 
-### Stage 7 — Finalize & Exit
+### Stage 8 — Finalize & Exit
 Verify all acceptance criteria, update project state, commit, and prepare for handoff.
 
 > [!IMPORTANT]
@@ -92,7 +101,7 @@ Verify all acceptance criteria, update project state, commit, and prepare for ha
 >    *   A visual-verification owner cannot transition to `passing` unless `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"` exits `0`. This requires a non-empty screenshot and a `visual_evidence/reference-anchor-verification.md` row for every visual Test ID; the row must connect the approved reference to a visual bounds `testTag`, a runtime assertion, and a concrete measured relationship.
 
 *   **Action**:
-    1. Execute the verification gate (see Gate Check Policy above). Attach evidence to `feature_list.json`.
+    1. Execute the verification gate (see Gate Check Policy above). Attach evidence to `feature_list.json`, then run bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate "$FEATURE_ID". A slice cannot transition to `passing` unless the recorded evidence command is scoped to every declared acceptance test suite.
     2. Once verification passes and evidence is attached, update `$FEATURE_DIR/feature_list.json` and `$FEATURE_DIR/progress.md`.
     3. Update `docs/product/product.md` directly:
         *   Update the **Product Portfolio Summary** to reflect the delivered slice.
@@ -111,7 +120,7 @@ Verify all acceptance criteria, update project state, commit, and prepare for ha
     8. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Finalize & Exit** stage status to completed (✅), transition the selected slice summary to Complete, and document key outcomes, open items, and handoff decisions.
 *   **Objective**: Ensure all state updates are backed by mechanical, verifiable evidence. Leave the repository in a completely green, stable, and self-documenting state that a fresh session can immediately pick up and resume.
 
-### Stage 8 — Install App To Device
+### Stage 9 — Install App To Device
 Install the completed debug build to all connected devices and emulators as the final generator step.
 
 *   **Action**:

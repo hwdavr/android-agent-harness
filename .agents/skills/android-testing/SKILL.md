@@ -33,6 +33,19 @@ The article principle: write the failing test *before* touching the application 
 
 ## Execute
 
+### Test-First Authoring (before application implementation)
+
+When the active workflow places this skill before `android-implementation`, write every
+planned test and shared JSON scenario first. Run each new test through its exact
+selector and record its expected red result: the failure must demonstrate the
+unimplemented requirement, such as a missing production API or unmet assertion, not
+a fixture, test-source syntax, or environment problem. A new test that already
+passes must be strengthened until it proves the intended behavior.
+
+Do not treat a red test-first run as a passing verification result and do not record
+coverage at this point. Return to the workflow so `android-implementation` can make
+the declared test methods green.
+
 ### 1. Execute Planned Tests
 For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` entry in `$FEATURE_DIR/feature_list.json`. Read the approved Rule Applicability matrix. Every required Rule Applicability row must have test, static-check, or review evidence.
 
@@ -89,7 +102,7 @@ These rules apply to every test file regardless of layer:
   - ✅ `import io.mockk.mockk`, `import io.mockk.every`, `import io.mockk.verify`
 - **Imports sorted lexicographically** with no blank lines between entries
 
-### 6. Run and record results
+### 6. Verification pass (after implementation)
 ```bash
 ./gradlew testDebugUnitTest
 ./gradlew koverLog
@@ -100,6 +113,16 @@ If instrumented tests were added: run on an emulator (e.g. `ANDROID_SERIAL=emula
 
 Record every result number in the output report below. Do not summarize — copy actual pass/fail counts and coverage percentages verbatim from the tool output.
 
+For the harness workflow, after writing tests and before leaving the test-first stage,
+run the acceptance-test traceability checker in test mode:
+
+    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --test "$FEATURE_ID"
+
+The gate requires every selected acceptance Test ID to name a real Kotlin test method,
+a suite-scoped Gradle selector, and any declared shared JSON scenario to be referenced
+from the named method. During the post-implementation verification pass, run the same
+checker with --evaluate "$FEATURE_ID" after successful evidence is recorded.
+
 ---
 
 ## Output
@@ -107,13 +130,21 @@ Record every result number in the output report below. Do not summarize — copy
 New or updated test files.
 New or updated shared JSON scenarios in `sharedContracts/test-scenarios/`.
 
-Update `summary_{feature_id}.md` (or `summary_v<N>.md` depending on the active workflow): mark the Testing stage complete with test count and coverage.
+During test-first authoring, update the active summary with the declared methods,
+shared scenarios, exact selectors, and expected red output. During the post-
+implementation verification pass, record actual green test counts and coverage.
 
 ---
 
 ## Done When
 
-**This stage is complete when all of the following are true — all must be mechanically verifiable:**
+**Test-first authoring is complete when all of the following are true:**
+- [ ] Every planned test method and shared JSON scenario exists
+- [ ] Every new test has been run through its exact selector and its red result is recorded
+- [ ] Each red result identifies the missing behavior rather than a broken fixture or unavailable environment
+- [ ] Harness workflow: acceptance-test traceability gate passes for the selected slice
+
+**Post-implementation verification is complete when all of the following are true — all must be mechanically verifiable:**
 - [ ] `./gradlew testDebugUnitTest` — exit code 0
 - [ ] `./gradlew koverLog` — overall ≥ 80%, new classes ≥ 90%
 - [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — weighted line thresholds pass
@@ -121,13 +152,14 @@ Update `summary_{feature_id}.md` (or `summary_v<N>.md` depending on the active w
 - [ ] At least one integration test per new or changed API endpoint
 - [ ] Shared JSON scenarios used — no inline mock response data in test files
 - [ ] Instrumented tests pass (if added): `./gradlew connectedDebugAndroidTest`
+- [ ] Harness workflow: acceptance-test traceability gate passes in evaluation mode for the selected slice
 
 **APPROVED →** Return to the active workflow file and proceed to the next stage defined there.
 
 **REVISION REQUIRED →**
-- If `total_tests == 0` → return to the Testing stage, add missing tests
-- If coverage < 80% → return to the Testing stage, add missing unit tests
-- If test failures exist → fix the failing tests (which may require fixing application code in Stages 03–05)
-- If a compilation error was introduced → return to the stage that caused it (03 / 04 / 05)
+- If `total_tests == 0` → return to Test First, add missing tests
+- If coverage < 80% → return to Verification, add missing unit tests
+- If test failures exist → return to Implementation to fix the application root cause, then Verification
+- If a compilation error was introduced → return to the stage that caused it
 
 **Iteration cap:** 2 rounds of test revision. If still failing, surface the specific failure to the user.

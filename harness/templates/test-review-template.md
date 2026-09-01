@@ -43,9 +43,9 @@ triggers are absent.
 
 List every FR, AC, and documented edge case from the active specification and sprint contract.
 
-| Source ID | Required behavior | Test file + method | Production trigger exercised | Observable assertion | Evidence status | Result |
-|---|---|---|---|---|---|---|
-| FR-001 | | | | | | PASS / REVISION REQUIRED / N/A |
+| Source ID | Acceptance Test ID | Required behavior | Test file + method | Production trigger exercised | Observable assertion | Evidence status | Result |
+|---|---|---|---|---|---|---|---|
+| FR-001 | TC-US-1-01 | | | | | | PASS / REVISION REQUIRED / N/A |
 
 ## Test Quality Findings
 

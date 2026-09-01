@@ -66,9 +66,9 @@ To prevent LLM performance degradation and context dilution, context is loaded i
 
 | Layer | When to Load | Contents |
 |---|---|---|
-| **L1 — Always Loaded** | Every session start | `AGENTS.md` + `rules/android-architecture.md` + `rules/testing-strategy.md` |
-| **L2 — Phase-Triggered** | During active workflow stage | The exact skill(s) specified in the active stage's `Load` instruction (e.g. `android-implementation`, `ui-verification`) |
-| **L3 — On-Demand** | When specifically needed | Specific rules (`compose-rules.md`, `api-contract-rules.md`), `docs/knowledge/`, OpenAPI schemas |
+| **L1 — Always Loaded** | Every session start | `AGENTS.md` + `rules/android-architecture.md` + `rules/implementation-rules.md` + `rules/testing-strategy.md` |
+| **L2 — Phase-Triggered** | Per workflow stage | The active stage skill(s), plus the Rule Applicability template and conditional Android rules during requirements, planning, and review |
+| **L3 — On-Demand** | When specifically needed | `docs/knowledge/`, `sharedContracts/openapi.yaml`, feature evidence, and rule detail newly triggered by the approved applicability matrix |
 
 > **Rule:** Never preload all rules and skills upfront. Only load what the active stage requires.
 
@@ -83,7 +83,7 @@ Used for multi-slice, significant features requiring systematic requirement anal
    - Clarifies ambiguities and generates `spec.md` and `design.md`.
    - Decomposes requirements into vertical slices in `feature_list.json` and schedules a `sprint-contract.md`.
 2. **Generation (`.agents/workflows/harness-generator.md`)**
-   - Implements each vertical slice incrementally (Data → Domain → UI → Tests → Quality Gates).
+   - Implements each vertical slice incrementally (Data → Domain → UI), with test-first authoring, verification, and quality gates.
    - Validates each slice before advancing to the next.
 3. **Evaluation (`.agents/workflows/harness-evaluation.md`)**
    - Conducts independent code, test, visual, and architectural reviews against evaluation rubrics.
@@ -109,6 +109,10 @@ The harness includes validation scripts located in `harness/scripts/`:
 | `check-localization-rules.sh` | Detects hardcoded strings in UI composables |
 | `check-feature-lifecycle.sh` | Validates feature tracking state and artifact integrity |
 | `check-visual-evidence-contract.sh` | Enforces visual screenshot verification artifacts |
+| `check-acceptance-test-traceability.sh` | Verifies acceptance IDs map to real Kotlin methods, scenarios, scoped commands, and evidence |
+| `check-evaluation-fix-contract.sh` | Enforces deterministic evaluator scoring, evidence, and fix-stage routing |
+| `check-rules-matrix-contract.sh` | Validates rule-matrix rows, summaries, and scripted owners |
+| `kotlin_ast_checker.py` | Shared AST-backed Compose, localization, architecture, navigation, and assertion checks |
 | `check-test-assertions-quality.sh` | Ensures tests do not use shallow/envelope-only assertions |
 | `auto-harness-generator.sh` | Headless runner for automating multi-slice generation loops |
 
@@ -117,6 +121,9 @@ Run any check directly from your project root:
 bash harness/scripts/check-architecture-rules.sh
 bash harness/scripts/check-compose-rules.sh
 bash harness/scripts/check-localization-rules.sh
+bash harness/scripts/check-acceptance-test-traceability.sh <feature-dir> --evaluate
+bash harness/scripts/check-evaluation-fix-contract.sh <feature-dir> --evaluation
+bash harness/scripts/check-rules-matrix-contract.sh
 ```
 
 ---

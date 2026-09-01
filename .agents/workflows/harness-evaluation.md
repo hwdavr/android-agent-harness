@@ -23,6 +23,13 @@ description: You are a senior Android developer running an independent code and 
 When a feature is submitted for review, execute these steps in order:
 
 ### Stage 1: Read the Baselines
+
+Run the acceptance-test traceability validator in evaluation mode before review work.
+It must prove every acceptance Test ID maps to a real Kotlin method, a suite-scoped
+command, any declared shared scenario, and successful evidence:
+
+    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
+
 Read the active feature specification and independently reconcile its complete Rule
 Applicability matrix against the submitted diff. Missing rows, triggered Not applicable
 decisions, and unapproved exceptions are review failures.
@@ -64,6 +71,16 @@ The code review report must include the Rule Applicability Reconciliation table.
 ---
 
 ### Stage 5: Quality Assessment ⛔ STOP
+
+After recording the score-based tracker transition, run the evaluation/fix lifecycle
+contract as a hard gate:
+
+    bash harness/scripts/check-evaluation-fix-contract.sh "$FEATURE_DIR" --evaluation
+
+Do not claim an evaluation pass if this command rejects the arithmetic score,
+contradictory evidence, acceptance traceability, hard-gate routing, or required
+review artifacts.
+
 The Evaluator's primary deliverable is the final quality assessment report.
 
 *   **`evaluator-rubric.md`**: Generated strictly by following the structure defined in the **[`evaluator-rubric-template.md`](../../harness/templates/evaluator-rubric-template.md)**.

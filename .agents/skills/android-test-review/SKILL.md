@@ -33,6 +33,12 @@ absent; an unsupported decision is **REVISION REQUIRED**.
 
 ### B1. Establish review scope and evidence provenance
 
+For harness evaluation, run the acceptance-test traceability validator in evaluation
+mode before accepting the review. It must prove each acceptance Test ID maps to a real
+Kotlin method, a suite-scoped command, its declared scenario, and successful evidence:
+
+    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
+
 1. Record the current commit, changed files, selected feature/slice, and the source paths used for review.
 2. For every recorded test or coverage result, capture the command, exit code, timestamp, commit (when available), and whether it was:
    - **Independently executed** during this review;

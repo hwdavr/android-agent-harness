@@ -5,6 +5,7 @@
     "single_active_feature": true,
     "passing_requires_evidence": true,
     "passing_requires_acceptance_test_evidence": true,
+    "passing_requires_noncontradictory_evidence": true,
     "do_not_skip_verification": true
   },
   "status_legend": {

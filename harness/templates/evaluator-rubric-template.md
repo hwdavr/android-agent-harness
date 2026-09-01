@@ -13,7 +13,13 @@ Use this rubric after implementation and before final acceptance.
 | Code & Test Review | Do the code quality checks (Ktlint, Detekt, Lint) and comprehensive test reviews pass? |  |  |
 | Rule Applicability | Does every approved rule decision have diff-trigger reconciliation and evidence in both review reports? |  |  |
 
-### Overall: 5.0 / 5
+### Overall: <arithmetic mean of the eight category scores, rounded to one decimal> / 5
+
+The eight category scores are the machine-checkable source of the overall score. Use
+their arithmetic mean, rounded to one decimal place; do not choose an independent
+overall score. A perfect 5.0 / 5 requires an Accept verdict and routes the tracker
+to To be human reviewed. Any lower score requires Revise or Block and routes the
+tracker to To be fixed.
 
 ### Platform Hard Gate
 
@@ -53,6 +59,17 @@ If any required answer is `No`, the evaluator MUST score `Verification` below `5
 | session-handoff.md | Yes | Complete | Full handoff with decisions and files modified |
 | clean-state-checklist.md | Yes | Complete | 30 check items across 7 categories |
 | evaluator-rubric.md | Yes | Complete | This file |
+
+### Evidence Contract
+
+Before changing the tracker status, run:
+
+```bash
+bash harness/scripts/check-evaluation-fix-contract.sh "$FEATURE_DIR" --evaluation
+```
+
+This hard gate verifies arithmetic score routing, successful non-contradictory
+evidence, acceptance-test traceability, and the required review artifacts.
 
 
 ## Verdict

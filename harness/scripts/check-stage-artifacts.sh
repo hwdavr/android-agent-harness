@@ -168,6 +168,7 @@ case "$WORKFLOW/$STAGE" in
       echo "FAIL: sprint contract acceptance tests must use the required traceability table." >&2
       exit 1
     fi
+    bash "$SCRIPT_DIR/check-acceptance-test-traceability.sh" "$DOCS_DIR" --planning
     if ! grep -q "## Spec Coverage Matrix" "$DOCS_DIR/sprint-contract.md"; then
       echo "FAIL: sprint contract has no required Spec Coverage Matrix." >&2
       exit 1

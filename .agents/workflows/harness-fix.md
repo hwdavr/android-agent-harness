@@ -87,6 +87,12 @@ Never introduce `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disa
 *   **Objective**: Every `code_review` and `test_review` finding has a root-cause fix **and** an in-report status line; no suppressions.
 
 ### Fix-Stage 4 — Re-verify
+Before recording the fix pass, run the acceptance-test traceability validator in
+evaluation mode. It must prove every acceptance Test ID still maps to a real Kotlin
+method, a suite-scoped command, its declared scenario, and successful evidence:
+
+    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
+
 *   **Action**:
     1. Re-run, **one by one**, every verification command listed in `$FEATURE_DIR/sprint-contract.md` Acceptance Test Cases. If any command fails, record its command, exit status, and raw output; keep the feature non-passing and stop the pipeline.
     2. Re-run the global quality gates: `./gradlew ktlintCheck`, `./gradlew detekt`, `./gradlew lint`, and `./gradlew koverLog` (coverage ≥ 80% overall; ≥ 90% for ViewModel & Use Case).
@@ -99,6 +105,14 @@ Never introduce `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disa
 *   **Objective**: All acceptance-test commands and quality gates pass with evidence attached; report statuses are consistent with re-verification results.
 
 ### Fix-Stage 5 — Finalize & Exit
+Before transitioning the tracker, run the evaluation/fix lifecycle contract:
+
+    bash harness/scripts/check-evaluation-fix-contract.sh "$FEATURE_DIR" --fix
+
+This hard gate rejects blocked or incomplete Fix-Stage rows, unresolved or stale
+review verdicts, missing in-report statuses, contradictory successful evidence, and
+acceptance Test IDs without successful evidence.
+
 *   **Action**:
     1. Finalize the in-report status updates in `$FEATURE_DIR/code_review_{feature_id}.md` (per-finding lines + the `## Verdict` `Fix Pass` line) and `$FEATURE_DIR/test_review_{feature_id}.md` (`Fix Status` column + `## Fix Pass Summary`).
     2. Update `$FEATURE_DIR/progress.md` and `$FEATURE_DIR/feature_list.json` evidence.
