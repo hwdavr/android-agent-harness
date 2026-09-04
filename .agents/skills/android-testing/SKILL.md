@@ -47,7 +47,7 @@ coverage at this point. Return to the workflow so `android-implementation` can m
 the declared test methods green.
 
 ### 1. Execute Planned Tests
-For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` entry in `$FEATURE_DIR/feature_list.json`. Read the approved Rule Applicability matrix. Every required Rule Applicability row must have test, static-check, or review evidence.
+For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When `production_journey.required` is `true`, implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the approved Rule Applicability matrix. Every required Rule Applicability row must have test, static-check, or review evidence.
 
 ### 2. Unit tests (`app/src/test/`)
 Write unit tests for all new or modified:
@@ -86,8 +86,8 @@ Write instrumented tests only when Android runtime or real UI rendering is requi
 
 Rules:
 - Target device selection: Use an Android emulator for instrumented UI tests (e.g. `ANDROID_SERIAL=emulator-5554`). Only when an emulator is missing/not connected, use a connected physical device.
-- Use `createComposeRule()` — **not** `createAndroidComposeRule` unless Activity is strictly required
-- Test the stateless `Content` Composable — not the Hilt-wired `Screen` wrapper
+- Use `createComposeRule()` for isolated rendering and callback tests. Use `createAndroidComposeRule` or a production Activity when the Activity, navigation graph, `SavedStateHandle`, destination lifecycle, or post-return state is part of the declared journey.
+- Test the stateless `Content` Composable for isolated rendering, but do not use a `Content`-only test as evidence for a required production journey. Journey tests must mount the production entry point and use real UI semantics/test tags across the return boundary.
 - Do not use `Thread.sleep` — use `waitUntil` or `waitForIdle`
 - One main business scenario per test
 
@@ -120,8 +120,12 @@ run the acceptance-test traceability checker in test mode:
 
 The gate requires every selected acceptance Test ID to name a real Kotlin test method,
 a suite-scoped Gradle selector, and any declared shared JSON scenario to be referenced
-from the named method. During the post-implementation verification pass, run the same
-checker with --evaluate "$FEATURE_ID" after successful evidence is recorded.
+from the named method. For a required production journey, also run
+`bash harness/scripts/check-journey-test-contract.sh` with the planned test file,
+method, and production entry point; the source checker must find the real graph,
+gestures, return boundary, and visible post-return assertion. During the
+post-implementation verification pass, run the same checkers with `--evaluate`
+`"$FEATURE_ID"` after successful evidence is recorded.
 
 ---
 

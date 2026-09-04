@@ -56,6 +56,24 @@ N/A — no API when no shared contract applies. The named Kotlin source method m
 real, and the exact command must select the declared Gradle suite or instrumented
 runner rather than the whole project without scope.
 
+Before finalizing the acceptance table, classify every slice in the
+`Production Journey Planning Contract` section of the sprint contract and mirror
+the decision in a `production_journey` object in `feature_list.json`. Set
+`production_journey.required` to `true` when any acceptance criterion crosses a
+production destination, navigation graph, back stack, `SavedStateHandle`,
+destination recreation, or post-return persistence boundary. A required journey
+must name one primary acceptance-test ID, the production entry point, an
+`app/src/androidTest/` test file and method, real UI actions, the return boundary,
+and the visible assertion made after returning. Set it to `false` only with a
+feature-specific reason and null/empty journey details.
+
+When `NAV` is `Required`, at least one slice must require a production journey.
+Any acceptance-test row whose setup or assertions mention navigation, a picker,
+saved state, a back stack, a destination, re-entry, or post-return behavior must
+be assigned to a journey-required slice and planned at the `Instrumented UI`
+layer. This is the planning signal that tells the generator to create a journey
+test; an isolated ViewModel or `*Content` test remains supplemental evidence.
+
 Do not let one AC bundle multiple named outcomes — split a multi-outcome AC so each outcome has its own test. A fallback, error, boundary, or compatibility path promised by an FR needs its own AC and test, not a secondary assertion inside the happy-path test.
 
 **Each user story MUST have a unique ID** (e.g. `US-1`, `US-2`, `US-3`). This ID is the cross-reference key used in `feature_list.json` to enforce a 1:1 mapping between user stories and feature slices.
@@ -97,6 +115,7 @@ For each slice, you must populate the `features` list in the `feature_list.json`
 - **`user_visible_behavior`**: A clear explanation of what observable UI elements, texts, behavior, or default flows are affected by this task.
 - **`affects_ui`**: Boolean. `true` if the slice adds, removes, or modifies any Composable, screen layout, or visible UI state. It always triggers UI-focused automated acceptance testing and `android-code-review` SKILL.md §4 during harness-evaluation. It does not, by itself, require a screenshot gate. When `false`, the slice is treated as a non-UI change.
 - **`requires_visual_verification`**: Boolean. Set this to `true` only for the final user story that makes the completed visual flow reachable and reviewable. Set it to `false` for intermediate UI slices, including a slice that changes Composables but has no standalone production entry point. A `true` owner MUST include the required `TC-US-*-VIS` rows and state-verifying screenshot commands; `false` slices require automated UI/integration proof for their acceptance criteria but no screenshot gate.
+- **`production_journey`**: Object mirrored in the sprint contract's Production Journey Planning Contract. It contains `required` (boolean), a feature-specific `reason`, and, when required, the primary `acceptance_test_id`, `production_entry_point`, `test_file`, `test_method`, `user_actions`, `return_boundary`, and `post_return_assertion`. A required journey must target `app/src/androidTest/`; a non-required journey uses null/empty details.
 - **`status`**: The progress status (`not_started`, `in_progress`, `blocked`, or `passing`).
 - **`verification`**: An array of specific, step-by-step proof required for that feature. A high-quality verification is defined as a set of instrumented tests or integration tests that can be executed directly in the shell to provide PASS or FAIL results. The visual-verification owner MUST also include every state-verifying screenshot command referenced by its `TC-US-*-VIS` Test IDs. A bare `adb exec-out screencap` command is not sufficient evidence because it can capture an unrelated screen.
 - **`evidence`**: Terminal output, test reports, or screenshots verifying task completion.
@@ -117,6 +136,7 @@ Before finalizing, verify the bidirectional mapping is complete:
 7. **`requires_visual_verification` ↔ `TC-US-*-VIS` consistency**: For every feature with `"requires_visual_verification": true`, the matching `US-*` user story in `sprint-contract.md` MUST contain the visual-state rows needed to assess the completed flow, and each row's state-verifying `Exact command` MUST appear verbatim in the feature's `verification` array. A feature with `"requires_visual_verification": false` MUST contain no `TC-US-*-VIS` row. `affects_ui` alone does not require a screenshot gate.
 8. **One visual-verification owner**: If the planned feature contains UI changes, select exactly one final, user-reachable slice as the visual-verification owner. Its acceptance tests must navigate through the completed production flow before capturing. Do not attach screenshot rows to intermediate slices merely because they change a Composable.
 9. **No horizontal slices**: Every feature passes the Vertical Slice Test from step 3 — it has an observable, already-reachable entry point when shipped alone. A slice whose only consumer is a later slice's UI is horizontal and must be merged into that later slice.
+10. **Production journey ownership**: Every feature has a matching production-journey classification in both planning artifacts. `NAV: Required` has at least one required journey, every navigation/lifecycle acceptance row is planned as `Instrumented UI`, and each required journey names the production entry point, real actions, return boundary, visible post-return assertion, and its acceptance-test owner. Run `bash harness/scripts/check-journey-planning-contract.sh "$FEATURE_DIR"` before requesting implementation approval.
 
 If a user story is too large to fit into a single feature slice, **split the user story** in the sprint contract first, then create the corresponding feature. If a feature slice doesn't map to any user story, either the sprint contract is missing a story or the slice should be merged into another feature.
 
@@ -160,6 +180,7 @@ The user must confirm:
 - [ ] Every acceptance-test row declares a shared scenario path or N/A — no API, a real Kotlin method, and a suite-scoped Gradle or instrumented selector
 - [ ] Every named outcome in each FR (happy path, fallback, error, boundary, compatibility, graceful fallback) has its own AC and test — no FR is covered by a happy-path test alone when it promises more
 - [ ] Every cross-layer or user-visible AC has an integration or instrumented acceptance test that exercises the production entry point
+- [ ] Every slice has a mirrored `production_journey` classification; navigation/lifecycle acceptance rows have a named production-entry instrumented journey with real actions, a return boundary, and a visible post-return assertion
 - [ ] Every sprint contract user story maps to exactly one feature list item (1:1, no orphans on either side)
 - [ ] Every source `FR-*` and `AC-*` appears in the Spec Coverage Matrix with a primary slice and acceptance-test owner
 - [ ] All edge cases, non-functional constraints, verification expectations, and changed design requirements are either mapped to a slice or explicitly approved as out of scope

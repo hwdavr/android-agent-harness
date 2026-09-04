@@ -30,6 +30,17 @@
       "user_visible_behavior": "A user can click + floating action button at home to create a new item.",
       "affects_ui": true,
       "requires_visual_verification": true,
+      "production_journey": {
+        "required": true,
+        "reason": "This slice crosses the production conversation destination and returns to the originating screen.",
+        "acceptance_test_id": "TC-US-1-01",
+        "production_entry_point": "AppNavigationHost",
+        "test_file": "app/src/androidTest/java/replace/ConversationJourneyTest.kt",
+        "test_method": "sendingMessageReturnsToConversation",
+        "user_actions": "Open the destination through the visible CTA and submit the action.",
+        "return_boundary": "The destination completes and returns to the originating screen.",
+        "post_return_assertion": "The resulting item is visible in the originating screen."
+      },
       "status": "not_started",
       "acceptance_test_ids": [
         "TC-US-1-01",
@@ -52,6 +63,17 @@
       "user_visible_behavior": "A user can submit a message and see it appear in the active thread.",
       "affects_ui": true,
       "requires_visual_verification": false,
+      "production_journey": {
+        "required": false,
+        "reason": "This slice has no navigation, saved-state, destination-recreation, or post-return persistence boundary.",
+        "acceptance_test_id": null,
+        "production_entry_point": null,
+        "test_file": null,
+        "test_method": null,
+        "user_actions": null,
+        "return_boundary": null,
+        "post_return_assertion": null
+      },
       "status": "not_started",
       "acceptance_test_ids": [
         "TC-US-2-01"
@@ -72,6 +94,17 @@
       "user_visible_behavior": "A user sees previously created conversations after restarting the app.",
       "affects_ui": false,
       "requires_visual_verification": false,
+      "production_journey": {
+        "required": false,
+        "reason": "This slice has no navigation, saved-state, destination-recreation, or post-return persistence boundary.",
+        "acceptance_test_id": null,
+        "production_entry_point": null,
+        "test_file": null,
+        "test_method": null,
+        "user_actions": null,
+        "return_boundary": null,
+        "post_return_assertion": null
+      },
       "status": "not_started",
       "acceptance_test_ids": [
         "TC-US-3-01"

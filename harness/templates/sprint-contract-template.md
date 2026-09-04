@@ -51,6 +51,27 @@ Copy the approved nine-row matrix from the requirement artifact. The decision mu
 
 ---
 
+## Production Journey Planning Contract *(required)*
+
+Classify every user-story slice explicitly. Set **Yes** when any acceptance
+criterion crosses a destination, navigation graph, back stack, saved state,
+destination recreation, or post-return persistence boundary. `NAV: Required` in
+the Rule Applicability Contract must have at least one **Yes** row. A **Yes** row
+must name the production entry point, the planned instrumented test method, the
+real UI actions, the return boundary, and the visible post-return assertion.
+Use **No** with a feature-specific reason when the slice has no such boundary.
+The same contract is mirrored by `production_journey` in `feature_list.json`.
+
+| User story | Journey required | Journey reason | Journey acceptance test ID | Production entry point | Planned test file and method | User actions | Return boundary | Post-return assertion |
+|---|---|---|---|---|---|---|---|---|
+| US-1 | Yes / No | `{why this slice does or does not cross a production boundary}` | `TC-US-1-01` or `N/A` | `AppNavigationHost` or `N/A` | `app/src/androidTest/.../[Class]Test.kt#[method]` or `N/A` | `{real UI gestures}` | `{back/pop/destination-selection boundary}` or `N/A` | `{visible result after return}` or `N/A` |
+
+The planning gate validates that every feature has a classification, that every
+**Yes** row maps to an instrumented acceptance-test row, and that navigation or
+lifecycle signals in an acceptance test cannot be left without a journey owner.
+
+---
+
 ## Spec Coverage Matrix *(required)*
 
 Map every `FR-*` and `AC-*` from the approved source spec. Also map each edge case, non-functional constraint, verification expectation, and changed design requirement to a user story, or record the approved out-of-scope reason. Preserve source IDs verbatim.

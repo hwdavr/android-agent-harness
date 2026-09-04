@@ -3,7 +3,7 @@
 #
 # Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> [artifact-directory]
 #   workflow: feature-delivery | bug-fixing | api-contract-update | harness-planning | create-ui-and-verify
-#   stage:    requirement-analysis | implementation-plan | feature-specification | slice-planning | ui-verification
+#   stage:    requirement-analysis | implementation-plan | feature-specification | slice-planning | testing | ui-verification
 #
 # Exits 0 if required artifacts are present, 1 otherwise.
 # Designed to run on macOS /bin/bash (Bash 3.2) — no mapfile, no arrays with set -u.
@@ -225,6 +225,7 @@ case "$WORKFLOW/$STAGE" in
       exit 1
     fi
     bash "$SCRIPT_DIR/check-acceptance-test-traceability.sh" "$DOCS_DIR" --planning
+    bash "$SCRIPT_DIR/check-journey-planning-contract.sh" "$DOCS_DIR"
     if ! grep -q "## Spec Coverage Matrix" "$DOCS_DIR/sprint-contract.md"; then
       echo "FAIL: sprint contract has no required Spec Coverage Matrix." >&2
       exit 1

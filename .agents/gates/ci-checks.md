@@ -102,6 +102,17 @@ each acceptance Test ID maps to one declared Kotlin test method, a suite-scoped 
 or instrumented selector, its declared shared JSON scenario(s), and successful
 evidence.
 
+### 10.1 Production Journey Planning Contract
+```bash
+bash harness/scripts/check-journey-planning-contract.sh "$FEATURE_DIR"
+bash harness/scripts/tests/journey-planning-contract-test.sh
+```
+**Must pass during harness planning.** It requires every slice to classify whether
+it crosses a production navigation/lifecycle boundary, mirrors that decision in
+`feature_list.json`, and assigns navigation/lifecycle acceptance rows to a named
+production-entry instrumented journey with real actions, a return boundary, and a
+visible post-return assertion.
+
 ### 10a. Evaluation/Fix Lifecycle Contract
 bash harness/scripts/check-evaluation-fix-contract.sh "$FEATURE_DIR" --evaluation
 bash harness/scripts/tests/review-lifecycle-contract-test.sh
