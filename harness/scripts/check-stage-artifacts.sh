@@ -11,6 +11,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${HARNESS_PROJECT_ROOT:-$(pwd)}"
 
 WORKFLOW="${1:-}"
 STAGE="${2:-}"
@@ -92,6 +93,50 @@ require_rule_applicability() {
   echo "OK: $artifact has a complete rule-applicability contract."
 }
 
+require_production_journey() {
+  local artifact="$1"
+  local boundary
+  local test_file
+  local test_method
+  local production_entry
+  local return_boundary
+  local post_return_assertion
+  local test_path
+
+  boundary=$(awk '
+    /^## Production Journey Boundary[[:space:]]*$/ { in_boundary = 1; next }
+    in_boundary && /^## / { exit }
+    in_boundary { print }
+  ' "$artifact")
+  if [ -z "$boundary" ]; then
+    echo "FAIL: $artifact requires a '## Production Journey Boundary' section for NAV-scoped testing." >&2
+    exit 1
+  fi
+
+  test_file=$(printf '%s\n' "$boundary" | sed -n 's/^[[:space:]]*-[[:space:]]*Test file:[[:space:]]*`\([^`]*\)`.*/\1/p' | head -n 1)
+  test_method=$(printf '%s\n' "$boundary" | sed -n 's/^[[:space:]]*-[[:space:]]*Test method:[[:space:]]*`\([^`]*\)`.*/\1/p' | head -n 1)
+  production_entry=$(printf '%s\n' "$boundary" | sed -n 's/^[[:space:]]*-[[:space:]]*Production entry point:[[:space:]]*`\([^`]*\)`.*/\1/p' | head -n 1)
+  return_boundary=$(printf '%s\n' "$boundary" | sed -n 's/^[[:space:]]*-[[:space:]]*Return boundary:[[:space:]]*\(.*\)$/\1/p' | head -n 1)
+  post_return_assertion=$(printf '%s\n' "$boundary" | sed -n 's/^[[:space:]]*-[[:space:]]*Post-return assertion:[[:space:]]*\(.*\)$/\1/p' | head -n 1)
+
+  if [ -z "$test_file" ] || [ -z "$test_method" ] || [ -z "$production_entry" ] || [ -z "$return_boundary" ] || [ -z "$post_return_assertion" ]; then
+    echo "FAIL: $artifact has an incomplete '## Production Journey Boundary' declaration." >&2
+    echo "FAIL: declare Test file, Test method, Production entry point, Return boundary, and Post-return assertion." >&2
+    exit 1
+  fi
+
+  case "$test_file" in
+    /*) test_path="$test_file" ;;
+    *) test_path="$PROJECT_ROOT/$test_file" ;;
+  esac
+
+  bash "$SCRIPT_DIR/check-journey-test-contract.sh" \
+    --project-root "$PROJECT_ROOT" \
+    --test-file "$test_path" \
+    --test-method "$test_method" \
+    --production-entry "$production_entry"
+}
+
 latest_versioned_file() {
   local pattern="$1"
   find "$DOCS_DIR" -maxdepth 1 -name "$pattern" -print 2>/dev/null |
@@ -124,6 +169,17 @@ case "$WORKFLOW/$STAGE" in
   bug-fixing/implementation-plan)
     require_file "implementation_plan_v*.md" "fix plan"
     warn_if_missing "test_plan_v*.md" "test plan (required by feature-delivery, optional for bug-fixing)"
+    ;;
+  bug-fixing/testing)
+    require_file "summary_v*.md" "stage progress tracker"
+    require_file "test_plan_v*.md" "test plan"
+    test_plan_artifact="$(latest_versioned_file "test_plan_v*.md")"
+    nav_row="$(grep -E "^[[:space:]]*\|[[:space:]]*NAV[[:space:]]*\|" "$test_plan_artifact" | head -n 1 || true)"
+    case "$nav_row" in
+      *"| Required |"*)
+        require_production_journey "$test_plan_artifact"
+        ;;
+    esac
     ;;
   api-contract-update/requirement-analysis)
     require_file "summary_v*.md" "stage progress tracker"
@@ -264,6 +320,7 @@ EOF
     echo "  feature-delivery/implementation-plan" >&2
     echo "  bug-fixing/requirement-analysis" >&2
     echo "  bug-fixing/implementation-plan" >&2
+    echo "  bug-fixing/testing" >&2
     echo "  api-contract-update/requirement-analysis" >&2
     echo "  api-contract-update/implementation-plan" >&2
     echo "  harness-planning/feature-specification" >&2

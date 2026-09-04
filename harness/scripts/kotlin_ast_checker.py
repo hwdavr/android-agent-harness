@@ -1320,6 +1320,12 @@ def build_parser() -> argparse.ArgumentParser:
     navigation = subparsers.add_parser("navigation")
     navigation.add_argument("--project-root", type=Path, default=None)
     navigation.add_argument("project_root_arg", nargs="?", type=Path)
+    journey = subparsers.add_parser("journey")
+    journey.add_argument("--test-file", type=Path, default=None)
+    journey.add_argument("--test-method", required=True)
+    journey.add_argument("--production-entry", required=True)
+    journey.add_argument("--project-root", type=Path, default=None)
+    journey.add_argument("test_file_arg", nargs="?", type=Path)
     assertions = subparsers.add_parser("assertions")
     assertions.add_argument("--test-directory", type=Path, default=None)
     assertions.add_argument("--project-root", type=Path, default=None)
@@ -1337,6 +1343,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return run_localization(args)
     if args.checker == "navigation":
         return run_navigation(args)
+    if args.checker == "journey":
+        return run_journey(args)
     if args.checker == "assertions":
         return run_assertions(args)
     raise AssertionError(f"Unknown checker: {args.checker}")
@@ -1751,6 +1759,154 @@ def run_navigation(args: argparse.Namespace) -> int:
 
     visit_rule(result, "Production navigation test mounting", check_navigation_tests)
     return finish(result, "navigation")
+
+
+def run_journey(args: argparse.Namespace) -> int:
+    """Check that declared navigation regressions use a production-entry journey."""
+
+    project_root = (args.project_root or repository_root()).resolve()
+    test_argument = args.test_file or args.test_file_arg
+    if test_argument is None:
+        test_path = project_root / "app" / "src" / "androidTest"
+    elif test_argument.is_absolute():
+        test_path = test_argument.resolve()
+    else:
+        test_path = (project_root / test_argument).resolve()
+
+    result = Result(project_root)
+    print("\n======================================================")
+    print("  Production Journey Contract Checker")
+    print("======================================================")
+    print(f"  Project root: {project_root}")
+    print(f"  Test file: {test_path}")
+    print(f"  Test method: {args.test_method}")
+    print(f"  Production entry: {args.production_entry}")
+
+    test_root = project_root / "app" / "src" / "androidTest"
+    if not path_is_under(test_path, test_root):
+        result.add_path(test_path, 1, "journey test must live under app/src/androidTest")
+    if not test_path.name.endswith("Test.kt"):
+        result.add_path(test_path, 1, "journey test file must end with Test.kt")
+    if not test_path.is_file():
+        result.add_path(test_path, 1, "journey test file is missing")
+        print_rule("Production journey contract", result.violations)
+        return finish(result, "production journey")
+
+    try:
+        test_ast = KotlinFile(test_path)
+    except (OSError, UnicodeError) as error:
+        result.add_path(test_path, 1, f"journey test file cannot be parsed: {error}")
+        print_rule("Production journey contract", result.violations)
+        return finish(result, "production journey")
+
+    target = next((function for function in test_ast.functions if function.name == args.test_method), None)
+    if target is None:
+        result.add_path(test_path, 1, f"journey test method '{args.test_method}' is missing")
+        print_rule("Production journey contract", result.violations)
+        return finish(result, "production journey")
+
+    target_line = test_ast.line(target.name_index)
+
+    def add_contract_violation(message: str, token_index: Optional[int] = None) -> None:
+        result.add_path(test_path, test_ast.line(token_index) if token_index is not None else target_line, message)
+
+    if "Test" not in target.annotations:
+        add_contract_violation(f"journey test method '{args.test_method}' must be annotated with @Test", target.name_index)
+
+    body_start = target.body_start
+    body_end = target.body_end
+    body_tokens = test_ast.tokens[body_start:body_end]
+    calls = sorted(function_calls(test_ast, target), key=lambda call: call.open_index)
+
+    def body_token_indices(text: str) -> list[int]:
+        return [
+            index
+            for index in range(body_start, min(body_end, len(test_ast.tokens)))
+            if test_ast.tokens[index].text == text
+        ]
+
+    set_content_indices = body_token_indices("setContent")
+    production_call_indices = [call.name_index for call in calls if call.name == args.production_entry]
+    production_entry_indices = body_token_indices(args.production_entry)
+    has_production_graph = any(
+        entry_index > set_content_index
+        for set_content_index in set_content_indices
+        for entry_index in production_call_indices + production_entry_indices
+    )
+
+    activity_rule_calls = [call for call in calls if call.name == "createAndroidComposeRule"]
+    has_declared_activity_entry = bool(activity_rule_calls) and any(
+        token.text == args.production_entry
+        for token in body_tokens
+        if token.is_identifier
+    )
+    if not has_production_graph and not has_declared_activity_entry:
+        add_contract_violation("journey test must render a production graph through setContent", target.name_index)
+
+    action_names = {
+        "performClick",
+        "performGesture",
+        "performKeyInput",
+        "performScrollTo",
+        "performTextClearance",
+        "performTextInput",
+        "performTextInputSelection",
+        "performTouchInput",
+    }
+    action_calls = [call for call in calls if call.name in action_names]
+    if not action_calls:
+        add_contract_violation("journey test must perform a real UI gesture", target.name_index)
+
+    return_names = {"navigateUp", "onBackPressed", "popBackStack", "pressBack"}
+    boundary_index: Optional[int] = None
+    if action_calls:
+        explicit_returns = [
+            call
+            for call in calls
+            if call.name in return_names and call.open_index > action_calls[0].open_index
+        ]
+        if explicit_returns:
+            boundary_index = explicit_returns[0].open_index
+        elif len(action_calls) >= 2:
+            # Selecting a picker item can pop the destination through production
+            # navigation without an explicit pressBack in the test body.
+            boundary_index = action_calls[1].open_index
+
+    if boundary_index is None:
+        add_contract_violation(
+            "journey test must prove a return boundary with back/pop or a second UI gesture",
+            action_calls[0].name_index if action_calls else target.name_index,
+        )
+    else:
+        finder_names = {
+            "onNode",
+            "onNodeWithContentDescription",
+            "onNodeWithText",
+            "onNodeWithTag",
+            "onRoot",
+        }
+        assertion_names = {
+            "assertExists",
+            "assertIsDisplayed",
+            "assertIsNotDisplayed",
+            "assertTextContains",
+            "assertTextEquals",
+        }
+        post_return_finders = [call for call in calls if call.name in finder_names and call.open_index > boundary_index]
+        post_return_assertions = [call for call in calls if call.name in assertion_names and call.open_index > boundary_index]
+        if not post_return_finders:
+            add_contract_violation("journey test must find a visible post-return UI result", target.name_index)
+        if not post_return_assertions:
+            add_contract_violation("journey test must assert the visible result after returning", target.name_index)
+        if post_return_finders and post_return_assertions and not any(
+            finder.open_index < assertion.open_index
+            for finder in post_return_finders
+            for assertion in post_return_assertions
+        ):
+            add_contract_violation("journey test must assert a post-return UI finder", post_return_assertions[0].name_index)
+
+    print_rule("Production journey contract", result.violations)
+    return finish(result, "production journey")
 
 
 def run_assertions(args: argparse.Namespace) -> int:

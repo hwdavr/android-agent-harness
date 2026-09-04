@@ -118,6 +118,16 @@ bash harness/scripts/tests/gate-failure-stop-contract-test.sh
 **Must pass.** Ensures generator and fix workflows stop immediately when a required gate
 fails or its prerequisite is unavailable.
 
+### 10c. Production Journey Contract
+```bash
+bash harness/scripts/tests/journey-test-contract-test.sh
+```
+**Must pass** for navigation, saved-state, back-stack, destination-recreation, and
+post-return persistence regressions. It rejects direct-ViewModel or Content-only tests
+when they are declared as production journey evidence and verifies that the stage gate
+requires a named production-entry test, real UI gesture, return boundary, and visible
+post-return assertion.
+
 ### 11. Platform Capability Evidence (when a platform boundary is in scope)
 ```bash
 # Generator: validates the selected slice's platform-boundary ownership.

@@ -80,8 +80,16 @@ Gate: `./gradlew assembleDebug` passes, all affected layer rules satisfied.
 ### Stage 5 — Testing
 **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
+For navigation, saved-state, back-stack, destination-recreation, or post-return
+persistence defects, the test plan must include a `## Production Journey Boundary`
+section naming an instrumented test that mounts the production entry point, performs
+the real UI actions, crosses the return boundary, and asserts the visible result.
+Direct ViewModel or `*Content` tests are supplemental evidence only.
+
 Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with test count and coverage.
-Gate: tests pass, coverage targets met.
+Gate: tests pass, coverage targets met. If `NAV` is `Required`, run
+`bash harness/scripts/check-stage-artifacts.sh bug-fixing testing docs/current`; it
+must exit 0.
 
 ---
 

@@ -29,7 +29,8 @@ A Composable must NOT:
 Split screens into:
 
 ```kotlin
-// Stateful wrapper — wires ViewModel (tested via integration tests)
+// Stateful wrapper — wires ViewModel (tested through production-graph journeys
+// when navigation or lifecycle behavior is in scope)
 @Composable
 fun NoteDetailScreen(viewModel: NoteDetailViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,7 +48,10 @@ fun NoteDetailContent(
 ) { ... }
 ```
 
-Always test `NoteDetailContent` (stateless) — not `NoteDetailScreen` (stateful) — in UI tests.
+Test `NoteDetailContent` (stateless) in isolation for rendering and callback behavior.
+When navigation, destination lifecycle, `SavedStateHandle`, or post-return persistence
+is in scope, also test the stateful wrapper through the production Activity or
+navigation graph; a Content-only test cannot replace that journey.
 
 ---
 

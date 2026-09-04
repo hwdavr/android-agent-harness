@@ -36,6 +36,26 @@ Copy the approved nine-row matrix and identify the test or explicit feature-spec
 
 ---
 
+## Production Journey Boundary
+
+> **MANDATORY when `NAV` is `Required` for navigation, saved-state, back-stack,
+> destination-recreation, or post-return persistence behavior.** Name the real
+> instrumented journey that enters through the shipped Activity or navigation graph,
+> uses UI gestures, crosses the return boundary, and asserts the visible result.
+
+- Test file: `<path under app/src/androidTest/>`
+- Test method: `<named @Test method>`
+- Production entry point: `<Activity, AppNavigationHost, or production graph function>`
+- User actions: `<real UI gestures and stable test tags>`
+- Return boundary: `<back/pop/destination selection and resulting return>`
+- Post-return assertion: `<visible result asserted after returning>`
+
+The stage gate invokes `bash harness/scripts/check-journey-test-contract.sh` for the
+declared file and method. Direct ViewModel, internal UiState, manually invoked
+callback, and Content-only tests remain supplemental and do not satisfy this section.
+
+---
+
 ## Test Cases
 
 List every test case grouped by the class under test. Assign a short ID (e.g. `T1`) so cases can be referenced in reviews and PRs.

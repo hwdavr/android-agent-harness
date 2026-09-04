@@ -61,8 +61,8 @@ Use for:
 
 Rules:
 - Target device selection: Use an emulator for instrumented UI tests (e.g. `ANDROID_SERIAL=emulator-5554`). Only when an emulator is missing/not connected, use a connected physical device.
-- Use `createComposeRule()` — not `createAndroidComposeRule` unless Activity is strictly required
-- Test the stateless Composable (`Content`) — not the Hilt-wired screen wrapper
+- Use `createComposeRule()` for isolated rendering tests. Use `createAndroidComposeRule` or a production Activity when the Activity, navigation graph, `SavedStateHandle`, or destination lifecycle is part of the behavior under test.
+- Test the stateless Composable (`Content`) for isolated rendering and callback behavior; stateful navigation behavior must also be covered through the production entry point.
 - Do not use `Thread.sleep` — use `waitUntil` or `waitForIdle`
 - One main business scenario per test
 - Do not use real production backend — use mocked data
@@ -71,6 +71,23 @@ Platform-bound exception:
 - When a feature depends on an Android SDK, device, hardware, OS service, model, locale, or permission contract, add a real instrumented boundary test in addition to deterministic JVM/fake tests.
 - The real test must exercise the shipped platform adapter with a deterministic local fixture and assert an observable platform result. A fake adapter, fake recognizer, JVM-only intent assertion, or manually emitted callback is supplemental evidence only.
 - If the required runtime environment is unavailable, the test must fail or report `Blocked`/`Revise`; do not use a skip, warning, or missing result as passing evidence.
+
+#### Production-entry journey requirement
+
+For defects involving navigation, saved-state, back-stack, destination recreation, or
+post-return persistence:
+
+- Add a named instrumented journey test that mounts the production Activity or
+  navigation graph, performs real UI gestures through stable semantics/test tags,
+  crosses the return boundary, and asserts the visible result after returning.
+- A picker selection that pops back to the editor is a valid return boundary when
+  the test asserts the editor result after the pop.
+- Direct ViewModel calls, internal UiState mutation, manually invoked callbacks, and
+  rendering only a `*Content` composable are supplemental tests; they cannot be the
+  only evidence for this class of defect or be labeled as the journey itself.
+- The test plan must declare the boundary in a `## Production Journey Boundary`
+  section. The testing-stage artifact gate validates that declaration against the
+  named instrumented test.
 
 Dedicated Visual Verification tests (`*VisualFlowTest.kt`):
 - When a feature introduces or modifies UI screens/components that require visual verification (`requires_visual_verification: true`), write a dedicated visual flow instrumented test (or test methods) that exercises the active Composables in their critical visual states (e.g. default/content, alternative mode, expanded/fullscreen, empty/error).
