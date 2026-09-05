@@ -83,9 +83,10 @@ Update `docs/product/product.md` to reflect the newly shipped feature.
 1. Move the feature row(s) in the **Product Portfolio Summary** from `🔜 Next` / `📋 Planned` to `✅ Complete`.
 2. Add the feature to **Current Product Capabilities** with its delivered capabilities and any notable implementation notes.
 3. Remove the feature from the **Roadmap — Planned Features** section if it is fully delivered, or update its priority column to reflect remaining sub-features.
+4. Record execution metrics in the `## Observability & Execution Metrics` section of `docs/current/summary_v<N>.md` and verify with `bash harness/scripts/check-harness-metrics.sh --validate docs/current/summary_v<N>.md`.
 
-Output: `docs/product/product.md` updated with current shipped state.
-Gate: the file is saved and the feature no longer appears as Planned or Next for all delivered capabilities.
+Output: `docs/product/product.md` updated with current shipped state; `docs/current/summary_v<N>.md` updated with observability metrics.
+Gate: the file is saved, the feature no longer appears as Planned or Next for all delivered capabilities, and `check-harness-metrics.sh --validate` exits 0.
 
 ---
 

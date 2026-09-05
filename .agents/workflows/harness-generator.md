@@ -100,11 +100,12 @@ Update repository history, project task logs, and product documentation to refle
         *   If every feature in `$FEATURE_DIR/feature_list.json` is now `passing`, update the Harness Feature Tracker status to `To be reviewed` in place and update its date/notes (do not move or rename the workspace). **NEVER transition directly to `To be human reviewed`** — only the Evaluator agent (via `harness-evaluation`) is authorized to make that transition after scoring. Otherwise, keep the Harness Feature Tracker `In Progress` while slices remain.
         *   Run `bash harness/scripts/check-feature-lifecycle.sh` after the tracker update. Do not claim completion or commit if it fails.
     3. If the shipped slice has `production_journey.required: true`, register the journey in `harness/journey-registry.yaml` using the sprint-contract values. Run `bash harness/scripts/check-journey-registry.sh --validate` to confirm the entry is well-formed.
-    4. Commit only the **source code, test changes, and product documentation** for the implemented feature:
+    4. Populate the `## Observability & Execution Metrics` section directly in `$FEATURE_DIR/summary_{feature_id}.md` (recording model name, duration, files modified, commands executed, retries, and the embedded `json:metrics` block). Run `bash harness/scripts/check-harness-metrics.sh --validate "$FEATURE_DIR/summary_{feature_id}.md"` to verify metrics integrity.
+    5. Commit only the **source code, test changes, and product documentation** for the implemented feature:
         ```bash
         git commit -m "feat(<area>): <short description of implemented feature>"
         ```
-    5. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Update State** stage status to completed (✅), logging the commit hash and verification execution outcome.
+    6. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Update State** stage status to completed (✅), logging the commit hash and verification execution outcome.
 *   **Objective**: Ensure all state updates are backed by mechanical, verifiable evidence. The stable product workspace remains at the same path throughout delivery.
 
 ### Stage 8 — Clean Exit
@@ -114,7 +115,8 @@ Ensure that the final repository state is clean, verified, and fully prepared fo
 > **Checklist & Handoff Policy**:
 > 1. **Run Clean State Checklist**: Execute and verify every single item in the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Process each checklist item **one by one**. If any item fails, **do not stop** — apply the **Gate Failure Resolution Policy** (diagnose → fix → re-run, up to 3 attempts per item) before moving to the next checklist item. After processing all items, all checks **SHOULD** pass; any remaining `⚠️ unresolved` items must be documented in the session handoff.
 > 2. **Produce Session Handoff**: Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following the format and fields defined in **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**. Detail what is working, what changed, unverified paths, risks, unresolved gate items, and next steps.
-> 3. **Never move the feature directory.** Its `docs/product/` path is stable; only tracker and per-slice statuses change.
+> 3. **Verify Observability Metrics**: Run `bash harness/scripts/check-harness-metrics.sh --validate "$FEATURE_DIR/summary_{feature_id}.md"` to confirm execution metrics are complete.
+> 4. **Never move the feature directory.** Its `docs/product/` path is stable; only tracker and per-slice statuses change.
 
 *   **Action**:
     1. Execute the verification command one last time to ensure no regression was introduced, verify all checklist criteria, and write `$FEATURE_DIR/session-handoff.md`.
