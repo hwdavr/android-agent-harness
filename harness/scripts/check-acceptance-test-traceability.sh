@@ -54,6 +54,12 @@ CONTRACT="$FEATURE_DIR/sprint-contract.md"
 [ -f "$FEATURE_JSON" ] || fail "missing $FEATURE_JSON"
 [ -f "$CONTRACT" ] || fail "missing $CONTRACT"
 
+# An acceptance row that claims opening or navigating to a route/destination
+# exercises the production navigation graph. Such a claim can only be owned by
+# the named production-journey acceptance test; a callback/stub test cannot
+# satisfy the outcome (see harness-retro-2026-09-05-link-tap-route-evidence).
+route_open_signal_pattern='open(s|ed|ing)?[[:space:]]+(the[[:space:]]+)?(existing[[:space:]]+)?(target[[:space:]]+)?(editor[[:space:]]+)?route|navigate(s|d)?[[:space:]]+to|open(s|ed|ing)?[[:space:]]+the[[:space:]]+(target|linked|note)'
+
 HEADER='| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |'
 grep -Fq "$HEADER" "$CONTRACT" \
   || fail "sprint-contract.md must use the acceptance table with Test file and method, Shared scenario(s), and Exact command columns"
@@ -153,6 +159,15 @@ $test_id"
     any(.features[]?; .id == $owner and ((.acceptance_test_ids // []) | index($test_id)))
   ' "$FEATURE_JSON" >/dev/null 2>&1 \
     || fail "$test_id is missing from $owner acceptance_test_ids in feature_list.json"
+
+  signal_text="$setup $assertions"
+  if printf '%s' "$signal_text" | grep -Eiq "$route_open_signal_pattern"; then
+    journey_owner=$(jq -r --arg owner "$owner" '
+      .features[]? | select(.id == $owner) | .production_journey.acceptance_test_id // empty
+    ' "$FEATURE_JSON")
+    [ "$test_id" = "$journey_owner" ] \
+      || fail "$test_id claims an open/navigate-to-route outcome but is not the named production-journey owner ($owner.production_journey.acceptance_test_id)"
+  fi
 
   if [ "$MODE" != "--planning" ]; then
     source_file="$PROJECT_ROOT/$test_file"

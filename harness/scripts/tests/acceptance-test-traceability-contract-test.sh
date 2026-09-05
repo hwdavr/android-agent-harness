@@ -101,4 +101,65 @@ mv "$FEATURE_DIR/feature_list.tmp" "$FEATURE_DIR/feature_list.json"
 expect_failure "has no successful evidence command scoped to FixtureIntegrationTest" \
   bash "$VALIDATOR" docs/product/2026-09-01-fixture --evaluate
 
+# Route-open ownership regression: an acceptance row that claims opening or
+# navigating to a route must be the named production-journey owner.
+write_journey_fixture() {
+  rm -rf "$FEATURE_DIR"
+  mkdir -p "$FEATURE_DIR"
+
+  printf '%s\n' \
+    '{' \
+    '  "features": [{' \
+    '    "id": "US-1",' \
+    '    "acceptance_test_ids": ["TC-US-1-01", "TC-US-1-02"],' \
+    '    "production_journey": {' \
+    '      "required": true,' \
+    '      "reason": "This slice crosses the production picker and returns to the editor.",' \
+    '      "acceptance_test_id": "TC-US-1-01",' \
+    '      "production_entry_point": "AppNavigationHost",' \
+    '      "test_file": "app/src/androidTest/java/example/JourneyTest.kt",' \
+    '      "test_method": "returnsToEditor",' \
+    '      "user_actions": "Open the picker and select a target note.",' \
+    '      "return_boundary": "Selecting the target pops back to the editor.",' \
+    '      "post_return_assertion": "The linked label is visible in the editor after return."' \
+    '    }' \
+    '  }]' \
+    '}' \
+    > "$FEATURE_DIR/feature_list.json"
+
+  printf '%s\n' \
+    '# Sprint Contract' \
+    '' \
+    '## Acceptance Test Cases' \
+    '' \
+    '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
+    '|---|---|---|---|---|---|---|---|' \
+    '| TC-US-1-01 | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/JourneyTest.kt#returnsToEditor | N/A — no API | Open the picker, select a target, and return to the editor. | The linked label is visible after return. | ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.JourneyTest |' \
+    '| TC-US-1-02 | AC-US-1-02 | Instrumented UI | app/src/androidTest/java/example/LinkScreenTest.kt#opensTarget | N/A — no API | Render a valid inserted link and tap its semantic link node. | Label is tappable and styled. | ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.LinkScreenTest |' \
+    > "$FEATURE_DIR/sprint-contract.md"
+}
+
+ROUTE_OPEN_CLAIM='and opens the existing target Editor route'
+
+# The named journey owner may claim the route-open outcome.
+write_journey_fixture
+sed "s/The linked label is visible after return./The linked label is visible after return $ROUTE_OPEN_CLAIM./" \
+  "$FEATURE_DIR/sprint-contract.md" \
+  > "$FEATURE_DIR/sprint-contract.tmp"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture --planning
+
+# A non-owner row claiming the same outcome must be rejected.
+write_journey_fixture
+sed "s/Label is tappable and styled./Label is tappable $ROUTE_OPEN_CLAIM./" \
+  "$FEATURE_DIR/sprint-contract.md" \
+  > "$FEATURE_DIR/sprint-contract.tmp"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+expect_failure "TC-US-1-02 claims an open/navigate-to-route outcome but is not the named production-journey owner" \
+  bash "$VALIDATOR" docs/product/2026-09-01-fixture --planning
+
+# Control: the identical row without route-open language stays accepted.
+write_journey_fixture
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture --planning
+
 echo "PASS: acceptance traceability validator rejects missing methods, scenario drift, and unscoped evidence."
