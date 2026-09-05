@@ -294,6 +294,27 @@ The tool:
 - Generates a neon magenta visual diff overlay (`<name>_diff.png`) highlighting divergent clusters
 - Generates `visual_comparison_report.md` in `visual_evidence/`
 
+**Batch reference resolution** (`--feature`): each capture is paired with a reference
+deterministically — an explicit `visual_evidence/reference-map.json` entry first, then the
+most specific `design/mockup_*.png` token match, then the anchor report's declared
+reference, then `UX/golden-baselines/`. Never rely on filename coincidence: when a state
+capture has no applicable pixel reference (e.g., a dark-theme state with no dark mockup),
+declare it explicitly in `visual_evidence/reference-map.json` rather than letting it
+compare against an inapplicable mockup:
+
+```json
+{
+  "formula_sheet_dark_theme.png": null,
+  "formula_sheet_invalid.png": "design/mockup_formula_sheet_invalid.png"
+}
+```
+
+- A `null` value records the capture as `ANCHOR_ONLY` (verified by its reference-anchor
+  bounds row instead of a pixel comparison).
+- A path value forces the pairing and is reported as `explicit-map`.
+- A capture with no resolvable reference fails loudly as `NO_REFERENCE` (exit 2); malformed,
+  dangling, or stale map entries also fail (exit 2).
+
 **What to evaluate (per in-scope region):**
 - Shape and contour similarity
 - Layout composition and visual weight distribution

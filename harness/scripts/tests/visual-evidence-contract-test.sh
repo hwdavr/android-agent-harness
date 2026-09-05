@@ -10,8 +10,21 @@ trap 'rm -rf "$fixture_root"' EXIT
 write_valid_fixture() {
   local feature_dir="$1"
   mkdir -p "$feature_dir/design" "$feature_dir/visual_evidence"
-  printf 'reference mockup' > "$feature_dir/design/mockup_picker.png"
-  printf '%6000s' 'x' > "$feature_dir/visual_evidence/emoji_picker_content.png"
+  # Real PNGs (identical content, incompressible noise so the capture exceeds the
+  # minimum screenshot size) so the perceptual comparator genuinely runs and passes;
+  # text placeholders would be rejected as unparseable images.
+  python3 - "$feature_dir" << 'EOF'
+import random
+import sys
+from PIL import Image
+
+feature_dir = sys.argv[1]
+rng = random.Random(42)
+img = Image.new("RGB", (108, 234))
+img.putdata([(rng.randrange(256), rng.randrange(256), rng.randrange(256)) for _ in range(108 * 234)])
+img.save(f"{feature_dir}/design/mockup_picker.png")
+img.save(f"{feature_dir}/visual_evidence/emoji_picker_content.png")
+EOF
   printf '%s\n' \
     '# Sprint Contract' \
     '' \

@@ -348,6 +348,21 @@ def run_promote_golden():
     print("======================================================")
     sys.exit(0)
 
+def load_reference_map(visual_evidence_dir):
+    """Load optional reference-map.json: {capture filename: reference path relative to the feature dir, or null (anchor-only)}."""
+    map_path = visual_evidence_dir / "reference-map.json"
+    if not map_path.is_file():
+        return {}
+    try:
+        raw = json.loads(map_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"FAIL: Could not parse {map_path}: {e}", file=sys.stderr)
+        sys.exit(2)
+    if not isinstance(raw, dict):
+        print(f"FAIL: {map_path} must be a JSON object mapping capture filenames to reference paths or null", file=sys.stderr)
+        sys.exit(2)
+    return raw
+
 def run_feature():
     f_dir = Path(feature_dir_str).resolve()
     if not f_dir.is_dir():
@@ -378,7 +393,15 @@ def run_feature():
     print(f"  Actual screenshots found: {len(actual_images)}")
 
     all_passed = True
+    config_error = False
     comparison_records = []
+
+    reference_map = load_reference_map(visual_evidence_dir)
+    actual_names = {p.name for p in actual_images}
+    for mapped_name in reference_map:
+        if mapped_name not in actual_names:
+            print(f"FAIL: reference-map.json maps unknown capture '{mapped_name}'; visual_evidence/ has no such PNG", file=sys.stderr)
+            config_error = True
 
     anchor_md = visual_evidence_dir / "reference-anchor-verification.md"
     default_ref = None
@@ -392,30 +415,71 @@ def run_feature():
 
     for act_img_path in actual_images:
         base_name = act_img_path.stem
+        file_name = act_img_path.name
         base_tokens = set(re.findall(r"[a-z0-9]+", base_name.lower()))
-        best_match = None
-        best_overlap = 0
+        ref_candidate = None
+        match_via = None
 
-        # Try matching by token overlap in design/
-        if design_dir.is_dir():
-            for p in design_dir.glob("*.png"):
-                p_tokens = set(re.findall(r"[a-z0-9]+", p.stem.lower()))
-                p_tokens.discard("mockup")
-                overlap = len(base_tokens & p_tokens)
-                if overlap > best_overlap:
-                    best_overlap = overlap
-                    best_match = p
+        if file_name in reference_map:
+            mapped = reference_map[file_name]
+            if mapped is None:
+                # Explicit anchor-only declaration: no pixel reference applies to this state.
+                print(f"  [ANCHOR_ONLY] {file_name}: declared anchor-only in reference-map.json (no pixel reference)")
+                comparison_records.append({
+                    "actual": file_name,
+                    "reference": "—",
+                    "score": None,
+                    "diff_percentage": None,
+                    "status": "ANCHOR_ONLY",
+                    "diff_image": "—",
+                    "matched_via": "explicit-map(null)"
+                })
+                continue
+            cand = f_dir / str(mapped)
+            if not cand.is_file():
+                print(f"FAIL: reference-map.json maps {file_name} to missing reference '{mapped}'", file=sys.stderr)
+                config_error = True
+                continue
+            ref_candidate = cand
+            match_via = "explicit-map"
+        else:
+            # Deterministic token matching: highest token overlap first, then the
+            # most parsimonious reference (fewest tokens absent from the capture
+            # name), then reference name order. Never depends on glob order.
+            candidates = []
+            if design_dir.is_dir():
+                for p in design_dir.glob("*.png"):
+                    p_tokens = set(re.findall(r"[a-z0-9]+", p.stem.lower()))
+                    p_tokens.discard("mockup")
+                    overlap = len(base_tokens & p_tokens)
+                    if overlap > 0:
+                        candidates.append((overlap, len(p_tokens - base_tokens), p.stem, p))
+            if candidates:
+                candidates.sort(key=lambda c: (-c[0], c[1], c[2]))
+                ref_candidate = candidates[0][3]
+                match_via = "token-match"
+            elif default_ref is not None:
+                ref_candidate = default_ref
+                match_via = "anchor-default"
+            elif golden_dir.is_dir():
+                for p in sorted(golden_dir.glob("*.png")):
+                    if base_name in p.stem or p.stem in base_name:
+                        ref_candidate = p
+                        match_via = "golden-baseline"
+                        break
 
-        ref_candidate = best_match or default_ref
-
-        if not ref_candidate and golden_dir.is_dir():
-            for p in golden_dir.glob("*.png"):
-                if base_name in p.stem or p.stem in base_name:
-                    ref_candidate = p
-                    break
-
-        if not ref_candidate:
-            print(f"  [SKIP] No matching reference found for {act_img_path.name}")
+        if ref_candidate is None:
+            print(f"  [NO_REFERENCE] No reference found for {file_name}; add an approved design/ mockup, a UX/golden-baselines match, or a visual_evidence/reference-map.json entry (or declare it anchor-only with null)", file=sys.stderr)
+            comparison_records.append({
+                "actual": file_name,
+                "reference": "—",
+                "score": None,
+                "diff_percentage": None,
+                "status": "NO_REFERENCE",
+                "diff_image": "—",
+                "matched_via": "—"
+            })
+            config_error = True
             continue
 
         try:
@@ -426,39 +490,60 @@ def run_feature():
             res["diff_overlay"].save(diff_file)
 
             status_str = "PASS" if res["passed"] else "FAIL"
-            print(f"  [{status_str}] {act_img_path.name} vs {ref_candidate.name} -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
+            print(f"  [{status_str}] {file_name} vs {ref_candidate.name} ({match_via}) -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
 
             if not res["passed"]:
                 all_passed = False
 
             comparison_records.append({
-                "actual": act_img_path.name,
+                "actual": file_name,
                 "reference": ref_candidate.name,
                 "score": res["similarity_score"],
                 "diff_percentage": res["diff_percentage"],
                 "status": status_str,
-                "diff_image": diff_file.name
+                "diff_image": diff_file.name,
+                "matched_via": match_via
             })
         except Exception as e:
-            print(f"  [SKIP] Skipping {act_img_path.name}: {e}")
+            print(f"  [ERROR] Failed to compare {file_name}: {e}", file=sys.stderr)
+            comparison_records.append({
+                "actual": file_name,
+                "reference": ref_candidate.name,
+                "score": None,
+                "diff_percentage": None,
+                "status": "ERROR",
+                "diff_image": "—",
+                "matched_via": match_via
+            })
+            all_passed = False
 
     # Write summary report markdown
     report_md = visual_evidence_dir / "visual_comparison_report.md"
+    overall = "PASS" if (all_passed and not config_error) else "FAIL"
     md_lines = [
         "# Visual Comparison Evaluation Report\n",
         f"**Feature Directory**: `{f_dir.name}`\n",
         f"**Threshold**: `{threshold}`\n",
-        f"**Overall Status**: `{'PASS' if all_passed else 'FAIL'}`\n\n",
-        "| Actual Screenshot | Reference Design | Similarity Score | Diff % | Diff Overlay | Status |\n",
-        "|---|---|---|---|---|---|\n"
+        f"**Overall Status**: `{overall}`\n\n",
+        "| Actual Screenshot | Reference Design | Matched Via | Similarity Score | Diff % | Diff Overlay | Status |\n",
+        "|---|---|---|---|---|---|---|\n"
     ]
     for r in comparison_records:
-        md_lines.append(f"| `{r['actual']}` | `{r['reference']}` | {r['score']:.4f} | {r['diff_percentage']}% | [`{r['diff_image']}`]({r['diff_image']}) | **{r['status']}** |\n")
+        score_str = f"{r['score']:.4f}" if r["score"] is not None else "—"
+        diff_str = f"{r['diff_percentage']}%" if r["diff_percentage"] is not None else "—"
+        ref_cell = f"`{r['reference']}`" if r["reference"] != "—" else "—"
+        if r["diff_image"] != "—":
+            diff_cell = f"[`{r['diff_image']}`]({r['diff_image']})"
+        else:
+            diff_cell = "—"
+        md_lines.append(f"| `{r['actual']}` | {ref_cell} | {r['matched_via']} | {score_str} | {diff_str} | {diff_cell} | **{r['status']}** |\n")
 
     report_md.write_text("".join(md_lines), encoding="utf-8")
     print(f"\n  Consolidated report written to: {report_md}")
     print("======================================================")
 
+    if config_error:
+        sys.exit(2)
     sys.exit(0 if all_passed else 1)
 
 if mode == "pair":

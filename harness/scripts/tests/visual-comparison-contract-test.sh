@@ -137,4 +137,123 @@ expect_success bash "$VALIDATOR" \
 grep -Fq "screen.png" "$FIXTURE_ROOT/docs/product/test-feature/visual_evidence/visual_comparison_report.md" \
   || fail_test "visual_comparison_report.md missing screen.png"
 
-echo "PASS: All 7 visual-comparison contract test cases passed."
+# Case 8: Reference matching is deterministic — a state-qualified capture must pair
+# with the most parsimonious reference, never an arbitrary tie-break (regression:
+# formula_sheet_default.png was paired with mockup_formula_sheet_keyboard.png).
+TIE_FEATURE="$FIXTURE_ROOT/docs/product/tie-feature"
+mkdir -p "$TIE_FEATURE/design" "$TIE_FEATURE/visual_evidence"
+python3 - << EOF
+from PIL import Image, ImageDraw
+
+tie = "$TIE_FEATURE"
+# Create the state-variant mockup FIRST so filesystem iteration order favors it,
+# reproducing the incident's arbitrary tie-break conditions.
+kb = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(kb)
+d.rectangle([10, 10, 90, 90], fill=(0, 100, 255))
+d.rectangle([0, 150, 100, 200], fill=(200, 200, 200))
+kb.save(f"{tie}/design/mockup_screen_keyboard.png")
+base = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(base)
+d.rectangle([10, 10, 90, 90], fill=(0, 100, 255))
+base.save(f"{tie}/design/mockup_screen.png")
+base.save(f"{tie}/visual_evidence/screen_default.png")
+kb.save(f"{tie}/visual_evidence/screen_keyboard.png")
+EOF
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$TIE_FEATURE" \
+  --threshold 0.95
+
+TIE_REPORT="$TIE_FEATURE/visual_evidence/visual_comparison_report.md"
+grep -Fq '| `screen_default.png` | `mockup_screen.png` |' "$TIE_REPORT" \
+  || fail_test "screen_default.png must pair with the parsimonious mockup_screen.png, not a state variant"
+grep -Fq '| `screen_keyboard.png` | `mockup_screen_keyboard.png` |' "$TIE_REPORT" \
+  || fail_test "screen_keyboard.png must pair with mockup_screen_keyboard.png"
+
+# Case 9: A capture with no resolvable reference fails loudly (regression: silent
+# [SKIP] let the batch exit 0 with completely unevaluated evidence).
+NOREF_FEATURE="$FIXTURE_ROOT/docs/product/noref-feature"
+mkdir -p "$NOREF_FEATURE/design" "$NOREF_FEATURE/visual_evidence"
+python3 - << EOF
+from PIL import Image, ImageDraw
+
+nore = "$NOREF_FEATURE"
+base = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(base)
+d.rectangle([10, 10, 90, 90], fill=(0, 100, 255))
+base.save(f"{nore}/design/mockup_screen.png")
+unrelated = Image.new("RGB", (100, 200), (10, 120, 10))
+unrelated.save(f"{nore}/visual_evidence/unrelated_thing.png")
+EOF
+
+expect_failure 2 "NO_REFERENCE" bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$NOREF_FEATURE"
+
+# Case 10: An explicit reference-map.json entry overrides token matching.
+MAP_FEATURE="$FIXTURE_ROOT/docs/product/map-feature"
+mkdir -p "$MAP_FEATURE/design" "$MAP_FEATURE/visual_evidence"
+python3 - << EOF
+from PIL import Image, ImageDraw
+
+mp = "$MAP_FEATURE"
+base = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(base)
+d.rectangle([10, 10, 90, 90], fill=(0, 100, 255))
+base.save(f"{mp}/design/mockup_screen.png")
+variant = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(variant)
+d.rectangle([10, 10, 90, 90], fill=(255, 0, 0))
+variant.save(f"{mp}/design/mockup_screen_state.png")
+base.save(f"{mp}/visual_evidence/screen_state.png")
+EOF
+printf '{\n  "screen_state.png": "design/mockup_screen.png"\n}\n' \
+  > "$MAP_FEATURE/visual_evidence/reference-map.json"
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$MAP_FEATURE" \
+  --threshold 0.95
+
+grep -Fq '| `screen_state.png` | `mockup_screen.png` | explicit-map |' "$MAP_FEATURE/visual_evidence/visual_comparison_report.md" \
+  || fail_test "explicit reference-map.json entry must override token matching in the report"
+
+# Case 11: A null mapping declares anchor-only — no pixel comparison, batch passes.
+printf '{\n  "screen_state.png": null\n}\n' \
+  > "$MAP_FEATURE/visual_evidence/reference-map.json"
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$MAP_FEATURE" \
+  --threshold 0.95
+
+grep -Fq '| `screen_state.png` | — | explicit-map(null) | — | — | — | **ANCHOR_ONLY** |' \
+  "$MAP_FEATURE/visual_evidence/visual_comparison_report.md" \
+  || fail_test "null-mapped capture must be recorded as ANCHOR_ONLY in the report"
+
+# Case 12: Malformed, dangling, and stale reference-map.json entries fail loudly.
+printf 'not json\n' > "$MAP_FEATURE/visual_evidence/reference-map.json"
+expect_failure 2 "Could not parse" bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$MAP_FEATURE"
+
+printf '["screen_state.png"]\n' > "$MAP_FEATURE/visual_evidence/reference-map.json"
+expect_failure 2 "must be a JSON object" bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$MAP_FEATURE"
+
+printf '{\n  "screen_state.png": "design/nonexistent.png"\n}\n' \
+  > "$MAP_FEATURE/visual_evidence/reference-map.json"
+expect_failure 2 "missing reference" bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$MAP_FEATURE"
+
+printf '{\n  "bogus_capture.png": "design/mockup_screen.png"\n}\n' \
+  > "$MAP_FEATURE/visual_evidence/reference-map.json"
+expect_failure 2 "unknown capture" bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$MAP_FEATURE"
+
+echo "PASS: All 12 visual-comparison contract test cases passed."
