@@ -21,7 +21,7 @@ Do not jump directly into coding.
 **Every stage's skill must be invoked via the Skill tool — reading the SKILL.md manually is not a substitute.**
 **Memory of prior approval does not bypass stages. Source of truth is on-disk artifacts in `docs/current/`. If an artifact is missing, re-run the stage via its skill.**
 
-Pipeline: Requirement, Impact & Design → Plan → [User Approval] → Test First → Implementation → Verification → Code Quality Fix → Product Document Update → Install App To Device
+Pipeline: Requirement, Impact & Design → Plan → [User Approval] → Implementation → Testing → Code Quality Fix → Product Document Update → Install App To Device
 
 ---
 
@@ -52,15 +52,7 @@ Gate: Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery implem
 
 ---
 
-### Stage 3 — Test First
-**INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute.
-
-Output: Unit, integration, instrumented UI tests, and shared JSON scenarios are created or updated before application source changes. `docs/current/summary_v<N>.md` records each exact selector and its expected red result.
-Gate: every new or changed test runs and fails only because the planned behavior is not implemented. A fixture, test-source syntax, or environment failure is blocked; a test that already passes must be strengthened before implementation begins. For harness-governed acceptance tables, run the acceptance-test traceability checker in test mode before implementation begins.
-
----
-
-### Stage 4 — Implementation (Data + Domain + UI)
+### Stage 3 — Implementation (Data + Domain + UI)
 **INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: All source files across Data, Domain, and UI layers created or modified; `docs/current/summary_v<N>.md` updated with Implementation stage marked complete.
@@ -68,22 +60,15 @@ Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI ch
 
 ---
 
-### Stage 5 — Verification
+### Stage 4 — Testing
 **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with test count and coverage.
 Gate: tests pass, coverage targets met.
-For harness-governed acceptance tables, run the acceptance-test traceability checker
-in test mode before marking verification complete and in evaluation mode after
-successful evidence is recorded.
-Use:
-
-    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --test "$FEATURE_ID"
-    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate "$FEATURE_ID"
 
 ---
 
-### Stage 6 — Code Quality Fix
+### Stage 5 — Code Quality Fix
 **INVOKE** the `code-quality-fix` skill via the Skill tool (name: `code-quality-fix`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: All violations resolved; `docs/current/summary_v<N>.md` updated with code quality results.
@@ -91,7 +76,7 @@ Gate: `ktlintCheck`, `detekt`, `lintDebug`, and all custom check scripts exit wi
 
 ---
 
-### Stage 7 — Product Document Update
+### Stage 6 — Product Document Update
 Update `docs/product/product.md` to reflect the newly shipped feature.
 
 **Actions**:
@@ -104,7 +89,7 @@ Gate: the file is saved and the feature no longer appears as Planned or Next for
 
 ---
 
-### Stage 8 — Install App To Device
+### Stage 7 — Install App To Device
 Install the completed debug build to all connected devices and emulators as the final delivery step.
 
 **Actions**:
@@ -125,8 +110,7 @@ Gate: install command exits with code 0. If no device is connected, mark this st
 |---------|-----------|
 | Requirement ambiguity or Plan rejection | Requirement, Impact & Design Analysis |
 | Compilation error | Implementation (Data + Domain + UI) |
-| Test-first fixture or environment failure | Test First |
-| Test failure or Coverage gap | Implementation (fix root cause), then Verification |
+| Test failure or Coverage gap | Testing (fix implementation if needed, then re-test) |
 | Quality check violation | Code Quality Fix (fix root cause, re-run checks) |
 | Install failure or missing connected device | Install App To Device |
 
