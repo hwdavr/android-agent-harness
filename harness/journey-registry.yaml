@@ -1,0 +1,65 @@
+# Critical Journey Registry
+# Every journey listed here is a regression gate — it must pass before any feature ships.
+# Add new journeys when a feature introduces a navigation/lifecycle boundary.
+# Remove a journey only when the feature is intentionally removed from the product.
+
+journeys:
+  - id: J-NOTE-LINK-PICKER
+    description: "Editor -> Link toolbar -> Note Link Picker -> select note -> return to editor with link"
+    introduced_by: formatting-toolbar/US-1
+    destinations:
+      - Editor
+      - NoteLinkPicker
+    test_file: app/src/androidTest/java/com/example/notesapp/ui/editor/screen/NoteLinkPickerScreenTest.kt
+    test_method: pickerReturnsTargetAndPreservesSelectedLabel
+    gradle_selector: "com.example.notesapp.ui.editor.screen.NoteLinkPickerScreenTest#pickerReturnsTargetAndPreservesSelectedLabel"
+    boundary: "Picker selection pops back to editor"
+    post_return_assertion: "Selected text retains label, target ID persisted, link renders as primary-color underlined inline label"
+
+  - id: J-VOICE-ENTRY
+    description: "Home -> Voice Recorder -> record -> return to editor with voice note"
+    introduced_by: voice-notes-audio-transcripts/US-3
+    destinations:
+      - Notes
+      - VoiceRecorder
+      - Editor
+    test_file: app/src/androidTest/java/com/example/notesapp/navigation/VoiceEntryNavigationTest.kt
+    test_method: homeRecorderEntry_buildsEncodedRouteRegisteredByProductionGraph
+    gradle_selector: "com.example.notesapp.navigation.VoiceEntryNavigationTest#homeRecorderEntry_buildsEncodedRouteRegisteredByProductionGraph"
+    boundary: "Voice recording completes and navigates to editor"
+    post_return_assertion: "Voice note visible in editor document"
+
+  - id: J-NAV-GRAPH-STARTUP
+    description: "App starts -> Onboarding when logged out, Notes when logged in"
+    introduced_by: core
+    destinations:
+      - Onboarding
+      - Notes
+    test_file: app/src/androidTest/java/com/example/notesapp/navigation/NavigationTest.kt
+    test_method: productionGraph_startsAtOnboarding_whenLoggedOut
+    gradle_selector: "com.example.notesapp.navigation.NavigationTest#productionGraph_startsAtOnboarding_whenLoggedOut"
+    boundary: "App launch"
+    post_return_assertion: "Correct start destination rendered"
+
+  - id: J-EXPORT-ROUTE
+    description: "Editor -> Export -> select format -> export completes"
+    introduced_by: core
+    destinations:
+      - Editor
+      - ExportNote
+    test_file: app/src/androidTest/java/com/example/notesapp/navigation/NavigationContractTest.kt
+    test_method: givenExportRoute_whenGraphIsBuilt_thenNoteIdIsRequired
+    gradle_selector: "com.example.notesapp.navigation.NavigationContractTest#givenExportRoute_whenGraphIsBuilt_thenNoteIdIsRequired"
+    boundary: "Export destination requires noteId"
+    post_return_assertion: "Export route contract satisfied"
+
+  - id: J-MOVE-TO-ROUTE
+    description: "Move item -> select folder -> move completes"
+    introduced_by: core
+    destinations:
+      - MoveTo
+    test_file: app/src/androidTest/java/com/example/notesapp/navigation/NavigationContractTest.kt
+    test_method: givenMoveToRoute_whenGraphIsBuilt_thenItemArgumentsAreRequired
+    gradle_selector: "com.example.notesapp.navigation.NavigationContractTest#givenMoveToRoute_whenGraphIsBuilt_thenItemArgumentsAreRequired"
+    boundary: "MoveTo destination requires itemType and itemId"
+    post_return_assertion: "MoveTo route contract satisfied"

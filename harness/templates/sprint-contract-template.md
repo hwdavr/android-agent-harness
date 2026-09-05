@@ -70,6 +70,12 @@ The planning gate validates that every feature has a classification, that every
 **Yes** row maps to an instrumented acceptance-test row, and that navigation or
 lifecycle signals in an acceptance test cannot be left without a journey owner.
 
+## Journey Registry Update *(conditional — when journey_required is Yes)*
+
+When a slice declares `Journey required: Yes`, the generator must register the
+journey in `harness/journey-registry.yaml` during the Finalize stage. The registry
+entry becomes a permanent regression gate for all future features.
+
 ---
 
 ## Spec Coverage Matrix *(required)*

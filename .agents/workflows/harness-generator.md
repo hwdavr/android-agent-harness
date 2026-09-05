@@ -64,7 +64,8 @@ Verify the correctness of the implemented behavior visually and logically.
     1. **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Implement every `Acceptance Test Cases` row in the selected user story. The primary acceptance test must exercise the production entry point; an isolated helper or use-case test cannot substitute for user-visible or cross-layer behavior. Verify through the actual UI/API and meet code coverage targets (overall project **≥ 80%**, ViewModel & Use Case **≥ 90%**).
     2. For every `platform_validation.real_boundary_test_ids` entry listed in the selected slice's `acceptance_test_ids`, run the declared instrumented test against the required runtime using the real shipped Android boundary. Do not replace it with a fake recognizer, JVM-only intent assertion, or manually emitted callback. If the emulator, device, model, locale, permission, or platform service is unavailable, let the command fail and record the gate as `Blocked`/`Revise`; do not mark it skipped or passing. A slice that does not own a declared real-boundary test validates the contract without being blocked on a later slice's unimplemented boundary.
     3. Run `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate --slice "$FEATURE_ID"` and attach its exit status and output to the feature evidence. The no-slice command remains mandatory during final feature evaluation after every boundary-owning slice is complete.
-    4. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Test** stage status to completed (✅) detailing coverage percentages, passed test counts, platform matrix results, and any blocked runtime explicitly.
+    4. Run `bash harness/scripts/check-journey-registry.sh --run-all` to verify that the current implementation does not regress any existing critical journey. A failure blocks the pipeline.
+    5. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Test** stage status to completed (✅) detailing coverage percentages, passed test counts, platform matrix results, and any blocked runtime explicitly.
 *   **Objective**: All local tests pass cleanly, coverage targets are fully met, and verification evidence is documented in the summary.
 
 ### Stage 6 — Code Quality Fix
@@ -98,11 +99,12 @@ Update repository history, project task logs, and product documentation to refle
         *   Update the `*Document last updated*` date at the bottom of the file.
         *   If every feature in `$FEATURE_DIR/feature_list.json` is now `passing`, update the Harness Feature Tracker status to `To be reviewed` in place and update its date/notes (do not move or rename the workspace). **NEVER transition directly to `To be human reviewed`** — only the Evaluator agent (via `harness-evaluation`) is authorized to make that transition after scoring. Otherwise, keep the Harness Feature Tracker `In Progress` while slices remain.
         *   Run `bash harness/scripts/check-feature-lifecycle.sh` after the tracker update. Do not claim completion or commit if it fails.
-    3. Commit only the **source code, test changes, and product documentation** for the implemented feature:
+    3. If the shipped slice has `production_journey.required: true`, register the journey in `harness/journey-registry.yaml` using the sprint-contract values. Run `bash harness/scripts/check-journey-registry.sh --validate` to confirm the entry is well-formed.
+    4. Commit only the **source code, test changes, and product documentation** for the implemented feature:
         ```bash
         git commit -m "feat(<area>): <short description of implemented feature>"
         ```
-    4. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Update State** stage status to completed (✅), logging the commit hash and verification execution outcome.
+    5. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Update State** stage status to completed (✅), logging the commit hash and verification execution outcome.
 *   **Objective**: Ensure all state updates are backed by mechanical, verifiable evidence. The stable product workspace remains at the same path throughout delivery.
 
 ### Stage 8 — Clean Exit

@@ -64,7 +64,7 @@ Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI ch
 **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with test count and coverage.
-Gate: tests pass, coverage targets met.
+Gate: tests pass, coverage targets met. Additionally, run `bash harness/scripts/check-journey-registry.sh --run-all` to verify no existing critical journey is regressed.
 
 ---
 

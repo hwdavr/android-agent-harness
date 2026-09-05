@@ -89,6 +89,18 @@ post-return persistence:
   section. The testing-stage artifact gate validates that declaration against the
   named instrumented test.
 
+#### Journey Registry Regression Gate
+
+Every journey declared in `harness/journey-registry.yaml` is a permanent
+regression gate. The harness-generator and feature-delivery workflows must
+run all registered journeys during the Test/Verification stage. A regression
+in any registered journey blocks the pipeline regardless of which feature
+introduced it.
+
+New journeys are registered when a slice ships with
+`production_journey.required: true`. A journey is removed only when the
+product feature is intentionally deprecated.
+
 Dedicated Visual Verification tests (`*VisualFlowTest.kt`):
 - When a feature introduces or modifies UI screens/components that require visual verification (`requires_visual_verification: true`), write a dedicated visual flow instrumented test (or test methods) that exercises the active Composables in their critical visual states (e.g. default/content, alternative mode, expanded/fullscreen, empty/error).
 - The test must capture visual evidence directly during active rendering using `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()` or `captureToImage()` while the test rule is idling (`waitForIdle()`), saving the file to `/sdcard/Download/<name>.png`.
