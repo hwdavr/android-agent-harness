@@ -111,6 +111,8 @@ for method in $CONTRACT_METHODS; do
 done
 
 if [ "$MODE" = "--evaluate" ]; then
+  ROOT_DIR="${HARNESS_PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+  GOLDEN_DIR="$ROOT_DIR/UX/golden-baselines"
   ANCHOR_REPORT="$FEATURE_DIR/visual_evidence/reference-anchor-verification.md"
   [ -f "$ANCHOR_REPORT" ] || fail "missing $ANCHOR_REPORT; visual evidence needs reference-anchor verification"
   grep -Fq "## Reference Anchor Verification" "$ANCHOR_REPORT" \
@@ -147,6 +149,22 @@ if [ "$MODE" = "--evaluate" ]; then
     [ "$SCREENSHOT_SIZE" -ge "$MIN_SCREENSHOT_BYTES" ] \
       || fail "$test_id screenshot $SCREENSHOT_PATH is only ${SCREENSHOT_SIZE} bytes (minimum ${MIN_SCREENSHOT_BYTES}); likely a blank or transparent capture"
 
+    # Golden promotion is part of slice approval: every contract screenshot that is
+    # not declared anchor-only must have a promoted golden baseline so the pixel
+    # regression gate has a binding reference.
+    REFERENCE_MAP="$FEATURE_DIR/visual_evidence/reference-map.json"
+    MAP_ENTRY_TYPE="missing"
+    if [ -f "$REFERENCE_MAP" ]; then
+      MAP_ENTRY_TYPE=$(jq -r --arg f "$(basename "$SCREENSHOT_PATH")" \
+        'if type == "object" and has($f) then (.[$f] | type) else "missing" end' \
+        "$REFERENCE_MAP" 2>/dev/null || echo "missing")
+    fi
+    if [ "$MAP_ENTRY_TYPE" != "null" ]; then
+      GOLDEN_BASELINE="$GOLDEN_DIR/$(basename "$SCREENSHOT_PATH")"
+      [ -s "$GOLDEN_BASELINE" ] \
+        || fail "$test_id screenshot $SCREENSHOT_PATH has no promoted golden baseline at $GOLDEN_BASELINE; approve the capture and promote it: bash harness/scripts/compare-visual-evidence.sh --promote-golden \"$FEATURE_DIR/$SCREENSHOT_PATH\" --name \"$(basename "${SCREENSHOT_PATH%.png}")\""
+    fi
+
     REPORT_ROWS=$(grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" "$ANCHOR_REPORT" || true)
     REPORT_ROW_COUNT=$(printf '%s\n' "$REPORT_ROWS" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')
     [ "$REPORT_ROW_COUNT" -eq 1 ] \
@@ -173,7 +191,7 @@ if [ "$MODE" = "--evaluate" ]; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   if [ -f "$SCRIPT_DIR/compare-visual-evidence.sh" ]; then
     echo "Running perceptual visual comparison checks..."
-    bash "$SCRIPT_DIR/compare-visual-evidence.sh" --feature "$FEATURE_DIR" --crop-insets \
+    bash "$SCRIPT_DIR/compare-visual-evidence.sh" --feature "$FEATURE_DIR" --crop-insets --project-root "$ROOT_DIR" \
       || fail "perceptual visual comparison failed"
   fi
 fi

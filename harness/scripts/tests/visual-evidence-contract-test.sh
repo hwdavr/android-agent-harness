@@ -6,6 +6,9 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 VALIDATOR="$REPO_ROOT/harness/scripts/check-visual-evidence-contract.sh"
 fixture_root=$(mktemp -d "${TMPDIR:-/tmp}/visual-evidence-test.XXXXXX")
 trap 'rm -rf "$fixture_root"' EXIT
+# The gate resolves the golden-baseline directory from the project root; point it
+# at the fixture root so the promoted golden below is found.
+export HARNESS_PROJECT_ROOT="$fixture_root"
 
 write_valid_fixture() {
   local feature_dir="$1"
@@ -25,6 +28,11 @@ img.putdata([(rng.randrange(256), rng.randrange(256), rng.randrange(256)) for _ 
 img.save(f"{feature_dir}/design/mockup_picker.png")
 img.save(f"{feature_dir}/visual_evidence/emoji_picker_content.png")
 EOF
+  # Approved captures are promoted to golden baselines: the gate requires a
+  # non-empty golden for every non-anchor-only contract screenshot.
+  mkdir -p "$fixture_root/UX/golden-baselines"
+  cp "$feature_dir/visual_evidence/emoji_picker_content.png" \
+    "$fixture_root/UX/golden-baselines/emoji_picker_content.png"
   printf '%s\n' \
     '# Sprint Contract' \
     '' \
@@ -174,4 +182,17 @@ rm -f "$duplicate_screenshot/sprint-contract.md.bak"
 expect_failure "is used by more than one visual row" \
   bash "$VALIDATOR" "$duplicate_screenshot"
 
-echo "PASS: visual evidence validator rejects missing anchor proof, blank screenshots, and aligns methods, contract rows, screenshots, and evidence."
+missing_golden="$fixture_root/missing-golden"
+write_valid_fixture "$missing_golden"
+rm "$fixture_root/UX/golden-baselines/emoji_picker_content.png"
+expect_failure "has no promoted golden baseline" \
+  bash "$VALIDATOR" "$missing_golden"
+
+anchor_only_golden_exempt="$fixture_root/anchor-only-golden-exempt"
+write_valid_fixture "$anchor_only_golden_exempt"
+rm "$fixture_root/UX/golden-baselines/emoji_picker_content.png"
+printf '{\n  "emoji_picker_content.png": null\n}\n' \
+  > "$anchor_only_golden_exempt/visual_evidence/reference-map.json"
+(cd "$REPO_ROOT" && bash "$VALIDATOR" "$anchor_only_golden_exempt")
+
+echo "PASS: visual evidence validator rejects missing anchor proof, blank screenshots, unverified golden promotion, and aligns methods, contract rows, screenshots, and evidence."

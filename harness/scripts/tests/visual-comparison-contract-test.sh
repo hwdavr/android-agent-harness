@@ -217,7 +217,7 @@ expect_success bash "$VALIDATOR" \
   --feature "$MAP_FEATURE" \
   --threshold 0.95
 
-grep -Fq '| `screen_state.png` | `mockup_screen.png` | explicit-map |' "$MAP_FEATURE/visual_evidence/visual_comparison_report.md" \
+grep -Fq '| `screen_state.png` | `mockup_screen.png` | informational | explicit-map |' "$MAP_FEATURE/visual_evidence/visual_comparison_report.md" \
   || fail_test "explicit reference-map.json entry must override token matching in the report"
 
 # Case 11: A null mapping declares anchor-only — no pixel comparison, batch passes.
@@ -229,7 +229,7 @@ expect_success bash "$VALIDATOR" \
   --feature "$MAP_FEATURE" \
   --threshold 0.95
 
-grep -Fq '| `screen_state.png` | — | explicit-map(null) | — | — | — | **ANCHOR_ONLY** |' \
+grep -Fq '| `screen_state.png` | — | — | explicit-map(null) | — | — | — | **ANCHOR_ONLY** |' \
   "$MAP_FEATURE/visual_evidence/visual_comparison_report.md" \
   || fail_test "null-mapped capture must be recorded as ANCHOR_ONLY in the report"
 
@@ -256,4 +256,93 @@ expect_failure 2 "unknown capture" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --feature "$MAP_FEATURE"
 
-echo "PASS: All 12 visual-comparison contract test cases passed."
+# Case 13: An exact-name golden baseline is the binding regression reference —
+# an identical capture passes and is recorded as binding.
+GOLDEN_FEATURE="$FIXTURE_ROOT/docs/product/golden-feature"
+mkdir -p "$GOLDEN_FEATURE/design" "$GOLDEN_FEATURE/visual_evidence" \
+  "$FIXTURE_ROOT/UX/golden-baselines"
+python3 - << EOF
+from PIL import Image, ImageDraw
+
+g = "$GOLDEN_FEATURE"
+base = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(base)
+d.rectangle([10, 10, 90, 90], fill=(0, 100, 255))
+base.save(f"{g}/design/mockup_screen.png")
+base.save(f"{g}/visual_evidence/screen_state.png")
+base.save("$FIXTURE_ROOT/UX/golden-baselines/screen_state.png")
+EOF
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$GOLDEN_FEATURE" \
+  --threshold 0.95
+
+grep -Fq '| `screen_state.png` | `screen_state.png` | binding | golden-baseline |' \
+  "$GOLDEN_FEATURE/visual_evidence/visual_comparison_report.md" \
+  || fail_test "exact-name golden must be recorded as the binding regression reference"
+
+# Case 14: A drifted capture fails the binding golden regression comparison (exit 1).
+python3 - << EOF
+from PIL import Image, ImageDraw
+
+g = "$GOLDEN_FEATURE"
+drift = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(drift)
+d.rectangle([0, 0, 100, 100], fill=(255, 0, 0))
+drift.save(f"{g}/visual_evidence/screen_state.png")
+EOF
+
+expect_failure 1 "golden-baseline" bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$GOLDEN_FEATURE" \
+  --threshold 0.95
+
+# Case 15: Mockup-only comparison is informational — even a total mismatch never
+# fails the batch (mock copy and AI-mockup rendering are not gated).
+WILD_FEATURE="$FIXTURE_ROOT/docs/product/wild-feature"
+mkdir -p "$WILD_FEATURE/design" "$WILD_FEATURE/visual_evidence"
+python3 - << EOF
+from PIL import Image, ImageDraw
+
+w = "$WILD_FEATURE"
+base = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(base)
+d.rectangle([10, 10, 90, 90], fill=(0, 100, 255))
+base.save(f"{w}/design/mockup_screen.png")
+wild = Image.new("RGB", (100, 200), (10, 120, 10))
+wild.save(f"{w}/visual_evidence/screen_wild.png")
+EOF
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$WILD_FEATURE" \
+  --threshold 0.95
+
+grep -F '| `screen_wild.png` | `mockup_screen.png` | informational | token-match |' \
+  "$WILD_FEATURE/visual_evidence/visual_comparison_report.md" \
+  | grep -Fq '**INFO**' \
+  || fail_test "a totally mismatched mockup comparison must be an INFO row, not a failure"
+
+# Case 16: Mask regions from a reference-map.json object entry are excluded from
+# the comparison (masked differences do not count toward the diff).
+python3 - << EOF
+from PIL import Image
+
+mp = "$MAP_FEATURE"
+wild = Image.new("RGB", (100, 200), (10, 120, 10))
+wild.save(f"{mp}/visual_evidence/screen_state.png")
+EOF
+printf '{\n  "screen_state.png": {"reference": "design/mockup_screen.png", "mask": [{"x": 0, "y": 0, "w": 100, "h": 200}]}\n}\n' \
+  > "$MAP_FEATURE/visual_evidence/reference-map.json"
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$MAP_FEATURE" \
+  --threshold 0.95
+
+grep -F '| `screen_state.png` | `mockup_screen.png` | informational | explicit-map | 1.0000 |' \
+  "$MAP_FEATURE/visual_evidence/visual_comparison_report.md" \
+  || fail_test "masked regions must be excluded from the comparison score"
+
+echo "PASS: All 16 visual-comparison contract test cases passed."
