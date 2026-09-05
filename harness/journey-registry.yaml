@@ -4,18 +4,6 @@
 # Remove a journey only when the feature is intentionally removed from the product.
 
 journeys:
-  - id: J-NOTE-LINK-PICKER
-    description: "Editor -> Link toolbar -> Note Link Picker -> select note -> return to editor with link"
-    introduced_by: formatting-toolbar/US-1
-    destinations:
-      - Editor
-      - NoteLinkPicker
-    test_file: app/src/androidTest/java/com/example/notesapp/ui/editor/screen/NoteLinkPickerScreenTest.kt
-    test_method: pickerReturnsTargetAndPreservesSelectedLabel
-    gradle_selector: "com.example.notesapp.ui.editor.screen.NoteLinkPickerScreenTest#pickerReturnsTargetAndPreservesSelectedLabel"
-    boundary: "Picker selection pops back to editor"
-    post_return_assertion: "Selected text retains label, target ID persisted, link renders as primary-color underlined inline label"
-
   - id: J-VOICE-ENTRY
     description: "Home -> Voice Recorder -> record -> return to editor with voice note"
     introduced_by: voice-notes-audio-transcripts/US-3
