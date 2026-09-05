@@ -56,8 +56,9 @@ Create `docs/current/` if needed. Choose the next unused `v<N>` and preserve exi
 If the user provides a design screenshot or mockup, save it to **`docs/current/design/`** so it can be referenced during UI Verification.
 
 Produce **`docs/current/summary_v<N>.md`** — create this file **first**, before `spec_v<N>.md`.
-Use the template from `harness/templates/progress-template.md`.
+Use the template from `harness/templates/summary-template.md`.
 The Stage Progress table must list every stage from the **active workflow** in order. Use the matching table below.
+
 All **Timestamp** values must be in `YYYY-MM-DD HH:MM` format:
 
 **Type**: feature / bugfix / api / refactor
