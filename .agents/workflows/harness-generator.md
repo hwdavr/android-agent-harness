@@ -11,6 +11,10 @@ Use this workflow when you are acting as the **Generator** (Implementer) agent. 
 
 This workflow starts only after the user approves `feature_list.json` and `sprint-contract.md` in one dated `docs/product/<YYYY-MM-DD>-<feature-short-name>/` workspace created by `harness-planning`. That approval authorizes implementation of the selected slice. Do not generate or request approval for a duplicate implementation plan in this workflow; the active feature description, sprint acceptance criteria, design, and verification commands are the implementation plan of record.
 
+Before implementation begins, preserve the approved Rule Applicability decisions from
+the feature specification in the slice evidence and carry each Required row into its
+implementation and verification records.
+
 ---
 
 ## Gate Semantics
@@ -65,7 +69,9 @@ Verify the correctness of the implemented behavior visually and logically.
     2. For every `platform_validation.real_boundary_test_ids` entry listed in the selected slice's `acceptance_test_ids`, run the declared instrumented test against the required runtime using the real shipped Android boundary. Do not replace it with a fake recognizer, JVM-only intent assertion, or manually emitted callback. If the emulator, device, model, locale, permission, or platform service is unavailable, let the command fail and record the gate as `Blocked`/`Revise`; do not mark it skipped or passing. A slice that does not own a declared real-boundary test validates the contract without being blocked on a later slice's unimplemented boundary.
     3. Run `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate --slice "$FEATURE_ID"` and attach its exit status and output to the feature evidence. The no-slice command remains mandatory during final feature evaluation after every boundary-owning slice is complete.
     4. Run `bash harness/scripts/check-journey-registry.sh --run-all` to verify that the current implementation does not regress any existing critical journey. A failure blocks the pipeline.
-    5. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Test** stage status to completed (✅) detailing coverage percentages, passed test counts, platform matrix results, and any blocked runtime explicitly.
+    5. Run `bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --test "$FEATURE_ID"` before leaving the Test stage. The command must resolve every selected acceptance row to its source method and, for explicit rich-text appearance claims, the named instrumented method must pass the rendered-output contract.
+    6. For every acceptance claim that says rich text or an inline formatting mark is visibly rendered, ensure the named instrumented method passes `bash harness/scripts/check-rendered-output-contract.sh` with source-fed `captureToImage()` and an explicit pixel comparison. A model/state assertion or non-empty screenshot alone is not rendered-output evidence.
+    7. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Test** stage status to completed (✅) detailing coverage percentages, passed test counts, platform matrix results, and any blocked runtime explicitly.
 *   **Objective**: All local tests pass cleanly, coverage targets are fully met, and verification evidence is documented in the summary.
 
 ### Stage 6 — Code Quality Fix
@@ -82,13 +88,13 @@ Update repository history, project task logs, and product documentation to refle
 > **Gate Check Policy**:
 > 1. **Identify Gate Criteria**: Read the selected user story in `$FEATURE_DIR/sprint-contract.md`. Every `Acceptance Test Cases` command is a mandatory gate. The active feature's `"verification"` field must reference the same Test IDs and commands.
 > 2. **Execute Each Command**: Run every verification command (e.g., `./gradlew testDebugUnitTest` or specific test runner script). Process them **one by one**.
-> 3. **On Failure — Apply Gate Failure Resolution Policy**: If any verification command fails (exit code `non-zero`), **do not stop**. Apply the **Gate Failure Resolution Policy** (diagnose → fix → re-run, up to 3 attempts) for that specific failing command before moving to the next one.
+> 3. **On Failure — bounded diagnosis and retry**: If any verification command fails (exit code `non-zero`), keep the stage non-passing and diagnose, fix, and re-run that specific command up to three times. If it remains non-zero, record the gate as `⚠️ Blocked` or non-passing and stop before the next verification item.
 > 4. **Validate & Attach Evidence**:
 >    *   The status can **ONLY** transition to `passing` if **every** acceptance-test command eventually executes successfully (exit code `0`) — either on the first run or after resolution.
 >    *   You **MUST** attach objective evidence for every Test ID, including the command, exit status, fix attempts (if any), and final result, inside the `"evidence"` field of the active feature object.
 >    *   If any verification command remains unresolved after 3 fix attempts, the status must be marked as `blocked` or returned to `in_progress`. Document all unresolved items.
 >    *   A slice that owns a declared real platform boundary test cannot transition to `passing` unless `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate --slice "$FEATURE_ID"` exits `0`. A non-owning slice must run the same slice-scoped command to validate the capability contract; missing matrices, pending/unavailable runtime rows, skipped environments, or fake-only recognizer tests remain hard failures for the boundary-owning slice and final feature evaluation.
->    *   A visual-verification owner cannot transition to `passing` unless `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"` exits `0`. This requires a non-empty screenshot and a `visual_evidence/reference-anchor-verification.md` row for every visual Test ID; the row must connect the approved reference to a visual bounds `testTag`, a runtime assertion, and a concrete measured relationship. Approval also requires promoting every non-anchor-only contract screenshot to `UX/golden-baselines/` (`compare-visual-evidence.sh --promote-golden`) so the binding golden regression comparison has its reference; design-mockup comparisons are informational and never block the transition.
+>    *   A visual-verification owner cannot transition to `passing` unless `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"` exits `0`. This requires a non-empty screenshot and a `visual_evidence/reference-anchor-verification.md` row for every visual Test ID; the row must connect the approved reference to a visual bounds `testTag`, a runtime assertion, and a concrete measured relationship. For rich-text or inline-formatting appearance claims, the same visual row must name a source method that passes the rendered-output contract (`captureToImage()` plus an explicit pixel comparison); state-only marks and screenshot existence are insufficient. Approval also requires promoting every non-anchor-only contract screenshot to `UX/golden-baselines/` (`compare-visual-evidence.sh --promote-golden`) so the binding golden regression comparison has its reference; design-mockup comparisons are informational and never block the transition.
 
 *   **Action**:
     1. Once verification passes and evidence is attached, update `$FEATURE_DIR/feature_list.json` and `$FEATURE_DIR/progress.md`.
@@ -113,7 +119,7 @@ Ensure that the final repository state is clean, verified, and fully prepared fo
 
 > [!IMPORTANT]
 > **Checklist & Handoff Policy**:
-> 1. **Run Clean State Checklist**: Execute and verify every single item in the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Process each checklist item **one by one**. If any item fails, **do not stop** — apply the **Gate Failure Resolution Policy** (diagnose → fix → re-run, up to 3 attempts per item) before moving to the next checklist item. After processing all items, all checks **SHOULD** pass; any remaining `⚠️ unresolved` items must be documented in the session handoff.
+> 1. **Run Clean State Checklist**: Execute and verify every single item in the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Process each checklist item **one by one**. If any item fails, keep clean exit non-passing and diagnose, fix, and re-run that item up to three times. After processing all items, all checks **SHOULD** pass; any remaining `⚠️ unresolved` items must be documented in the session handoff and keep the pipeline stopped.
 > 2. **Produce Session Handoff**: Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following the format and fields defined in **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**. Detail what is working, what changed, unverified paths, risks, unresolved gate items, and next steps.
 > 3. **Verify Observability Metrics**: Run `bash harness/scripts/check-harness-metrics.sh --validate "$FEATURE_DIR/summary_{feature_id}.md"` to confirm execution metrics are complete.
 > 4. **Never move the feature directory.** Its `docs/product/` path is stable; only tracker and per-slice statuses change.

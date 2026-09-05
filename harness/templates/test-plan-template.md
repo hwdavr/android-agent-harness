@@ -98,6 +98,22 @@ Each visual row's sprint-contract command must select the exact method using
 -Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#<method>,
 then pull the in-test screenshot with adb pull and verify it is non-empty.
 
+### Rendered Output Contract *(when a visual claim concerns rich text or inline formatting)*
+
+If a test-plan, acceptance, or reproduction claim says that formatted text is
+visible or renders a style (for example, bold, italic, underline, strikethrough,
+code, or monospace), record the source-fed proof in the same named instrumented
+method:
+
+| Claim | Test file and method | Runtime proof required |
+|---|---|---|
+| `<exact visible formatting claim>` | `app/src/androidTest/.../*Test.kt#<method>` | Capture plain and formatted Compose nodes with `captureToImage()` and assert `differingPixelCount(...) > 0`, `assertPixels(...)`, or an equivalent explicit pixel comparison |
+
+The rendered-output contract checker validates this method during acceptance,
+visual-evidence, and bug-reproduction gates. Assertions about marks, toolbar state,
+`AnnotatedString`, text content, or a non-empty full-screen screenshot are
+supplemental and cannot replace the rendered-node pixel comparison.
+
 ## Shared JSON Scenarios
 
 | Scenario File | API Mock | Expected Domain | Expected UI |

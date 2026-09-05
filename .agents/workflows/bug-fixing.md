@@ -47,7 +47,7 @@ Gate: root cause is specific enough that a reproduction test can be written. Run
 Write a failing test that mechanically proves the root cause before any fix is written.
 
 Output: Failing reproduction test file created; `docs/current/spec_v<N>.md` updated with a Reproduction Test section; `docs/current/summary_v<N>.md` updated.
-Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
+Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. For a visual or rich-text rendering reproduction, the named instrumented test must include source-fed `captureToImage()` and an explicit pixel comparison; the stage gate enforces this. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
 **STOP — if root cause cannot be reproduced by a test, surface to user before continuing.**
 
 ---
@@ -89,7 +89,9 @@ Direct ViewModel or `*Content` tests are supplemental evidence only.
 Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with test count and coverage.
 Gate: tests pass, coverage targets met. If `NAV` is `Required`, run
 `bash harness/scripts/check-stage-artifacts.sh bug-fixing testing docs/current`; it
-must exit 0.
+must exit 0. For a rich-text or visual rendering fix, also require the named
+instrumented test to pass `bash harness/scripts/check-rendered-output-contract.sh`;
+model marks, toolbar state, or screenshot existence alone do not prove the fix.
 
 ---
 

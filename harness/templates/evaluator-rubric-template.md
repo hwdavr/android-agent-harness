@@ -47,6 +47,7 @@ If any required answer is `No`, the evaluator MUST use `Revise`.
 - `ui_verification.json` present and passes `check-ui-verification-artifact.sh`: Yes / No / N/A
 - `reference-anchor-verification.md` references `*VisualFlowTest` methods in Runtime proof column: Yes / No / N/A
 - `check-visual-evidence-contract.sh` exits 0: Yes / No / N/A
+- Rich-text/inline-formatting appearance claims have source-fed `captureToImage()` evidence and an explicit checked pixel comparison in the named method: Yes / No / N/A
 
 If any required answer is `No`, the evaluator MUST score `Verification` below `5.0 / 5` and use `Revise`. Screenshots from post-test CLI screencaps are invalid evidence because the test Activity/window is destroyed before the capture runs.
 

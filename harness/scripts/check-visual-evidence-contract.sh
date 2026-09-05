@@ -5,6 +5,7 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FEATURE_DIR="${1:-}"
 MODE="${2:---evaluate}"
 
@@ -132,6 +133,23 @@ if [ "$MODE" = "--evaluate" ]; then
   SEEN_SCREENSHOT_PATHS=""
   for test_id in $CONTRACT_IDS; do
     CONTRACT_ROW=$(printf '%s\n' "$CONTRACT_ROWS" | grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" || true)
+    VISUAL_TARGET=$(printf '%s\n' "$CONTRACT_ROW" | sed -n -E 's/.*`([^`]*VisualFlowTest(\.kt)?#[A-Za-z_][A-Za-z0-9_]*)`.*/\1/p' | head -n 1)
+    if [ -z "$VISUAL_TARGET" ]; then
+      VISUAL_TARGET=$(printf '%s\n' "$CONTRACT_ROW" | sed -n -E 's/.*(app\/src\/androidTest\/[^|[:space:]]*VisualFlowTest(\.kt)?#[A-Za-z_][A-Za-z0-9_]*).*/\1/p' | head -n 1)
+    fi
+    [ -n "$VISUAL_TARGET" ] \
+      || fail "$test_id visual row must name a VisualFlowTest.kt#method target"
+    VISUAL_FILE="${VISUAL_TARGET%%#*}"
+    VISUAL_METHOD="${VISUAL_TARGET#*#}"
+    case "$VISUAL_FILE" in
+      app/src/androidTest/*.kt) ;;
+      *) fail "$test_id visual test must be under app/src/androidTest/: $VISUAL_FILE" ;;
+    esac
+    bash "$SCRIPT_DIR/check-rendered-output-contract.sh" \
+      --project-root "$ROOT_DIR" \
+      --test-file "$VISUAL_FILE" \
+      --test-method "$VISUAL_METHOD" \
+      --claim "$CONTRACT_ROW"
     SCREENSHOT_PATH=$(printf '%s\n' "$CONTRACT_ROW" | grep -oE 'visual_evidence/[[:alnum:]_./-]+\.png' | head -n 1 || true)
     [ -n "$SCREENSHOT_PATH" ] \
       || fail "$test_id has no visual_evidence PNG artifact path in sprint-contract.md"
@@ -188,7 +206,6 @@ if [ "$MODE" = "--evaluate" ]; then
       || fail "$test_id reference-anchor row must end with PASS"
   done
 
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   if [ -f "$SCRIPT_DIR/compare-visual-evidence.sh" ]; then
     echo "Running perceptual visual comparison checks..."
     bash "$SCRIPT_DIR/compare-visual-evidence.sh" --feature "$FEATURE_DIR" --crop-insets --project-root "$ROOT_DIR" \
@@ -197,4 +214,3 @@ if [ "$MODE" = "--evaluate" ]; then
 fi
 
 echo "PASS: visual methods, contract rows, acceptance IDs, connected evidence, screenshots, and reference-anchor proof are aligned."
-

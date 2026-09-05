@@ -101,6 +101,78 @@ mv "$FEATURE_DIR/feature_list.tmp" "$FEATURE_DIR/feature_list.json"
 expect_failure "has no successful evidence command scoped to FixtureIntegrationTest" \
   bash "$VALIDATOR" docs/product/2026-09-01-fixture --evaluate
 
+# Rendered rich-text evidence regression: a state-only mark assertion must not
+# satisfy an acceptance row that claims visible text styling.
+write_rendered_fixture() {
+  rm -rf "$FEATURE_DIR"
+  mkdir -p "$FEATURE_DIR" "$FIXTURE_ROOT/app/src/androidTest/java/example"
+
+  printf '%s\n' \
+    '{' \
+    '  "features": [{' \
+    '    "id": "US-1",' \
+    '    "status": "passing",' \
+    '    "acceptance_test_ids": ["TC-US-1-01"],' \
+    '    "evidence": [{' \
+    '      "test_id": "TC-US-1-01",' \
+    '      "executed_command": "./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.RenderedTest",' \
+    '      "exit_status": 0,' \
+    '      "result": "Rendered-output fixture passed"' \
+    '    }]' \
+    '  }]' \
+    '}' \
+    > "$FEATURE_DIR/feature_list.json"
+
+  printf '%s\n' \
+    '# Sprint Contract' \
+    '' \
+    '## Acceptance Test Cases' \
+    '' \
+    '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
+    '|---|---|---|---|---|---|---|---|' \
+    '| TC-US-1-01 | AC-US-1-01 | Instrumented UI | `app/src/androidTest/java/example/RenderedTest.kt#markedTextIsRendered` | N/A — no API | Render marked text in the production editor. | Following text visibly inherits Bold and differs from the plain text. | ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.RenderedTest |' \
+    > "$FEATURE_DIR/sprint-contract.md"
+}
+
+write_rendered_fixture
+printf '%s\n' \
+  'package example' \
+  '' \
+  'import org.junit.Assert.assertTrue' \
+  'import org.junit.Test' \
+  '' \
+  'class RenderedTest {' \
+  '  @Test' \
+  '  fun markedTextIsRendered() {' \
+  '    val marks = listOf("bold")' \
+  '    assertTrue("bold" in marks)' \
+  '  }' \
+  '}' \
+  > "$FIXTURE_ROOT/app/src/androidTest/java/example/RenderedTest.kt"
+expect_failure "must capture a Compose node with captureToImage()" \
+  bash "$VALIDATOR" docs/product/2026-09-01-fixture --test US-1
+
+write_rendered_fixture
+printf '%s\n' \
+  'package example' \
+  '' \
+  'import org.junit.Assert.assertTrue' \
+  'import org.junit.Test' \
+  '' \
+  'class RenderedTest {' \
+  '  @Test' \
+  '  fun markedTextIsRendered() {' \
+  '    val plain = onNodeWithTag("plain").captureToImage().asAndroidBitmap()' \
+  '    val marked = onNodeWithTag("marked").captureToImage().asAndroidBitmap()' \
+  '    assertTrue(plain.differingPixelCount(marked) > 0)' \
+  '  }' \
+  '}' \
+  > "$FIXTURE_ROOT/app/src/androidTest/java/example/RenderedTest.kt"
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \
+  docs/product/2026-09-01-fixture --test US-1 >/dev/null
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \
+  docs/product/2026-09-01-fixture --evaluate >/dev/null
+
 # Route-open ownership regression: an acceptance row that claims opening or
 # navigating to a route must be the named production-journey owner.
 write_journey_fixture() {

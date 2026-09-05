@@ -91,6 +91,24 @@ expect_pass "comment and literal architecture fixture" \
 expect_pass "comment and literal assertion fixture" \
   bash "$ASSERTIONS_CHECKER" "$fixture_root/comments/com/example/notesapp/ui"
 
+default_scan_root="$fixture_root/default-scan"
+mkdir -p "$default_scan_root/app/src/test" "$default_scan_root/app/src/androidTest"
+cat > "$default_scan_root/app/src/test/JvmRendererTest.kt" <<'KOTLIN'
+fun jvmRenderingTest() {
+    val output = renderer.render()
+    assertTrue(output.contains(">Label</text>"))
+}
+KOTLIN
+cat > "$default_scan_root/app/src/androidTest/AndroidRendererTest.kt" <<'KOTLIN'
+fun androidRenderingTest() {
+    val output = renderer.render()
+    assertTrue(output.contains("<svg"))
+    assertTrue(output.contains("</svg>"))
+}
+KOTLIN
+expect_failure "envelope-only assertions" \
+  bash "$ASSERTIONS_CHECKER" --project-root "$default_scan_root"
+
 actual_compose="$fixture_root/actual-compose/com/example/notesapp/ui"
 mkdir -p "$actual_compose"
 cat > "$actual_compose/Bad.kt" <<'KOTLIN'

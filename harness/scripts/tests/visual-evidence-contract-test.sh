@@ -13,6 +13,19 @@ export HARNESS_PROJECT_ROOT="$fixture_root"
 write_valid_fixture() {
   local feature_dir="$1"
   mkdir -p "$feature_dir/design" "$feature_dir/visual_evidence"
+  mkdir -p "$fixture_root/app/src/androidTest/java/example"
+  printf '%s\n' \
+    'package example' \
+    '' \
+    'import org.junit.Test' \
+    '' \
+    'class EmojiPickerVisualFlowTest {' \
+    '  @Test' \
+    '  fun emojiPickerContentLightTheme() {' \
+    '    check(true)' \
+    '  }' \
+    '}' \
+    > "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt"
   # Real PNGs (identical content, incompressible noise so the capture exceeds the
   # minimum screenshot size) so the perceptual comparator genuinely runs and passes;
   # text placeholders would be rejected as unparseable images.
@@ -40,7 +53,7 @@ EOF
     '' \
     '| Test ID | Covers AC | Test layer | Test file and method | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|' \
-    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme | fixture | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
+    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | `app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme` | fixture | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
     > "$feature_dir/sprint-contract.md"
   printf '%s\n' \
     '{' \
@@ -171,6 +184,59 @@ mv "$class_scoped_visual_command/feature_list.tmp" \
   "$class_scoped_visual_command/feature_list.json"
 expect_failure "no method-scoped VisualFlowTest verification command" \
   bash "$VALIDATOR" "$class_scoped_visual_command"
+
+rich_text_false_pass="$fixture_root/rich-text-false-pass"
+write_valid_fixture "$rich_text_false_pass"
+sed 's/ | fixture | screenshot saved at/ | Render marked text | Following text visibly inherits Bold; screenshot saved at/' \
+  "$rich_text_false_pass/sprint-contract.md" \
+  > "$rich_text_false_pass/sprint-contract.tmp"
+mv "$rich_text_false_pass/sprint-contract.tmp" "$rich_text_false_pass/sprint-contract.md"
+printf '%s\n' \
+  'package example' \
+  '' \
+  'import org.junit.Assert.assertTrue' \
+  'import org.junit.Test' \
+  '' \
+  'class EmojiPickerVisualFlowTest {' \
+  '  @Test' \
+  '  fun emojiPickerContentLightTheme() {' \
+  '    val marks = listOf("bold")' \
+  '    assertTrue("bold" in marks)' \
+  '  }' \
+  '}' \
+  > "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt"
+expect_failure "must capture a Compose node with captureToImage()" \
+  bash "$VALIDATOR" "$rich_text_false_pass"
+
+rich_text_visual_proof="$fixture_root/rich-text-visual-proof"
+write_valid_fixture "$rich_text_visual_proof"
+sed 's/ | fixture | screenshot saved at/ | Render marked text | Following text visibly inherits Bold; screenshot saved at/' \
+  "$rich_text_visual_proof/sprint-contract.md" \
+  > "$rich_text_visual_proof/sprint-contract.tmp"
+mv "$rich_text_visual_proof/sprint-contract.tmp" "$rich_text_visual_proof/sprint-contract.md"
+printf '%s\n' \
+  'package example' \
+  '' \
+  'import org.junit.Assert.assertTrue' \
+  'import org.junit.Test' \
+  '' \
+  'class EmojiPickerVisualFlowTest {' \
+  '  @Test' \
+  '  fun emojiPickerContentLightTheme() {' \
+  '    val plain = onNodeWithTag("plain").captureToImage().asAndroidBitmap()' \
+  '    val marked = onNodeWithTag("marked").captureToImage().asAndroidBitmap()' \
+  '    assertTrue(plain.differingPixelCount(marked) > 0)' \
+  '  }' \
+  '}' \
+  > "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt"
+(cd "$REPO_ROOT" && bash "$VALIDATOR" "$rich_text_visual_proof")
+
+plain_target="$fixture_root/plain-target"
+write_valid_fixture "$plain_target"
+sed -i.bak 's/`app\/src\/androidTest\/java\/example\/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme`/app\/src\/androidTest\/java\/example\/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme/' \
+  "$plain_target/sprint-contract.md"
+rm -f "$plain_target/sprint-contract.md.bak"
+(cd "$REPO_ROOT" && bash "$VALIDATOR" "$plain_target")
 
 duplicate_screenshot="$fixture_root/duplicate-screenshot"
 write_valid_fixture "$duplicate_screenshot"

@@ -1330,6 +1330,12 @@ def build_parser() -> argparse.ArgumentParser:
     assertions.add_argument("--test-directory", type=Path, default=None)
     assertions.add_argument("--project-root", type=Path, default=None)
     assertions.add_argument("test_directory_arg", nargs="?", type=Path)
+    rendered_output = subparsers.add_parser("rendered-output")
+    rendered_output.add_argument("--project-root", type=Path, default=None)
+    rendered_output.add_argument("--test-file", required=True, type=Path)
+    rendered_output.add_argument("--test-method", required=True)
+    rendered_output.add_argument("--claim", default="")
+    rendered_output.add_argument("--require-source", action="store_true")
     return parser
 
 
@@ -1347,6 +1353,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return run_journey(args)
     if args.checker == "assertions":
         return run_assertions(args)
+    if args.checker == "rendered-output":
+        return run_rendered_output(args)
     raise AssertionError(f"Unknown checker: {args.checker}")
 
 
@@ -1912,14 +1920,29 @@ def run_journey(args: argparse.Namespace) -> int:
 def run_assertions(args: argparse.Namespace) -> int:
     project_root = (args.project_root or repository_root()).resolve()
     test_argument = args.test_directory or args.test_directory_arg
-    test_directory = (test_argument or project_root / "app" / "src" / "test").resolve()
-    files = [path for path in iter_files(test_directory) if path.name.endswith("Test.kt")]
+    if test_argument is None:
+        test_directories = [
+            project_root / "app" / "src" / "test",
+            project_root / "app" / "src" / "androidTest",
+        ]
+    else:
+        test_directories = [test_argument]
+    test_directories = [directory.resolve() for directory in test_directories]
+    files = sorted(
+        {
+            path
+            for directory in test_directories
+            for path in iter_files(directory)
+            if path.name.endswith("Test.kt")
+        },
+        key=lambda path: str(path),
+    )
     parsed_files = parse_files(files)
     result = Result(project_root)
     print("\n======================================================")
     print("  Test Assertions Quality Checker")
     print("======================================================")
-    print(f"  Test root: {test_directory}")
+    print(f"  Test roots: {', '.join(str(directory) for directory in test_directories)}")
     print(f"  Files scanned: {len(parsed_files)}")
 
     envelope_prefixes = ("<svg", "</svg", "<SVG", "</SVG", "<html", "</html", "<HTML", "</HTML")
@@ -1955,6 +1978,127 @@ def run_assertions(args: argparse.Namespace) -> int:
 
     visit_rule(result, "Semantic rendering assertions", check_rendering_assertions)
     return finish(result, "test assertion quality")
+
+
+RENDERED_RICH_TEXT_CLAIM_PATTERN = re.compile(
+    r"(?:"
+    r"\bvisibl\w*\b.{0,120}\b(?:bold|italic|underline|strikethrough|code|monospace|"
+    r"text|style|appearance)\b|"
+    r"\brender\w*\s+(?:the\s+)?(?:bold|italic|underline|strikethrough|code|monospace|"
+    r"styled|formatted|marked|rich[\s-]+text|inline[\s-]+(?:marks?|formatting)|"
+    r"text\s+appearance|appearance)\b|"
+    r"\b(?:bold|italic|underline|strikethrough|code|monospace)\b.{0,120}\b(?:style|"
+    r"appearance|render\w*|visibl\w*|display\w*|shown|font|weight)\b|"
+    r"\b(?:text|range)\s+(?:differs|changes)\b|"
+    r"\b(?:marked|formatted|styled)\s+text\b|"
+    r"\btext\b.{0,80}\b(?:appearance|style|pixel)\w*\b|"
+    r"\b(?:rich[\s-]+text|inline[\s-]+marks?|inline[\s-]+formatting?)\b.{0,120}\b(?:render|"
+    r"appear|style|visual|pixel)\w*\b"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def run_rendered_output(args: argparse.Namespace) -> int:
+    """Verify source-fed pixel evidence for explicit rich-text appearance claims."""
+
+    project_root = (args.project_root or repository_root()).resolve()
+    claim = args.claim or ""
+    has_rendered_claim = RENDERED_RICH_TEXT_CLAIM_PATTERN.search(claim) is not None
+    if not args.require_source and not has_rendered_claim:
+        print(
+            f"SKIP: {args.test_file}#{args.test_method} has no explicit rich-text "
+            "rendered-appearance claim."
+        )
+        return 0
+
+    test_argument = args.test_file
+    test_path = Path(test_argument)
+    if not test_path.is_absolute():
+        test_path = project_root / test_path
+    test_path = test_path.resolve()
+
+    result = Result(project_root)
+    print("\n======================================================")
+    print("  Rendered Output Contract Checker")
+    print("======================================================")
+    print(f"  Test: {project_relative(test_path, project_root)}#{args.test_method}")
+
+    if not path_is_under(test_path, project_root):
+        result.add_path(test_path, 1, "rendered-output test file must stay inside the project")
+    elif not test_path.is_file():
+        result.add_path(test_path, 1, "rendered-output test file does not exist")
+    else:
+        try:
+            source_file = KotlinFile(test_path)
+        except (OSError, UnicodeError) as error:
+            result.add_path(test_path, 1, f"unable to parse rendered-output test source: {error}")
+        else:
+            functions = [function for function in source_file.functions if function.name == args.test_method]
+            if not functions:
+                result.add_path(
+                    test_path,
+                    1,
+                    f"rendered-output test method is missing: {args.test_method}",
+                )
+            else:
+                target = functions[0]
+                if not ({"Test", "org.junit.Test", "ParameterizedTest", "TestFactory", "TestTemplate"} & target.annotations):
+                    result.add(source_file, target.name_index, "rendered-output method is not annotated as a Kotlin/JUnit test")
+
+                body_calls = [
+                    call
+                    for call in source_file.calls
+                    if target.body_start < call.open_index < target.body_end
+                ]
+                if has_rendered_claim:
+                    capture_calls = [call for call in body_calls if call.name == "captureToImage"]
+                    if not capture_calls:
+                        result.add(
+                            source_file,
+                            target.name_index,
+                            "rendered appearance claims must capture a Compose node with captureToImage()",
+                        )
+
+                    comparison_calls = [
+                        call
+                        for call in body_calls
+                        if call.name in {
+                            "differingPixelCount",
+                            "assertPixels",
+                            "assertScreenshot",
+                            "assertRenderedAppearance",
+                            "compareRenderedPixels",
+                        }
+                    ]
+                    if not comparison_calls:
+                        result.add(
+                            source_file,
+                            target.name_index,
+                            "rendered appearance claims must assert an explicit pixel comparison "
+                            "(differingPixelCount(), assertPixels(), or an equivalent assertion)",
+                        )
+                    elif any(call.name == "differingPixelCount" or call.name == "compareRenderedPixels" for call in comparison_calls):
+                        assertion_calls = [
+                            call
+                            for call in body_calls
+                            if call.name in {"assertTrue", "assertEquals", "assertNotEquals", "assertThat"}
+                        ]
+                        if not any(
+                            assertion.open_index < comparison.open_index < assertion.close_index
+                            for assertion in assertion_calls
+                            for comparison in comparison_calls
+                            if comparison.name in {"differingPixelCount", "compareRenderedPixels"}
+                        ):
+                            result.add(
+                                source_file,
+                                comparison_calls[0].name_index,
+                                "differingPixelCount() must be inside an assertion; "
+                                "a computed pixel difference without a checked result is not evidence",
+                            )
+
+    print_rule("Rendered rich-text appearance evidence", result.violations)
+    return finish(result, "rendered rich-text appearance contract")
 
 
 if __name__ == "__main__":

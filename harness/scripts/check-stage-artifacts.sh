@@ -99,6 +99,7 @@ require_bug_reproduction_evidence() {
   local reproduction_section
   local result_line
   local reproduction_file
+  local reproduction_test_method
   local test_path
 
   reproduction_section=$(awk '
@@ -148,6 +149,19 @@ require_bug_reproduction_evidence() {
     echo "FAIL: reproduction test file does not exist: $reproduction_file" >&2
     exit 1
   fi
+  reproduction_test_method=$(printf '%s\n' "$reproduction_section" |
+    sed -n -E 's/^[[:space:]]*-[[:space:]]*\*{0,2}Test name\*{0,2}:[[:space:]]*`([^`]+)`.*/\1/p' |
+    head -n 1)
+  if [ -z "$reproduction_test_method" ]; then
+    reproduction_test_method=$(printf '%s\n' "$reproduction_section" |
+      sed -n -E 's/.*(test|method)[[:space:]]+`([A-Za-z_][A-Za-z0-9_]*)`.*/\2/p' |
+      head -n 1)
+  fi
+  bash "$SCRIPT_DIR/check-rendered-output-contract.sh" \
+    --project-root "$PROJECT_ROOT" \
+    --test-file "$test_path" \
+    --test-method "$reproduction_test_method" \
+    --claim "$reproduction_section"
   echo "OK: $spec records RED reproduction evidence in $reproduction_file"
 }
 

@@ -107,6 +107,24 @@ Dedicated Visual Verification tests (`*VisualFlowTest.kt`):
 - Visual evidence files are then retrieved using `adb pull /sdcard/Download/<name>.png <destination_path>`.
 - **Prohibition**: Post-test external screencaps (such as chaining `&& adb exec-out screencap` after `connectedDebugAndroidTest`) are strictly forbidden because the test Activity/window is already destroyed when the test runner finishes.
 
+#### Rendered Rich-Text Appearance Evidence
+
+When an acceptance, reproduction, or visual-verification row claims that rich text,
+inline marks, or a formatting action is visibly rendered (for example, bold, italic,
+underline, strikethrough, code, or monospace), the named instrumented test must prove
+the rendered result from the Compose node itself. After the test is idle, capture the
+plain and formatted node with `captureToImage()` and assert an explicit pixel
+comparison such as `differingPixelCount(...) > 0`, `assertPixels(...)`, or an
+equivalent checked comparison.
+
+ViewModel state, `RichText.marks`, `AnnotatedString` contents, toolbar state, text
+content, and a non-empty full-screen PNG are supplemental evidence only; none proves
+that the `BasicTextField` actually rendered the formatting. The acceptance-test,
+visual-evidence, and bug-reproduction validators invoke
+`bash harness/scripts/check-rendered-output-contract.sh` for this claim class and
+fail when the named method has no source-fed pixel comparison. Claims unrelated to
+rich-text appearance continue to use the ordinary visual and semantic contracts.
+
 #### Level 5 Semantic & Visual Verification Engine
 
 Visual verification is layered, and only layers with deterministic pixels are gated:

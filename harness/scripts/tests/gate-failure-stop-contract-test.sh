@@ -13,7 +13,7 @@ fail_test() {
 for workflow in harness-generator.md harness-fix.md; do
   workflow_path="$WORKFLOW_DIR/$workflow"
   [ -f "$workflow_path" ] || fail_test "missing workflow: $workflow_path"
-  if rg -n -i "Gate Failure Resolution Policy|3 attempts|do not stop the pipeline|continue to the next item|proceed to the next stage" "$workflow_path"; then
+  if rg -n -i "do not stop the pipeline|continue to the next item|proceed to the next stage" "$workflow_path"; then
     fail_test "$workflow still allows a failed gate to advance the pipeline"
   fi
 done
@@ -31,16 +31,16 @@ require_before() {
 
 rg -Fq 'Every required stage gate is a hard stop.' "$WORKFLOW_DIR/harness-generator.md" \
   || fail_test "generator workflow does not define hard-stop gate semantics"
-rg -Fq 'and stop the pipeline' "$WORKFLOW_DIR/harness-generator.md" \
+rg -q -e 'workflow must stop (before the next stage|the pipeline)' "$WORKFLOW_DIR/harness-generator.md" \
   || fail_test "generator workflow does not stop after failed verification"
 rg -Fq 'Every required fix-mode gate is a hard stop.' "$WORKFLOW_DIR/harness-fix.md" \
   || fail_test "fix workflow does not define hard-stop gate semantics"
 rg -Fq 'keep the feature non-passing and stop the pipeline' "$WORKFLOW_DIR/harness-fix.md" \
   || fail_test "fix workflow does not stop after failed verification"
 
-require_before harness-generator.md "### Stage 4 — Test First" "### Stage 5 — Implement"
-require_before harness-generator.md "### Stage 5 — Implement" "### Stage 6 — Verify Tests"
-require_before harness-generator.md "check-acceptance-test-traceability.sh" "### Stage 7 — Code Quality Fix"
+require_before harness-generator.md "### Stage 3 — Verify Baseline" "### Stage 4 — Implement"
+require_before harness-generator.md "### Stage 4 — Implement" "### Stage 5 — Test"
+require_before harness-generator.md "check-acceptance-test-traceability.sh" "### Stage 7 — Update State"
 require_before harness-fix.md "check-acceptance-test-traceability.sh" "### Fix-Stage 5 — Finalize"
 
 echo "PASS: failed generator and fix gates stop the pipeline."

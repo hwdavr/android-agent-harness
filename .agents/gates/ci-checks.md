@@ -100,7 +100,24 @@ bash harness/scripts/tests/acceptance-test-traceability-contract-test.sh
 **Must pass** before a harness slice is marked tested or evaluated. It proves that
 each acceptance Test ID maps to one declared Kotlin test method, a suite-scoped Gradle
 or instrumented selector, its declared shared JSON scenario(s), and successful
-evidence.
+evidence. When the row explicitly claims rich-text or inline-formatting appearance,
+the same gate invokes the rendered-output contract for the named instrumented method.
+
+### 10.0 Rendered Output Evidence Contract
+```bash
+bash harness/scripts/check-rendered-output-contract.sh \
+  --project-root "$PWD" \
+  --test-file app/src/androidTest/.../<Feature>VisualFlowTest.kt \
+  --test-method <method> \
+  --claim "Following text visibly inherits Bold"
+bash harness/scripts/tests/rendered-output-contract-test.sh
+```
+**Must pass** for any acceptance, reproduction, or visual row that claims formatted
+text is visibly rendered. The named source method must capture the rendered Compose
+node with `captureToImage()` and check an explicit pixel comparison. ViewModel marks,
+toolbar state, text content, and a non-empty screenshot without a node comparison
+are supplemental only. The acceptance, visual-evidence, and bug-reproduction gates
+invoke this contract automatically where the claim is explicit.
 
 ### 10.1 Production Journey Planning Contract
 ```bash
@@ -153,7 +170,7 @@ bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate
 ```bash
 bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"
 ```
-**Must pass.** Every visual verification method in the final owner's `feature_list.json` must have a matching `TC-*-VIS-*` row in `sprint-contract.md`, an acceptance-test ID, successful connected-test evidence, a non-empty screenshot, and one matching reference-anchor row in `visual_evidence/reference-anchor-verification.md`. Each row names the approved design asset, visual bounds `testTag`, runtime test, concrete bounds relationship, and screenshot.
+**Must pass.** Every visual verification method in the final owner's `feature_list.json` must have a matching `TC-*-VIS-*` row in `sprint-contract.md`, an acceptance-test ID, successful connected-test evidence, a non-empty screenshot, and one matching reference-anchor row in `visual_evidence/reference-anchor-verification.md`. Each row names the approved design asset, visual bounds `testTag`, runtime test, concrete bounds relationship, and screenshot. Rows that claim rich-text or inline-formatting appearance additionally require the named `VisualFlowTest` method to pass the source-fed rendered-output contract.
 
 ### 13. Keyboard-Visible Planning Mockup (when a planned screen or bottom sheet has text input)
 ```bash

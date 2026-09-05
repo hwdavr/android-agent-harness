@@ -185,6 +185,15 @@ $test_id"
       NR > 1 && /^[[:space:]]*((public|private|protected|internal|suspend|inline|operator|infix|override|final|open)[[:space:]]+)*fun[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(/ { exit }
       { print }
     ')
+    case "$test_file" in
+      app/src/androidTest/*.kt)
+        bash "$SCRIPT_DIR/check-rendered-output-contract.sh" \
+          --project-root "$PROJECT_ROOT" \
+          --test-file "$source_file" \
+          --test-method "$test_method" \
+          --claim "$signal_text"
+        ;;
+    esac
     while IFS= read -r scenario_path; do
       [ -n "$scenario_path" ] || continue
       [ -f "$PROJECT_ROOT/$scenario_path" ] \
