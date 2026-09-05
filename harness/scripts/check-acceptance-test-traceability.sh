@@ -211,7 +211,7 @@ EOF
       .features[]
       | select(.id == $owner)
       | (.evidence // [])[]?
-      | select(.test_id == $test_id and .exit_status == 0)
+      | select(type == "object" and .test_id == $test_id and .exit_status == 0)
       | .executed_command // empty
     ' "$FEATURE_JSON")
     [ -n "$evidence_commands" ] || fail "$test_id has no successful evidence in feature_list.json"
