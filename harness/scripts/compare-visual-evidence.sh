@@ -430,6 +430,8 @@ def run_feature():
         match_via = None
         mask_regions = None
 
+        targets = []
+
         if file_name in reference_map:
             mapped = reference_map[file_name]
             if mapped is None:
@@ -446,14 +448,16 @@ def run_feature():
                     "matched_via": "explicit-map(null)"
                 })
                 continue
+
+            cand = None
             if isinstance(mapped, str):
-                cand = f_dir / mapped
-                if not cand.is_file():
+                c = f_dir / mapped
+                if not c.is_file():
                     print(f"FAIL: reference-map.json maps {file_name} to missing reference '{mapped}'", file=sys.stderr)
                     config_error = True
                     continue
-                ref_candidate = cand
-                match_via = "explicit-map"
+                cand = c
+                mask_regions = None
             elif isinstance(mapped, dict):
                 ref_val = mapped.get("reference")
                 mask_regions = mapped.get("mask")
@@ -465,45 +469,68 @@ def run_feature():
                     print(f"FAIL: reference-map.json 'mask' for {file_name} must be a list of regions", file=sys.stderr)
                     config_error = True
                     continue
-                cand = f_dir / ref_val
-                if not cand.is_file():
+                c = f_dir / ref_val
+                if not c.is_file():
                     print(f"FAIL: reference-map.json maps {file_name} to missing reference '{ref_val}'", file=sys.stderr)
                     config_error = True
                     continue
-                ref_candidate = cand
-                match_via = "explicit-map"
+                cand = c
             else:
                 print(f"FAIL: reference-map.json entry for {file_name} must be null, a reference path string, or an object with 'reference' and optional 'mask'", file=sys.stderr)
                 config_error = True
                 continue
+
+            is_gold = is_golden_reference(cand)
+            targets.append({
+                "ref": cand,
+                "match_via": "explicit-map",
+                "gate_role": "binding" if is_gold else "informational",
+                "mask": mask_regions,
+                "is_golden": is_gold
+            })
         else:
-            # Exact-name golden baseline first: it is the binding regression reference.
+            # 1. Exact-name golden baseline: binding regression reference.
             golden_exact = golden_dir / f"{base_name}.png"
             if golden_exact.is_file():
-                ref_candidate = golden_exact
-                match_via = "golden-baseline"
-            else:
-                # Deterministic token matching against design mockups (informational):
-                # highest token overlap first, then the most parsimonious reference
-                # (fewest tokens absent from the capture name), then reference name
-                # order. Never depends on glob order.
-                candidates = []
-                if design_dir.is_dir():
-                    for p in design_dir.glob("*.png"):
-                        p_tokens = set(re.findall(r"[a-z0-9]+", p.stem.lower()))
-                        p_tokens.discard("mockup")
-                        overlap = len(base_tokens & p_tokens)
-                        if overlap > 0:
-                            candidates.append((overlap, len(p_tokens - base_tokens), p.stem, p))
-                if candidates:
-                    candidates.sort(key=lambda c: (-c[0], c[1], c[2]))
-                    ref_candidate = candidates[0][3]
-                    match_via = "token-match"
-                elif default_ref is not None:
-                    ref_candidate = default_ref
-                    match_via = "anchor-default"
+                targets.append({
+                    "ref": golden_exact,
+                    "match_via": "golden-baseline",
+                    "gate_role": "binding",
+                    "mask": None,
+                    "is_golden": True
+                })
 
-        if ref_candidate is None:
+            # 2. Deterministic token matching against design mockups (informational):
+            # highest token overlap first, then the most parsimonious reference
+            # (fewest tokens absent from the capture name), then reference name
+            # order. Never depends on glob order.
+            candidates = []
+            if design_dir.is_dir():
+                for p in design_dir.glob("*.png"):
+                    p_tokens = set(re.findall(r"[a-z0-9]+", p.stem.lower()))
+                    p_tokens.discard("mockup")
+                    overlap = len(base_tokens & p_tokens)
+                    if overlap > 0:
+                        candidates.append((overlap, len(p_tokens - base_tokens), p.stem, p))
+            if candidates:
+                candidates.sort(key=lambda c: (-c[0], c[1], c[2]))
+                targets.append({
+                    "ref": candidates[0][3],
+                    "match_via": "token-match",
+                    "gate_role": "informational",
+                    "mask": None,
+                    "is_golden": False
+                })
+            elif default_ref is not None:
+                targets.append({
+                    "ref": default_ref,
+                    "match_via": "anchor-default",
+                    "gate_role": "informational",
+                    "mask": None,
+                    "is_golden": False
+                })
+
+        if not targets:
             print(f"  [NO_REFERENCE] No reference found for {file_name}; add an approved design/ mockup, promote a golden baseline, or add a visual_evidence/reference-map.json entry (or declare it anchor-only with null)", file=sys.stderr)
             comparison_records.append({
                 "actual": file_name,
@@ -518,50 +545,61 @@ def run_feature():
             config_error = True
             continue
 
-        binding = is_golden_reference(ref_candidate)
-        gate_role = "binding" if binding else "informational"
+        has_golden = any(t["is_golden"] for t in targets)
+        has_multiple = len(targets) > 1
 
-        try:
-            ref_img = Image.open(ref_candidate)
-            act_img = Image.open(act_img_path)
-            res = compare_images(ref_img, act_img, mask_regions=mask_regions)
-            diff_file = visual_evidence_dir / f"{base_name}_diff.png"
-            res["diff_overlay"].save(diff_file)
+        for target in targets:
+            ref_candidate = target["ref"]
+            gate_role = target["gate_role"]
+            binding = (gate_role == "binding")
+            match_via = target["match_via"]
+            mask_regions = target["mask"]
 
-            if binding:
-                status_str = "PASS" if res["passed"] else "FAIL"
-                if not res["passed"]:
-                    all_passed = False
-                print(f"  [{status_str}] {file_name} vs {ref_candidate.name} ({match_via}, binding golden regression) -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
-            else:
-                # Mockup comparisons are informational: mock copy and AI-mockup
-                # rendering can never pixel-match a real implementation.
-                status_str = "INFO"
-                print(f"  [INFO] {file_name} vs {ref_candidate.name} ({match_via}, informational) -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
+            try:
+                ref_img = Image.open(ref_candidate)
+                act_img = Image.open(act_img_path)
+                res = compare_images(ref_img, act_img, mask_regions=mask_regions)
 
-            comparison_records.append({
-                "actual": file_name,
-                "reference": ref_candidate.name,
-                "gate_role": gate_role,
-                "score": res["similarity_score"],
-                "diff_percentage": res["diff_percentage"],
-                "status": status_str,
-                "diff_image": diff_file.name,
-                "matched_via": match_via
-            })
-        except Exception as e:
-            print(f"  [ERROR] Failed to compare {file_name}: {e}", file=sys.stderr)
-            comparison_records.append({
-                "actual": file_name,
-                "reference": ref_candidate.name,
-                "gate_role": gate_role,
-                "score": None,
-                "diff_percentage": None,
-                "status": "ERROR",
-                "diff_image": "—",
-                "matched_via": match_via
-            })
-            all_passed = False
+                if has_multiple and not target["is_golden"]:
+                    diff_file = visual_evidence_dir / f"{base_name}_mockup_diff.png"
+                else:
+                    diff_file = visual_evidence_dir / f"{base_name}_diff.png"
+                res["diff_overlay"].save(diff_file)
+
+                if binding:
+                    status_str = "PASS" if res["passed"] else "FAIL"
+                    if not res["passed"]:
+                        all_passed = False
+                    print(f"  [{status_str}] {file_name} vs {ref_candidate.name} ({match_via}, binding golden regression) -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
+                else:
+                    # Mockup comparisons are informational: mock copy and AI-mockup
+                    # rendering can never pixel-match a real implementation.
+                    status_str = "INFO"
+                    print(f"  [INFO] {file_name} vs {ref_candidate.name} ({match_via}, informational) -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
+
+                comparison_records.append({
+                    "actual": file_name,
+                    "reference": ref_candidate.name,
+                    "gate_role": gate_role,
+                    "score": res["similarity_score"],
+                    "diff_percentage": res["diff_percentage"],
+                    "status": status_str,
+                    "diff_image": diff_file.name,
+                    "matched_via": match_via
+                })
+            except Exception as e:
+                print(f"  [ERROR] Failed to compare {file_name} vs {ref_candidate.name}: {e}", file=sys.stderr)
+                comparison_records.append({
+                    "actual": file_name,
+                    "reference": ref_candidate.name,
+                    "gate_role": gate_role,
+                    "score": None,
+                    "diff_percentage": None,
+                    "status": "ERROR",
+                    "diff_image": "—",
+                    "matched_via": match_via
+                })
+                all_passed = False
 
     # Write summary report markdown
     report_md = visual_evidence_dir / "visual_comparison_report.md"

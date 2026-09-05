@@ -345,4 +345,37 @@ grep -F '| `screen_state.png` | `mockup_screen.png` | informational | explicit-m
   "$MAP_FEATURE/visual_evidence/visual_comparison_report.md" \
   || fail_test "masked regions must be excluded from the comparison score"
 
-echo "PASS: All 16 visual-comparison contract test cases passed."
+# Case 17: When both an exact-name golden baseline and a design mockup exist,
+# BOTH the binding golden regression comparison and the informational design mockup
+# comparison are recorded in visual_comparison_report.md (golden promotion does not
+# silence mockup conformance evidence).
+DUAL_FEATURE="$FIXTURE_ROOT/docs/product/dual-feature"
+mkdir -p "$DUAL_FEATURE/design" "$DUAL_FEATURE/visual_evidence"
+python3 - << EOF
+from PIL import Image, ImageDraw
+
+d_feat = "$DUAL_FEATURE"
+base = Image.new("RGB", (100, 200), (255, 255, 255))
+d = ImageDraw.Draw(base)
+d.rectangle([10, 10, 90, 90], fill=(0, 100, 255))
+base.save(f"{d_feat}/design/mockup_dual_screen.png")
+base.save(f"{d_feat}/visual_evidence/dual_screen.png")
+base.save("$FIXTURE_ROOT/UX/golden-baselines/dual_screen.png")
+EOF
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --feature "$DUAL_FEATURE" \
+  --threshold 0.95
+
+grep -Fq '| `dual_screen.png` | `dual_screen.png` | binding | golden-baseline | 1.0000 | 0.0% | [`dual_screen_diff.png`](dual_screen_diff.png) | **PASS** |' \
+  "$DUAL_FEATURE/visual_evidence/visual_comparison_report.md" \
+  || fail_test "golden baseline row missing from dual-reference report"
+grep -Fq '| `dual_screen.png` | `mockup_dual_screen.png` | informational | token-match | 1.0000 | 0.0% | [`dual_screen_mockup_diff.png`](dual_screen_mockup_diff.png) | **INFO** |' \
+  "$DUAL_FEATURE/visual_evidence/visual_comparison_report.md" \
+  || fail_test "informational mockup row missing from dual-reference report"
+[ -s "$DUAL_FEATURE/visual_evidence/dual_screen_diff.png" ] \
+  || fail_test "golden diff overlay missing"
+[ -s "$DUAL_FEATURE/visual_evidence/dual_screen_mockup_diff.png" ] \
+  || fail_test "mockup diff overlay missing"
+echo "PASS: All 17 visual-comparison contract test cases passed."

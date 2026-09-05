@@ -306,10 +306,11 @@ AI-generated rendering that can never pixel-match a real implementation, so:
   later phases. They never pass/fail the gate.
 - Structural conformance is bound by the reference-anchor bounds contract, not by pixels.
 
-**Batch reference resolution** (`--feature`): each capture is paired with a reference
-deterministically — an explicit `visual_evidence/reference-map.json` entry first, then an
-exact-name golden baseline, then the most specific `design/mockup_*.png` token match, then
-the anchor report's declared reference. Never rely on filename coincidence: when a state
+**Batch reference resolution** (`--feature`): each capture is evaluated deterministically —
+an explicit `visual_evidence/reference-map.json` entry takes precedence. For unmapped captures,
+both the exact-name golden baseline (binding regression check) and the most specific
+`design/mockup_*.png` token match (informational design review) are evaluated and recorded so
+that golden promotion does not silence design mockup conformance evidence. Never rely on filename coincidence: when a state
 capture has no applicable pixel reference (e.g., a dark-theme state with no dark mockup),
 declare it explicitly in `visual_evidence/reference-map.json` rather than letting it
 compare against an inapplicable mockup:
