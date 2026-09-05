@@ -93,6 +93,64 @@ require_rule_applicability() {
   echo "OK: $artifact has a complete rule-applicability contract."
 }
 
+require_bug_reproduction_evidence() {
+  local spec="$1"
+  local summary="$2"
+  local reproduction_section
+  local result_line
+  local reproduction_file
+  local test_path
+
+  reproduction_section=$(awk '
+    /^## Reproduction Test/ { in_reproduction = 1 }
+    in_reproduction && /^## / && !/^## Reproduction Test/ { exit }
+    in_reproduction { print }
+  ' "$spec")
+  if [ -z "$reproduction_section" ]; then
+    echo "FAIL: $spec is missing a '## Reproduction Test' section." >&2
+    exit 1
+  fi
+
+  result_line=$(printf '%s\n' "$reproduction_section" |
+    sed -n -E 's/^[[:space:]]*-[[:space:]]*\*{0,2}(Run result|Result)\*{0,2}:[[:space:]]*(.*)$/\2/p' |
+    head -n 1)
+  if [ -z "$result_line" ]; then
+    echo "FAIL: $spec reproduction evidence must record a Run result or Result line." >&2
+    exit 1
+  fi
+  if ! printf '%s\n' "$result_line" | rg -qi 'FAILED|RED'; then
+    echo "FAIL: $spec reproduction result must record FAILED or RED evidence." >&2
+    exit 1
+  fi
+  if printf '%s\n' "$result_line" | rg -qi 'PASSED|SUCCESSFUL'; then
+    echo "FAIL: $spec reproduction result cannot claim a passing result." >&2
+    exit 1
+  fi
+
+  if ! rg -qi '^[[:space:]]*\|[[:space:]]*Bug Reproduction[[:space:]]*\|.*(RED|FAILED)' "$summary"; then
+    echo "FAIL: $summary must mark Bug Reproduction as RED or FAILED." >&2
+    exit 1
+  fi
+
+  reproduction_file=$(printf '%s\n' "$reproduction_section" |
+    sed -n -E 's/^[[:space:]]*-[[:space:]]*\*{0,2}File\*{0,2}:[[:space:]]*`([^`]+)`.*/\1/p' |
+    head -n 1)
+  if [ -z "$reproduction_file" ]; then
+    echo "FAIL: $spec reproduction evidence must name the test File." >&2
+    exit 1
+  fi
+
+  case "$reproduction_file" in
+    /*) test_path="$reproduction_file" ;;
+    *) test_path="$PROJECT_ROOT/$reproduction_file" ;;
+  esac
+  if [ ! -f "$test_path" ]; then
+    echo "FAIL: reproduction test file does not exist: $reproduction_file" >&2
+    exit 1
+  fi
+  echo "OK: $spec records RED reproduction evidence in $reproduction_file"
+}
+
 require_production_journey() {
   local artifact="$1"
   local boundary
@@ -165,6 +223,13 @@ case "$WORKFLOW/$STAGE" in
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "bug context/root cause spec"
     require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "bug-fixing requirement analysis"
+    ;;
+  bug-fixing/bug-reproduction)
+    require_file "summary_v*.md" "stage progress tracker"
+    require_file "spec_v*.md" "bug context/root cause spec"
+    require_bug_reproduction_evidence \
+      "$(latest_versioned_file "spec_v*.md")" \
+      "$(latest_versioned_file "summary_v*.md")"
     ;;
   bug-fixing/implementation-plan)
     require_file "implementation_plan_v*.md" "fix plan"
@@ -320,6 +385,7 @@ EOF
     echo "  feature-delivery/requirement-analysis" >&2
     echo "  feature-delivery/implementation-plan" >&2
     echo "  bug-fixing/requirement-analysis" >&2
+    echo "  bug-fixing/bug-reproduction" >&2
     echo "  bug-fixing/implementation-plan" >&2
     echo "  bug-fixing/testing" >&2
     echo "  api-contract-update/requirement-analysis" >&2

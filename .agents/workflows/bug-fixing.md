@@ -47,7 +47,7 @@ Gate: root cause is specific enough that a reproduction test can be written. Run
 Write a failing test that mechanically proves the root cause before any fix is written.
 
 Output: Failing reproduction test file created; `docs/current/spec_v<N>.md` updated with a Reproduction Test section; `docs/current/summary_v<N>.md` updated.
-Gate: test exits RED (non-zero), failure message matches root cause, no application code modified.
+Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
 **STOP — if root cause cannot be reproduced by a test, surface to user before continuing.**
 
 ---
