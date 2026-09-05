@@ -107,6 +107,15 @@ Dedicated Visual Verification tests (`*VisualFlowTest.kt`):
 - Visual evidence files are then retrieved using `adb pull /sdcard/Download/<name>.png <destination_path>`.
 - **Prohibition**: Post-test external screencaps (such as chaining `&& adb exec-out screencap` after `connectedDebugAndroidTest`) are strictly forbidden because the test Activity/window is already destroyed when the test runner finishes.
 
+#### Level 5 Semantic & Visual Verification Engine
+
+- Captured runtime screenshots must be compared against the reference design (`design/mockup_*.png`) or golden baseline (`UX/golden-baselines/<screen>.png`) using `bash harness/scripts/compare-visual-evidence.sh`.
+- The comparison engine performs automated insets normalization (`--crop-insets` for status/nav bars), anti-aliasing color tolerance, and pixel divergence clustering.
+- A visual diff overlay (`<test_id>_diff.png`) highlighting divergent regions in neon magenta must be generated and preserved alongside the actual screenshot in `visual_evidence/`.
+- **Pass threshold**: Similarity score must be $\ge 0.95$ ($\le 5.0\%$ diff) with zero high-severity layout or component violations. Any regression below 0.95 or structural violation blocks the pipeline.
+- **Golden promotion**: Approved intentional visual updates or new screen standards are promoted to `UX/golden-baselines/` using `bash harness/scripts/compare-visual-evidence.sh --promote-golden <actual.png> --name <screen_name>`.
+
+
 Do NOT use instrumented UI tests for:
 - ViewModel + repository + mocked backend verification when JVM integration tests can cover it
 

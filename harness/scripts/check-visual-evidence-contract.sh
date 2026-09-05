@@ -169,6 +169,14 @@ if [ "$MODE" = "--evaluate" ]; then
     printf '%s\n' "$REPORT_ROW" | grep -Eq '\|[[:space:]]*PASS[[:space:]]*\|[[:space:]]*$' \
       || fail "$test_id reference-anchor row must end with PASS"
   done
+
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "$SCRIPT_DIR/compare-visual-evidence.sh" ]; then
+    echo "Running perceptual visual comparison checks..."
+    bash "$SCRIPT_DIR/compare-visual-evidence.sh" --feature "$FEATURE_DIR" --crop-insets \
+      || fail "perceptual visual comparison failed"
+  fi
 fi
 
 echo "PASS: visual methods, contract rows, acceptance IDs, connected evidence, screenshots, and reference-anchor proof are aligned."
+

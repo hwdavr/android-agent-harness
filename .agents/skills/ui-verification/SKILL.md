@@ -274,6 +274,26 @@ and fails due to:
 - Image compression artifacts
 - Status bar differences (even after normalization)
 
+**Automated tooling**: Run `bash harness/scripts/compare-visual-evidence.sh` to perform automated perceptual comparison:
+```bash
+# Compare single screenshot against reference mockup or golden baseline:
+bash harness/scripts/compare-visual-evidence.sh \
+  --reference docs/product/.../design/mockup.png \
+  --actual docs/product/.../visual_evidence/actual.png \
+  --diff-output docs/product/.../visual_evidence/diff.png \
+  --crop-insets
+
+# Batch evaluate entire feature workspace:
+bash harness/scripts/compare-visual-evidence.sh --feature docs/product/<feature-dir> --crop-insets
+```
+
+The tool:
+- Crops system insets (status bar & gesture bar) when `--crop-insets` is enabled
+- Normalizes dimensions via Lanczos filtering
+- Applies color tolerance (0.08 distance threshold) to eliminate anti-aliasing false positives
+- Generates a neon magenta visual diff overlay (`<name>_diff.png`) highlighting divergent clusters
+- Generates `visual_comparison_report.md` in `visual_evidence/`
+
 **What to evaluate (per in-scope region):**
 - Shape and contour similarity
 - Layout composition and visual weight distribution
@@ -281,21 +301,18 @@ and fails due to:
 - Edge structure and element boundaries
 - Typography hierarchy (relative sizes, weights, not exact rendering)
 
-**Conceptual thresholds:**
+**Thresholds:**
 ```yaml
-overall_similarity: 0.95       # minimum for full-screen pass
+overall_similarity: 0.95       # minimum for full-screen pass (<= 5.0% diff)
 critical_component: 0.98       # minimum for critical UI elements (CTAs, headers)
 ```
-
-These thresholds guide judgment — they are not computed metrics from a pixel-diff tool.
-The agent uses visual reasoning to assess whether the runtime output is perceptually equivalent
-to the reference within these confidence levels.
 
 **Important:** score alone does not determine PASS/FAIL. A 0.93 similarity with only minor
 anti-aliasing differences is a PASS. A 0.97 similarity where the CTA button is partially hidden
 is a FAIL. Use defect classification (Phase 7) to make the final call.
 
-**Record in the report:** per-region perceptual assessment with confidence level and notes.
+**Record in the report:** per-region perceptual assessment with similarity score, diff overlay link, confidence level, and notes.
+
 
 ---
 
