@@ -32,7 +32,7 @@ The specification must include the complete nine-row Rule Applicability matrix, 
 stage gate must reject missing or unsupported decisions.
 **INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
-Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with requirements, impacted files, API classification, and UiState/Navigation design.
+Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with Context Provenance and stage evidence. The summary references the approved Rule Applicability matrix in the spec rather than copying it.
 Gate: requirements clear, impacted files identified, API classified, UiState/Navigation designed. Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery requirement-analysis` — must exit 0.
 
 **If the feature involves new screens or UI changes:**
@@ -120,5 +120,5 @@ Gate: install command exits with code 0. If no device is connected, mark this st
 
 ## Human-in-the-Loop Confirmation Points
 
-1. **After Requirement, Impact & Design Analysis** — user confirms assumptions and designs
+1. **After Requirement, Impact & Design Analysis** — ask only when assumptions, scope, or a design choice remains unresolved
 2. **After Implementation Plan** — user approves implementation plan *(mandatory always)*

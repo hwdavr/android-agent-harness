@@ -17,11 +17,12 @@ Do not implement any fix in this stage.
 
 ## Load
 
-- `skills/android-unit-test/SKILL.md`
-- `skills/android-instrumented-ui-test/SKILL.md`
-- `skills/shared-json-scenarios/SKILL.md`
-- `rules/testing-strategy.md`
-- `docs/current/spec_v<N>.md` — root cause statement
+Load `rules/testing-strategy.md` and `docs/current/spec_v<N>.md` first. After
+selecting the lowest sufficient reproduction layer, load only its guidance:
+
+- `skills/android-unit-test/SKILL.md` for a unit or JVM integration reproduction
+- `skills/android-instrumented-ui-test/SKILL.md` for a visual, navigation, or runtime reproduction
+- `skills/shared-json-scenarios/SKILL.md` only when an API response is part of the root cause
 
 ---
 

@@ -32,7 +32,7 @@ be recorded as `⚠️ Blocked` or non-passing, and the workflow must stop befor
 ### Stage 1 — Orient
 Before making any changes or planning code, gather complete session and git context. Select the next task to implement.
 *   **Action**: **INVOKE** the `feature-orient` skill via the Skill tool (name: `feature-orient`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-*   **Objective**: Run `bash harness/scripts/check-feature-lifecycle.sh`, select the approved `docs/product/` workspace from the Harness Feature Tracker by status, reconstruct the prior session, establish the per-slice source of truth (`$FEATURE_DIR/summary_{feature_id}.md`), read and validate `$FEATURE_DIR/platform-capability-matrix.md` when the feature is platform-bound (`platform_validation.required: true`), and select one task from `$FEATURE_DIR/feature_list.json`. If the slice affects UI, read `docs/product/design_system.md`, the approved feature `design.md`, and its mockups before implementation.
+*   **Objective**: Run `bash harness/scripts/check-feature-lifecycle.sh`, select the approved `docs/product/` workspace from the Harness Feature Tracker by status, run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`, and establish the sprint contract plus `feature_list.json` as the only requirement/execution authorities. The slice summary records their paths and hashes as Context Provenance; it does not duplicate scope, acceptance criteria, or the Rule Applicability matrix. Read and validate `$FEATURE_DIR/platform-capability-matrix.md` when the feature is platform-bound (`platform_validation.required: true`). If the index reports `affects_ui: true`, read `docs/product/design_system.md`, the approved feature `design.md`, and its mockups before implementation.
 
 ### Stage 2 — Setup
 Verify target emulator/device runtime environment readiness.
@@ -60,7 +60,7 @@ Build out the selected feature across the necessary layers.
 *   **Action**:
     1. **INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Implement** stage status to completed (✅) with list of created/modified files.
-*   **Objective**: All layers successfully implemented, `./gradlew assembleDebug` compiles cleanly, UI changes conform to `docs/product/design_system.md` plus approved feature exceptions, and progress is logged in the summary.
+*   **Objective**: Only the layers and conditional rules selected by the approved slice are implemented, `./gradlew assembleDebug` compiles cleanly, UI changes conform to `docs/product/design_system.md` plus approved feature exceptions, and progress is logged in the summary.
 
 ### Stage 5 — Test
 Verify the correctness of the implemented behavior visually and logically.
@@ -87,7 +87,7 @@ Update repository history, project task logs, and product documentation to refle
 >
 > **Gate Check Policy**:
 > 1. **Identify Gate Criteria**: Read the selected user story in `$FEATURE_DIR/sprint-contract.md`. Every `Acceptance Test Cases` command is a mandatory gate. The active feature's `"verification"` field must reference the same Test IDs and commands.
-> 2. **Execute Each Command**: Run every verification command (e.g., `./gradlew testDebugUnitTest` or specific test runner script). Process them **one by one**.
+> 2. **Validate fresh evidence**: Reuse the successful Test-stage command evidence when the production sources, build/test configuration, declared verification command, and runtime target are unchanged. Re-run only the affected command when one of those inputs changed; do not repeat a green acceptance suite solely to copy its output into a later stage.
 > 3. **On Failure — bounded diagnosis and retry**: If any verification command fails (exit code `non-zero`), keep the stage non-passing and diagnose, fix, and re-run that specific command up to three times. If it remains non-zero, record the gate as `⚠️ Blocked` or non-passing and stop before the next verification item.
 > 4. **Validate & Attach Evidence**:
 >    *   The status can **ONLY** transition to `passing` if **every** acceptance-test command eventually executes successfully (exit code `0`) — either on the first run or after resolution.
@@ -120,13 +120,13 @@ Ensure that the final repository state is clean, verified, and fully prepared fo
 
 > [!IMPORTANT]
 > **Checklist & Handoff Policy**:
-> 1. **Run Clean State Checklist**: Execute and verify every single item in the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Process each checklist item **one by one**. If any item fails, keep clean exit non-passing and diagnose, fix, and re-run that item up to three times. After processing all items, all checks **SHOULD** pass; any remaining `⚠️ unresolved` items must be documented in the session handoff and keep the pipeline stopped.
+> 1. **Run Clean State Checklist**: Execute and verify every single item in the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Process each checklist item **one by one**. Reference the fresh Test and Code Quality evidence for build/test/lint checks unless a relevant input changed after that stage; do not re-run an unchanged green verification command solely for Clean Exit. If any item fails, keep clean exit non-passing and diagnose, fix, and re-run that item up to three times. After processing all items, all checks **SHOULD** pass; any remaining `⚠️ unresolved` items must be documented in the session handoff and keep the pipeline stopped.
 > 2. **Produce Session Handoff**: Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following the format and fields defined in **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**. Detail what is working, what changed, unverified paths, risks, unresolved gate items, and next steps.
 > 3. **Verify Observability Metrics**: Run `bash harness/scripts/check-harness-metrics.sh --validate "$FEATURE_DIR/summary_{feature_id}.md"` to confirm execution metrics are complete.
 > 4. **Never move the feature directory.** Its `docs/product/` path is stable; only tracker and per-slice statuses change.
 
 *   **Action**:
-    1. Execute the verification command one last time to ensure no regression was introduced, verify all checklist criteria, and write `$FEATURE_DIR/session-handoff.md`.
+    1. Verify all checklist criteria, reference fresh Test and Code Quality evidence, and write `$FEATURE_DIR/session-handoff.md`. Re-run only a verification command invalidated by a later relevant change.
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Clean Exit** stage status to completed (✅), transition the selected slice summary to Complete, and document key outcomes, open items, and handoff decisions.
 *   **Objective**: Leave the repository in a completely green, stable, and self-documenting state that a fresh session can immediately pick up and resume.
 

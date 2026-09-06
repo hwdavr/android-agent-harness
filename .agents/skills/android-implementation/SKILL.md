@@ -6,8 +6,8 @@ description: Implements a user story or feature across data, domain, and UI laye
 # Skill — Android Implementation (Data + Domain + UI)
 
 ## Purpose
-Implement the full change across all three layers — Data, Domain, and UI — in a single pass.
-Work in small, vertically-sliced increments: implement one layer, verify the build, then proceed to the next.
+Implement only the layers affected by the approved change, in small verified increments.
+Do not load or execute a Data, Domain, or UI section merely because another layer is in scope.
 
 > This is the **compact implementation stage** used by `feature-delivery` and `bug-fixing` workflows.
 > For granular layer-by-layer control, use the individual stages `android-data-layer/SKILL.md`, `android-domain-layer/SKILL.md`, and `android-ui-layer/SKILL.md`.
@@ -16,16 +16,15 @@ Work in small, vertically-sliced increments: implement one layer, verify the bui
 
 ## Load
 
-**Always load:**
-- `docs/product/design_system.md` — mandatory visual tokens and reusable component contracts for UI-affecting work
+**At a new session, load L1:**
 - `rules/android-architecture.md`
-- `rules/api-contract-rules.md`
-- `rules/compose-rules.md`
-- `rules/navigation-rules.md`
-- `rules/analytics-rules.md`
-- `rules/localization-rules.md`
-- `rules/observability.md`
 - `rules/implementation-rules.md`
+- `rules/testing-strategy.md`
+
+**Then load only triggered context:**
+- `rules/api-contract-rules.md` when API is `Required` or excepted
+- `rules/compose-rules.md`, `rules/localization-rules.md`, `docs/product/design_system.md`, `design.md`, and mockups when the slice affects UI
+- `rules/navigation-rules.md`, `rules/analytics-rules.md`, and `rules/observability.md` only when their Rule Applicability decision is `Required` or excepted
 
 **Adhoc workflows** (`feature-delivery`, `bug-fixing`):
 - `docs/current/implementation_plan_v<N>.md` — implementation plan approved by user
@@ -34,15 +33,17 @@ Work in small, vertically-sliced increments: implement one layer, verify the bui
 - `docs/current/design/` — user-provided screenshots or AI-generated `mockup_*.png` images (view these for visual layout reference before implementing UI)
 
 **Harness workflow** (`harness-generator`):
-- `$FEATURE_DIR/design.md` — screen purpose, layout, visual/interaction states, copy, components inventory, accessibility
-- `$FEATURE_DIR/design/` — user-provided screenshots or AI-generated `mockup_*.png` images (view these images to understand the intended visual layout before implementing UI)
-- `$FEATURE_DIR/spec.md` — screen specifications, functional requirements, edge cases, persistence schema
-- `$FEATURE_DIR/sprint-contract.md` — acceptance criteria, scope boundaries, verification plan
-- `$FEATURE_DIR/summary_{feature_id}.md` — single source of truth for the active feature (key decisions, files changed, stage progress)
+- Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` and use its hashes and source pointers.
+- Read only the selected sprint-contract user story, mapped requirement rows, and acceptance rows. Read the selected `feature_list.json` entry for execution flags and verification IDs.
+- Read the summary only for execution-stage evidence, blockers, and decisions made after approval; never treat it as a second requirement source.
 
 ---
 
 ## Execute
+
+Use the approved plan or generated context index to select the affected layers. Skip
+unaffected sections and their checklist rows; a skipped layer must be recorded as
+`Not applicable — <slice-specific reason>`, never silently treated as completed.
 
 ### Layer 1 — Data Layer
 
@@ -142,7 +143,7 @@ Update `summary_{feature_id}.md` (or `summary_v<N>.md` depending on the active w
 
 ## Done When
 
-**This stage is complete when all of the following are true — all must be mechanically verifiable:**
+**This stage is complete when every applicable item below is mechanically verified:**
 - [ ] `sharedContracts/openapi.yaml` updated (if API changed)
 - [ ] No DTOs referenced outside the data layer
 - [ ] All new enum fields have an `UNKNOWN` / fallback variant
