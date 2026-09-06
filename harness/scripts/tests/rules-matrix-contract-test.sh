@@ -68,6 +68,9 @@ expect_failure "compose scripted rule 1.7 names missing or unknown owner" \
   bash "$MATRIX_VALIDATOR" --root "$unknown_owner" \
   --catalog "$unknown_owner/harness/rules-matrix/rule-enforcement.json"
 
+[ -f "$PROJECT_ROOT/docs/harness/documented-dynamic-test-tags.json" ] || fail "missing project dynamic-tag registry: docs/harness/documented-dynamic-test-tags.json"
+[ ! -e "$PROJECT_ROOT/harness/rules-matrix/documented-dynamic-test-tags.json" ] || fail "legacy registry must not exist in harness: harness/rules-matrix/documented-dynamic-test-tags.json"
+
 dynamic_source="$fixture_root/dynamic-source"
 mkdir -p "$dynamic_source"
 printf '%s\n' 'Modifier.testTag("editor_code_block_${userInput}")' > "$dynamic_source/UnregisteredTag.kt"
@@ -80,9 +83,9 @@ expect_failure "dynamic testTag is not an approved documented immutable identifi
 
 invalid_registry="$fixture_root/invalid-registry.json"
 jq '(.entries[] | select(.id == "code-block-card").documentation) = "docs/product/missing-design.md"' \
-  "$PROJECT_ROOT/harness/rules-matrix/documented-dynamic-test-tags.json" > "$invalid_registry"
+  "$PROJECT_ROOT/docs/harness/documented-dynamic-test-tags.json" > "$invalid_registry"
 expect_failure "references missing documentation" \
   env DOCUMENTED_DYNAMIC_TAGS_REGISTRY="$invalid_registry" \
   bash "$COMPOSE_CHECKER" "$dynamic_source"
 
-echo "PASS: rules-matrix validator rejects stale counts and owners; Compose accepts only documented immutable dynamic tags."
+echo "PASS: rules-matrix validator rejects stale counts and owners; Compose resolves the project dynamic-tag registry and accepts only documented immutable dynamic tags."

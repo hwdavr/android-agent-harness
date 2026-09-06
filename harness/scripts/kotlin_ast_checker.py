@@ -1066,31 +1066,35 @@ def is_dynamic_test_tag(source_file: KotlinFile, call: CallNode) -> bool:
     return any(token.text in {"lowercase", "replace"} for token in argument)
 
 
-def load_dynamic_tag_registry(project_root: Path) -> tuple[Optional[list[dict]], Optional[str]]:
-    registry = Path(os.environ.get("DOCUMENTED_DYNAMIC_TAGS_REGISTRY", project_root / "harness" / "rules-matrix" / "documented-dynamic-test-tags.json"))
+def documented_dynamic_tag_registry_path(project_root: Path) -> Path:
+    return Path(os.environ.get("DOCUMENTED_DYNAMIC_TAGS_REGISTRY", project_root / "docs" / "harness" / "documented-dynamic-test-tags.json"))
+
+
+def load_dynamic_tag_registry(project_root: Path) -> tuple[Optional[list[dict]], Optional[str], Path]:
+    registry = documented_dynamic_tag_registry_path(project_root)
     if not registry.is_file():
-        return None, f"Missing documented dynamic test-tag registry: {registry}"
+        return None, f"Missing documented dynamic test-tag registry: {registry}", registry
     try:
         payload = json.loads(registry.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        return None, f"Invalid documented dynamic test-tag registry: {registry} ({error})"
+        return None, f"Invalid documented dynamic test-tag registry: {registry} ({error})", registry
     entries = payload.get("entries") if isinstance(payload, dict) else None
     if not isinstance(entries, list) or not entries:
-        return None, f"Invalid documented dynamic test-tag registry: {registry}"
+        return None, f"Invalid documented dynamic test-tag registry: {registry}", registry
     required_fields = {"id", "file", "documentation", "template", "source_type", "line_pattern"}
     for entry in entries:
         if not isinstance(entry, dict) or not required_fields.issubset(entry) or entry.get("source_type") not in {"immutable-domain-id", "fixed-catalog-key"}:
-            return None, f"Invalid documented dynamic test-tag registry: {registry}"
+            return None, f"Invalid documented dynamic test-tag registry: {registry}", registry
         documentation = project_root / str(entry["documentation"])
         if not documentation.is_file():
-            return None, f"Registry entry {entry.get('id', '<unknown>')} references missing documentation: {entry['documentation']}"
+            return None, f"Registry entry {entry.get('id', '<unknown>')} references missing documentation: {entry['documentation']}", registry
         try:
             documentation_text = documentation.read_text(encoding="utf-8")
         except (OSError, UnicodeError) as error:
-            return None, f"Unable to read registry documentation {documentation}: {error}"
+            return None, f"Unable to read registry documentation {documentation}: {error}", registry
         if str(entry["template"]) not in documentation_text:
-            return None, f"Registry entry {entry.get('id', '<unknown>')} is not documented by template '{entry['template']}' in {entry['documentation']}"
-    return entries, None
+            return None, f"Registry entry {entry.get('id', '<unknown>')} is not documented by template '{entry['template']}' in {entry['documentation']}", registry
+    return entries, None, registry
 
 
 def dynamic_tag_is_documented(source_file: KotlinFile, call: CallNode, project_root: Path, entries: Sequence[dict]) -> bool:
@@ -1215,11 +1219,11 @@ def run_compose(args: argparse.Namespace) -> int:
 
     visit_rule(result, "Repository/use-case calls inside Composables", check_composable_layer_access)
 
-    entries, registry_error = load_dynamic_tag_registry(project_root)
+    entries, registry_error, registry_path = load_dynamic_tag_registry(project_root)
 
     def check_dynamic_tags() -> None:
         if registry_error is not None:
-            result.add_path(project_root / "harness" / "rules-matrix" / "documented-dynamic-test-tags.json", 1, registry_error)
+            result.add_path(registry_path, 1, registry_error)
             return
         assert entries is not None
         for source_file in files:
