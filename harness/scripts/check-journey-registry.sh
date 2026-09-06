@@ -19,7 +19,7 @@ usage() {
 Usage: bash harness/scripts/check-journey-registry.sh [OPTIONS] <MODE>
 
 Options:
-  --registry <path>           Path to journey-registry.yaml (default: harness/journey-registry.yaml)
+  --registry <path>           Path to journey-registry.yaml (default: docs/product/journey-registry.yaml)
   --project-root <path>       Root directory of the project
   --destinations-file <path>  Path to Destinations.kt
   --dry-run                   Print execution command without running tests (for --run-all / --run-one)
@@ -90,7 +90,7 @@ done
 [ -n "$MODE" ] || usage
 
 if [ -z "$REGISTRY_PATH" ]; then
-  REGISTRY_PATH="$PROJECT_ROOT/harness/journey-registry.yaml"
+  REGISTRY_PATH="$PROJECT_ROOT/docs/product/journey-registry.yaml"
 elif [[ "$REGISTRY_PATH" != /* ]]; then
   REGISTRY_PATH="$PROJECT_ROOT/$REGISTRY_PATH"
 fi

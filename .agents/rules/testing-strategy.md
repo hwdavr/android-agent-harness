@@ -91,7 +91,7 @@ post-return persistence:
 
 #### Journey Registry Regression Gate
 
-Every journey declared in `harness/journey-registry.yaml` is a permanent
+Every journey declared in `docs/product/journey-registry.yaml` is a permanent
 regression gate. The harness-generator and feature-delivery workflows must
 run all registered journeys during the Test/Verification stage. A regression
 in any registered journey blocks the pipeline regardless of which feature

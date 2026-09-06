@@ -48,7 +48,7 @@ expect_failure() {
 }
 
 # Setup dummy project fixture
-mkdir -p "$FIXTURE_ROOT/harness"
+mkdir -p "$FIXTURE_ROOT/docs/product"
 mkdir -p "$FIXTURE_ROOT/app/src/androidTest/java/com/example/test"
 mkdir -p "$FIXTURE_ROOT/app/src/main/java/com/example/notesapp/navigation"
 
@@ -75,7 +75,7 @@ sealed class Destinations(val route: String) {
 EOF
 
 # Case 1: Valid registry passes validation
-cat << 'EOF' > "$FIXTURE_ROOT/harness/journey-registry.yaml"
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
     description: "Home -> Editor -> save -> return to Home"
@@ -92,7 +92,7 @@ EOF
 
 expect_success bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --destinations-file "$FIXTURE_ROOT/app/src/main/java/com/example/notesapp/navigation/Destinations.kt" \
   --validate
 
@@ -103,7 +103,7 @@ expect_failure 2 "Journey registry file not found" bash "$VALIDATOR" \
   --validate
 
 # Case 3: Missing required field fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/harness/journey-registry.yaml"
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
     description: "Home -> Editor -> save"
@@ -116,11 +116,11 @@ EOF
 
 expect_failure 2 "missing required field 'test_method'" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --validate
 
 # Case 4: Non-existent test_file fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/harness/journey-registry.yaml"
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
     description: "Home -> Editor -> save"
@@ -136,11 +136,11 @@ EOF
 
 expect_failure 2 "test_file does not exist" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --validate
 
 # Case 5: Non-existent test_method in existing test file fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/harness/journey-registry.yaml"
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
     description: "Home -> Editor -> save"
@@ -156,11 +156,11 @@ EOF
 
 expect_failure 2 "test_method 'noSuchMethod' not found" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --validate
 
 # Case 6: Duplicate journey ID fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/harness/journey-registry.yaml"
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
     description: "Home -> Editor -> save"
@@ -186,11 +186,11 @@ EOF
 
 expect_failure 2 "duplicate journey id 'J-DUMMY-JOURNEY'" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --validate
 
 # Case 7: Placeholder values fail validation
-cat << 'EOF' > "$FIXTURE_ROOT/harness/journey-registry.yaml"
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
     description: "{insert description}"
@@ -206,11 +206,11 @@ EOF
 
 expect_failure 2 "has empty or placeholder value" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --validate
 
 # Case 8: Coverage check identifies covered and uncovered destinations
-cat << 'EOF' > "$FIXTURE_ROOT/harness/journey-registry.yaml"
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
     description: "Home -> Editor -> save"
@@ -226,7 +226,7 @@ EOF
 
 cov_output=$(bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --destinations-file "$FIXTURE_ROOT/app/src/main/java/com/example/notesapp/navigation/Destinations.kt" \
   --check-coverage)
 
@@ -237,19 +237,19 @@ printf '%s\n' "$cov_output" | grep -Fq "[-] Settings" || fail_test "Settings not
 # Case 9: --run-one with unknown ID fails with code 2
 expect_failure 2 "Journey ID 'J-UNKNOWN' not found in registry" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-UNKNOWN
 
 # Case 10: --run-one and --run-all with --dry-run succeed with code 0
 expect_success bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-DUMMY-JOURNEY \
   --dry-run
 
 expect_success bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --registry "$FIXTURE_ROOT/harness/journey-registry.yaml" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-all \
   --dry-run
 
