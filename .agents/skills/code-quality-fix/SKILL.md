@@ -13,12 +13,11 @@ Run all static check suites, lint rules, and custom compliance rules. Resolve an
 
 ## Load
 
-- `skills/android-code-quality-checks/SKILL.md`
-- `skills/karpathy-guidelines/SKILL.md`
-- `rules/android-architecture.md`
-- `rules/implementation-rules.md`
-- `rules/testing-strategy.md`
-- `harness/templates/rule-applicability-template.md`
+Load `skills/android-code-quality-checks/SKILL.md`, `skills/karpathy-guidelines/SKILL.md`,
+and L1 once per session. Read the approved Rule Applicability matrix from the active
+specification or generated complex-slice context index, then load a conditional rule
+only when its decision is `Required` or an approved exception. Do not re-read the
+matrix from a summary file.
 
 ---
 
@@ -29,18 +28,19 @@ Read the active specification's Rule Applicability matrix first. Run the baselin
 below and the checks needed for every `Required` row; retain explicit non-applicable
 and exception rationales. Do not add analytics or logs merely to change a decision.
 
-Execute the following set of checks to verify complete quality baseline correctness:
+Execute the following baseline checks:
 ```bash
 ./gradlew assembleDebug
 ./gradlew ktlintCheck
 ./gradlew detekt
 ./gradlew lintDebug
-bash harness/scripts/check-compose-rules.sh
-bash harness/scripts/check-localization-rules.sh
 bash harness/scripts/check-architecture-rules.sh
-bash harness/scripts/check-navigation-rules.sh
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
+
+Run `check-compose-rules.sh`, `check-localization-rules.sh`, and
+`check-navigation-rules.sh` only when SUI, L10N, and NAV respectively are `Required`
+or excepted. Record non-applicable decisions with the canonical artifact reference.
 
 On Windows (using PowerShell or Command Prompt), run the native script launchers instead:
 ```powershell
@@ -79,8 +79,8 @@ Clean git status with all formatting and structural violations fixed.
 - [ ] `./gradlew ktlintCheck` — exit code 0
 - [ ] `./gradlew detekt` — exit code 0
 - [ ] `./gradlew lintDebug` — exit code 0
-- [ ] `bash harness/scripts/check-compose-rules.sh` or `harness\scripts\check-compose-rules.cmd` — exit code 0 (or skipped if no UI changed)
-- [ ] `bash harness/scripts/check-localization-rules.sh` or `harness\scripts\check-localization-rules.cmd` — exit code 0
+- [ ] `bash harness/scripts/check-compose-rules.sh` or `harness\scripts\check-compose-rules.cmd` — exit code 0 when SUI is required or excepted
+- [ ] `bash harness/scripts/check-localization-rules.sh` or `harness\scripts\check-localization-rules.cmd` — exit code 0 when L10N is required or excepted
 - [ ] `bash harness/scripts/check-architecture-rules.sh` or `harness\scripts\check-architecture-rules.cmd` — exit code 0
 - [ ] `bash harness/scripts/check-navigation-rules.sh` — exit code 0 when NAV is required
 - [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — exit code 0

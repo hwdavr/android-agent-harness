@@ -29,13 +29,12 @@ Do not write any code in this stage.
 
 ### 1. Requirement & Impact Analysis
 1. Read the user's feature request in full. Do not assume anything that is not explicitly stated.
-2. **Read `harness/templates/evaluator-rubric-template.md`** for final quality evidence and issues that require follow-up.
-3. Search the codebase for all affected files (Screens, ViewModels, UseCases, Repos, DTOs, Tests).
-4. Classify changes (`modify`, `extend`, `new`, `delete`).
-5. **API & Contract Check**:
+2. Search the codebase for all affected files (Screens, ViewModels, UseCases, Repos, DTOs, Tests).
+3. Classify changes (`modify`, `extend`, `new`, `delete`).
+4. **API & Contract Check**:
    - Classify API changes and state force update requirement.
    - **Identify needed APIs**: List all existing or new endpoints that must be called to fulfill the requirement.
-6. **Rule Applicability**:
+5. **Rule Applicability**:
    - Copy the complete matrix from `harness/templates/rule-applicability-template.md`.
    - Record a decision for all nine rules before planning: `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`.
    - For every `Required` row, record the concrete trigger and planned evidence. Do not delete a conditional-rule row when its trigger is absent.
@@ -57,57 +56,15 @@ If the user provides a design screenshot or mockup, save it to **`docs/current/d
 
 Produce **`docs/current/summary_v<N>.md`** — create this file **first**, before `spec_v<N>.md`.
 Use the template from `harness/templates/summary-template.md`.
-The Stage Progress table must list every stage from the **active workflow** in order. Use the matching table below.
+The Stage Progress table must list every stage from the **active workflow** in order.
+Copy the matching table from `harness/templates/summary-template.md`; do not maintain a
+second table here.
 
 All **Timestamp** values must be in `YYYY-MM-DD HH:MM` format:
 
 **Type**: feature / bugfix / api / refactor
 **Started**: YYYY-MM-DD HH:MM
 **Status**: In Progress / Complete
-
-**`feature-delivery` workflow:**
-
-| Stage | Status | Timestamp | Notes |
-|-------|--------|-----------|-------|
-| Requirement Analysis | ⏳ In Progress | YYYY-MM-DD HH:MM | |
-| Implementation Plan | | | Approved by user: — |
-| Implementation | | | |
-| Testing | | | |
-| Code Quality Fix | | | |
-| Knowledge Capture | | | |
-
-**`bug-fixing` workflow:**
-
-| Stage | Status | Timestamp | Notes |
-|-------|--------|-----------|-------|
-| Bug Context & Root Cause | ⏳ In Progress | YYYY-MM-DD HH:MM | |
-| Bug Reproduction | | | Reproduction test: RED |
-| Fix Plan | | | Approved by user: — |
-| Implementation | | | |
-| Testing | | | |
-| Code Quality Fix | | | APPROVED / REVISION REQUIRED |
-| Knowledge Capture | | | |
-
-**`api-contract-update` workflow:**
-
-| Stage | Status | Timestamp | Notes |
-|-------|--------|-----------|-------|
-| Requirement Analysis | ⏳ In Progress | YYYY-MM-DD HH:MM | |
-| Implementation Plan | | | Approved by user: — |
-| Data Layer | | | |
-| Domain Layer | | | |
-| UI Layer | | | Skipped if no UI changes |
-| Testing | | | |
-| Code Quality Fix | | | APPROVED / REVISION REQUIRED |
-| Knowledge Capture | | | Skipped if straightforward |
-
-**`create-ui-and-verify` workflow:**
-
-| Stage | Status | Timestamp | Notes |
-|-------|--------|-----------|-------|
-| UI Implementation | ⏳ In Progress | YYYY-MM-DD HH:MM | |
-| UI Verification | | | Loop count: — |
-| Code Quality Fix| | | APPROVED / REVISION REQUIRED |
 
 Mark the first row as ✅ Complete when this stage's gate passes.
 

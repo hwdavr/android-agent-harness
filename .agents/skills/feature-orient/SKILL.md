@@ -12,17 +12,15 @@ Gather complete session, requirement, and git context, establishing a single sou
 ---
 
 ## Load
-- `rules/android-architecture.md`
-- `rules/api-contract-rules.md`
-- `rules/navigation-rules.md`
-- `rules/testing-strategy.md`
-- `rules/android-architecture.md`
-- `rules/implementation-rules.md`
-- `rules/compose-rules.md`
-- `rules/localization-rules.md`
-- `rules/observability.md`
-- `rules/analytics-rules.md`
-- `harness/templates/rule-applicability-template.md`
+
+At a new session, load L1: `rules/android-architecture.md`,
+`rules/implementation-rules.md`, and `rules/testing-strategy.md`.
+
+After selecting the slice, run `bash harness/scripts/print-context-index.sh
+--feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`. Load a conditional rule only
+when the generated index lists it as `Required` or an approved exception. Load
+`docs/product/design_system.md`, `design.md`, and mockups only when `affects_ui` is
+true. The index is derived from the approved contract; it does not replace it.
 
 ---
 
@@ -33,48 +31,15 @@ This is a gated spec-driven workflow: `$FEATURE_DIR/spec.md` (Phase 1: Specify) 
 Before making any changes or planning code, gather complete session and git context:
 
 1. **Validate and select `FEATURE_DIR` first**: run `bash harness/scripts/check-feature-lifecycle.sh`, then read the Harness Feature Tracker in `docs/product/product.md`. Continue an `In Progress` product workspace, or select the approved `Awaiting implementation approval` product workspace. Stop if validation fails; never infer lifecycle state by scanning directories or start a second feature while one is `In Progress`.
-2. **Read `$FEATURE_DIR/spec.md`** for the full functional requirements (`FR-*`), acceptance criteria (`AC-*`), edge cases, technical decisions, and complete Rule Applicability matrix. Record every decision and trigger in the selected slice summary; do not reopen an approved decision unless the selected work introduces a new trigger.
-3. **Read `$FEATURE_DIR/sprint-contract.md`** for scope, the Spec Coverage Matrix mapping requirements to user stories, acceptance test cases, and verification commands.
-4. **Read `$FEATURE_DIR/evaluator-rubric.md`** when present for final quality evidence and issues that require follow-up.
-5. **Read active logs** in `$FEATURE_DIR/progress.md` (or the session logs).
-6. **Run recent git history analysis** (`git log -n 5 --oneline`).
-7. **Review prior knowledge** in `docs/knowledge/`:
-   - Scan `docs/knowledge/architecture-decisions/` for ADRs relevant to the feature area (e.g. navigation, scoping, data layer patterns).
-   - Scan `docs/knowledge/past-bugs/` for bugs that affected the same area or similar functionality.
-   - Scan `docs/knowledge/pitfalls/` for known gotchas that could impact implementation.
+2. **Select the slice, then generate the context index**: read the selected slice in `$FEATURE_DIR/feature_list.json`, run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`, and retain its source hashes. Read only the `FR-*` / `AC-*` rows mapped to that slice, the selected user-story section, and the matching acceptance rows in `$FEATURE_DIR/spec.md` and `$FEATURE_DIR/sprint-contract.md`.
+3. **Read `$FEATURE_DIR/evaluator-rubric.md`** only when it names unresolved findings for the selected slice.
+4. **Read active logs**: start with the latest relevant entry in `$FEATURE_DIR/progress.md` (or session logs); expand only when it names an unresolved dependency or blocker.
+5. **Run recent git history analysis** (`git log -n 5 --oneline`).
+6. **Review prior knowledge** in `docs/knowledge/`:
+   - Search titles and metadata for the selected feature area, affected components, and required-rule IDs first.
+   - Open only matching ADRs, past bugs, and pitfalls; do not preload entire knowledge directories.
    - Record any relevant findings in the summary file's **Knowledge Artifacts** section so they are visible throughout the session.
-8. **Select the next task & initialize summary**:
+7. **Select the next task & initialize summary**:
    - Review `$FEATURE_DIR/feature_list.json` and select the highest-priority incomplete task (status `not_started`). Do not work on multiple tasks in parallel.
    - Update its status in `$FEATURE_DIR/feature_list.json` to `in_progress`, update the tracker row to `In Progress`, and run `bash harness/scripts/check-feature-lifecycle.sh` again before continuing.
-   - Generate `$FEATURE_DIR/summary_{feature_id}.md` (where `{feature_id}` is the selected task's ID) following the template below. Refer to the feature spec and sprint contract to document baseline goals, scope, and acceptance criteria. Include relevant findings from step 7.
-
-**`summary_{feature_id}.md` Template:**
-```markdown
-# Change Summary — {name}
-
-**Type**: feature / bugfix / api / refactor
-**Started**: YYYY-MM-DD HH:MM
-**Status**: In Progress / Complete
-
-## Stage Progress
-
-| Stage | Status | Timestamp | Notes |
-|-------|--------|-----------|-------|
-| Orient | | | |
-| Setup | | | |
-| Verify Baseline | | | |
-| Implement | | | |
-| Test | | | |
-| Fix | | | |
-| Update State | | | |
-| Clean Exit | | | |
-
-## Key Decisions
-<major decisions made during this change>
-
-## Knowledge Artifacts
-<ADRs, past-bug entries, or pitfall entries produced>
-
-## Open Items
-<anything deferred or unresolved>
-```
+   - Generate `$FEATURE_DIR/summary_{feature_id}.md` from `harness/templates/summary-template.md`. Its **Context Provenance** section must cite the approved `sprint-contract.md`, `feature_list.json`, the selected slice, and the generated index hashes. Do not repeat the Rule Applicability matrix, scope, acceptance criteria, or feature-list metadata.

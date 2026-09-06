@@ -15,19 +15,20 @@ The article principle: write the failing test *before* touching the application 
 
 ## Load
 
-**Always load:**
-- `skills/android-unit-test/SKILL.md`
-- `skills/android-instrumented-ui-test/SKILL.md`
-- `skills/shared-json-scenarios/SKILL.md`
+**At a new session, load L1:**
 - `rules/testing-strategy.md`
-- `harness/templates/rule-applicability-template.md`
+
+**Then load only the selected test-layer guidance:**
+- `skills/android-unit-test/SKILL.md` for unit or JVM integration coverage
+- `skills/android-instrumented-ui-test/SKILL.md` for UI, navigation, visual, or platform-bound coverage
+- `skills/shared-json-scenarios/SKILL.md` only when an API endpoint or shared fixture is in scope
 
 **Adhoc workflows** (`feature-delivery`, `bug-fixing`):
 - `docs/current/test_plan_v<N>.md` — test cases, layers, and coverage targets approved by user
 
 **Harness workflow** (`harness-generator`):
-- `$FEATURE_DIR/sprint-contract.md` — verification plan mapped to each acceptance criterion
-- `$FEATURE_DIR/summary_{feature_id}.md` — active feature context and stage progress
+- Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`.
+- Read only the selected acceptance-test rows and matching `feature_list.json` entry. Read the summary only for prior evidence, blockers, and handoff decisions.
 
 ---
 
@@ -111,7 +112,7 @@ bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 If instrumented tests were added: run on an emulator (e.g. `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest`), using a connected physical device only if no emulator is present.
 
-Record every result number in the output report below. Do not summarize — copy actual pass/fail counts and coverage percentages verbatim from the tool output.
+Record the exact command, exit code, test count, and coverage percentage in the stage evidence. Keep verbose tool output in a referenced log or generated report; do not copy it into the summary.
 
 For the harness workflow, after writing tests and before leaving the test-first stage,
 run the acceptance-test traceability checker in test mode:
@@ -153,8 +154,8 @@ implementation verification pass, record actual green test counts and coverage.
 - [ ] `./gradlew koverLog` — overall ≥ 80%, new classes ≥ 90%
 - [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — weighted line thresholds pass
 - [ ] Total test count `> 0` (not `0/0` — this is a gate failure)
-- [ ] At least one integration test per new or changed API endpoint
-- [ ] Shared JSON scenarios used — no inline mock response data in test files
+- [ ] At least one integration test per new or changed API endpoint (when API is in scope)
+- [ ] Shared JSON scenarios used — no inline mock response data in test files (when API is in scope)
 - [ ] Instrumented tests pass (if added): `./gradlew connectedDebugAndroidTest`
 - [ ] Harness workflow: acceptance-test traceability gate passes in evaluation mode for the selected slice
 

@@ -36,7 +36,7 @@ Adapt for bugs:
 - Root cause statement (triggered when \<cond\>, causing \<behavior\>)
 - Design the fix (UiState changes if needed)
 
-Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with bug context, fault area, and root cause.
+Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with Context Provenance and stage evidence. The summary references the approved Rule Applicability matrix in the spec rather than copying it.
 Gate: root cause is specific enough that a reproduction test can be written. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing requirement-analysis` — must exit 0.
 
 ---

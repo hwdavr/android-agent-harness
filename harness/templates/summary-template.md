@@ -35,19 +35,58 @@ Copy the stage progress table matching your workflow.
 | Implementation | ✅ Complete | YYYY-MM-DD HH:MM | Data, domain, and UI layers implemented. |
 | Testing | ✅ Complete | YYYY-MM-DD HH:MM | Unit, integration, and journey regression tests passing. |
 | Code Quality Fix | ✅ Complete | YYYY-MM-DD HH:MM | Static analysis, ktlint, and detekt passing. |
-| Knowledge Capture | ✅ Complete | YYYY-MM-DD HH:MM | ADRs and learnings captured. |
+| Product Document Update | ✅ Complete | YYYY-MM-DD HH:MM | Product capabilities and execution metrics updated. |
+| Install App To Device | ✅ Complete | YYYY-MM-DD HH:MM | Installed debug APK to target device/emulator. |
+
+### Ad-hoc Bug Fix (`bug-fixing` workflow)
+
+| Stage | Status | Timestamp | Notes |
+|---|---|---|---|
+| Bug Context & Root Cause | ✅ Complete | YYYY-MM-DD HH:MM | Root cause and expected behavior recorded. |
+| Bug Reproduction | ✅ Complete | YYYY-MM-DD HH:MM | Reproduction test is RED. |
+| Fix Plan | ✅ Complete | YYYY-MM-DD HH:MM | Plan approved by user. |
+| Implementation | ✅ Complete | YYYY-MM-DD HH:MM | Minimal affected layers updated. |
+| Testing | ✅ Complete | YYYY-MM-DD HH:MM | Reproduction and regression tests passing. |
+| Code Quality Fix | ✅ Complete | YYYY-MM-DD HH:MM | Static analysis, ktlint, and detekt passing. |
+| Install App To Device | ✅ Complete | YYYY-MM-DD HH:MM | Installed debug APK to target device/emulator. |
+
+### API Contract Update (`api-contract-update` workflow)
+
+| Stage | Status | Timestamp | Notes |
+|---|---|---|---|
+| Requirement Analysis | ✅ Complete | YYYY-MM-DD HH:MM | Contract impact and Rule Applicability recorded. |
+| Implementation Plan | ✅ Complete | YYYY-MM-DD HH:MM | Plan approved by user. |
+| Data Layer | ✅ Complete | YYYY-MM-DD HH:MM | Contract, DTO, mapper, and repository changes completed. |
+| Domain Layer | ✅ Complete | YYYY-MM-DD HH:MM | Domain contract and use cases updated. |
+| UI Layer | ✅ Complete / N/A | YYYY-MM-DD HH:MM | Updated when presentation changes are needed. |
+| Testing | ✅ Complete | YYYY-MM-DD HH:MM | Contract and regression tests passing. |
+| Code Quality Fix | ✅ Complete | YYYY-MM-DD HH:MM | Applicable static checks pass. |
+| Knowledge Capture | ✅ Complete / N/A | YYYY-MM-DD HH:MM | Recorded only for a reusable non-obvious lesson. |
+
+### UI Update (`create-ui-and-verify` workflow)
+
+| Stage | Status | Timestamp | Notes |
+|---|---|---|---|
+| Reference Design Gate | ✅ Complete | YYYY-MM-DD HH:MM | Approved visual reference is available. |
+| UI Implementation | ✅ Complete | YYYY-MM-DD HH:MM | UI implementation completed. |
+| UI Verification | ✅ Complete | YYYY-MM-DD HH:MM | Required visual and interaction checks pass. |
+| Code Quality Fix | ✅ Complete | YYYY-MM-DD HH:MM | Applicable static checks pass. |
 
 ---
 
-## Baseline Goals and Scope
+## Context Provenance *(required)*
 
-- <Goal 1>
-- <Goal 2>
+- Canonical requirements and Rule Applicability: `<spec or sprint-contract path and section>`
+- Canonical execution metadata: `<feature_list path and slice ID, or N/A for ad-hoc>`
+- Source hashes at stage start: `<sprint-contract/spec hash>`; `<feature-list/plan hash>`
+- Rule decisions: unchanged from the approved canonical artifact unless this summary links an approved update.
+
+Do not copy the Rule Applicability matrix, acceptance criteria, user-story scope, or
+feature-list metadata here. This summary records execution history only.
 
 ## Key Decisions
 
-- <Decision 1>
-- <Decision 2>
+- <Decision made during execution that is not already captured in the approved artifact>
 
 ## Knowledge Artifacts
 
@@ -60,6 +99,10 @@ Copy the stage progress table matching your workflow.
 ---
 
 ## Stage Evidence
+
+For each completed stage, cite the authoritative artifact or command log and include
+one concise result line. Keep verbose command output in the referenced evidence file;
+do not paste it into this summary.
 
 ### Orient
 - Command: `bash harness/scripts/check-feature-lifecycle.sh`

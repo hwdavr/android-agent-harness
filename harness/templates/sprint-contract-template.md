@@ -51,6 +51,22 @@ Copy the approved nine-row matrix from the requirement artifact. The decision mu
 
 ---
 
+## Generated Context Index *(execution aid — no new authority)*
+
+At the start of each complex-feature slice, run:
+
+```bash
+bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"
+```
+
+The output is derived from this approved contract and `feature_list.json`. It reports
+the selected slice, source hashes, rule IDs that are `Required` or exceptions, and
+execution flags. It is a disposable lookup for selecting context, never an approval
+artifact. Do not copy its contents, this matrix, or acceptance criteria into the slice
+summary; cite these authoritative source paths and hashes instead.
+
+---
+
 ## Production Journey Planning Contract *(required)*
 
 Classify every user-story slice explicitly. Set **Yes** when any acceptance
