@@ -156,6 +156,14 @@ when they are declared as production journey evidence and verifies that the stag
 requires a named production-entry test, real UI gesture, return boundary, and visible
 post-return assertion.
 
+### 10d. Role-Profile Alignment Contract
+```bash
+bash harness/scripts/tests/role-profile-contract-test.sh
+```
+**Must pass** when role profiles, complex-feature workflows, or named skills change.
+It rejects stale `docs/current` paths, obsolete task-selection instructions, invalid
+template paths, and unavailable evaluator skill names in `.agents/agents/`.
+
 ### 11. Platform Capability Evidence (when a platform boundary is in scope)
 ```bash
 # Generator: validates the selected slice's platform-boundary ownership.

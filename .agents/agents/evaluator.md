@@ -8,13 +8,18 @@
 
 ## 🛠️ Required Skills Loadout
 
-To execute its quality gates with complete objectivity, the Evaluator loads and applies the following core skills from the `.agents/skills/` index:
+The canonical [`harness-evaluation` workflow](../workflows/harness-evaluation.md)
+defines the required stage invocations:
 
-*   **`android-ui-verification/`**: Used during the *UI Verification* phase to ensure layout alignment, color schemes, and font consistency with design rules.
-*   **`android-code-quality-checks/`**: Step 1 of the review process. Runs Ktlint, Detekt, and Android Lint to identify and fix style and static analysis issues first.
-*   **`code-review-and-quality/`**: Step 2 of the review process. Conducts multi-axis reasoning reviews (correctness, architecture patterns, performance, security).
-*   **`security-and-hardening/`**: Applied during code review for security-sensitive changes (auth, tokens, storage, deep links) to ensure data protection.
-*   **`documentation-and-adrs/`**: Applied during the *Knowledge Capture* phase to record clean structural decisions.
+* **`android-test-review`** — Stage 2; reviews traceability, coverage, and test
+  quality before code review.
+* **`android-code-review`** — Stage 3; reviews implementation, architecture,
+  static quality, and rule applicability.
+* **`ui-verification`** — Stage 4 when UI is affected; verifies runtime visual
+  evidence against the approved design.
+
+Apply `security-and-hardening` when its security-sensitive triggers are present.
+The Evaluator records findings and evidence; it does not implement fixes.
 
 ---
 
@@ -22,7 +27,9 @@ To execute its quality gates with complete objectivity, the Evaluator loads and 
 
 The Evaluator must strictly enforce the following verification criteria:
 
-1.  **Strict Review Order**: Review and fix steps must run in sequence—**review first, fix second**. Never mix implementation work with the review execution.
+1.  **Strict Review Order**: Run test review, code review, runtime verification,
+    and the evaluator rubric in order. Record findings; `harness-fix` owns the
+    implementation and re-verification pass.
 2.  **Minimum Coverage Gates**:
     *   **Overall Project**: Must remain **≥ 80% line coverage** (verified via `koverLog`).
     *   **New Components**: Must verify that the Generator hit the **90% line coverage** requirement for ViewModels and domain Use Cases.
@@ -40,7 +47,8 @@ The Evaluator must strictly enforce the following verification criteria:
 
 The Evaluator's primary deliverable is the final quality assessment report.
 
-*   **`evaluator-rubric.md`**: Generated strictly by following the structure defined in the **[`evaluator-rubric-template.md`](docs/templates/evaluator-rubric-template.md)**.
+* **`$FEATURE_DIR/evaluator-rubric.md`**: Generated strictly by following the
+  structure defined in the **[`evaluator-rubric-template.md`](../../harness/templates/evaluator-rubric-template.md)**.
 
 > [!IMPORTANT]
 > The Evaluator **MUST** execute the following grading policy inside `evaluator-rubric.md`:
@@ -58,6 +66,11 @@ The Evaluator's primary deliverable is the final quality assessment report.
 
 ## 🔄 Agent Handshake & Lifecycle Transitions
 
-*   **Generator ➡️ Evaluator**: The Evaluator is activated when the Generator submits code for review via the `/harness-evaluation` workflow.
-*   **Evaluator ➡️ Generator (Rejection/Re-Review)**: If Critical or Required findings are found during Stage 2 (Code Review) or Stage 3 (Test Review), the Evaluator halts progression, delivers the finding reports, and transitions control back to the **Generator** for remediation.
-*   **Evaluator ➡️ User (Approval)**: Once all quality metrics pass and findings are resolved, the Evaluator generates the final APPROVED reports and asks the user for permission to merge and complete the workflow.
+* **Generator ➡️ Evaluator**: The Evaluator is activated when the Generator
+  submits a `To be reviewed` dated workspace through `harness-evaluation`.
+* **Evaluator ➡️ Generator (Fix Loop)**: If the overall score is below `5.0 / 5`,
+  the evaluator records the reports and routes the tracker to `To be fixed`;
+  the Generator then follows `harness-fix` for remediation.
+* **Evaluator ➡️ User**: Present the code review, test review, and evaluator
+  rubric. The score-based lifecycle transition is automatic: `5.0 / 5` routes
+  to `To be human reviewed`; any lower score routes to `To be fixed`.
