@@ -101,6 +101,7 @@ Key skills under `.agents/skills/`:
 ---
 ## Build Commands — run from project root
 ```bash
+bash harness/scripts/check-full-source-rules.sh # repository-wide source rules
 ./gradlew assembleDebug              # build check
 ./gradlew testDebugUnitTest          # unit + integration tests
 ./gradlew :app:koverXmlReportDebug   # machine-readable coverage report

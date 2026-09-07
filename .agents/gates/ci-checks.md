@@ -55,11 +55,11 @@ supports explicit per-file thresholds with `--min-file <path>=<percent>`.
 
 ### 7. Compose Rules
 ```bash
-bash harness/scripts/check-compose-rules.sh
+bash harness/scripts/check-compose-rules.sh --all
 ```
 Windows:
 ```powershell
-harness\scripts\check-compose-rules.cmd
+harness\scripts\check-compose-rules.cmd --all
 ```
 **Must pass.** Catches Compose-specific violations not covered by Ktlint/Detekt:
 - Hardcoded strings (must use `stringResource()`)
@@ -69,6 +69,21 @@ harness\scripts\check-compose-rules.cmd
 - Repository / UseCase calls inside Composables
 - Unstable `testTag` values (string interpolation)
 - `Column` + `forEach` instead of `LazyColumn`
+
+### 7a. Full Source Rules Bundle
+```bash
+bash harness/scripts/check-full-source-rules.sh
+```
+Windows:
+```powershell
+harness\scripts\check-full-source-rules.cmd
+```
+**Must pass.** This is the required repository-wide source-rule gate used by
+generator, evaluation, fix, and CI flows. It passes `--all` to the architecture,
+Compose, and localization AST checkers, scans both test roots for assertion quality,
+runs navigation checks, executes every checker after earlier failures, and returns
+non-zero if any checker reports a violation. Individual checker commands are useful
+for diagnosis but cannot replace this bundle as evidence.
 
 ### 8. Navigation Rules
 ```bash
@@ -85,6 +100,13 @@ bash harness/scripts/tests/ast-checkers-contract-test.sh
 **Must pass.** Verifies the shared AST-backed Compose, localization, architecture,
 navigation, and rendering-assertion entry points ignore rule-shaped comments/literals
 and reject actual violations.
+
+### 8b. Full Source Rules Bundle Contract
+```bash
+bash harness/scripts/tests/full-source-rules-contract-test.sh
+```
+**Must pass.** Proves the bundle forces full-source scans, runs every checker even
+when an earlier checker fails, and fails on an untouched source violation.
 
 ### 9. Rule Applicability Harness Contract
 ```bash

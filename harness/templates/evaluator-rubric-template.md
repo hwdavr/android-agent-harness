@@ -10,7 +10,7 @@ Use this rubric after implementation and before final acceptance.
 | Reliability | Does the result survive restart or rerun without repair? |  |  |
 | Maintainability | Is the code and documentation clear enough for the next session? |  |  |
 | Handoff readiness | Can a fresh session continue work from repo artifacts only? |  |  |
-| Code & Test Review | Do the code quality checks (Ktlint, Detekt, Lint) and comprehensive test reviews pass? |  |  |
+| Code & Test Review | Do Ktlint, Detekt, Lint, the full-source rules bundle, and comprehensive test reviews pass? |  |  |
 | Rule Applicability | Does every approved rule decision have diff-trigger reconciliation and evidence in both review reports? |  |  |
 
 ### Overall: <arithmetic mean of the eight category scores, rounded to one decimal> / 5
@@ -62,6 +62,10 @@ If any required answer is `No`, the evaluator MUST score `Verification` below `5
 | evaluator-rubric.md | Yes | Complete | This file |
 
 ### Evidence Contract
+
+The evaluator's static-quality evidence must include
+`bash harness/scripts/check-full-source-rules.sh` (or the Windows `.cmd` launcher),
+not only a changed-file checker invocation.
 
 Before changing the tracker status, run:
 

@@ -34,19 +34,21 @@ Execute the following baseline checks:
 ./gradlew ktlintCheck
 ./gradlew detekt
 ./gradlew lintDebug
-bash harness/scripts/check-architecture-rules.sh
+bash harness/scripts/check-full-source-rules.sh
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 
-Run `check-compose-rules.sh`, `check-localization-rules.sh`, and
-`check-navigation-rules.sh` only when SUI, L10N, and NAV respectively are `Required`
-or excepted. Record non-applicable decisions with the canonical artifact reference.
+`check-full-source-rules.sh` is the mandatory bundle for the custom source rules. It
+passes `--all` to the architecture, Compose, and localization AST checkers, scans
+both test roots for assertion quality, runs navigation checks, and aggregates every
+checker result. A non-zero result blocks the stage, including when the finding is
+pre-existing or outside the changed feature. Use the Rule Applicability matrix to
+classify and document findings; it does not permit replacing this baseline with a
+changed-file scan.
 
 On Windows (using PowerShell or Command Prompt), run the native script launchers instead:
 ```powershell
-harness\scripts\check-compose-rules.cmd
-harness\scripts\check-localization-rules.cmd
-harness\scripts\check-architecture-rules.cmd
+harness\scripts\check-full-source-rules.cmd
 ```
 
 ### 2. Auto-Fix Formatting Issues
@@ -79,10 +81,7 @@ Clean git status with all formatting and structural violations fixed.
 - [ ] `./gradlew ktlintCheck` — exit code 0
 - [ ] `./gradlew detekt` — exit code 0
 - [ ] `./gradlew lintDebug` — exit code 0
-- [ ] `bash harness/scripts/check-compose-rules.sh` or `harness\scripts\check-compose-rules.cmd` — exit code 0 when SUI is required or excepted
-- [ ] `bash harness/scripts/check-localization-rules.sh` or `harness\scripts\check-localization-rules.cmd` — exit code 0 when L10N is required or excepted
-- [ ] `bash harness/scripts/check-architecture-rules.sh` or `harness\scripts\check-architecture-rules.cmd` — exit code 0
-- [ ] `bash harness/scripts/check-navigation-rules.sh` — exit code 0 when NAV is required
+- [ ] `bash harness/scripts/check-full-source-rules.sh` or `harness\scripts\check-full-source-rules.cmd` — exit code 0
 - [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — exit code 0
 - [ ] Every Rule Applicability decision has required check/review evidence or its approved rationale
 - [ ] `summary_{feature_id}.md` (or `summary_v<N>.md`) updated and marked complete

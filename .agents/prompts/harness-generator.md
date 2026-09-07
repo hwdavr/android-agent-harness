@@ -36,6 +36,7 @@ Non-negotiable rules (from AGENTS.md):
 - CRITICAL: When all slices are passing, you MUST transition the tracker status to "To be reviewed" — NEVER to "To be human reviewed". Only the Evaluator agent (harness-evaluation workflow) is authorized to transition a feature to "To be human reviewed" after scoring. Transitioning directly to "To be human reviewed" bypasses the mandatory evaluation and is a workflow violation.
 
 Build commands (run from project root):
+- bash harness/scripts/check-full-source-rules.sh # repository-wide source rules; runs every checker with full scans
 - ./gradlew assembleDebug              # build check
 - ./gradlew testDebugUnitTest          # unit + integration tests
 - ./gradlew koverLog                   # coverage (>= 80% overall)

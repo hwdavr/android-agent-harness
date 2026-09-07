@@ -47,11 +47,15 @@ Verify target emulator/device runtime environment readiness.
 ### Stage 3 — Verify Baseline
 Ensure that the existing codebase compiles and all tests pass before making any changes. The previous session or developer may have introduced bugs or broken tests.
 *   **Action**:
-    1. Run full static checks and JVM test suites:
+    1. Run the repository-wide source-rule bundle and JVM test suites:
         ```bash
+        bash harness/scripts/check-full-source-rules.sh
         ./gradlew assembleDebug
         ./gradlew testDebugUnitTest
         ```
+       The source-rule bundle always scans the complete production and test source
+       trees. It runs every checker even when one fails and returns non-zero if any
+       checker reports a violation; record the complete output before stopping.
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Verify Baseline** stage status to completed (✅) with notes and current timestamp.
 *   **Objective**: Confirm the repository is in a perfectly stable, compilable, and green state. If the baseline is broken, stop and fix existing regressions first! Register status in `$FEATURE_DIR/summary_{feature_id}.md`.
 
@@ -77,6 +81,7 @@ Verify the correctness of the implemented behavior visually and logically.
 ### Stage 6 — Code Quality Fix
 Run all static check suites, lint rules, and custom compliance rules, and resolve all violations.
 *   **Action**: **INVOKE** the `code-quality-fix` skill via the Skill tool (name: `code-quality-fix`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+*   **Required gate**: The skill MUST run `bash harness/scripts/check-full-source-rules.sh` after its individual Gradle checks. This bundle is the authoritative repository-wide architecture, Compose, localization, navigation, and test-assertion gate; do not substitute a changed-file invocation.
 *   **Objective**: Diagnose and resolve all formatting, quality, localization, and architectural style guidelines issues, logging check success in `$FEATURE_DIR/summary_{feature_id}.md`.
 
 ### Stage 7 — Update State

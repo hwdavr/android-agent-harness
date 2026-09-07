@@ -131,7 +131,7 @@ do not paste it into this summary.
 ### Code Quality Fix
 - `./gradlew ktlintCheck` — exit 0
 - `./gradlew detekt` — exit 0
-- `bash harness/scripts/check-architecture-rules.sh` — exit 0
+- `bash harness/scripts/check-full-source-rules.sh` — exit 0 (repository-wide architecture, Compose, localization, navigation, and test-assertion checks)
 
 ---
 
@@ -173,7 +173,7 @@ do not paste it into this summary.
   "commands_executed": 14,
   "first_pass_command_rate": 92.8,
   "gate_retries_total": 1,
-  "gate_failure_causes": ["check-compose-rules.sh"],
+  "gate_failure_causes": ["check-full-source-rules.sh"],
   "tokens_estimated": 125000,
   "stages": {
     "orient": {"duration_sec": 60, "retries": 0, "commands": 1},

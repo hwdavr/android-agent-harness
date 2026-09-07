@@ -56,6 +56,15 @@ The test review report must include the Rule Applicability Test Reconciliation t
 The code review report must include the Rule Applicability Reconciliation table.
 **INVOKE** the `android-code-review` skill via the Skill tool (name: `android-code-review`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Perform static analysis and identify logic/architectural flaws. Do not stop after this stage — proceed immediately to Stage 4.
 
+The skill MUST run the repository-wide source-rule bundle:
+
+    bash harness/scripts/check-full-source-rules.sh
+
+This command forces `--all` scans for architecture, Compose, and localization,
+checks all test sources for assertion quality, and runs navigation checks. It runs
+every checker and aggregates failures; record its complete output and treat any
+non-zero result as a review failure, including pre-existing findings.
+
 **Output**:
 - Code review report: `$FEATURE_DIR/code_review_{feature_id}.md`
 

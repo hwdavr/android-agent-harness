@@ -44,25 +44,27 @@ avoid a valid non-applicable decision.
 
 ### 1. Build and Static Quality Checks
 
-Run all checks and record results:
+Run all checks and record results. The repository-wide source-rule bundle is
+mandatory even when the reviewed diff is small or contains no Kotlin files:
 ```bash
 ./gradlew assembleDebug
 ./gradlew ktlintCheck
 ./gradlew detekt
 ./gradlew lintDebug
-bash harness/scripts/check-compose-rules.sh
-bash harness/scripts/check-localization-rules.sh
-bash harness/scripts/check-architecture-rules.sh
-bash harness/scripts/check-navigation-rules.sh
+bash harness/scripts/check-full-source-rules.sh
 ./gradlew :app:koverXmlReportDebug
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 
+`check-full-source-rules.sh` passes `--all` to the architecture, Compose, and
+localization AST checkers, scans all test sources for assertion quality, and runs
+navigation checks. It executes every checker and aggregates failures; record its
+complete output and treat any non-zero result as a review failure, including
+pre-existing findings.
+
 On Windows (using PowerShell or Command Prompt), run the native script launchers instead:
 ```powershell
-harness\scripts\check-compose-rules.cmd
-harness\scripts\check-localization-rules.cmd
-harness\scripts\check-architecture-rules.cmd
+harness\scripts\check-full-source-rules.cmd
 ```
 
 For every command, record its exact exit code, timestamp, commit, and complete failure details in the review report. A non-zero global gate is a review failure even when the violation is outside the changed feature; identify the source and whether it appears pre-existing, but do not report the gate as passing or approve the review without an explicit user waiver.
@@ -291,9 +293,7 @@ All conditions must pass before returning to the workflow:
 - [ ] `assembleDebug` — exit code 0
 - [ ] `ktlintCheck` — exit code 0
 - [ ] `detekt` — exit code 0
-- [ ] `check-compose-rules.sh` or `check-compose-rules.cmd` — exit code 0 (or skipped with no Compose changes)
-- [ ] `check-localization-rules.sh` or `check-localization-rules.cmd` — exit code 0
-- [ ] `check-architecture-rules.sh` or `check-architecture-rules.cmd` — exit code 0
+- [ ] `check-full-source-rules.sh` or `check-full-source-rules.cmd` — exit code 0
 - [ ] Compose Rules Enforcement table completed — every rule is ✅, ❌ (acknowledged), ⏭, or `👁️ Human` (no blanks)
 - [ ] All `❌` compose rule violations are either fixed or explicitly accepted with justification
 - [ ] All compose `👁️ Human` rows acknowledged by the human reviewer before merge

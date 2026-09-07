@@ -69,11 +69,14 @@ Never introduce `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disa
         adb devices
         ```
        Confirm device availability for runtime testing. Always use an emulator for instrumented UI tests (e.g. `ANDROID_SERIAL=emulator-5554`), and fallback to a connected physical device only when no emulator is present.
-    2. Run full static checks and JVM test suites:
+    2. Run the repository-wide source-rule bundle and JVM test suites:
         ```bash
+        bash harness/scripts/check-full-source-rules.sh
         ./gradlew assembleDebug
         ./gradlew testDebugUnitTest
         ```
+       The bundle always scans the complete production and test source trees and
+       aggregates every checker result. A non-zero result blocks Fix-Stage 2.
     3. If red, mark the baseline `⚠️ Blocked`, record the failing command and raw output, and stop. Do not begin fixing review findings on a broken baseline.
     4. If all setup and baseline commands succeed, **update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Setup & Verify Baseline** stage status as completed (✅) with notes and the current timestamp. If any fails, record the stage as `⚠️ Blocked` and stop.
 *   **Objective**: Confirm runtime readiness and verify the repository is in a perfectly stable, compilable, and green baseline before applying fixes.
@@ -95,7 +98,7 @@ method, a suite-scoped command, its declared scenario, and successful evidence:
 
 *   **Action**:
     1. Re-run, **one by one**, every verification command listed in `$FEATURE_DIR/sprint-contract.md` Acceptance Test Cases. If any command fails, record its command, exit status, and raw output; keep the feature non-passing and stop the pipeline.
-    2. Re-run the global quality gates: `./gradlew ktlintCheck`, `./gradlew detekt`, `./gradlew lint`, and `./gradlew koverLog` (coverage ≥ 80% overall; ≥ 90% for ViewModel & Use Case).
+    2. Re-run the global quality gates: `./gradlew ktlintCheck`, `./gradlew detekt`, `./gradlew lint`, `./gradlew koverLog`, and `bash harness/scripts/check-full-source-rules.sh` (coverage ≥ 80% overall; ≥ 90% for ViewModel & Use Case). The full-source bundle is mandatory and must not be replaced by changed-file checker invocations.
     3. Attach objective evidence (command + exit status + fix attempts) to each Test ID's `evidence` field in `$FEATURE_DIR/feature_list.json`. All slices must remain `passing`.
     4. Run `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate`. Missing matrices, unavailable/pending/skipped environments, and fake-only platform tests remain hard failures; record them as `Unresolved ⚠️` rather than passing them through.
     5. Run `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"` when visual verification is required. Every final visual method must be declared in the sprint contract, have successful connected evidence and a non-empty screenshot, and have reference-anchor proof in `visual_evidence/reference-anchor-verification.md` for the approved design. Rich-text or inline-formatting appearance rows must also pass the source-fed rendered-output contract (`captureToImage()` plus an explicit pixel comparison); model marks and screenshot existence are supplemental only.

@@ -62,6 +62,10 @@ Required: flag completion paths called only from tests, stale transition flags, 
 
 ## Build & Test Results
 
+The source-rule result in this table must come from the full-source bundle. Its
+output supplies the per-rule details below; individual checker invocations are
+diagnostic follow-ups only.
+
 | Check | Exit code | Timestamp / commit | Provenance | Result | Failure detail / scope |
 |-------|---:|---|---|---|---|
 | `assembleDebug` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
@@ -72,9 +76,7 @@ Required: flag completion paths called only from tests, stale transition flags, 
 | `ktlintCheck` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
 | `detekt` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
 | `lintDebug` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
-| `check-compose-rules.sh` or `check-compose-rules.cmd` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL / ⏭ SKIPPED | |
-| `check-localization-rules.sh` or `check-localization-rules.cmd` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
-| `check-architecture-rules.sh` or `check-architecture-rules.cmd` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
+| `check-full-source-rules.sh` or `check-full-source-rules.cmd` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | Includes architecture, Compose, localization, navigation, and test-assertion checks over the complete source tree. |
 | Suppression audit | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | Confirm no new suppressions, ignores, baselines, or rule exclusions were added to make checks pass. |
 
 Any non-zero required gate makes the verdict non-approved, even when the source is pre-existing. Record the source and scope above.

@@ -68,19 +68,19 @@ Android Lint checks for Android-specific problems.
 1. **Run All Checks**: Start by running all tools to get a full picture of the debt.
    ```bash
    ./gradlew ktlintCheck detekt lintDebug
-   bash harness/scripts/check-compose-rules.sh
-   bash harness/scripts/check-localization-rules.sh
-   bash harness/scripts/check-architecture-rules.sh
-   bash harness/scripts/check-navigation-rules.sh
+   bash harness/scripts/check-full-source-rules.sh
    ./gradlew :app:koverXmlReportDebug
    bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
    ```
 
+   The full-source bundle passes `--all` to the architecture, Compose, and
+   localization AST checkers, scans both test roots for assertion quality, runs
+   navigation checks, and aggregates every checker result. A non-zero result is a
+   hard failure, including for pre-existing violations.
+
    On Windows (using PowerShell or Command Prompt), run the native script launchers instead:
    ```powershell
-   harness\scripts\check-compose-rules.cmd
-   harness\scripts\check-localization-rules.cmd
-   harness\scripts\check-architecture-rules.cmd
+   harness\scripts\check-full-source-rules.cmd
    ```
 
 2. **Fix Formatting First**: Run `ktlintFormat` to handle low-hanging fruit.
@@ -111,9 +111,6 @@ The task is complete when:
 - [ ] `./gradlew ktlintCheck` passes.
 - [ ] `./gradlew detekt` passes.
 - [ ] `./gradlew lintDebug` passes (0 errors).
-- [ ] `bash harness/scripts/check-compose-rules.sh` or `harness\scripts\check-compose-rules.cmd` passes (0 violations).
-- [ ] `bash harness/scripts/check-localization-rules.sh` or `harness\scripts\check-localization-rules.cmd` passes (0 violations).
-- [ ] `bash harness/scripts/check-architecture-rules.sh` or `harness\scripts\check-architecture-rules.cmd` passes (0 violations).
-- [ ] `bash harness/scripts/check-navigation-rules.sh` passes when NAV is required.
+- [ ] `bash harness/scripts/check-full-source-rules.sh` or `harness\scripts\check-full-source-rules.cmd` passes (0 violations).
 - [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` passes weighted coverage thresholds.
 - [ ] Rule Applicability Harness Contract is reconciled with the diff and evidence.

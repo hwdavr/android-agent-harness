@@ -26,6 +26,7 @@ Non-negotiable rules (from AGENTS.md):
 - Every stage skill must be invoked via the Skill tool - reading SKILL.md manually is not a substitute
 
 Build commands (run from project root):
+- bash harness/scripts/check-full-source-rules.sh # repository-wide source rules; runs every checker with full scans
 - ./gradlew assembleDebug              # build check
 - ./gradlew testDebugUnitTest          # unit + integration tests
 - ./gradlew koverLog                   # coverage (>= 80% overall)
