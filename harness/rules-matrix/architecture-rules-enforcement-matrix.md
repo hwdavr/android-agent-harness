@@ -104,7 +104,7 @@ A rule can carry more than one badge when layered enforcement is needed.
 | # | Rule | Enforcement | Script Check | Notes |
 |---|------|-------------|-------------|-------|
 | 8.1 | No fully-qualified class names used inline in any file | 🤖 Scripted | §8a: fully-qualified identifiers in function/property bodies | |
-| 8.2 | ViewModel must not call Retrofit directly | 🤖 Scripted + 🧠 Evaluator | §8b: `enqueue` / `execute` / `await` call nodes in ViewModel class bodies | AST visitor catches calls; AI reviews equivalent patterns |
+| 8.2 | ViewModel must not call Retrofit directly | 🤖 Scripted + 🧠 Evaluator | §8b: API-service calls plus `enqueue` / `execute` call nodes in ViewModel class bodies | Coroutine `Deferred.await()` is allowed; AST visitor catches common calls and AI reviews equivalent patterns |
 | 8.3 | No business rules inside Composable or Fragment | 🤖 Scripted + 🧠 Evaluator | §8c: `when/if` condition nodes on domain model fields inside `@Composable` | AST visitor is conservative; AI reviews subtle logic placement |
 | 8.4 | Every new ViewModel must have a corresponding test file | 🤖 Scripted | §8d: ViewModel files without `*Test.kt` or `*IntegrationTest.kt` | |
 | 8.5 | AI-generated code must not be merged without review | 👁️ Human | — | Process control — enforced by the review workflow gate, not a script |
@@ -159,7 +159,7 @@ The [`check-architecture-rules.sh`](../scripts/check-architecture-rules.sh) scri
 | **§7** — `Context` in domain constructor parameter nodes | 3.1 · 7.4 |
 | **§7** — `RepositoryImpl` class declarations without `@Singleton` | 7.2 |
 | **§8** — Fully-qualified call/type expression nodes | 8.1 |
-| **§8** — `enqueue` / `execute` / `await` call nodes in ViewModel classes | 8.2 |
+| **§8** — API-service calls plus `enqueue` / `execute` call nodes in ViewModel classes | 8.2 |
 | **§8** — `when` / `if` condition nodes on domain-model properties inside `@Composable` | 8.3 |
 | **§8** — ViewModel class declarations without a matching test file | 8.4 |
 | **§9** — ViewModel/UseCase/RepositoryImpl class declarations in non-canonical paths and domain mapper files | 9.1 · 9.2 · 9.3 · 9.4 |

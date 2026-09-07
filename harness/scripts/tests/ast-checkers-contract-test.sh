@@ -149,6 +149,51 @@ KOTLIN
 expect_failure "repository, use case, or data source directly" \
   bash "$ARCHITECTURE_CHECKER" --all "$fixture_root/actual-architecture/com/example/notesapp"
 
+safe_await_root="$fixture_root/safe-await/com/example/notesapp/ui/viewmodel"
+mkdir -p "$safe_await_root"
+cat > "$safe_await_root/SafeFoldersViewModel.kt" <<'KOTLIN'
+package com.example.notesapp.ui
+
+class SafeFoldersViewModel {
+    fun refresh() {
+        val deferred = async { repository.load() }
+        deferred.await()
+    }
+}
+KOTLIN
+mkdir -p "$fixture_root/safe-await/app/src/test"
+cat > "$fixture_root/safe-await/app/src/test/SafeFoldersViewModelTest.kt" <<'KOTLIN'
+package com.example.notesapp.ui
+
+class SafeFoldersViewModelTest
+KOTLIN
+expect_pass "coroutine Deferred.await fixture" \
+  bash "$ARCHITECTURE_CHECKER" --all --project-root "$fixture_root/safe-await" \
+    --source-root "$fixture_root/safe-await/com/example/notesapp" \
+    "$fixture_root/safe-await/com/example/notesapp"
+
+direct_retrofit_root="$fixture_root/direct-retrofit/com/example/notesapp/ui/viewmodel"
+mkdir -p "$direct_retrofit_root"
+cat > "$direct_retrofit_root/BadRetrofitViewModel.kt" <<'KOTLIN'
+package com.example.notesapp.ui
+
+class BadRetrofitViewModel {
+    fun refresh() {
+        apiService.get().await()
+    }
+}
+KOTLIN
+mkdir -p "$fixture_root/direct-retrofit/app/src/test"
+cat > "$fixture_root/direct-retrofit/app/src/test/BadRetrofitViewModelTest.kt" <<'KOTLIN'
+package com.example.notesapp.ui
+
+class BadRetrofitViewModelTest
+KOTLIN
+expect_failure "ViewModel calls a Retrofit API service directly" \
+  bash "$ARCHITECTURE_CHECKER" --all --project-root "$fixture_root/direct-retrofit" \
+    --source-root "$fixture_root/direct-retrofit/com/example/notesapp" \
+    "$fixture_root/direct-retrofit/com/example/notesapp"
+
 cat > "$fixture_root/actual-architecture/com/example/notesapp/data/BadState.kt" <<'KOTLIN'
 package com.example.notesapp.data
 

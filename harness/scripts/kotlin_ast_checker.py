@@ -1506,7 +1506,11 @@ def run_architecture(args: argparse.Namespace) -> int:
                 if not class_node.name.endswith("ViewModel"):
                     continue
                 for call in calls_in_range(source_file, class_node.body_start, class_node.body_end):
-                    if call.name in {"enqueue", "execute", "await"}:
+                    # `Deferred.await()` is a normal coroutine operation and does
+                    # not imply a Retrofit dependency. Retrofit's terminal Call
+                    # methods remain forbidden here; API-service methods are
+                    # checked separately by `check_viewmodel_api_calls`.
+                    if call.name in {"enqueue", "execute"}:
                         result.add(source_file, call.name_index, "ViewModel must not call Retrofit directly")
 
     visit_rule(result, "Direct Retrofit calls in ViewModels", check_viewmodel_retrofit_methods)
