@@ -58,8 +58,9 @@ bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 
 `check-full-source-rules.sh` passes `--all` to the architecture, Compose, and
 localization AST checkers, scans all test sources for assertion quality, and runs
-navigation checks. It executes every checker and aggregates failures; record its
-complete output and treat any non-zero result as a review failure, including
+navigation checks, then runs the AI/WebView security evaluator and its contract
+test. It executes every checker and aggregates failures; record its complete
+output and treat any non-zero result as a review failure, including
 pre-existing findings.
 
 On Windows (using PowerShell or Command Prompt), run the native script launchers instead:

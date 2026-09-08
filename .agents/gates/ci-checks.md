@@ -85,6 +85,13 @@ runs navigation checks, executes every checker after earlier failures, and retur
 non-zero if any checker reports a violation. Individual checker commands are useful
 for diagnosis but cannot replace this bundle as evidence.
 
+The bundle also runs the AI/WebView security evaluator and its negative-case
+contract test. These checks are mandatory in every flow that invokes the
+full-source bundle; no separate workflow invocation is required. The evaluator
+rejects unsafe cleartext, WebView, Mermaid, AI-input logging, and untrusted-output
+sink patterns, while the contract test proves unsafe fixtures fail and reports do
+not leak fixture content.
+
 ### 8. Navigation Rules
 ```bash
 bash harness/scripts/check-navigation-rules.sh

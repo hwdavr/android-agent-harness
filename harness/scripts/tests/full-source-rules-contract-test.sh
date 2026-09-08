@@ -55,6 +55,10 @@ for checker in \
 done
 grep -Fq -- '--all' "$BUNDLE" || fail "bundle does not force full-source scans"
 grep -Fq 'failed=0' "$BUNDLE" || fail "bundle does not aggregate checker failures"
+grep -Fq 'check-ai-security-rules.sh' "$BUNDLE" \
+  || fail "bundle does not invoke the AI security evaluator"
+grep -Fq 'ai-security-rules-contract-test.sh' "$BUNDLE" \
+  || fail "bundle does not invoke the AI security contract test"
 
 mkdir -p \
   "$fixture_root/app/src/main/java/com/example/notesapp/ui" \
@@ -88,7 +92,9 @@ for expected in \
   "Compose rules (full source)" \
   "Localization rules (full source)" \
   "Navigation rules (full source)" \
-  "Test assertion rules (full test source)"; do
+  "Test assertion rules (full test source)" \
+  "AI security rules" \
+  "AI security rule contract"; do
   printf '%s\n' "$output" | grep -Fq ">> $expected" \
     || { echo "$output" >&2; fail "bundle did not run $expected"; }
 done

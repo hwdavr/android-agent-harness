@@ -114,6 +114,7 @@ The harness includes validation scripts located in `harness/scripts/`:
 | `check-rules-matrix-contract.sh` | Validates rule-matrix rows, summaries, and scripted owners |
 | `kotlin_ast_checker.py` | Shared AST-backed Compose, localization, architecture, navigation, and assertion checks |
 | `check-test-assertions-quality.sh` | Ensures tests do not use shallow/envelope-only assertions |
+| `check-ai-security-rules.sh` | Evaluates AI/WebView trust-boundary policies and runs its negative-case contract |
 | `check-full-source-rules.sh` / `.cmd` | Runs every source-rule checker over the complete production and test trees and aggregates failures |
 | `auto-harness-generator.sh` | Headless runner for automating multi-slice generation loops |
 

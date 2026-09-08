@@ -58,6 +58,18 @@ foreach ($check in $checks) {
     }
 }
 
+Write-Host ""
+Write-Host ">> AI security rules"
+$aiSecurityChecker = Join-Path $PSScriptRoot "check-ai-security-rules.py"
+& $python.Source $aiSecurityChecker --root $projectRoot
+$status = $LASTEXITCODE
+if ($status -eq 0) {
+    Write-Host "PASS: AI security rules"
+} else {
+    Write-Host "FAIL: AI security rules (exit $status)"
+    $failed = $true
+}
+
 if ($failed) {
     Write-Host "FAIL: full-source rules bundle (one or more checkers failed)"
     exit 1
