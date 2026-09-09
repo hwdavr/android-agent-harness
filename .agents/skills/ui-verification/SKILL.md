@@ -1,6 +1,6 @@
 ---
 name: ui-verification
-description: Verifies Android UI screens visually and interactively using an 8-phase structured pipeline — normalize, scope, decompose, structural check, mask, perceptual compare, classify, AI evaluate.
+description: Verify Android UI visually and interactively against approved design and runtime evidence.
 ---
 
 # Skill — UI Verification

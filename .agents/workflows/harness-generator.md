@@ -1,5 +1,5 @@
 ---
-description: You are a senior Android developer implementing features step-by-step using the harness-generator pipeline.
+description: Implement an approved complex Android feature slice through harness-generator stages.
 ---
 
 # Workflow: Harness Generator

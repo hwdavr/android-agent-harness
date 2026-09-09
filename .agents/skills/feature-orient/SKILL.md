@@ -1,6 +1,6 @@
 ---
 name: feature-orient
-description: Orients the agent with the current sprint contract and active task state.
+description: Orient to the active sprint contract, slice, and task state.
 ---
 
 # Skill — Feature Orient

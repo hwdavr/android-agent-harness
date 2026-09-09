@@ -1,5 +1,5 @@
 ---
-description: You are a senior Android developer running an independent code and test review of an existing change — harness-evaluation workflow.
+description: Evaluate complex-feature code and test evidence in a post-implementation review.
 ---
 
 # Workflow: Harness Evaluation

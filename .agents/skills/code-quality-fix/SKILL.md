@@ -1,6 +1,6 @@
 ---
 name: code-quality-fix
-description: Runs static analysis, linting, formatting checks and resolves all violations.
+description: Run static analysis, formatting, lint checks, and fix violations.
 ---
 
 # Skill — Code Quality Fix

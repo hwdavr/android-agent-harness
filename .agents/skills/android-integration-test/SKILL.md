@@ -1,6 +1,6 @@
 ---
 name: android-integration-test
-description: Use this skill for Android integration tests below the UI layer.
+description: Implement Android integration tests below the UI layer.
 ---
 
 # Android integration test skill

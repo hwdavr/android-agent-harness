@@ -1,6 +1,7 @@
 # Review Template
 
-Use this template when producing the review summary in the relevant stage.
+Use this template when producing the review summary in the relevant stage. It is the canonical
+detailed checklist; `code-review-and-quality` supplies routing, review order, and evidence rules.
 
 ---
 

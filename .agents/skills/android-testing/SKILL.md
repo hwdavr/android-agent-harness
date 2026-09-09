@@ -1,6 +1,6 @@
 ---
 name: android-testing
-description: Implements unit, integration, and instrumented UI tests according to the test plan.
+description: Implement planned Android unit, integration, and instrumented UI tests.
 ---
 
 # Skill — Android Testing

@@ -1,6 +1,6 @@
 ---
 name: implementation-plan
-description: Generates a detailed implementation and test plan before coding.
+description: Create a detailed implementation and test plan before coding.
 ---
 
 # Skill — Implementation Plan

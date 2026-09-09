@@ -1,6 +1,6 @@
 ---
 name: slice-planning
-description: Decomposes requirements into vertical slices and schedules a Sprint Contract.
+description: Decompose requirements into vertical slices and a sprint contract.
 ---
 
 # Skill — Slice Planning

@@ -1,6 +1,6 @@
 ---
 name: ux-design
-description: Android/Jetpack Compose/Material 3 UI/UX design skill. Formulates design specifications (design.md) and generates visual mockup images for each screen when no user-provided screenshot/mockup exists.
+description: Design Android Compose UI and produce design.md plus mockups when none are supplied.
 ---
 
 # Skill — UX Design (Android / Jetpack Compose / Material 3)

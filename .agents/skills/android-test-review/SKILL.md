@@ -1,6 +1,6 @@
 ---
 name: android-test-review
-description: Verifies test suite completion, requirement traceability, boundary testing, and coverage targets.
+description: Conduct Android test review for traceability, boundaries, coverage, and regressions.
 ---
 
 # Skill — Android Test Review

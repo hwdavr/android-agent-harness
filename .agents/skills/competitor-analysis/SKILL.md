@@ -1,6 +1,6 @@
 ---
 name: competitor-analysis
-description: Research and compare a software repository with current competitors using primary evidence, shared metric rubrics, and conservative scoring, then identify gaps and recommend exactly one feasible PR-sized next feature. Use for product strategy, competitive parity, roadmap prioritization, or next-feature decisions; keep the work read-only unless implementation is explicitly requested.
+description: Compare repository competitors with primary evidence and recommend one feasible PR-sized feature.
 ---
 
 # Competitor Analysis

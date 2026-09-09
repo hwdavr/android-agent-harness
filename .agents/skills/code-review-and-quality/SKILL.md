@@ -1,6 +1,6 @@
 ---
 name: code-review-and-quality
-description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
+description: Review code quality, correctness, security, performance, and maintainability before merge.
 ---
 
 # Code Review and Quality
@@ -289,84 +289,10 @@ Part of code review is dependency review:
 
 **Rule:** Prefer standard library and existing utilities over new dependencies. Every dependency is a liability.
 
-## The Review Checklist
+## Checklist Authority
 
-```markdown
-## Review: [PR/Change title]
-
-### Context
-- [ ] I understand what this change does and why
-- [ ] I have loaded all in-scope rule files (Step 0 above) before starting
-
-### Correctness
-- [ ] Change matches spec/task requirements
-- [ ] Edge cases handled
-- [ ] Error paths handled
-- [ ] Tests cover the change adequately
-
-### Readability
-- [ ] Names are clear and consistent
-- [ ] Logic is straightforward
-- [ ] No unnecessary complexity
-
-### Architecture
-- [ ] Follows existing patterns
-- [ ] No unnecessary coupling or dependencies
-- [ ] Appropriate abstraction level
-
-### Security
-- [ ] No secrets in code
-- [ ] Input validated at boundaries
-- [ ] No injection vulnerabilities
-- [ ] Auth checks in place
-- [ ] External data sources treated as untrusted
-
-### Performance
-- [ ] No N+1 patterns
-- [ ] No unbounded operations
-- [ ] Pagination on list endpoints
-
-### Rule Applicability
-- [ ] I reconciled all ten approved decisions with the diff: ARCH, IMPL, TEST, SUI,
-  L10N, NAV, API, OBS, ANL, and SEC.
-- [ ] Every triggered rule is Required or has a direct user-approved exception.
-- [ ] Compose, localization, navigation, API, architecture, and implementation rules
-  match their approved decisions and evidence.
-- [ ] Every changed function, branch, and callback implements its required behavior;
-  no dummy, stub, or no-op production code exists.
-
-### Project-Specific Rules
-
-#### compose-rules.md *(if UI changed)*
-- [ ] No hardcoded colors (`Color.White`, `Color(0x...)`, etc.) — all via `LocalAppColors.current.<token>`
-- [ ] New color tokens added to both `LightAppColors` and `DarkAppColors`
-- [ ] No hardcoded strings in `Text()`, labels, or hints — all via `stringResource()`
-- [ ] All interactive elements have `Modifier.testTag(...)` with stable names
-- [ ] Stateless `Content` composable separated from the stateful `Screen` wrapper
-
-#### localization-rules.md *(if UI changed)*
-- [ ] Every new string defined in `strings.xml` with pattern `<screen>_<component>_<type>`
-- [ ] Plural strings use `<plurals>` block
-- [ ] Non-text interactive elements have `contentDescription = stringResource(...)` — not `null`
-
-#### android-architecture.md
-- [ ] No cross-layer imports
-- [ ] No fully-qualified class names inline in function bodies
-- [ ] DTOs not exposed outside data layer
-
-#### navigation-rules.md — PASS / FAIL / N/A
-#### api-contract-rules.md — PASS / FAIL / N/A
-#### analytics-rules.md — PASS / FAIL / N/A
-
-### Verification
-- [ ] Tests pass
-- [ ] Build succeeds
-- [ ] Manual verification done (if applicable)
-
-### Verdict
-- [ ] **Approve** — Ready to merge
-- [ ] **Request changes** — Issues must be addressed
-```
+Complete `harness/templates/code-review-template.md`; it owns the detailed checklist,
+Rule Applicability table, and report format. This skill owns only review routing and judgement.
 ## See Also
 
 - For detailed security review guidance, see `references/security-checklist.md`

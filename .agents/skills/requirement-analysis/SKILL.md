@@ -1,6 +1,6 @@
 ---
 name: requirement-analysis
-description: Analyzes requirements, classifies APIs, and designs UI states and navigation flow.
+description: Analyze requirements, API impact, UI states, and navigation flow.
 ---
 
 # Skill — Requirement, Impact & Design Analysis

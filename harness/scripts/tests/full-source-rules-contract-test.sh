@@ -33,9 +33,6 @@ for required_file in \
   "$REPO_ROOT/.agents/skills/android-code-review/SKILL.md" \
   "$REPO_ROOT/.agents/gates/ci-checks.md" \
   "$REPO_ROOT/.agents/gates/review-checklist.md" \
-  "$REPO_ROOT/.agents/prompts/harness-generator.md" \
-  "$REPO_ROOT/.agents/prompts/harness-evaluation.md" \
-  "$REPO_ROOT/.agents/prompts/harness-fix.md" \
   "$REPO_ROOT/harness/templates/code-review-template.md" \
   "$REPO_ROOT/harness/templates/summary-template.md" \
   "$REPO_ROOT/harness/templates/clean-state-checklist-template.md" \

@@ -1,6 +1,6 @@
 ---
 name: requirement-capture
-description: Captures unambiguous product requirements and user goals from the user's prompt.
+description: Capture unambiguous product requirements and user goals.
 ---
 
 # Skill — Feature Requirement Capture

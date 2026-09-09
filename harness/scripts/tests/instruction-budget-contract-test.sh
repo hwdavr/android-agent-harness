@@ -63,14 +63,6 @@ if rg -Fq '"runtime_evidence_schema"' "$UI_SKILL"; then
   fail "UI verification skill embeds the canonical report schema"
 fi
 
-DESCRIPTION_HASH=$(
-  for file in $(find "$PROJECT_ROOT/.agents/workflows" "$PROJECT_ROOT/.agents/skills" \
-      -type f -name '*.md' | sort); do
-    relative=${file#"$PROJECT_ROOT/"}
-    awk -v file="$relative" '/^description:/{print file "\t" $0}' "$file"
-  done | shasum -a 256 | awk '{print $1}'
-)
-[ "$DESCRIPTION_HASH" = "ed4496ebf0349dcc4c4457e8f426a07398db69932c48bba26a9f5a48a2fa1afa" ] \
-  || fail "workflow or skill descriptions changed outside the approved phase"
+bash "$PROJECT_ROOT/harness/scripts/tests/description-routing-contract-test.sh"
 
-echo "PASS: instruction profiles stay within budget and descriptions/schema ownership are preserved."
+echo "PASS: instruction profiles stay within budget and description routing/schema ownership are preserved."

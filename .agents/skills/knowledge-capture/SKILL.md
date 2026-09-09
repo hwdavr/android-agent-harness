@@ -1,6 +1,6 @@
 ---
 name: knowledge-capture
-description: Records ADRs, post-mortems, and learnings after feature or bug resolution.
+description: Record ADRs, post-mortems, and reusable lessons after feature or bug resolution.
 ---
 
 # Skill — Knowledge Capture

@@ -1,6 +1,6 @@
 ---
 name: security-and-hardening
-description: Hardens Android code against security and privacy risks. Use when handling authentication tokens, local storage, deep links, WebView, file or content URIs, exported components, IPC, network communication, or third-party SDKs. Use when building features that process untrusted input, store sensitive data on-device, or integrate with backend APIs and external services.
+description: Harden Android security and privacy boundaries for untrusted input, storage, IPC, network, WebView, and SDKs.
 ---
 
 # Security and Hardening

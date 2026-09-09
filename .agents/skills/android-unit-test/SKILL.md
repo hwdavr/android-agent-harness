@@ -1,6 +1,6 @@
 ---
 name: android-unit-test
-description: Requirements and instructions for Android unit test coverage and verification.
+description: Implement and verify Android unit-test coverage.
 ---
 
 # Android Unit Test Skill

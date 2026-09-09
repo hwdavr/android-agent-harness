@@ -1,6 +1,6 @@
 ---
 name: android-ui-layer
-description: Implements UI screens and components in Compose with unidirectional state flow.
+description: Implement Compose UI screens and components with unidirectional state flow.
 ---
 
 # Skill — Android UI Layer

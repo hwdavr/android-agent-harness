@@ -1,6 +1,6 @@
 ---
 name: harness-retrospective
-description: Diagnose and harden repository harness-environment failures after false passes, skipped runtime checks, stale fixtures, or missing validation. Use when workflows, gates, validators, templates, or environment probes must be repaired without changing product requirements, model capability, or application behavior.
+description: Repair harness workflow, gate, fixture, or evidence failures without changing application behavior.
 ---
 
 # Harness Retrospective

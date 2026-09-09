@@ -1,5 +1,5 @@
 ---
-description: You are a senior Android developer resolving evaluator findings after a feature scored below 5.0/5 — harness-fix workflow.
+description: Resolve evaluator findings for a complex feature below the acceptance score.
 ---
 
 # Workflow: Harness Fix

@@ -1,6 +1,6 @@
 ---
 name: android-implementation
-description: Implements a user story or feature across data, domain, and UI layers sequentially.
+description: Implement an Android feature across affected data, domain, and UI layers.
 ---
 
 # Skill — Android Implementation (Data + Domain + UI)

@@ -1,6 +1,6 @@
 ---
 name: android-code-quality-checks
-description: Applies a comprehensive suite of Android code quality checks including Ktlint, Detekt, and Android Lint. Use this skill to ensure code adherence to style guides, static analysis rules, and Android best practices.
+description: Run Ktlint, Detekt, Android Lint, and project code-quality checks.
 ---
 
 # Android Code Quality Checks

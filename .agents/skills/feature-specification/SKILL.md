@@ -1,6 +1,6 @@
 ---
 name: feature-specification
-description: Clarifies a broad feature requirement through chat questions, then writes spec.md (always) and design.md (for new screens) with no open questions before planning.
+description: Clarify a feature and write approved spec.md and design.md before planning.
 ---
 
 # Skill — Feature Specification

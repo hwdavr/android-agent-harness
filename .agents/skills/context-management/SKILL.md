@@ -1,6 +1,6 @@
 ---
 name: context-management
-description: Optimizes agent context setup. Use when starting a new session, when agent output quality degrades, when switching between tasks, or when you need to configure rules files and context for a project.
+description: Set up focused session context and project rules for the active task.
 ---
 
 # Context Management
@@ -14,6 +14,9 @@ description: Optimizes agent context setup. Use when starting a new session, whe
 5. The skill(s) for the current stage only
 6. Source files for the specific feature area (ViewModel, use case, repository interface)
 
+**Implementation-only:** load `rules/implementation-rules.md` only after the
+Implementation stage is selected. Do not infer or preload Android security guidance at session
+start; the selected stage skill loads it only after inspected scope triggers its boundary.
 
 **Rule:** Never preload all skills or conditional rules. Use the Rule Applicability trigger
 catalog, or the complex-slice context index, and load only Required, excepted, or newly triggered

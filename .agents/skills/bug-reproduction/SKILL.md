@@ -1,6 +1,6 @@
 ---
 name: bug-reproduction
-description: Reproduces a bug with a failing test before fixing it.
+description: Reproduce a bug with a failing test before fixing it.
 ---
 
 # Skill — Bug Reproduction (TDD)

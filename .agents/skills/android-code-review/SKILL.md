@@ -1,6 +1,6 @@
 ---
 name: android-code-review
-description: Performs a structured code review across correctness, security, performance, and architecture.
+description: Review Android code for correctness, security, performance, and architecture.
 ---
 
 # Skill — Android Code Review

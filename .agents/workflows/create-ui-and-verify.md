@@ -1,5 +1,5 @@
 ---
-description: Implement or update the Android UI to match a provided screenshot or an approved mockup.
+description: Implement or update Android UI from a provided screenshot or approved mockup, then verify it.
 ---
 
 # Workflow: Create UI and Verify

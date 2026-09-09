@@ -1,6 +1,6 @@
 ---
 name: api-contract-update
-description: Handles end-to-end delivery of a backend API contract change — from impact analysis through data/domain/UI layers, testing, code quality, and optional knowledge capture.
+description: Deliver a backend API contract change through data, domain, UI, and verification.
 ---
 
 # Skill — API Contract Update

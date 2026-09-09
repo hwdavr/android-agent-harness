@@ -1,6 +1,6 @@
 ---
 name: android-data-layer
-description: Implements Room DAOs, databases, network APIs, and data mappers.
+description: Implement Room DAOs, databases, network APIs, and data mappers.
 ---
 
 # Skill — Android Data Layer

@@ -1,6 +1,6 @@
 ---
 name: android-domain-layer
-description: Implements domain mappers, models, and domain use cases.
+description: Implement domain models, mappers, and use cases.
 ---
 
 # Skill — Android Domain Layer
