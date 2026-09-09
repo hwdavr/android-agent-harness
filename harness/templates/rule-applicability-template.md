@@ -1,6 +1,6 @@
 # Rule Applicability Template
 
-Copy this section into every requirement artifact. Keep all nine rows. The approved
+Copy this section into every requirement artifact. Keep all ten rows. The approved
 artifact is the source of truth for planning, implementation, and review.
 
 ## Rule Applicability
@@ -25,6 +25,7 @@ artifact is the source of truth for planning, implementation, and review.
 | API | `api-contract-rules.md` | Conditional | <decision> | Endpoint, DTO, schema, error contract, or OpenAPI change. | <contract/integration evidence> |
 | OBS | `observability.md` | Conditional | <decision> | Async/network/persistence/error boundary, recovery, or diagnostic logging change. | <logger/review evidence> |
 | ANL | `analytics-rules.md` | Conditional | <decision> | Screen impression, user action, funnel, business outcome, or product-approved error event. | <event/review evidence> |
+| SEC | `android-security.md` | Conditional | <decision> | Authentication, sensitive storage, URI/IPC, exported components, network/TLS, WebView, AI/model, SDK, or release-security boundary. | <boundary/test/review evidence> |
 
 ### Guardrails
 

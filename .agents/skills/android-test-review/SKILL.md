@@ -16,10 +16,13 @@ Identify the active workflow first. The test-review report is an **output**, nev
 - **Ad-hoc review**: `docs/current/spec_v<N>.md`, `implementation_plan_v<N>.md`, `test_plan_v<N>.md`, `summary_v<N>.md`, and any testing-stage evidence such as `test_report_v<N>.md`.
 - **Harness evaluation**: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/sprint-contract.md`, `$FEATURE_DIR/feature_list.json`, the active slice summary, and testing-stage evidence recorded in `$FEATURE_DIR/progress.md` or the slice summary.
 - All test files mapped by the active plan or sprint contract, plus the production files that implement the mapped behavior.
-- `rules/testing-strategy.md`, `harness/templates/test-review-template.md`, and
+- `rules/testing-strategy.md`, `rules/testing-practices.md`,
+  `harness/templates/test-review-template.md`, and
   `harness/templates/rule-applicability-template.md`.
-- Load `rules/android-security.md` when the changed behavior crosses an Android
-  security boundary, even though it is outside the nine-row applicability matrix.
+- Load `rules/testing-runtime-evidence.md` only when the plan or diff makes a
+  platform, instrumented runtime, end-to-end journey, or visual claim.
+- Load `rules/android-security.md` when the approved `SEC` row is `Required` or
+  excepted, or when the changed behavior newly triggers a security boundary.
 
 If a required baseline or test-evidence artifact is missing, record it as a blocking finding. Do not substitute a prior `test_review_*.md` for the missing source evidence.
 
@@ -28,12 +31,12 @@ If a required baseline or test-evidence artifact is missing, record it as a bloc
 ### B0. Rule Applicability Test Reconciliation
 
 Read the approved Rule Applicability matrix and test plan before assessing tests. For
-ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, and ANL, verify that the planned test,
+ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, ANL, and SEC, verify that the planned test,
 static-check, review evidence, or explicit non-applicable rationale exists and remains
 valid against the diff. Do not invent analytics or logging tests when their triggers are
 absent; an unsupported decision is **REVISION REQUIRED**.
 
-For a triggered Android security boundary, also verify the rule's validation,
+For `SEC: Required`, also verify the rule's validation,
 redaction/fallback, and real instrumented boundary evidence. Missing runtime evidence
 is blocked, not passing.
 

@@ -97,7 +97,7 @@ method, a suite-scoped command, its declared scenario, and successful evidence:
     bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
 
 *   **Action**:
-    1. Re-run, **one by one**, every verification command listed in `$FEATURE_DIR/sprint-contract.md` Acceptance Test Cases. If any command fails, record its command, exit status, and raw output; keep the feature non-passing and stop the pipeline.
+    1. Validate an existing successful receipt with `bash harness/scripts/check-evidence-receipt.sh <receipt.json> --source <hash> --build-config <hash> --command <hash> --runtime <hash>`. Reuse it only when the validator passes; otherwise re-run, **one by one**, each affected verification command listed in `$FEATURE_DIR/sprint-contract.md` Acceptance Test Cases. If any command fails, record its command, exit status, and raw output; keep the feature non-passing and stop the pipeline.
     2. Re-run the global quality gates: `./gradlew ktlintCheck`, `./gradlew detekt`, `./gradlew lint`, `./gradlew koverLog`, and `bash harness/scripts/check-full-source-rules.sh` (coverage ≥ 80% overall; ≥ 90% for ViewModel & Use Case). The full-source bundle is mandatory and must not be replaced by changed-file checker invocations.
     3. Attach objective evidence (command + exit status + fix attempts) to each Test ID's `evidence` field in `$FEATURE_DIR/feature_list.json`. All slices must remain `passing`.
     4. Run `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate`. Missing matrices, unavailable/pending/skipped environments, and fake-only platform tests remain hard failures; record them as `Unresolved ⚠️` rather than passing them through.
@@ -128,13 +128,17 @@ acceptance Test IDs without successful evidence.
         ```bash
         git commit -m "fix(<area>): resolve evaluator findings from code_review and test_review"
         ```
-    5. Review the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)** — architecture & standards (§2), observability (§5), and cleanliness (§6) items are code-review checks. Build, test, and quality checks (§1, §3, §4) are already covered by Fix-Stage 4 re-verification above — reference that evidence, do not re-run commands. If any review item fails, record it and stop the pipeline.
+    5. Review the Core and triggered conditional sections in
+       **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**.
+       Record omitted triggers with feature-specific N/A reasons. Reference valid Fix-Stage 4
+       receipts instead of rerunning unchanged commands. A required failure stops the pipeline.
     6. Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**, documenting what was fixed, the re-verification evidence, any `Unresolved ⚠️` findings, residual risks, and that the feature is now `To be human reviewed`.
     7. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Finalize & Exit** stage status to completed (✅), transition the summary to Complete, and log the commit hash and key outcomes.
 *   **Objective**: Tracker transitioned to `To be human reviewed`, backed by mechanical evidence, updated review reports, and a clean self-documenting repository state.
 
 ### Fix-Stage 6 — Install App To Device
-Install the fixed debug build to all connected devices and emulators as the final generator step.
+Install the fixed debug build when a resolved finding affects UI, instrumented/platform behavior,
+or the user explicitly requests installation. Otherwise record an explicit non-runtime N/A.
 
 *   **Action**:
     1. Install the debug build to every connected device and emulator:
@@ -143,7 +147,8 @@ Install the fixed debug build to all connected devices and emulators as the fina
         ```
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Install App To Device** stage status to completed (✅), logging device IDs, command, timestamp, and exit status.
 *   **Objective**: The fixed build is installed on every connected runtime device for immediate manual review.
-*   **Gate**: The install command must exit with code `0`. If the install fails, mark this stage `⚠️ Blocked` with the command and raw output and stop the pipeline. If no device is connected, mark this stage blocked with the `adb devices` output.
+*   **Gate**: When required, the command must exit 0; failure or no connected device is blocked.
+    Otherwise the explicit N/A rationale completes the stage.
 
 ---
 

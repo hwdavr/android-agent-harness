@@ -56,6 +56,7 @@ write_spec() {
     '| API | rule.md | Conditional | Not applicable — no API | contract fixture | shell evidence |' \
     '| OBS | rule.md | Conditional | Not applicable — no boundary | contract fixture | shell evidence |' \
     '| ANL | rule.md | Conditional | Not applicable — analytics: none | contract fixture | shell evidence |' \
+    '| SEC | rule.md | Conditional | Not applicable — no Android security boundary is changed | contract fixture | shell evidence |' \
     > "$feature_dir/spec.md"
 }
 

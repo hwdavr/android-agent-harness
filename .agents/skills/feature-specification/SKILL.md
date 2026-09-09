@@ -28,13 +28,12 @@ This skill ends only when every material question has been answered by the user 
 
 ## Load
 
-- `docs/product/design_system.md` — mandatory for every UI-affecting specification and design
-- `rules/compose-rules.md` — **Keyboard / IME Behavior** section: when screen content or a bottom sheet has text input, the bottom toolbar must dismiss while the keyboard is visible
-- `rules/android-architecture.md`, `rules/implementation-rules.md`, `rules/testing-strategy.md`
-- `rules/localization-rules.md`, `rules/navigation-rules.md`, `rules/api-contract-rules.md`
-- `rules/observability.md`, `rules/analytics-rules.md`
-- `rules/android-security.md` when the request touches authentication, sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model, SDK, or release-security boundaries
-- `harness/templates/rule-applicability-template.md`
+- `rules/android-architecture.md`, `rules/testing-strategy.md`
+- `harness/templates/rule-applicability-template.md` as the conditional-rule trigger catalog
+- Load the mapped conditional rule only after its row is `Required`, excepted, or
+  newly triggered by inspected scope. For UI scope this includes
+  `docs/product/design_system.md`, `rules/compose-rules.md`, and
+  `rules/localization-rules.md`; the Compose keyboard/IME section applies to text input.
 - `harness/templates/feature-spec-template.md`
 - `harness/templates/feature-design-template.md`
 

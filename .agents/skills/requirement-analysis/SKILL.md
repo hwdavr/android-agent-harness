@@ -13,16 +13,12 @@ Do not write any code in this stage.
 
 ## Load
 - `rules/android-architecture.md`
-- `rules/implementation-rules.md`
 - `rules/testing-strategy.md`
-- `rules/compose-rules.md`
-- `rules/localization-rules.md`
-- `rules/api-contract-rules.md`
-- `rules/navigation-rules.md`
-- `rules/observability.md`
-- `rules/analytics-rules.md`
-- `rules/android-security.md` when the request touches authentication, sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model, SDK, or release-security boundaries
-- `harness/templates/rule-applicability-template.md`
+- `harness/templates/rule-applicability-template.md` as the conditional-rule trigger catalog
+- Load `rules/compose-rules.md`, `rules/localization-rules.md`, `rules/api-contract-rules.md`,
+  `rules/navigation-rules.md`, `rules/observability.md`, `rules/analytics-rules.md`, and
+  `rules/android-security.md`
+  only after their row is `Required`, excepted, or newly triggered by inspected scope.
 
 ---
 
@@ -37,10 +33,9 @@ Do not write any code in this stage.
    - **Identify needed APIs**: List all existing or new endpoints that must be called to fulfill the requirement.
 5. **Rule Applicability**:
    - Copy the complete matrix from `harness/templates/rule-applicability-template.md`.
-   - Record a decision for all nine rules before planning: `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`.
+   - Record a decision for all ten rules before planning: `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`.
    - For every `Required` row, record the concrete trigger and planned evidence. Do not delete a conditional-rule row when its trigger is absent.
    - Assess analytics and observability explicitly. Use `Not applicable — analytics: none` when no product event is justified; do not add logging or analytics only to satisfy the matrix.
-   - Record the separate Android security decision (`Required` or `Not applicable — no Android security boundary is changed`) when applicable; it is cross-cutting guidance, not an additional matrix row.
 
 ### 2. UI State & Navigation Design
 1. **Design UiState**: For any new or modified screen, define all possible states (Loading, Success, Empty, Error).
@@ -59,8 +54,8 @@ If the user provides a design screenshot or mockup, save it to **`docs/current/d
 Produce **`docs/current/summary_v<N>.md`** — create this file **first**, before `spec_v<N>.md`.
 Use the template from `harness/templates/summary-template.md`.
 The Stage Progress table must list every stage from the **active workflow** in order.
-Copy the matching table from `harness/templates/summary-template.md`; do not maintain a
-second table here.
+Load and copy only `harness/templates/summary-profiles/<active-workflow>.md`; do not load inactive
+profiles or maintain a second stage table in this skill.
 
 All **Timestamp** values must be in `YYYY-MM-DD HH:MM` format:
 
@@ -74,7 +69,7 @@ Produce **`spec_v<N>.md`** (inside `docs/current/`).
 Use the template from `harness/templates/spec-template.md`.
 - Record every assumption the analysis required — never silently fill an ambiguous requirement.
 - Reframe vague requests into concrete, testable verification expectations the user can confirm.
-- Include the complete **Rule Applicability** matrix with a concrete decision, trigger or rationale, and planned evidence for all nine rules.
+- Include the complete **Rule Applicability** matrix with a concrete decision, trigger or rationale, and planned evidence for all ten rules.
 - Keep the spec alive — when scope or decisions change, update `spec_v<N>.md` first.
 
 ---
@@ -87,6 +82,6 @@ Use the template from `harness/templates/spec-template.md`.
 - [ ] Every affected file is listed with a change type.
 - [ ] UiState design covers all visual states.
 - [ ] API change is classified.
-- [ ] Rule Applicability contains all nine rows with no implicit or missing decision.
+- [ ] Rule Applicability contains all ten rows with no implicit or missing decision.
 
 **APPROVED →** Return to the active workflow file and proceed to the next stage defined there.

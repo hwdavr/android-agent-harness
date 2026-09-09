@@ -14,13 +14,14 @@ Kotlin + Jetpack Compose + Room Android notes app. Treat it as a production prod
 Load context in layers to keep the context window below 40% fill. More is not better.
 | Layer | When | What to load |
 |-------|------|-------------|
-| **L1 — Always** | Every session | This file + `.agents/rules/android-architecture.md` + `.agents/rules/implementation-rules.md` + `.agents/rules/testing-strategy.md` |
-| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) and, for requirements/planning/review, `harness/templates/rule-applicability-template.md` plus `compose-rules.md`, `localization-rules.md`, `navigation-rules.md`, `api-contract-rules.md`, `observability.md`, and `analytics-rules.md`; load `android-security.md` when a security/AI/WebView/network/manifest boundary is touched; for UI work also `docs/product/design_system.md` |
+| **L1 — Always** | Every session | This file + `.agents/rules/android-architecture.md` + `.agents/rules/testing-strategy.md` |
+| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) plus `harness/templates/rule-applicability-template.md` for requirements/planning/review. Load `implementation-rules.md` only during Implementation. Use conditional-rule triggers, then load a conditional rule only when `Required`, excepted, or contradicted by the submitted diff. Load `android-security.md` when `SEC` is Required/excepted or a security/AI/WebView/network/manifest boundary is triggered; load `testing-practices.md` during test authoring/review and `testing-runtime-evidence.md` for UI/navigation/visual/platform/runtime claims; for UI work also load `docs/product/design_system.md`. |
 | **L3 — On-demand** | When needed | `docs/knowledge/` docs, `sharedContracts/openapi.yaml`, and feature-specific evidence or rule detail newly triggered by the approved Rule Applicability matrix |
 
-Do not preload unrelated skills. Requirements, planning, and review must load the full
-L1/L2 rule contract so every rule is decided and reconciled; implementation loads only
-the rules marked required plus any newly triggered rule. For a complex slice, run
+Do not preload unrelated skills or conditional rules. Requirements, planning, and review use the
+compact trigger catalog to decide and reconcile all ten rows, then load only Required, excepted,
+or diff-triggered rule documents. Implementation follows the approved decisions plus any newly
+triggered rule. For a complex slice, run
 `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` after selection; its disposable output derives from the approved contract and feature list, is never authority or a summary copy, and must be regenerated when either hash changes.
 ---
 ## Harness Structure
@@ -90,7 +91,7 @@ Key skills under `.agents/skills/`:
 - **Implementation authorization must be approved by the user before code is written** — ad-hoc workflows require approval of `implementation_plan_v<N>.md`; the complex harness path uses the approved `feature_list.json` and `sprint-contract.md` from `harness-planning` and must not generate a duplicate implementation plan in `harness-generator`
 - **Every stage gate must pass before advancing** — do not skip gates
 - **Every stage skill must be invoked via the Skill tool** — reading the SKILL.md manually is not a substitute. The workflow's "INVOKE" instruction is a command, not a suggestion
-- **Every requirement artifact must contain the complete Rule Applicability matrix** — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all nine rules, and carry the decisions into plans and review evidence
+- **Every requirement artifact must contain the complete Rule Applicability matrix** — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all ten rules, and carry the decisions into plans and review evidence
 - **Memory of prior approval does not bypass workflow stages** — source of truth is on disk. Ad-hoc workflows use `docs/current/`; every complex harness feature uses one stable dated workspace under `docs/product/`. If a required artifact is missing, re-run the stage via its skill. Require the approved `spec.md`, `design.md` when UI is affected, `feature_list.json`, and `sprint-contract.md` in that workspace.
 - **Validate harness lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting a complex feature and after every tracker transition. Folder location never represents status; the tracker and per-slice evidence do.
 - **Stage completion requires evidence** — when marking a stage complete in `summary_v<N>.md`, cite the artifact path and paste a one-line excerpt. A stage is not complete until the artifact exists on disk and is referenced from the summary. Summaries reference canonical scope and Rule Applicability artifacts; they do not duplicate their matrices, acceptance criteria, or slice metadata.

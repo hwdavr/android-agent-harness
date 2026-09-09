@@ -25,14 +25,7 @@ Complete every row before approval. Use `Required`, `Not applicable — <feature
 | API | `api-contract-rules.md` | <decision> | |
 | OBS | `observability.md` | <decision> | |
 | ANL | `analytics-rules.md` | <decision> | |
-
-### Android Security Boundary (cross-cutting, outside the nine rows)
-
-Record `Android security: Required` when the feature touches authentication,
-sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model,
-SDK, or release-security boundaries, and name the planned boundary evidence. Otherwise
-record `Android security: Not applicable — no Android security boundary is changed`.
-Load `.agents/rules/android-security.md` when this decision is `Required`.
+| SEC | `android-security.md` | <decision> | Authentication, sensitive storage, URI/IPC, exported components, network/TLS, WebView, AI/model, SDK, or release-security boundary. |
 
 ## Functional Requirements
 

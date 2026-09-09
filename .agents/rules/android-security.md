@@ -8,11 +8,10 @@ data, local sensitive data, `Intent`/`Bundle`/URI input, files, deep links,
 exported components or IPC, networking/TLS, `WebView`, third-party SDKs, AI/model
 input or output, rendering, or release/build security settings.
 
-This is a conditional cross-cutting rule, not a tenth row in the nine-rule
-Applicability matrix. When a change touches one of the boundaries above, record
-`Android security: Required` and the relevant evidence in the plan/review. When
-none apply, record `Android security: Not applicable — no Android security
-boundary is changed`.
+This is the conditional `SEC` row in the ten-row Rule Applicability matrix. When a
+change touches one of the boundaries above, record `SEC: Required` and the relevant
+evidence in the plan/review. When none apply, record `SEC: Not applicable — no
+Android security boundary is changed`.
 
 ## Trust-Boundary Invariants
 
@@ -97,7 +96,7 @@ boundary is changed`.
 
 ## Required Evidence and Enforcement
 
-For a change marked `Android security: Required`:
+For a change marked `SEC: Required`:
 
 1. Explain the affected trust boundary and the validation, least-privilege, and
    failure behavior in the implementation/review evidence.

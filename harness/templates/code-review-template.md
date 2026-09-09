@@ -41,6 +41,7 @@ triggered `Not applicable` rule or an unapproved exception is **REVISION REQUIRE
 | API | | | | PASS / REVISION REQUIRED / N/A |
 | OBS | | | | PASS / REVISION REQUIRED / N/A |
 | ANL | | | | PASS / REVISION REQUIRED / N/A |
+| SEC | | | | PASS / REVISION REQUIRED / N/A |
 
 ## Requirement-to-Production Traceability
 

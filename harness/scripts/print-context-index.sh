@@ -70,15 +70,33 @@ esac
 RULE_ROWS=$(awk '
   /^## Rule Applicability Contract/ { in_contract = 1; next }
   in_contract && /^## / { exit }
-  in_contract && /^\| (ARCH|IMPL|TEST|SUI|L10N|NAV|API|OBS|ANL) \|/ { print }
+  in_contract && /^\| (ARCH|IMPL|TEST|SUI|L10N|NAV|API|OBS|ANL|SEC) \|/ { print }
 ' "$CONTRACT")
 
 [ -n "$RULE_ROWS" ] || fail "$CONTRACT has no Rule Applicability Contract rows"
 
-RULE_IDS="ARCH IMPL TEST SUI L10N NAV API OBS ANL"
+RULE_IDS="ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC"
 REQUIRED_RULES=""
 EXCEPTION_RULES=""
 NON_APPLICABLE_RULES=""
+ACTIVE_RULE_FILES=""
+NAV_ACTIVE=false
+
+rule_file_for_id() {
+  case "$1" in
+    ARCH) printf '%s\n' ".agents/rules/android-architecture.md" ;;
+    IMPL) printf '%s\n' ".agents/rules/implementation-rules.md" ;;
+    TEST) printf '%s\n' ".agents/rules/testing-strategy.md" ;;
+    SUI) printf '%s\n' ".agents/rules/compose-rules.md" ;;
+    L10N) printf '%s\n' ".agents/rules/localization-rules.md" ;;
+    NAV) printf '%s\n' ".agents/rules/navigation-rules.md" ;;
+    API) printf '%s\n' ".agents/rules/api-contract-rules.md" ;;
+    OBS) printf '%s\n' ".agents/rules/observability.md" ;;
+    ANL) printf '%s\n' ".agents/rules/analytics-rules.md" ;;
+    SEC) printf '%s\n' ".agents/rules/android-security.md" ;;
+    *) fail "no rule file mapping for $1" ;;
+  esac
+}
 
 for RULE_ID in $RULE_IDS; do
   RULE_COUNT=$(printf '%s\n' "$RULE_ROWS" | awk -F '|' -v id="$RULE_ID" '
@@ -104,9 +122,13 @@ for RULE_ID in $RULE_IDS; do
   case "$DECISION" in
     Required*)
       REQUIRED_RULES="${REQUIRED_RULES}${RULE_ID}\n"
+      ACTIVE_RULE_FILES="${ACTIVE_RULE_FILES}$(rule_file_for_id "$RULE_ID")\n"
+      [ "$RULE_ID" != "NAV" ] || NAV_ACTIVE=true
       ;;
     "Exception — approved by "*)
       EXCEPTION_RULES="${EXCEPTION_RULES}${RULE_ID}\n"
+      ACTIVE_RULE_FILES="${ACTIVE_RULE_FILES}$(rule_file_for_id "$RULE_ID")\n"
+      [ "$RULE_ID" != "NAV" ] || NAV_ACTIVE=true
       ;;
     "Not applicable — "*)
       NON_APPLICABLE_RULES="${NON_APPLICABLE_RULES}${RULE_ID}\n"
@@ -124,6 +146,16 @@ to_json_array() {
 REQUIRED_JSON=$(to_json_array "$REQUIRED_RULES")
 EXCEPTION_JSON=$(to_json_array "$EXCEPTION_RULES")
 NON_APPLICABLE_JSON=$(to_json_array "$NON_APPLICABLE_RULES")
+ACTIVE_RULE_FILES_JSON=$(to_json_array "$ACTIVE_RULE_FILES")
+STAGE_TESTING_FILES=".agents/rules/testing-practices.md\n"
+if [ "$(printf '%s' "$SLICE_JSON" | jq -r '.affects_ui // false')" = "true" ] \
+  || [ "$(printf '%s' "$SLICE_JSON" | jq -r '.requires_visual_verification // false')" = "true" ] \
+  || [ "$(printf '%s' "$SLICE_JSON" | jq -r '.production_journey.required // false')" = "true" ] \
+  || [ "$PLATFORM_VALIDATION_REQUIRED" = "true" ] \
+  || [ "$NAV_ACTIVE" = "true" ]; then
+  STAGE_TESTING_FILES="${STAGE_TESTING_FILES}.agents/rules/testing-runtime-evidence.md\n"
+fi
+STAGE_TESTING_FILES_JSON=$(to_json_array "$STAGE_TESTING_FILES")
 CONTRACT_HASH=$(sha256_file "$CONTRACT")
 FEATURE_LIST_HASH=$(sha256_file "$FEATURE_LIST")
 
@@ -138,6 +170,8 @@ jq -n \
   --argjson required_rules "$REQUIRED_JSON" \
   --argjson exception_rules "$EXCEPTION_JSON" \
   --argjson non_applicable_rules "$NON_APPLICABLE_JSON" \
+  --argjson active_rule_files "$ACTIVE_RULE_FILES_JSON" \
+  --argjson testing_context_files "$STAGE_TESTING_FILES_JSON" \
   '{
     slice: $slice,
     authority: {
@@ -149,7 +183,11 @@ jq -n \
     rule_context: {
       required: $required_rules,
       exceptions: $exception_rules,
-      not_applicable: $non_applicable_rules
+      not_applicable: $non_applicable_rules,
+      files: $active_rule_files
+    },
+    stage_context: {
+      testing: $testing_context_files
     },
     execution_flags: {
       affects_ui: $slice_metadata.affects_ui,

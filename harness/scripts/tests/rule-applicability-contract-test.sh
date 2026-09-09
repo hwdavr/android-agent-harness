@@ -48,11 +48,13 @@ for required_file in \
   "$PROJECT_ROOT/.agents/workflows/harness-fix.md" \
   "$PROJECT_ROOT/.agents/gates/ci-checks.md" \
   "$PROJECT_ROOT/harness/templates/code-review-template.md" \
-  "$PROJECT_ROOT/harness/templates/test-review-template.md"; do
+  "$PROJECT_ROOT/harness/templates/test-review-template.md" \
+  "$PROJECT_ROOT/harness/templates/summary-profiles/feature-delivery.md" \
+  "$PROJECT_ROOT/harness/templates/summary-profiles/bug-fixing.md"; do
   assert_exists "$required_file"
 done
 
-for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL; do
+for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC; do
   assert_contains "$TEMPLATE" "| $rule_id |"
 done
 
@@ -74,8 +76,8 @@ assert_contains "$PROJECT_ROOT/.agents/skills/code-review-and-quality/SKILL.md" 
 assert_contains "$PROJECT_ROOT/.agents/skills/android-implementation/SKILL.md" "only triggered context"
 assert_contains "$PROJECT_ROOT/harness/templates/sprint-contract-template.md" "Generated Context Index"
 assert_contains "$PROJECT_ROOT/harness/templates/summary-template.md" "Context Provenance"
-assert_contains "$PROJECT_ROOT/harness/templates/summary-template.md" "Product Document Update"
-assert_contains "$PROJECT_ROOT/harness/templates/summary-template.md" "Ad-hoc Bug Fix"
+assert_contains "$PROJECT_ROOT/harness/templates/summary-profiles/feature-delivery.md" "Product Document Update"
+assert_contains "$PROJECT_ROOT/harness/templates/summary-profiles/bug-fixing.md" "Ad-hoc Bug Fix"
 assert_contains "$PROJECT_ROOT/.agents/workflows/create-ui-and-verify.md" "approved Rule Applicability matrix"
 assert_contains "$PROJECT_ROOT/.agents/workflows/harness-generator.md" "approved Rule Applicability decisions"
 assert_contains "$PROJECT_ROOT/.agents/workflows/harness-fix.md" "Reconcile all Rule Applicability rows again"
@@ -100,7 +102,7 @@ create_spec() {
   printf '%s\n' '# Spec' '' '## Rule Applicability' '' \
     '| Rule ID | Rule document | Default | Decision for this change | Trigger / rationale | Planned evidence |' \
     '|---|---|---|---|---|---|' > "$output"
-  for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL; do
+  for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC; do
     if [ "$rule_id" != "$omit_rule_id" ]; then
       printf '| %s | rule.md | Always | Required | contract test | shell evidence |\n' "$rule_id" >> "$output"
     fi
@@ -112,7 +114,7 @@ INVALID_DOCS="$TEMP_ROOT/invalid"
 mkdir -p "$VALID_DOCS" "$INVALID_DOCS"
 touch "$VALID_DOCS/summary_v1.md" "$INVALID_DOCS/summary_v1.md"
 create_spec "$VALID_DOCS/spec_v1.md"
-create_spec "$INVALID_DOCS/spec_v1.md" ANL
+create_spec "$INVALID_DOCS/spec_v1.md" SEC
 
 bash "$STAGE_CHECKER" feature-delivery requirement-analysis "$VALID_DOCS" >/dev/null \
   || fail "complete rule-applicability matrix did not pass the requirement gate"
@@ -123,7 +125,7 @@ invalid_status=$?
 set -e
 
 [ "$invalid_status" -ne 0 ] || fail "incomplete rule-applicability matrix unexpectedly passed"
-printf '%s\n' "$invalid_output" | rg -Fq "missing the ANL rule-applicability row" \
+printf '%s\n' "$invalid_output" | rg -Fq "missing the SEC rule-applicability row" \
   || fail "incomplete matrix did not report the missing rule row"
 
 echo "PASS: rule-applicability contract accepts complete and rejects incomplete requirement artifacts."

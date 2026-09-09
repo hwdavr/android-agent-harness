@@ -28,7 +28,7 @@ Pipeline: Requirement, Impact & Design → Plan → [User Approval] → Implemen
 ## Stage Execution
 
 ### Stage 1 — Requirement, Impact & Design Analysis
-The specification must include the complete nine-row Rule Applicability matrix, and the
+The specification must include the complete ten-row Rule Applicability matrix, and the
 stage gate must reject missing or unsupported decisions.
 **INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
@@ -55,6 +55,8 @@ Gate: Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery implem
 ### Stage 3 — Implementation (Data + Domain + UI)
 **INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
+Feature delivery is implementation-first: implement the approved plan before the Testing stage.
+
 Output: All source files across Data, Domain, and UI layers created or modified; `docs/current/summary_v<N>.md` updated with Implementation stage marked complete.
 Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI changes conform to `docs/product/design_system.md` plus any explicit approved exception in `docs/current/design.md`.
 
@@ -62,6 +64,9 @@ Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI ch
 
 ### Stage 4 — Testing
 **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+
+Create or complete the approved tests against the implementation and verify them GREEN. Do not
+introduce a separate feature-level RED/TDD stage.
 
 Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with test count and coverage.
 Gate: tests pass, coverage targets met. Additionally, run `bash harness/scripts/check-journey-registry.sh --run-all` to verify no existing critical journey is regressed. For any instrumented claim that rich text or an inline formatting mark is visibly rendered, run `bash harness/scripts/check-rendered-output-contract.sh` for the named method and require source-fed `captureToImage()` plus an explicit pixel comparison; state-only marks and a non-empty screenshot are supplemental evidence.
@@ -92,7 +97,9 @@ Gate: the file is saved, the feature no longer appears as Planned or Next for al
 ---
 
 ### Stage 7 — Install App To Device
-Install the completed debug build to all connected devices and emulators as the final delivery step.
+Install the completed debug build when the feature affects UI, requires instrumented/platform
+verification, or the user explicitly requests installation. Otherwise record an explicit
+non-runtime N/A.
 
 **Actions**:
 1. Install the app to every connected device and emulator:
@@ -102,7 +109,8 @@ Install the completed debug build to all connected devices and emulators as the 
 2. Record the install command, connected device IDs, and exit status in `docs/current/summary_v<N>.md`.
 
 Output: Debug app installed on every connected device and emulator.
-Gate: install command exits with code 0. If no device is connected, mark this stage blocked with the `adb devices` output and do not claim delivery is fully complete.
+Gate: when required, installation exits 0; failure or no connected device is blocked. Otherwise
+the feature-specific N/A rationale completes the stage.
 
 ---
 

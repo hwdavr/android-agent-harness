@@ -35,7 +35,7 @@ Platform-bound features MUST declare at least one real instrumented boundary tes
 
 ## Rule Applicability Contract *(required)*
 
-Copy the approved nine-row matrix from the requirement artifact. The decision must be `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`. Every `Required` row must map to implementation and verification evidence before a slice can pass.
+Copy the approved ten-row matrix from the requirement artifact. The decision must be `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`. Every `Required` row must map to implementation and verification evidence before a slice can pass.
 
 | Rule ID | Rule document | Decision | Slice evidence |
 |---|---|---|---|
@@ -48,6 +48,7 @@ Copy the approved nine-row matrix from the requirement artifact. The decision mu
 | API | `api-contract-rules.md` | <decision> | |
 | OBS | `observability.md` | <decision> | |
 | ANL | `analytics-rules.md` | <decision> | |
+| SEC | `android-security.md` | <decision> | |
 
 ---
 

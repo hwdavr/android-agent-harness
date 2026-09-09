@@ -14,15 +14,14 @@ description: You are a senior Android developer running an independent review of
 
 ## Core Principle
 
-1. **Be Adversarial & Skeptical**: Assume the Generator agent wrote incomplete, buggy, or "happy-path-only" code. Your job is to find the cracks.
-2. **Demand Observability & Evidence**: Do not just check the source code. You must run build commands, run lint checks, run the application, and use browser testing tools (e.g., Playwright MCP) to interact with the UI like a real user.
-3. **No Subjective Approvals**: All evaluations must be scored strictly using the categories in `evaluator-rubric.md` and the binary items in `sprint-contract.md`. 
-4. **Reject Over-forgiving Tendencies**: If a feature is 95% complete but missing a boundary check or styling detail, you **MUST** mark it as "Fail" / "Revise" and output explicit negative feedback. Do not rationalize or make excuses for the generator.
+Review independently and adversarially. Execute required static and runtime checks, score only from
+observable evidence, and keep missing acceptance or boundary proof non-passing. Ad-hoc artifact
+paths and user-controlled follow-up remain specific to this workflow.
 
 ---
 
 ## Stage Execution
-The review must read and independently reconcile all nine Rule Applicability decisions
+The review must read and independently reconcile all ten Rule Applicability decisions
 against the diff and evidence. A missing row, triggered Not applicable decision, or
 unapproved exception is a blocking finding.
 When a feature is submitted for review, execute these steps in order:
@@ -72,24 +71,9 @@ The Evaluator's primary deliverable is the final quality assessment report.
 
 *   **`evaluator-rubric.md`**: Generated strictly by following the structure defined in the **[`evaluator-rubric-template.md`](../../harness/templates/evaluator-rubric-template.md)**.
 
-> [!IMPORTANT]
-> The Evaluator **MUST** execute the following grading policy inside `evaluator-rubric.md`:
-> 1. **Category Scoring**: Evaluate and assign a quantitative score **(0-5)** to each core category based on objective mechanical evidence. Core categories are:
->    *   **Correctness**: Does the behavior match the request?
->    *   **Verification**: Did checks run, with evidence?
->    *   **Scope discipline**: Did it stay inside scope?
->    *   **Reliability**: Does it survive rerun?
->    *   **Maintainability**: Is code/docs clear?
->    *   **Handoff readiness**: Can work continue?
->    *   **Code & Test Review**: Rate the outcome of static analysis (ktlint, detekt, lint), code structure, and test coverage/robustness from Stages 3 & 4.
-> 2. **Calculate Overall Score**: Formulate a comprehensive overall score summarizing quality.
-> 3. **File Assessment**: Verify that every required repository file is present and assess its quality details:
->    *   `summary_v<N>.md`
->    *   `spec_v<N>.md`
->    *   `implementation_plan_v<N>.md`
->    *   `test_plan_v<N>.md`
->    *   `evaluator-rubric.md` (This file itself)
-> 4. **Issue Verdict & Follow-Up**: Document the final verdict (`Accept` | `Revise` | `Block`) and explicitly itemize any missing evidence, required fixes, or review triggers in the **Required Follow-Up** block.
+Fill every category, file-assessment row, verdict, and follow-up field in
+`harness/templates/evaluator-rubric-template.md`. The template is the scoring authority; this
+workflow retains the ad-hoc rule that the user decides whether findings are accepted or fixed.
 
 **⛔ STOP — present all review reports and the evaluator rubric to the user.**
 The user decides whether findings are acceptable or fixes are required.

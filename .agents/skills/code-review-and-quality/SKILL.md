@@ -135,7 +135,7 @@ implementation/test plans. Load the L1 rules and all conditional rule files:
 | Any analytics event | `rules/analytics-rules.md` |
 | Authentication, sensitive storage, URI/IPC, exported component, network/TLS, WebView, AI/model, SDK, or release-security boundary | `rules/android-security.md` |
 
-For ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, and ANL, independently inspect the
+For ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, ANL, and SEC, independently inspect the
 diff for a trigger and record the approved decision, observed trigger, evidence, and
 result. A missing decision, a triggered rule marked `Not applicable`, or an exception
 without the cited user approval blocks approval. Analytics and observability remain
@@ -327,8 +327,8 @@ Part of code review is dependency review:
 - [ ] Pagination on list endpoints
 
 ### Rule Applicability
-- [ ] I reconciled all nine approved decisions with the diff: ARCH, IMPL, TEST, SUI,
-  L10N, NAV, API, OBS, and ANL.
+- [ ] I reconciled all ten approved decisions with the diff: ARCH, IMPL, TEST, SUI,
+  L10N, NAV, API, OBS, ANL, and SEC.
 - [ ] Every triggered rule is Required or has a direct user-approved exception.
 - [ ] Compose, localization, navigation, API, architecture, and implementation rules
   match their approved decisions and evidence.

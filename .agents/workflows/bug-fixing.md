@@ -26,7 +26,7 @@ Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan → [
 ## Stage Execution
 
 ### Stage 1 — Bug Context, Localization & Root Cause
-The specification must include the complete nine-row Rule Applicability matrix. Assess
+The specification must include the complete ten-row Rule Applicability matrix. Assess
 only the fix scope and preserve an explicit trigger or rationale for every decision.
 **INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
@@ -45,6 +45,7 @@ Gate: root cause is specific enough that a reproduction test can be written. Run
 **INVOKE** the `bug-reproduction` skill via the Skill tool (name: `bug-reproduction`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Write a failing test that mechanically proves the root cause before any fix is written.
+This is the only workflow stage that requires pre-implementation RED/TDD evidence.
 
 Output: Failing reproduction test file created; `docs/current/spec_v<N>.md` updated with a Reproduction Test section; `docs/current/summary_v<N>.md` updated.
 Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. For a visual or rich-text rendering reproduction, the named instrumented test must include source-fed `captureToImage()` and an explicit pixel comparison; the stage gate enforces this. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
@@ -114,7 +115,9 @@ Gate:
 ---
 
 ### Stage 7 — Install App To Device
-Install the completed debug build to all connected devices and emulators as the final delivery step.
+Install the completed debug build when the fix affects UI, requires instrumented/platform
+verification, or the user explicitly requests installation. Otherwise record an explicit
+non-runtime N/A.
 
 **Actions**:
 1. Install the app to every connected device and emulator:
@@ -124,7 +127,8 @@ Install the completed debug build to all connected devices and emulators as the 
 2. Record the install command, connected device IDs, and exit status in `docs/current/summary_v<N>.md`.
 
 Output: Debug app installed on every connected device and emulator.
-Gate: install command exits with code 0. If no device is connected, mark this stage blocked with the `adb devices` output and do not claim delivery is fully complete.
+Gate: when required, installation exits 0; failure or no connected device is blocked. Otherwise
+the feature-specific N/A rationale completes the stage.
 ---
 
 ## Human-in-the-Loop Confirmation Points

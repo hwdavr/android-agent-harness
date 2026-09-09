@@ -34,8 +34,8 @@ If any required answer is `No`, the evaluator MUST score the feature below `5.0 
 ### Rule Applicability Hard Gate
 
 - Complete approved matrix exists in the feature specification: Yes / No
-- Code review includes all nine reconciliation rows: Yes / No
-- Test review includes all nine reconciliation rows: Yes / No
+- Code review includes all ten reconciliation rows: Yes / No
+- Test review includes all ten reconciliation rows: Yes / No
 - Every `Not applicable` / exception decision is supported by the diff and cited approval: Yes / No
 
 If any required answer is `No`, the evaluator MUST use `Revise`.

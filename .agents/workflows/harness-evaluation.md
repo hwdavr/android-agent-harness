@@ -12,10 +12,9 @@ description: You are a senior Android developer running an independent code and 
 
 ---
 ## 1. Core Operating Principles
-1. **Be Adversarial & Skeptical**: Assume the Generator agent wrote incomplete, buggy, or "happy-path-only" code. Your job is to find the cracks.
-2. **Demand Observability & Evidence**: Do not just check the source code. You must run build commands, run lint checks, run the application, and use browser testing tools (e.g., Playwright MCP) to interact with the UI like a real user.
-3. **No Subjective Approvals**: All evaluations must be scored strictly using the categories in `evaluator-rubric.md` and the binary items in `sprint-contract.md`. 
-4. **Reject Over-forgiving Tendencies**: If a feature is 95% complete but missing a boundary check or styling detail, you **MUST** mark it as "Fail" / "Revise" and output explicit negative feedback. Do not rationalize or make excuses for the generator.
+Review independently and adversarially. Execute required static and runtime checks, score only from
+observable evidence, and keep any missing boundary or acceptance proof non-passing. The canonical
+review criteria live in the invoked review skills, sprint contract, and evaluator rubric template.
 
 ---
 
@@ -94,25 +93,9 @@ The Evaluator's primary deliverable is the final quality assessment report.
 
 *   **`evaluator-rubric.md`**: Generated strictly by following the structure defined in the **[`evaluator-rubric-template.md`](../../harness/templates/evaluator-rubric-template.md)**.
 
-> [!IMPORTANT]
-> The Evaluator **MUST** execute the following grading policy inside `evaluator-rubric.md`:
-> 1. **Category Scoring**: Evaluate and assign a quantitative score **(0-5)** to each core category based on objective mechanical evidence. Core categories are:
->    *   **Correctness**: Does the behavior match the request?
->    *   **Verification**: Did checks run, with evidence?
->    *   **Scope discipline**: Did it stay inside scope?
->    *   **Reliability**: Does it survive rerun?
->    *   **Maintainability**: Is code/docs clear?
->    *   **Handoff readiness**: Can work continue?
->    *   **Code & Test Review**: Rate the outcome of static analysis (ktlint, detekt, lint), code structure, and test coverage/robustness from Stages 3 & 4.
-> 2. **Calculate Overall Score**: Formulate a comprehensive overall score summarizing quality.
-> 3. **Harness File Assessment**: Verify that every required repository harness file is present and assess its quality details:
->    *   `feature_list.json`
->    *   `progress.md`
->    *   `session-handoff.md`
->    *   `clean-state-checklist.md`
->    *   `evaluator-rubric.md` (This file itself)
-> 4. **Issue Verdict & Follow-Up**: Document the final verdict (`Accept` | `Revise` | `Block`) and explicitly itemize any missing evidence, required fixes, or review triggers in the **Required Follow-Up** block.
-> 5. **Platform Hard Gate**: If the platform capability matrix is missing or invalid, or if only fake/JVM recognizer tests exist for a platform-bound behavior, the overall score MUST be below `5.0 / 5` and the verdict MUST be `Revise` or `Block`. The feature must transition to `To be fixed` through the score-based rule.
+Fill every category, hard-gate answer, file-assessment row, verdict, and follow-up field defined by
+the template. Its arithmetic and hard-gate routing are binding and are enforced by
+`check-evaluation-fix-contract.sh`; do not maintain a second scoring policy in this workflow.
 
 **⛔ STOP — present all review reports and the evaluator rubric to the user.**
 The findings are presented for transparency, but the status transition is **driven automatically by the overall score** (see the rule below), not by a manual accept/fix decision.

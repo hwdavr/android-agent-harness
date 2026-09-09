@@ -128,7 +128,7 @@ when an earlier checker fails, and fails on an untouched source violation.
 ```bash
 bash harness/scripts/tests/rule-applicability-contract-test.sh
 ```
-**Must pass.** Ensures requirement artifacts carry all nine rule decisions and that the
+**Must pass.** Ensures requirement artifacts carry all ten rule decisions and that the
 stage gate rejects incomplete matrices.
 
 ### 10. Acceptance-Test Traceability Contract

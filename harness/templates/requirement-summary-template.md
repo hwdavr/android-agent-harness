@@ -42,6 +42,7 @@ or `Exception — approved by <user/date>`.
 | API | `api-contract-rules.md` | Conditional | <decision> | <trigger/rationale> | <evidence> |
 | OBS | `observability.md` | Conditional | <decision> | <trigger/rationale> | <evidence> |
 | ANL | `analytics-rules.md` | Conditional | <decision> | <trigger/rationale> | <evidence> |
+| SEC | `android-security.md` | Conditional | <decision> | <trigger/rationale> | <evidence> |
 
 ## Explicit Assumptions
 

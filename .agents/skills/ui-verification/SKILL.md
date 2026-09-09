@@ -6,683 +6,149 @@ description: Verifies Android UI screens visually and interactively using an 8-p
 # Skill — UI Verification
 
 ## Purpose
-Verify that the implemented UI renders correctly and matches the design specified in `spec_v<N>.md`.
-This stage runs after implementation is complete and before (or as part of) the code review.
 
-**Core principle**: separate deterministic structural checks from perceptual/AI-judged visual
-evaluation. Most real UI bugs are structural (missing element, wrong spacing, clipped text) and
-can be caught deterministically. Reserve visual comparison for layout composition, color harmony,
-and design-system compliance.
-
-Use the cheapest reliable check first — build and static analysis → instrumented UI tests →
-structural verification → scoped visual evaluation.
-
----
+Verify implemented UI against the approved design and design system after implementation. Keep
+deterministic structure and runtime evidence binding; use perceptual and AI comparison for scoped
+design judgment. The report schema exists only in
+`harness/templates/ui-verification-template.json`.
 
 ## Load
-- `docs/product/design_system.md` — project-wide visual and component baseline
-- `rules/android-architecture.md` — ensure no layer violations (UI importing data classes, etc.)
-- `docs/current/spec_v<N>.md` — UiState design and visual specification from the Requirement, Impact & Design Analysis stage
-- `docs/current/design/` — **original design screenshots** provided by the user in the Requirement, Impact & Design Analysis stage (e.g. `design.png`)
-- `docs/current/implementation_plan_v<N>.md` — list of changed Composables and **scope of UI changes**
 
----
+- `docs/product/design_system.md` and the approved feature design/reference assets.
+- The active spec, implementation/test plan or selected sprint-contract rows, and execution flags.
+- `.agents/rules/testing-runtime-evidence.md`.
+- Only Required, excepted, or diff-triggered Compose, localization, navigation, and security rules.
+- `harness/templates/ui-verification-template.json`.
 
 ## Execute
 
-### Phase 0 — Build and static checks
+### Phase 0 — Build and runtime readiness
+
 ```bash
 ./gradlew assembleDebug
 ./gradlew lintDebug
 ./gradlew ktlintCheck
-```
-All must pass before proceeding to visual steps.
-
-### Phase 0a — Instrumented UI test verification
-Run existing instrumented tests for any changed screen (target an emulator first, e.g. using
-`ANDROID_SERIAL=emulator-5554`, and fall back to a connected physical device only if no emulator
-is present):
-```bash
 ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest
 ```
 
-For each changed Composable, verify:
-- [ ] Loading state renders correctly
-- [ ] Success / content state renders correctly
-- [ ] Empty state renders correctly (if applicable)
-- [ ] Error state renders correctly (if applicable)
-- [ ] CTAs are visible and correctly enabled/disabled
-- [ ] Navigation triggers work as expected
+All applicable commands must exit 0. Prefer an emulator and use a physical device only when no
+emulator is connected. Missing required runtime evidence is `Blocked`/`Revise`, never passing.
 
-**Screenshot Capture Requirement:**
-- Visual screenshots MUST be captured from within the test runner during `composeRule.waitForIdle()` via `takeScreenshot()`, saving to `/sdcard/Download/<name>.png` and pulled via `adb pull`.
-- Do NOT use post-test CLI screencaps (`&& adb exec-out screencap`) which capture the device home screen after the test activity has already unmounted.
+Visual captures must be created inside the active test after `waitForIdle()` using
+`UiAutomation.takeScreenshot()` or `captureToImage()`, saved under `/sdcard/Download/`, and pulled
+with `adb pull`. Post-test CLI screencaps are invalid.
 
-**Machine-readable evidence contract:**
-- New reports may declare `design_anchors: "design/design_anchors.json"` and
-  `runtime_evidence: "evidence/ui_frames.json"`. When either path is present, both are required
-  and `check-ui-verification-artifact.sh` calculates every structural delta from the captured
-  Compose test frames in dp.
-- Store expected geometry only in `design/design_anchors.json`; structural checks identify the
-  screen, visual `testTag`, and metric without self-reported expected/actual/result fields.
-- For version 2+ evidence-backed PASS reports, declare a non-empty `visual_contract` with
-  explicit roles for the changed surface (for example `icon_identity`, `layout_relationship`,
-  and `action_presence`). Each check names a runtime-backed `testTag`, producing test method, and
-  concrete visible assertion. A large interactive target is not proof of the compact visual
-  inside it; use a distinct visual-shape tag such as `*_handle_visual` for handle anchors.
-- Existing reports without the two evidence paths remain readable for migration compatibility;
-  do not create new reports in the legacy shape.
+For evidence-backed reports, `design_anchors` and `runtime_evidence` are a pair. Expected geometry
+lives only in `design_anchors.json`; captured bounds live only in `ui_frames.json`. Version 2+
+PASS reports also declare each applicable visual-risk role, its runtime-backed visual `testTag`,
+producing method, and concrete assertion. A touch target does not prove the smaller visible shape.
 
----
+### Phase 1 — Normalize
 
-### Phase 1 — Normalize screenshots
+Record reference/runtime resolution and density, common logical dp space, aspect ratio, system-bar
+cropping or masks, orientation, theme, font scale, and locale. Differences must be corrected or
+declared before comparison.
 
-Before comparing anything, make the mockup and actual screenshot comparable.
+### Phase 2 — Scope
 
-**What to normalize:**
+Derive the area of interest from approved requirements and changed files. Fully verify changed
+regions. For unchanged regions, prove presence, visibility, no clipping/overlap, and no unintended
+layout shift. A new screen or full redesign uses the full screen as its scope.
 
-| Property | Normalization |
-|----------|--------------|
-| Screen resolution | Map both to the same logical dp-equivalent coordinate space (e.g. 390 × 844 dp) |
-| Device aspect ratio | Identify and document aspect ratio of both reference and runtime device |
-| Status bar | Crop or mask system status bar from both images |
-| Navigation bar | Crop or mask system navigation bar (gesture bar / 3-button) |
-| Safe areas / insets | Account for display cutouts and system insets |
-| Orientation | Confirm both are in the same orientation; rotate if needed |
-| Theme | Confirm both are in the same theme mode (light/dark); note if different |
-| Font scale | Confirm both use the same font scale (default 1.0); note if different |
-| Locale | Confirm both use the same locale; note if different |
+### Phase 3 — Decompose
 
-**Example — do NOT compare directly:**
-```
-Figma mockup:   390 × 844
-Runtime:       1080 × 2400
-```
-
-Map both to the same logical coordinate space:
-```
-Logical space: 390 × 844 dp-equivalent
-```
-
-**Record in the report:**
-- Source resolution and density of reference
-- Source resolution and density of runtime device
-- Logical coordinate space used for comparison
-- Any properties that differ between reference and runtime (theme, font scale, locale)
-
----
-
-### Phase 2 — Scope-aware area selection
-
-Derive the **area of interest** from the spec, design, and implementation plan.
-
-**When the feature modifies only part of the screen** (e.g. "add emoji picker below toolbar",
-"redesign the balance card", "update bottom CTA"):
-- Identify the specific region(s) of the screen that the change affects
-- Set those regions as the **area of interest** for full verification (Phases 3–8)
-- All other regions receive only a **lightweight regression check**:
-  - [ ] Region exists and is visible
-  - [ ] Region is not clipped or overlapping
-  - [ ] No layout shift compared to before the change
-- This prevents false failures from unrelated regions and focuses agent effort on the actual change
-
-**When the spec describes a new screen or full-screen redesign:**
-- The area of interest is the entire screen
-- All regions are fully verified
-
-**Record in the report:**
-- Declared area of interest with rationale (which spec/plan section drives it)
-- List of regions receiving full verification
-- List of regions receiving regression-only checks
-- Regression check results for out-of-scope regions
-
----
-
-### Phase 3 — Region decomposition
-
-Within the area of interest, break the content into named logical regions derived from the spec's
-component hierarchy.
-
-**Example:**
-```
-┌────────────────────────────┐
-│ header                     │
-├────────────────────────────┤
-│ balance_card               │
-│ $128.50                    │
-├────────────────────────────┤
-│ usage_chart                │
-│                            │
-├────────────────────────────┤
-│ transaction_list           │
-│ ...                        │
-├────────────────────────────┤
-│ bottom_cta                 │
-└────────────────────────────┘
-```
-
-Regions should map to logical components from the spec, not arbitrary pixel rectangles.
-
-**Record in the report:** table of region names with their approximate bounds in dp.
-
----
+Map the scoped surface into named logical regions that correspond to design components. Record
+region bounds in dp; do not invent arbitrary rectangles solely to improve a comparison score.
 
 ### Phase 4 — Structural verification
 
-For each critical element within each in-scope region, verify deterministic structural properties.
+For each critical element, verify existence, position, size, alignment, spacing, visibility,
+clipping, overlap, and cross-state invariance. Use design-approved tolerances; defaults are 4dp for
+position/spacing and 5% for size unless the design declares stricter values.
 
-**Properties to check:**
-
-| Property | Description |
-|----------|-------------|
-| `exists` | Element is present in the semantic tree |
-| `position` | Element's x/y coordinates in dp |
-| `size` | Element's width/height in dp |
-| `alignment` | Element's alignment relative to parent or siblings |
-| `spacing` | Gaps between adjacent elements in dp |
-| `visibility` | Element is visible (not hidden, not zero-sized) |
-| `clipping` | Content is not clipped or overflowing its bounds |
-| `overlap` | Element does not unintentionally overlap siblings |
-| `cross_state_invariance` | Element position/size remains unchanged across interactive focus/selection transitions (zero layout shift) |
-
-**Default tolerances:**
-
-```yaml
-position_tolerance_dp: 4
-size_tolerance_percent: 5
-spacing_tolerance_dp: 4
-```
-
-You do not need exact equality — use tolerances to account for rounding, density differences,
-and minor rendering variations.
-
-**Example structural check:**
-```
-Pay button:
-  Expected:
-    x = 24–366 dp
-    height ≈ 48 dp
-    bottom margin ≈ 24 dp
-
-  Actual:
-    x = 24–366 dp
-    height = 48 dp
-    bottom margin = 6 dp
-
-  Result: FAIL
-    bottom spacing differs significantly (expected ~24dp, got 6dp)
-```
-
-**How to measure:**
-
-Use Compose semantics bounds when available:
-- Give the rendered element a stable `testTag`
-- Use `fetchSemanticsNode().boundsInRoot` and density-derived dp conversion
-- When the visual shape differs from the interactive target (e.g. a small icon inside a 48dp
-  touch target), give the visual shape its own `testTag` and measure that
-
-Use `adb shell uiautomator dump` as a fallback for elements without semantic tags.
-
-**Record in the report:** table of element measurements vs expected values, with tolerances and
-PASS/FAIL per element.
-
----
+Use Compose semantic bounds from stable visual `testTag`s and density-derived dp conversion.
+`uiautomator` is a fallback only when semantics cannot expose the element. The artifact validator
+computes expected/actual deltas; do not self-report PASS values that are not source-fed.
 
 ### Phase 5 — Mask dynamic content
 
-Before visual comparison, identify and mask regions containing runtime-variable data.
-
-**Mask areas containing:**
-- Customer names and user-generated text
-- Account numbers and IDs
-- Timestamps, dates, and clocks
-- Balances and monetary values
-- Chart/graph data points
-- Dynamic images and avatars
-- Notification badges and counts
-- Random or session-specific identifiers
-
-**What to compare after masking:**
-- Container bounds and shape
-- Layout structure and alignment
-- Label text (static labels, not dynamic values)
-- Icon presence and position
-- Background color and borders
-
-**Example:**
-```yaml
-ignore_regions:
-  - balance_value     # "$128.50" — runtime variable
-  - account_number    # "****1234" — user-specific
-  - chart_data        # plotted line — data-dependent
-  - timestamp         # "2 hours ago" — time-dependent
-```
-
-**Record in the report:** list of masked regions with rationale.
-
----
+Mask only runtime-variable content such as user text, identifiers, timestamps, balances, chart
+data, dynamic images, or counts. Preserve container bounds, layout, static labels, icons, borders,
+and background treatment. Record every mask and rationale.
 
 ### Phase 6 — Perceptual comparison
 
-Compare visual composition rather than exact pixel values. Traditional pixel diff is too sensitive
-and fails due to:
-- Font anti-aliasing differences
-- GPU rendering variations
-- Different OS versions
-- Subpixel placement
-- Shadow rendering
-- Image compression artifacts
-- Status bar differences (even after normalization)
-
-**Automated tooling**: Run `bash harness/scripts/compare-visual-evidence.sh` to perform automated perceptual comparison:
 ```bash
-# Compare single screenshot against reference mockup or golden baseline:
 bash harness/scripts/compare-visual-evidence.sh \
-  --reference docs/product/.../design/mockup.png \
-  --actual docs/product/.../visual_evidence/actual.png \
-  --diff-output docs/product/.../visual_evidence/diff.png \
+  --reference <approved-reference> \
+  --actual <runtime-capture> \
+  --diff-output <diff-overlay> \
   --crop-insets
 
-# Batch evaluate entire feature workspace:
-bash harness/scripts/compare-visual-evidence.sh --feature docs/product/<feature-dir> --crop-insets
+bash harness/scripts/compare-visual-evidence.sh --feature "$FEATURE_DIR" --crop-insets
 ```
 
-The tool:
-- Crops system insets (status bar & gesture bar) when `--crop-insets` is enabled
-- Normalizes dimensions via Lanczos filtering
-- Applies color tolerance (0.08 distance threshold) to eliminate anti-aliasing false positives
-- Generates a neon magenta visual diff overlay (`<name>_diff.png`) highlighting divergent clusters
-- Generates `visual_comparison_report.md` in `visual_evidence/`
+- Golden comparisons are binding at similarity >= 0.95 with zero high-severity defects.
+- Approved mockup comparisons are informational and support semantic design review.
+- Reference-anchor geometry remains the binding structural proof.
+- `reference-map.json` resolves explicit references/masks; `null` declares anchor-only evidence.
+- Missing, ambiguous, dangling, or stale references fail as `NO_REFERENCE`.
+- Promote every approved non-anchor-only capture to its golden baseline.
+- Preserve the report, actual capture, and neon-magenta diff overlay.
 
-**Gate semantics — only deterministic pixels bind.** Mockups carry fictional copy and
-AI-generated rendering that can never pixel-match a real implementation, so:
+Evaluate composition, visual weight, palette, boundaries, icon identity, and typography hierarchy.
+A score cannot override a hidden CTA, clipping, overlap, or missing component.
 
-- Comparisons against a promoted golden baseline (`UX/golden-baselines/<screen>.png`, matched
-  by exact capture name or explicit map) are **binding** — the 0.95 threshold applies because
-  both sides share the rendering pipeline and deterministic fixture content. This is the
-  regression gate.
-- Comparisons against `design/mockup_*.png` are **informational** — recorded as `INFO` rows
-  with scores and diff overlays for the human/AI design review you perform in this skill's
-  later phases. They never pass/fail the gate.
-- Structural conformance is bound by the reference-anchor bounds contract, not by pixels.
+### Phase 7 — Classify defects
 
-**Batch reference resolution** (`--feature`): each capture is evaluated deterministically —
-an explicit `visual_evidence/reference-map.json` entry takes precedence. For unmapped captures,
-both the exact-name golden baseline (binding regression check) and the most specific
-`design/mockup_*.png` token match (informational design review) are evaluated and recorded so
-that golden promotion does not silence design mockup conformance evidence. Never rely on filename coincidence: when a state
-capture has no applicable pixel reference (e.g., a dark-theme state with no dark mockup),
-declare it explicitly in `visual_evidence/reference-map.json` rather than letting it
-compare against an inapplicable mockup:
+| Severity | Examples | Verdict effect |
+|---|---|---|
+| Critical | Missing/wrong screen or component, inaccessible CTA, unreadable clipping, unusable overlap, overflow, broken navigation | FAIL |
+| Major | Dimensions beyond tolerance, spacing deviation over 8dp, layout shift, wrong hierarchy/icon/theme/token | FAIL unless explicitly accepted |
+| Minor | Small within-tolerance spacing, anti-aliasing, subtle same-hue variance, small radius/shadow difference | PASS with warning |
 
-```json
-{
-  "formula_sheet_dark_theme.png": null,
-  "formula_sheet_invalid.png": "design/mockup_formula_sheet_invalid.png",
-  "note_link_picker.png": {"reference": "design/mockup_note_link_picker.png", "mask": [{"x": 0, "y": 800, "w": 1080, "h": 600}]}
-}
-```
-
-- A `null` value records the capture as `ANCHOR_ONLY` (verified by its reference-anchor
-  bounds row instead of a pixel comparison).
-- A path value forces the pairing and is reported as `explicit-map`.
-- An object value forces the pairing and excludes its `mask` regions (dynamic content) from
-  the comparison.
-- A capture with no resolvable reference fails loudly as `NO_REFERENCE` (exit 2); malformed,
-  dangling, or stale map entries also fail (exit 2).
-
-**Golden promotion at approval**: when the slice is approved, promote each non-anchor-only
-contract screenshot so the regression gate has its binding reference:
-
-```bash
-bash harness/scripts/compare-visual-evidence.sh --promote-golden docs/product/<feature-dir>/visual_evidence/<capture>.png --name <capture-stem>
-```
-
-**What to evaluate (per in-scope region):**
-- Shape and contour similarity
-- Layout composition and visual weight distribution
-- Color distribution and palette adherence
-- Edge structure and element boundaries
-- Typography hierarchy (relative sizes, weights, not exact rendering)
-
-**Thresholds:**
-```yaml
-overall_similarity: 0.95       # minimum for full-screen pass (<= 5.0% diff)
-critical_component: 0.98       # minimum for critical UI elements (CTAs, headers)
-```
-
-**Important:** score alone does not determine PASS/FAIL. A 0.93 similarity with only minor
-anti-aliasing differences is a PASS. A 0.97 similarity where the CTA button is partially hidden
-is a FAIL. Use defect classification (Phase 7) to make the final call.
-
-**Record in the report:** per-region perceptual assessment with similarity score, diff overlay link, confidence level, and notes.
-
-
----
-
-### Phase 7 — Defect classification
-
-Classify every finding from Phases 4–6 into severity tiers. This prevents agents from endlessly
-fixing meaningless pixel differences.
-
-#### Critical → FAIL
-- Button or CTA hidden or inaccessible
-- Text clipped or unreadable
-- Elements overlap making content unusable
-- Wrong screen rendered
-- Missing required component
-- Layout overflowing screen bounds
-- Navigation element missing or broken
-
-#### Major → usually FAIL
-- Wrong component dimensions (beyond tolerance)
-- Large spacing deviation (>8dp from reference)
-- Layout shift or positional jumping during focus, selection, or interactive state transitions
-- Wrong typography hierarchy (e.g. body used where heading expected)
-- Incorrect icon or asset
-- Wrong theme applied
-- Color significantly different from design system token
-
-#### Minor → WARN
-- 1–2dp shadow or elevation difference
-- Small spacing deviation (within 4dp but noticeable)
-- Anti-aliasing or font rendering differences
-- Subtle color variance within the same hue
-- Minor border radius difference
-
-**Verdict rules:**
-- Any Critical finding → **FAIL**
-- Any unresolved Major finding → **FAIL** (unless explicitly accepted by reviewer)
-- Minor findings only → **PASS with WARNs**
-
-**Record in the report:** table of findings with region, severity, description, and suggested fix.
-
----
+Record region, severity, evidence, suggested fix, and resolution status for every finding.
 
 ### Phase 8 — AI visual evaluation
 
-With the reference mockup, runtime screenshot, and all context from prior phases, perform a
-structured visual evaluation.
+Evaluate the normalized reference and runtime image only within the declared scope. Return
+structured findings for component order, alignment, relative spacing, typography, clipping,
+overlap, missing/extra elements, icon/assets, and visual balance. Record regression results for
+out-of-scope regions. Do not substitute a vague whole-screen similarity judgment.
 
-**Evaluation inputs:**
-1. Reference mockup (normalized, from Phase 1)
-2. Runtime screenshot (normalized, from Phase 1)
-3. Declared area of interest (from Phase 2)
-4. Acceptance criteria (from spec)
-5. Masked/ignored regions (from Phase 5)
+## Conditional rendered-output proof
 
-**Evaluation axes — evaluate within the area of interest:**
-- Component hierarchy — are all expected components present in the right order?
-- Alignment — are elements aligned as specified?
-- Relative spacing — are gaps between elements proportional to the reference?
-- Typography hierarchy — do headings, body, captions follow the right visual weight?
-- Clipping — is any content cut off?
-- Overlap — do any elements unintentionally overlap?
-- Missing/extra elements — anything present that shouldn't be, or absent that should be?
-- Icons and assets — correct icons used, correct size, correct color?
-- Visual balance — does the overall composition feel balanced and intentional?
+For rich-text or inline-formatting appearance claims, the named test must capture plain and
+formatted Compose nodes and assert an explicit pixel difference. Model marks, text content,
+toolbar state, and screenshot existence are supplemental. Run:
 
-**Do NOT ask vaguely:** "Does this look the same?"
-
-**Do ask specifically:** evaluate each axis above and return structured findings.
-
-**Expected output format:**
-```json
-{
-  "status": "PASS | FAIL",
-  "area_of_interest": "bottom toolbar + emoji picker",
-  "issues": [
-    {
-      "region": "bottom_cta",
-      "severity": "critical",
-      "issue": "CTA is partially hidden behind navigation bar",
-      "suggestion": "Apply navigationBarsPadding()"
-    },
-    {
-      "region": "balance_card",
-      "severity": "minor",
-      "issue": "Vertical padding appears approximately 4dp larger than reference"
-    }
-  ],
-  "regression_checks": {
-    "header": "PASS — exists, visible, no layout shift",
-    "transaction_list": "PASS — exists, visible, no layout shift"
-  }
-}
+```bash
+bash harness/scripts/check-rendered-output-contract.sh \
+  --project-root . --test-file <file> --test-method <method> --claim <claim>
 ```
-
-**Record in the report:** the full structured evaluation result.
-
----
-
-## Checklist — what to verify
-
-### Deterministic (must all pass)
-- [ ] Build succeeds with no crash (`assembleDebug`)
-- [ ] Static checks pass (`lintDebug`, `ktlintCheck`)
-- [ ] Instrumented UI tests pass (if present)
-- [ ] Screenshots normalized to common dp coordinate space
-- [ ] Area of interest declared and documented
-- [ ] In-scope regions identified and listed
-- [ ] Out-of-scope regions regression-checked (exists, visible, no shift)
-- [ ] Cross-state positional invariance verified for interactive overlays/handles (zero host layout shift)
-- [ ] All text strings match the design (`spec_v<N>.md`)
-- [ ] Structural properties verified within tolerance for all critical elements
-- [ ] Dynamic content regions identified and masked
-- [ ] No Critical defects found
-- [ ] No unresolved Major defects
-
-### Judged (agent visual assessment)
-- [ ] Perceptual similarity within acceptable range per in-scope region
-- [ ] AI visual evaluation completed with structured findings
-- [ ] Actual screenshot conforms to `docs/product/design_system.md` except for explicitly
-      documented approved exceptions
-- [ ] Loading / empty / error / success states all render correctly
-- [ ] Long content handled correctly (scrolling verified)
-- [ ] Bottom sheets with long content use `skipPartiallyExpanded = true` for reliable accessibility
-- [ ] Navigation destination or back-stack behavior matches design
-
----
 
 ## Output
 
-Produce `docs/current/ui_verification.json` from
-`harness/templates/ui-verification-template.json`. The output is a single JSON document:
-```json
-{
-  "version": "<N>",
-  "reference_design": "design/<approved_mockup_or_screenshot>.png",
-  "design_anchors": "design/design_anchors.json",
-  "runtime_evidence": "evidence/ui_frames.json",
+Copy `harness/templates/ui-verification-template.json`, replace every placeholder, and write the
+active workflow's `ui_verification.json`. Validate it with:
 
-  "visual_contract": {
-    "required_roles": ["icon_identity", "layout_relationship", "action_presence"],
-    "checks": [
-      {
-        "screen": "<screen_name>",
-        "element_id": "<runtime-backed testTag>",
-        "role": "<declared visual-risk role>",
-        "runtime_test": "<ComposeUiTest class/method producing the evidence>",
-        "assertion": "<concrete visible icon, label, layout, or action assertion>"
-      }
-    ]
-  },
-
-  "build_and_static_checks": {
-    "assembleDebug": "PASS / FAIL",
-    "lintDebug": "PASS / FAIL",
-    "ktlintCheck": "PASS / FAIL"
-  },
-
-  "instrumented_tests": {
-    "passed": "<N>",
-    "total": "<N>"
-  },
-
-  "normalization": {
-    "reference_resolution": "<e.g. 390×844>",
-    "reference_density": "<e.g. 2x>",
-    "runtime_resolution": "<e.g. 1080×2400>",
-    "runtime_density": "<e.g. 2.75x>",
-    "logical_space": "<e.g. 390×844 dp>",
-    "theme": { "reference": "light", "runtime": "light", "match": true },
-    "font_scale": { "reference": 1.0, "runtime": 1.0, "match": true },
-    "locale": { "reference": "en-US", "runtime": "en-US", "match": true }
-  },
-
-  "scope": {
-    "type": "partial / full-screen",
-    "area_of_interest": "<description>",
-    "rationale": "<which spec/plan section drives this scope>",
-    "in_scope_regions": ["<region_name>"],
-    "out_of_scope_regions": ["<region_name>"]
-  },
-
-  "regression_checks": [
-    {
-      "region": "<out-of-scope region>",
-      "exists": true,
-      "not_clipped": true,
-      "no_layout_shift": true,
-      "result": "PASS / FAIL"
-    }
-  ],
-
-  "region_decomposition": [
-    {
-      "region": "<region_name>",
-      "bounds_dp": { "x_start": 0, "x_end": 390, "y_start": 0, "y_end": 56 }
-    }
-  ],
-
-  "structural_verification": {
-    "checks": [
-      {
-        "region": "<region>",
-        "screen": "<screen_name_in_runtime_evidence>",
-        "element_id": "<visual_bounds_testTag>",
-        "metric": "<x / y / width / height>",
-        "note": "<what this anchor proves; numeric expected/tolerance live only in design/design_anchors.json>"
-      }
-    ]
-  },
-
-  "design_anchors_schema": {
-    "coordinate_space": { "unit": "dp", "reference_resolution": { "width": 390, "height": 844 } },
-    "anchors": [
-      {
-        "screen": "<screen_name>",
-        "element_id": "<visual_bounds_testTag>",
-        "metric": "<x / y / width / height>",
-        "expected": "<number measured from approved design>",
-        "tolerance_dp": "<non-negative number>"
-      }
-    ]
-  },
-
-  "runtime_evidence_schema": {
-    "producer": { "kind": "ComposeUiTest", "test_name": "<test class/method>" },
-    "coordinate_space": { "unit": "dp" },
-    "normalization": { "theme": "light", "font_scale": 1.0, "locale": "en-US" },
-    "screens": [
-      {
-        "name": "<screen_name>",
-        "screenshot": "evidence/<screen>.png",
-        "elements": {
-          "<testTag>": { "x": 0, "y": 0, "width": 0, "height": 0 }
-        }
-      }
-    ]
-  },
-
-  "dynamic_content_masking": [
-    {
-      "region": "<region>",
-      "rationale": "<why masked>"
-    }
-  ],
-
-  "perceptual_comparison": [
-    {
-      "region": "<region>",
-      "confidence": "high / medium / low",
-      "notes": "<observations>"
-    }
-  ],
-
-  "defect_classification": [
-    {
-      "id": 1,
-      "region": "<region>",
-      "severity": "critical / major / minor",
-      "description": "<description>",
-      "suggested_fix": "<suggestion>",
-      "status": "open / fixed"
-    }
-  ],
-
-  "ai_visual_evaluation": {
-    "status": "PASS / FAIL",
-    "area_of_interest": "<description>",
-    "issues": [
-      {
-        "region": "<region>",
-        "severity": "critical / major / minor",
-        "issue": "<description>",
-        "suggestion": "<fix>"
-      }
-    ],
-    "regression_summary": {
-      "<out-of-scope region>": "PASS — exists, visible, no layout shift"
-    }
-  },
-
-  "design_deviations": [],
-
-  "verdict": {
-    "result": "PASS / FAIL",
-    "reason": "<reason if fail>",
-    "critical_findings": 0,
-    "major_findings_unresolved": 0,
-    "minor_findings_warnings": 0
-  }
-}
+```bash
+bash harness/scripts/check-ui-verification-artifact.sh <ui_verification.json>
+bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate
 ```
 
-Update `docs/current/summary_v<N>.md`: mark UI Verification stage complete.
-
----
+Do not reproduce or maintain the JSON schema in this skill. Update the active summary with concise
+command results and referenced evidence paths.
 
 ## Done When
 
-**This stage is complete when all of the following are true — all must be mechanically verifiable:**
-- [ ] `assembleDebug` — exit code 0
-- [ ] `lintDebug` and `ktlintCheck` — exit code 0
-- [ ] Instrumented UI tests pass (if present): `./gradlew connectedDebugAndroidTest`
-- [ ] Screenshots normalized and logical coordinate space documented
-- [ ] Area of interest declared with rationale
-- [ ] Out-of-scope regions regression-checked (exists, visible, no layout shift)
-- [ ] In-scope regions decomposed and listed
-- [ ] Structural properties verified within tolerance for all critical in-scope elements
-- [ ] Dynamic content masked and documented
-- [ ] All text strings verified against design — no unresolved mismatches
-- [ ] Perceptual comparison completed for all in-scope regions
-- [ ] Defect classification applied — zero Critical, zero unresolved Major
-- [ ] AI visual evaluation completed with structured per-region findings
-- [ ] Actual screenshot compared against the original or approved generated reference
-- [ ] All UiState variants (loading, success, empty, error) confirmed rendering correctly
-- [ ] `docs/current/ui_verification.json` exists with verdict filled in
-- [ ] `bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify ui-verification docs/current` exits 0
+- Applicable build, lint, formatting, and instrumented commands exit 0.
+- Normalization, scope, regions, masks, and out-of-scope regressions are recorded.
+- Every critical element has source-fed bounds evidence within its approved tolerance.
+- Every required visual role has a runtime-backed visual tag and concrete assertion.
+- Required captures, anchors, references/goldens, comparisons, and rendered-output checks pass.
+- No Critical or unresolved Major finding remains.
+- The canonical JSON artifact passes its validator with no placeholders or contradictory results.
 
-**APPROVED →** Return to the active workflow file and proceed to the next stage defined there.
-
-**REVISION REQUIRED →**
-- Build failure → fix compilation error in the UI implementation stage
-- Critical/Major defect → fix in the UI implementation stage, re-run from Phase 0
-- Text mismatch → fix hardcoded strings or string resource values, re-run verification
-- State rendering issue → return to UI implementation stage and fix ViewModel or Composable
-- Structural failure → fix spacing/sizing/alignment in the Composable, re-run from Phase 4
-
-**Iteration cap:** 2 rounds. If a layout issue cannot be resolved through structural verification
-and code fixes alone, surface it to the user with the screenshot, structural measurements, and
-defect classification attached.
+On failure, return to UI implementation, fix the root cause, and rerun only invalidated evidence.
+After the workflow's retry cap, stop and present the unresolved deviation with its evidence.

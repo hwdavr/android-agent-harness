@@ -66,6 +66,8 @@ Build out the selected feature across the necessary layers.
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Implement** stage status to completed (✅) with list of created/modified files.
 *   **Objective**: Only the layers and conditional rules selected by the approved slice are implemented, `./gradlew assembleDebug` compiles cleanly, UI changes conform to `docs/product/design_system.md` plus approved feature exceptions, and progress is logged in the summary.
 
+This workflow is implementation-first; do not insert a feature-level RED/TDD stage before Stage 4.
+
 ### Stage 5 — Test
 Verify the correctness of the implemented behavior visually and logically.
 *   **Action**:
@@ -92,7 +94,7 @@ Update repository history, project task logs, and product documentation to refle
 >
 > **Gate Check Policy**:
 > 1. **Identify Gate Criteria**: Read the selected user story in `$FEATURE_DIR/sprint-contract.md`. Every `Acceptance Test Cases` command is a mandatory gate. The active feature's `"verification"` field must reference the same Test IDs and commands.
-> 2. **Validate fresh evidence**: Reuse the successful Test-stage command evidence when the production sources, build/test configuration, declared verification command, and runtime target are unchanged. Re-run only the affected command when one of those inputs changed; do not repeat a green acceptance suite solely to copy its output into a later stage.
+> 2. **Validate fresh evidence**: Reuse successful Test-stage evidence only after `bash harness/scripts/check-evidence-receipt.sh <receipt.json> --source <hash> --build-config <hash> --command <hash> --runtime <hash>` confirms that the production sources, build/test configuration, declared verification command, runtime target, exit code, and evidence file are unchanged. Re-run only the affected command when validation fails; do not repeat a green acceptance suite solely to copy its output into a later stage.
 > 3. **On Failure — bounded diagnosis and retry**: If any verification command fails (exit code `non-zero`), keep the stage non-passing and diagnose, fix, and re-run that specific command up to three times. If it remains non-zero, record the gate as `⚠️ Blocked` or non-passing and stop before the next verification item.
 > 4. **Validate & Attach Evidence**:
 >    *   The status can **ONLY** transition to `passing` if **every** acceptance-test command eventually executes successfully (exit code `0`) — either on the first run or after resolution.
@@ -125,7 +127,7 @@ Ensure that the final repository state is clean, verified, and fully prepared fo
 
 > [!IMPORTANT]
 > **Checklist & Handoff Policy**:
-> 1. **Run Clean State Checklist**: Execute and verify every single item in the **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Process each checklist item **one by one**. Reference the fresh Test and Code Quality evidence for build/test/lint checks unless a relevant input changed after that stage; do not re-run an unchanged green verification command solely for Clean Exit. If any item fails, keep clean exit non-passing and diagnose, fix, and re-run that item up to three times. After processing all items, all checks **SHOULD** pass; any remaining `⚠️ unresolved` items must be documented in the session handoff and keep the pipeline stopped.
+> 1. **Run Clean State Checklist**: Copy the Core checks and only the triggered conditional sections from **[`clean-state-checklist-template.md`](../../harness/templates/clean-state-checklist-template.md)**. Record every omitted trigger as `N/A — <feature-specific reason>`. Reference fresh Test and Code Quality evidence while its receipt remains valid; rerun only invalidated evidence. A failed required item keeps Clean Exit non-passing and stops the pipeline.
 > 2. **Produce Session Handoff**: Create or update **`$FEATURE_DIR/session-handoff.md`** by strictly following the format and fields defined in **[`session-handoff-template.md`](../../harness/templates/session-handoff-template.md)**. Detail what is working, what changed, unverified paths, risks, unresolved gate items, and next steps.
 > 3. **Verify Observability Metrics**: Run `bash harness/scripts/check-harness-metrics.sh --validate "$FEATURE_DIR/summary_{feature_id}.md"` to confirm execution metrics are complete.
 > 4. **Never move the feature directory.** Its `docs/product/` path is stable; only tracker and per-slice statuses change.
@@ -136,7 +138,9 @@ Ensure that the final repository state is clean, verified, and fully prepared fo
 *   **Objective**: Leave the repository in a completely green, stable, and self-documenting state that a fresh session can immediately pick up and resume.
 
 ### Stage 9 — Install App To Device
-Install the completed debug build to all connected devices and emulators as the final generator step.
+Install the completed debug build when the slice affects UI, requires instrumented/platform
+verification, or the user explicitly requests installation. Otherwise record
+`N/A — no Android runtime or installation boundary in the approved scope`.
 
 *   **Action**:
     1. Install the app to every connected device and emulator:
@@ -145,4 +149,6 @@ Install the completed debug build to all connected devices and emulators as the 
         ```
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Install App To Device** stage status to completed (✅), logging the connected device IDs, install command, timestamp, and exit status.
 *   **Objective**: Leave the implemented feature installed on every connected runtime device for immediate manual review.
-*   **Gate**: The install command must exit with code `0`. If the install fails, mark this stage `⚠️ Blocked` with the command and raw output and stop the pipeline. If no device is connected, mark this stage blocked with the `adb devices` output and do not claim the generator session is fully complete.
+*   **Gate**: When required, the install command must exit 0; failure or no connected device is
+    `⚠️ Blocked`. When not required, the explicit N/A rationale completes the stage without an
+    install command.

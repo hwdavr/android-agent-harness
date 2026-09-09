@@ -38,6 +38,7 @@ triggers are absent.
 | API | | | | PASS / REVISION REQUIRED / N/A |
 | OBS | | | | PASS / REVISION REQUIRED / N/A |
 | ANL | | | | PASS / REVISION REQUIRED / N/A |
+| SEC | | | | PASS / REVISION REQUIRED / N/A |
 
 ## Requirement-to-Test Traceability
 

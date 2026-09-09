@@ -5,244 +5,94 @@ trigger: always_on
 # Testing Strategy Rules
 
 ## Purpose
-Rules for deciding what to test, at which layer, and how much coverage is required.
 
----
+Define the always-applicable test-layer, coverage, and evidence contract. Load detailed
+authoring practices only during testing or review, and load runtime evidence rules only when UI,
+navigation, visual, platform, locale, permission, lifecycle, or Android SDK behavior is in scope.
 
 ## Test Pyramid
 
+```text
+      [Instrumented UI tests]      <- smallest layer
+      [Integration tests (JVM)]    <- primary cross-layer verification
+      [Unit tests (JVM)]           <- foundation
 ```
-      [Instrumented UI tests]      ← smallest layer
-      [Integration tests (JVM)]    ← primary verification layer
-      [Unit tests (JVM)]            ← foundation
-```
 
-Always start at the lowest layer that gives enough confidence.
+Start at the lowest layer that proves the requirement. A lower layer cannot replace a declared
+Android runtime or production-entry boundary.
 
----
-
-## Layer Selection Rules
+## Layer Selection
 
 ### Unit tests (`app/src/test/`)
-Use for:
-- Business rules and domain use case logic
-- ViewModel state transitions (no Android runtime required)
-- Mapper logic (DTO → Domain, Domain → UI)
-- Formatters, reducers, fallback logic
-- UiState creation and state transition logic
 
-Rules:
-- All ViewModel tests inherit from `BaseViewModelTest`
-- Class name ends with `Test.kt`
-- One main scenario per test
+Use for business rules, domain use cases, ViewModel state transitions, mappers, formatters,
+reducers, and fallback logic that do not require Android runtime behavior.
+
+- ViewModel tests inherit from `BaseViewModelTest`.
+- Test class names end with `Test.kt`.
+- Keep one main scenario per test.
 
 ### Integration tests (`app/src/test/`)
-Use for:
-- ViewModel + repository + mocked API end-to-end
-- API response → repository → use case → ViewModel → UiState
-- API error handling (4xx, 5xx, malformed, timeout)
-- DTO parsing and domain mapping
-- Cache / Room behavior when Android runtime is not required
-- Retry and fallback logic
 
-Rules:
-- All ViewModel integration tests inherit from `BaseViewModelIntegrationTest`
-- Class name ends with `IntegrationTest.kt`
-- Use shared JSON scenarios — do not inline mock data
-- If API used by ViewModel: assert `expected.ui` from shared scenario
-- If API used only by repo/use case: assert `expected.domain`
+Use for repository/use-case/ViewModel data flow, DTO parsing, error mapping, cache behavior, retry,
+and fallback behavior that can run deterministically on the JVM.
 
-### Instrumented UI tests (`app/src/androidTest/`)
-Use for:
-- Compose rendering that must be verified in Android runtime
-- User gesture interaction
-- Navigation between screens
-- Critical multi-screen flows
+- ViewModel integration tests inherit from `BaseViewModelIntegrationTest`.
+- Test class names end with `IntegrationTest.kt`.
+- API tests use shared JSON scenarios; do not inline mock response bodies.
+- Assert `expected.ui` when the ViewModel owns the endpoint and `expected.domain` when only the
+  repository or use case owns it.
 
-Rules:
-- Target device selection: Use an emulator for instrumented UI tests (e.g. `ANDROID_SERIAL=emulator-5554`). Only when an emulator is missing/not connected, use a connected physical device.
-- Use `createComposeRule()` for isolated rendering tests. Use `createAndroidComposeRule` or a production Activity when the Activity, navigation graph, `SavedStateHandle`, or destination lifecycle is part of the behavior under test.
-- Test the stateless Composable (`Content`) for isolated rendering and callback behavior; stateful navigation behavior must also be covered through the production entry point.
-- Do not use `Thread.sleep` — use `waitUntil` or `waitForIdle`
-- One main business scenario per test
-- Do not use real production backend — use mocked data
+### Instrumented tests (`app/src/androidTest/`)
 
-Platform-bound exception:
-- When a feature depends on an Android SDK, device, hardware, OS service, model, locale, or permission contract, add a real instrumented boundary test in addition to deterministic JVM/fake tests.
-- The real test must exercise the shipped platform adapter with a deterministic local fixture and assert an observable platform result. A fake adapter, fake recognizer, JVM-only intent assertion, or manually emitted callback is supplemental evidence only.
-- If the required runtime environment is unavailable, the test must fail or report `Blocked`/`Revise`; do not use a skip, warning, or missing result as passing evidence.
+Use only when Compose rendering, gestures, navigation, lifecycle, Android SDK behavior, device
+capability, permission, locale, or another real runtime boundary is part of the claim. Load
+`.agents/rules/testing-runtime-evidence.md` before planning, implementing, or reviewing such
+evidence.
 
-#### Production-entry journey requirement
-
-For defects involving navigation, saved-state, back-stack, destination recreation, or
-post-return persistence:
-
-- Add a named instrumented journey test that mounts the production Activity or
-  navigation graph, performs real UI gestures through stable semantics/test tags,
-  crosses the return boundary, and asserts the visible result after returning.
-- A picker selection that pops back to the editor is a valid return boundary when
-  the test asserts the editor result after the pop.
-- Direct ViewModel calls, internal UiState mutation, manually invoked callbacks, and
-  rendering only a `*Content` composable are supplemental tests; they cannot be the
-  only evidence for this class of defect or be labeled as the journey itself.
-- The test plan must declare the boundary in a `## Production Journey Boundary`
-  section. The testing-stage artifact gate validates that declaration against the
-  named instrumented test.
-
-#### Journey Registry Regression Gate
-
-Every journey declared in `docs/product/journey-registry.yaml` is a permanent
-regression gate. The harness-generator and feature-delivery workflows must
-run all registered journeys during the Test/Verification stage. A regression
-in any registered journey blocks the pipeline regardless of which feature
-introduced it.
-
-New journeys are registered when a slice ships with
-`production_journey.required: true`. A journey is removed only when the
-product feature is intentionally deprecated.
-
-Dedicated Visual Verification tests (`*VisualFlowTest.kt`):
-- When a feature introduces or modifies UI screens/components that require visual verification (`requires_visual_verification: true`), write a dedicated visual flow instrumented test (or test methods) that exercises the active Composables in their critical visual states (e.g. default/content, alternative mode, expanded/fullscreen, empty/error).
-- The test must capture visual evidence directly during active rendering using `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()` or `captureToImage()` while the test rule is idling (`waitForIdle()`), saving the file to `/sdcard/Download/<name>.png`.
-- Visual evidence files are then retrieved using `adb pull /sdcard/Download/<name>.png <destination_path>`.
-- **Prohibition**: Post-test external screencaps (such as chaining `&& adb exec-out screencap` after `connectedDebugAndroidTest`) are strictly forbidden because the test Activity/window is already destroyed when the test runner finishes.
-
-#### Rendered Rich-Text Appearance Evidence
-
-When an acceptance, reproduction, or visual-verification row claims that rich text,
-inline marks, or a formatting action is visibly rendered (for example, bold, italic,
-underline, strikethrough, code, or monospace), the named instrumented test must prove
-the rendered result from the Compose node itself. After the test is idle, capture the
-plain and formatted node with `captureToImage()` and assert an explicit pixel
-comparison such as `differingPixelCount(...) > 0`, `assertPixels(...)`, or an
-equivalent checked comparison.
-
-ViewModel state, `RichText.marks`, `AnnotatedString` contents, toolbar state, text
-content, and a non-empty full-screen PNG are supplemental evidence only; none proves
-that the `BasicTextField` actually rendered the formatting. The acceptance-test,
-visual-evidence, and bug-reproduction validators invoke
-`bash harness/scripts/check-rendered-output-contract.sh` for this claim class and
-fail when the named method has no source-fed pixel comparison. Claims unrelated to
-rich-text appearance continue to use the ordinary visual and semantic contracts.
-
-#### Level 5 Semantic & Visual Verification Engine
-
-Visual verification is layered, and only layers with deterministic pixels are gated:
-
-- **Structure (binding)**: the reference-anchor bounds contract in `reference-anchor-verification.md` proves layout geometry content-independently (testTag bounds, measured relationships).
-- **Golden regression (binding)**: pixel comparison against a promoted golden baseline (`UX/golden-baselines/<screen>.png`) via `bash harness/scripts/compare-visual-evidence.sh`. Both sides share the rendering pipeline and deterministic fixture content, so the pass threshold is meaningful: similarity $\ge 0.95$ ($\le 5.0\%$ diff) with zero high-severity violations. A regression below threshold blocks the pipeline.
-- **Mockup conformance (informational)**: pixel comparison against `design/mockup_*.png` is recorded as `INFO` rows with diff overlays for human/AI design review. Mockups carry fictional copy and AI-generated rendering that can never pixel-match a real implementation, so mockup scores never pass/fail the gate.
-- **Golden promotion is part of slice approval**: when a visual-verification owner is approved, every contract screenshot not declared anchor-only must be promoted via `bash harness/scripts/compare-visual-evidence.sh --promote-golden <actual.png> --name <screen_name>`. The `--evaluate` visual gate fails with the exact promote command while a golden is missing; intentional visual updates replace the golden through the same promotion command.
-- **Reference resolution is deterministic and explicit** in batch mode (`--feature`): an explicit `visual_evidence/reference-map.json` entry takes precedence. For unmapped captures, both the exact-name golden baseline (binding regression check) and the most specific `design/mockup_*.png` token match (informational design review) are evaluated and recorded so that golden baseline promotion does not silence mockup conformance evidence. Pairings are never chosen by filesystem iteration order, and a capture with no resolvable reference fails the gate as `NO_REFERENCE` (exit 2) instead of being silently skipped.
-- `reference-map.json` maps a capture filename to `null` (anchor-only — no pixel comparison; the reference-anchor bounds row remains binding), a feature-relative reference path string, or `{"reference": "<path>", "mask": [{"x": 0, "y": 0, "w": 1080, "h": 400}]}` to exclude dynamic content regions from the comparison.
-- A capture whose state has no applicable pixel reference (e.g., a dark-theme state with no dark mockup) must be declared anchor-only in `visual_evidence/reference-map.json`; it is recorded as `ANCHOR_ONLY` in `visual_comparison_report.md` and must still pass its reference-anchor bounds row — it is never silently compared against an inapplicable mockup.
-- The comparison engine performs automated insets normalization (`--crop-insets` for status/nav bars), anti-aliasing color tolerance, and pixel divergence clustering.
-- A visual diff overlay (`<name>_diff.png`) highlighting divergent regions in neon magenta must be generated and preserved alongside the actual screenshot in `visual_evidence/` for every compared row.
-
-
-Do NOT use instrumented UI tests for:
-- ViewModel + repository + mocked backend verification when JVM integration tests can cover it
-
-### Appium E2E tests (Black-box)
-Use for:
-- Smoke testing "happy paths" in release candidates
-- Mission-critical journeys spanning multiple integrated systems
-- Bugs that only surface when fully integrated with live services
-
----
+Do not use instrumented tests for behavior that a deterministic JVM test proves completely.
 
 ## Coverage Requirements
 
-| Scope | Minimum Coverage |
-|-------|-----------------|
-| Overall project | 80% line coverage |
-| New ViewModel classes | 90% line coverage |
-| New domain use case classes | 90% line coverage |
-| Compose screens | excluded from coverage requirement |
+| Scope | Minimum line coverage |
+|---|---|
+| Overall project | 80% |
+| New ViewModel classes | 90% |
+| New domain use case classes | 90% |
+| Compose screens/components | Excluded; verify with instrumented semantic/visual evidence when triggered |
 
-Verify with:
+Machine-readable verification:
+
 ```bash
-./gradlew koverLog
-./gradlew :app:koverHtmlReportDebug
 ./gradlew :app:koverXmlReportDebug
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 
----
+## Feature and Bug Policy
+
+- Feature and enhancement workflows implement approved behavior before the Testing stage. The
+  Testing stage then creates or completes the planned tests and verifies them GREEN.
+- Bug fixing is the only TDD workflow: `bug-reproduction` must produce a relevant RED test before
+  the approved fix is implemented, and the later Testing stage must prove it GREEN.
+- Every new feature includes ViewModel/state tests, use-case tests when business logic changes,
+  mapper tests when mapping is non-trivial, and at least one shared-scenario integration test per
+  affected API endpoint.
+- Every bug fix includes at least one regression test that proves the reported behavior.
+
+## Evidence Invariants
+
+- A test result is passing only when the declared command ran, exited 0, executed a non-zero test
+  count when applicable, and produced the required source-fed evidence.
+- Missing runtimes, devices, models, locales, permissions, services, skipped tests, empty output,
+  fake-only platform evidence, and unexecuted commands cannot be recorded as passing.
+- Reuse a prior successful command only when its source, build configuration, declared command,
+  and runtime fingerprints are unchanged and `check-evidence-receipt.sh` accepts its receipt.
+- Keep verbose output in a referenced log/report; summaries record the command, exit status, test
+  count or coverage, evidence path, and fingerprint receipt.
+- Load `.agents/rules/testing-practices.md` during test authoring and test review.
 
 ## Shared JSON Scenarios
 
-- **Mandatory**: All API endpoint must have at least one integration test using shared JSON scenarios
-- Do not create mock response data inline in test code
-- Store scenarios in `sharedContracts/test-scenarios/`
-- Use the shared-json-scenarios skill to load or generate scenarios
-- A scenario may contain `apiMocks`, `expected.domain`, and `expected.ui`
-- Each test asserts the layer it owns — do not assert both in one test
-
----
-
-## Mandatory Test Coverage for New Features
-
-At minimum, every new feature must include:
-- ViewModel / state transition tests
-- Use case tests if new business logic is added
-- Mapper tests if mapping logic is non-trivial
-- At least one integration test per API endpoint involved, using shared JSON scenarios
-
----
-
-## Mandatory Test Coverage for Bug Fixes
-
-Every bug fix must include at least one test that fails before the fix and passes after. Write this test before touching application code when feasible.
-
-**Triage by bug type:**
-- **Logic/Calculation bugs**: Unit test
-- **Data flow/API mapping/Error state bugs**: Integration test
-- **Visual glitches/Unresponsive elements**: Instrumented UI test
-- **Navigation crashes/Deep-link issues**: Instrumented UI test
-
----
-
-## Testing Best Practices
-
-### 1. Arrange-Act-Assert (AAA) Pattern
-Structure each test cleanly into three visual blocks separated by empty lines:
-```kotlin
-@Test
-fun givenNoteWithEmptyTitle_whenSaving_thenEmitsError() {
-    // Arrange: Set up mock responses, parameters, and view models
-    val note = Note(id = "1", title = "")
-    coEvery { repository.saveNote(note) } throws IllegalArgumentException("Empty title")
-
-    // Act: Invoke the action being tested
-    viewModel.saveNote(note)
-
-    // Assert: Verify the expected outcome
-    assertEquals(EditorUiState.Error("Empty title"), viewModel.uiState.value)
-}
-```
-
-### 2. DAMP Over DRY in Tests
-In production code, DRY (Don't Repeat Yourself) is preferred. In tests, prefer **DAMP (Descriptive And Meaningful Phrases)**. Each test should tell a self-contained story without requiring the reader to jump to shared setup helpers to understand the test input configuration.
-
-### 3. Test State, Not Interactions
-Verify the *outcome* of an operation (state changes) rather than the internal implementation details (which methods were called in which order). Testing interaction sequences (`verify { repo.save(...) }`) makes tests fragile and prone to breaking during refactoring, even if behavior remains correct.
-
-### 4. One Assertion Per Concept
-Each test should verify exactly one logical behavior. Do not bundle multiple unrelated assertions into a single test case.
-
-### 5. Prefer Real Implementations Over Mocks
-Catches integration bugs earlier. Use real database, domain mappers, or in-memory fakes. Mock only at external network boundaries or non-deterministic APIs.
-
----
-
-## Test Anti-Patterns to Avoid
-
-| Anti-Pattern | Description | Remediation |
-|---|---|---|
-| Testing implementation details | Verifying internal helper functions or private fields | Test public inputs, state transitions, and outputs only |
-| Flaky tests | Tests that fail intermittently due to delays or threads | Avoid `Thread.sleep` or timing assumptions. Use Compose `waitUntil` or coroutine test dispatchers |
-| Testing framework code | Verifying Room or Retrofit libraries actually save/fetch | Rely on libraries being tested by their authors. Only test your custom business code and mappings |
-| Lack of test isolation | Test class state carrying over between runs | Recreate mock objects and databases in `@Before` setup blocks |
-| Mocking everything | Mocking domain models or standard library lists | Use real objects for simple models. Mock only boundaries |
-| Envelope-only assertions | Asserting `contains("<svg")` or `contains("<html")` on rendered output without checking semantic content | Assert specific visual elements: node labels (`>Label</text>`), structural shapes (`<rect`, `<line`), and connectors. Run `bash harness/scripts/check-test-assertions-quality.sh` |
+Every affected API endpoint has at least one integration test backed by
+`sharedContracts/test-scenarios/`. A scenario may contain `apiMocks`, `expected.domain`, and
+`expected.ui`; each test asserts only the layer it owns.

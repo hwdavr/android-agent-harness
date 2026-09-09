@@ -74,7 +74,7 @@ require_rule_applicability() {
     exit 1
   fi
 
-  for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL; do
+  for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC; do
     row=$(grep -E "^[[:space:]]*\|[[:space:]]*$rule_id[[:space:]]*\|" "$artifact" | head -n 1 || true)
     if [ -z "$row" ]; then
       echo "FAIL: $artifact is missing the $rule_id rule-applicability row ($label)." >&2

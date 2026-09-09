@@ -12,12 +12,13 @@ description: Optimizes agent context setup. Use when starting a new session, whe
 3. `rules/testing-strategy.md`
 4. The workflow file that matches the task
 5. The skill(s) for the current stage only
-6. `.agents/rules/android-security.md` when the task touches authentication,
-   sensitive storage, URI/IPC, exported components, networking/TLS, WebView,
-   AI/model, SDK, or release-security boundaries
-7. Source files for the specific feature area (ViewModel, use case, repository interface)
+6. Source files for the specific feature area (ViewModel, use case, repository interface)
 
-**Rule:** Never preload all skills at once. Load what the current stage requires.
+
+**Rule:** Never preload all skills or conditional rules. Use the Rule Applicability trigger
+catalog, or the complex-slice context index, and load only Required, excepted, or newly triggered
+documents. During testing/review load `rules/testing-practices.md`; add
+`rules/testing-runtime-evidence.md` only for runtime-bound claims.
 
 ---
 
@@ -76,9 +77,9 @@ description: Optimizes agent context setup. Use when starting a new session, whe
 
 ## Session Start Checklist
 
-- [ ] `AGENTS.md` + both rule files loaded
+- [ ] `AGENTS.md` + both L1 rule files loaded
 - [ ] Correct workflow identified
 - [ ] Only current-stage skill(s) loaded
-- [ ] Android security rule loaded when a security boundary is in scope
+- [ ] Implementation rules loaded only when the Implementation stage is selected
 - [ ] Feature-area source files loaded
 - [ ] No unresolved assumptions

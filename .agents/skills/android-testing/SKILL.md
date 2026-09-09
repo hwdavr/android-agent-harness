@@ -6,10 +6,12 @@ description: Implements unit, integration, and instrumented UI tests according t
 # Skill — Android Testing
 
 ## Purpose
-Write all tests for the change and mechanically verify they pass.
+After implementation, write or complete all approved tests and mechanically verify they pass.
 This stage **generates** — it does not evaluate quality. That is the Test Review stage's job.
 
-The article principle: write the failing test *before* touching the application code for bug fixes and new behavior.
+Bug fixes perform RED reproduction through the `bug-reproduction` skill before implementation;
+this skill performs the later GREEN verification. Feature and enhancement workflows implement
+approved behavior before invoking this skill.
 
 ---
 
@@ -19,8 +21,10 @@ The article principle: write the failing test *before* touching the application 
 - `rules/testing-strategy.md`
 
 **Then load only the selected test-layer guidance:**
+- `rules/testing-practices.md` for test structure, doubles, reliability, and assertion quality
 - `skills/android-unit-test/SKILL.md` for unit or JVM integration coverage
 - `skills/android-instrumented-ui-test/SKILL.md` for UI, navigation, visual, or platform-bound coverage
+- `rules/testing-runtime-evidence.md` only for UI, navigation, visual, platform, or runtime claims
 - `skills/shared-json-scenarios/SKILL.md` only when an API endpoint or shared fixture is in scope
 - `rules/android-security.md` when the test covers a security boundary; use its
   required real-runtime boundary evidence and fail loudly when the runtime is unavailable
@@ -35,19 +39,6 @@ The article principle: write the failing test *before* touching the application 
 ---
 
 ## Execute
-
-### Test-First Authoring (before application implementation)
-
-When the active workflow places this skill before `android-implementation`, write every
-planned test and shared JSON scenario first. Run each new test through its exact
-selector and record its expected red result: the failure must demonstrate the
-unimplemented requirement, such as a missing production API or unmet assertion, not
-a fixture, test-source syntax, or environment problem. A new test that already
-passes must be strengthened until it proves the intended behavior.
-
-Do not treat a red test-first run as a passing verification result and do not record
-coverage at this point. Return to the workflow so `android-implementation` can make
-the declared test methods green.
 
 ### 1. Execute Planned Tests
 For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When `production_journey.required` is `true`, implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the approved Rule Applicability matrix. Every required Rule Applicability row must have test, static-check, or review evidence.
@@ -116,19 +107,17 @@ If instrumented tests were added: run on an emulator (e.g. `ANDROID_SERIAL=emula
 
 Record the exact command, exit code, test count, and coverage percentage in the stage evidence. Keep verbose tool output in a referenced log or generated report; do not copy it into the summary.
 
-For the harness workflow, after writing tests and before leaving the test-first stage,
-run the acceptance-test traceability checker in test mode:
+For the harness workflow, after writing tests and before leaving this stage, run the
+acceptance-test traceability checker in evaluation mode:
 
-    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --test "$FEATURE_ID"
+    bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate "$FEATURE_ID"
 
 The gate requires every selected acceptance Test ID to name a real Kotlin test method,
 a suite-scoped Gradle selector, and any declared shared JSON scenario to be referenced
 from the named method. For a required production journey, also run
 `bash harness/scripts/check-journey-test-contract.sh` with the planned test file,
 method, and production entry point; the source checker must find the real graph,
-gestures, return boundary, and visible post-return assertion. During the
-post-implementation verification pass, run the same checkers with `--evaluate`
-`"$FEATURE_ID"` after successful evidence is recorded.
+gestures, return boundary, and visible post-return assertion.
 
 ---
 
@@ -137,19 +126,13 @@ post-implementation verification pass, run the same checkers with `--evaluate`
 New or updated test files.
 New or updated shared JSON scenarios in `sharedContracts/test-scenarios/`.
 
-During test-first authoring, update the active summary with the declared methods,
-shared scenarios, exact selectors, and expected red output. During the post-
-implementation verification pass, record actual green test counts and coverage.
+Record the declared methods, shared scenarios, exact selectors, GREEN test counts, and coverage
+in the active summary. Bug reproduction RED evidence remains in the bug specification and its
+dedicated stage evidence.
 
 ---
 
 ## Done When
-
-**Test-first authoring is complete when all of the following are true:**
-- [ ] Every planned test method and shared JSON scenario exists
-- [ ] Every new test has been run through its exact selector and its red result is recorded
-- [ ] Each red result identifies the missing behavior rather than a broken fixture or unavailable environment
-- [ ] Harness workflow: acceptance-test traceability gate passes for the selected slice
 
 **Post-implementation verification is complete when all of the following are true — all must be mechanically verifiable:**
 - [ ] `./gradlew testDebugUnitTest` — exit code 0
@@ -164,7 +147,7 @@ implementation verification pass, record actual green test counts and coverage.
 **APPROVED →** Return to the active workflow file and proceed to the next stage defined there.
 
 **REVISION REQUIRED →**
-- If `total_tests == 0` → return to Test First, add missing tests
+- If `total_tests == 0` → add the missing approved tests and rerun verification
 - If coverage < 80% → return to Verification, add missing unit tests
 - If test failures exist → return to Implementation to fix the application root cause, then Verification
 - If a compilation error was introduced → return to the stage that caused it

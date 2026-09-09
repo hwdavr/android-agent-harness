@@ -6,52 +6,45 @@ description: Performs a structured code review across correctness, security, per
 # Skill — Android Code Review
 
 ## Purpose
-An evaluator pass covering the implementation — build quality, static analysis, architecture compliance, and rule adherence — always run as the second half of a review cycle, immediately after Test Review.
 
----
+Independently review implementation correctness, architecture, security, maintainability, and
+static quality after Test Review. The canonical report structure and per-rule checklist live in
+`harness/templates/code-review-template.md`; do not reproduce them in this skill.
 
 ## Load
 
-Load before starting (android-test-review SKILL.md context should already be loaded — do not re-load what is already in context):
-
-- `skills/code-review-and-quality/SKILL.md`
-- `skills/android-code-quality-checks/SKILL.md`
-- `rules/android-architecture.md`
-- `rules/compose-rules.md`
-- `rules/localization-rules.md`
-- `rules/navigation-rules.md`  *(if navigation changed)*
-- `rules/api-contract-rules.md` *(if API or data layer changed)*
-- `rules/analytics-rules.md`   *(if analytics events changed)*
-- `rules/android-security.md` *(if an Android security boundary changed)*
-- `rules/implementation-rules.md`
-- `rules/observability.md`
-- `gates/review-checklist.md`
-- `harness/templates/rule-applicability-template.md`
-- Ad-hoc workflows: `docs/current/spec_v<N>.md`, `implementation_plan_v<N>.md`, `test_plan_v<N>.md`, and `test_review_v<N>.md`
-- Harness evaluation: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/design.md` (if present), `$FEATURE_DIR/sprint-contract.md`, the active slice summary, and `test_review_{feature_id}.md`
-- The active diff, its merge base or prior reviewed commit, all changed production files, and the tests mapped to the changed behavior
-
----
+- L1 rules already loaded for the session; do not reload them.
+- `skills/code-review-and-quality/SKILL.md` and `skills/android-code-quality-checks/SKILL.md`.
+- `harness/templates/code-review-template.md` and `gates/review-checklist.md`.
+- The approved Rule Applicability matrix and exact conditional rule paths selected from it.
+- `rules/testing-practices.md`; add `rules/testing-runtime-evidence.md` when a runtime claim is in
+  scope.
+- `rules/android-security.md` only when the approved scope or diff touches a security boundary.
+- The active diff, merge base/reviewed commit, changed production files, and mapped tests.
+- Ad-hoc baseline: `docs/current/spec_v<N>.md`, `implementation_plan_v<N>.md`,
+  `test_plan_v<N>.md`, and `test_review_v<N>.md`.
+- Complex baseline: `$FEATURE_DIR/spec.md`, optional design, `sprint-contract.md`, selected slice
+  metadata/summary, and `test_review_{feature_id}.md`.
 
 ## Execute
 
-### 0. Rule Applicability Reconciliation
+### 1. Establish scope and evidence provenance
 
-Before reviewing code, read the approved Rule Applicability matrix and implementation/test
-plans. Reconcile all nine rows — ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, and ANL —
-against the diff. A triggered rule marked `Not applicable` or an exception without the
-cited user approval is **REVISION REQUIRED**. Do not add analytics or logging solely to
-avoid a valid non-applicable decision.
+Record the current commit, merge base or reviewed baseline, and changed files. Distinguish fresh
+commands from recorded stage evidence, stale results, planned tasks, and skipped checks. A
+pre-existing failure remains a failed global gate; classification does not turn it green.
 
-Security is a conditional cross-cutting rule outside those nine rows. If the diff
-touches an Android security boundary, load `rules/android-security.md`, record its
-boundary and evidence result, and treat missing or blocked platform evidence as a
-review failure.
+### 2. Rule Applicability Reconciliation
 
-### 1. Build and Static Quality Checks
+Reconcile ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, ANL, and SEC against the submitted diff. Load and
+apply each Required or excepted rule. If the diff triggers a rule marked Not applicable, load it
+and record a blocking planning defect. An exception without cited user approval is blocking.
 
-Run all checks and record results. The repository-wide source-rule bundle is
-mandatory even when the reviewed diff is small or contains no Kotlin files:
+For `SEC: Required` or an exception, require the approved trust-boundary and real-runtime evidence;
+unavailable required evidence remains failed or blocked.
+
+### 3. Run mechanical gates
+
 ```bash
 ./gradlew assembleDebug
 ./gradlew ktlintCheck
@@ -62,267 +55,65 @@ bash harness/scripts/check-full-source-rules.sh
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
 
-`check-full-source-rules.sh` passes `--all` to the architecture, Compose, and
-localization AST checkers, scans all test sources for assertion quality, and runs
-navigation checks, then runs the AI/WebView security evaluator and its contract
-test. It executes every checker and aggregates failures; record its complete
-output and treat any non-zero result as a review failure, including
-pre-existing findings.
+The full-source bundle is mandatory and scans all production and test sources. Record command,
+exit code, commit, evidence path, and actionable failure details. Reuse a previous successful
+result only when `bash harness/scripts/check-evidence-receipt.sh ...` accepts all fingerprints.
 
-On Windows (using PowerShell or Command Prompt), run the native script launchers instead:
-```powershell
-harness\scripts\check-full-source-rules.cmd
-```
+### 4. Trace requirements to production
 
-For every command, record its exact exit code, timestamp, commit, and complete failure details in the review report. A non-zero global gate is a review failure even when the violation is outside the changed feature; identify the source and whether it appears pre-existing, but do not report the gate as passing or approve the review without an explicit user waiver.
+Complete the template's Requirement-to-Production and State Completion tables for every FR, AC,
+and edge case. Trace each input through state, coroutine/callback, cleanup, and final observable
+result. Verify completion methods have reachable production call sites; test-only invocation does
+not prove production wiring.
 
-### 1a. Evidence integrity and changed-file scope
+Treat placeholders, no-op handlers, unreachable branches, stale flags, ignored callback results,
+missing cleanup, and unimplemented completion paths as `REVISION REQUIRED`.
 
-1. Record the current commit, merge base or reviewed baseline, and every changed file.
-2. Distinguish independently executed checks, recorded stage evidence, up-to-date tasks, and skipped checks. Do not describe the latter three as fresh execution.
-3. Record all checker failures verbatim enough to identify file, line, rule, and exit code. Scope classification (introduced / pre-existing / unknown) supplements the failure; it does not erase it.
+### 5. Review applicable rules
 
-### 1b. Requirement-to-production and completion-path tracing
+Use the canonical template rows and enforcement matrices rather than a second checklist here:
 
-Build a review table for every functional requirement, acceptance criterion, and documented edge case in the active specification and sprint contract:
+- Architecture: dependencies flow inward, domain remains platform-independent, DTOs remain in
+  data, state ownership matches the approved plan, and Hilt scopes are correct.
+- Implementation: every reachable production branch implements the requirement; no placeholder,
+  dummy, suppression, or no-op path is accepted without explicit documented approval.
+- Compose/localization: apply only when UI or user-visible copy is triggered; reconcile scripted,
+  evaluator, and human-owned rows in the report.
+- Navigation/API/observability/analytics: apply only when Required, excepted, or triggered by the
+  diff; otherwise record the approved N/A rationale.
+- Security/release: audit secrets, sensitive/user-generated logging, untrusted inputs, exported or
+  IPC boundaries, compatibility, and required runtime proof when triggered.
 
-| Source ID | Required behavior | Production entry point | Completion / cleanup path | Test evidence | Result |
-|---|---|---|---|---|---|
+Every loaded rule receives a report result. Any unchecked human-owned row remains visible for
+human review rather than being inferred as passing.
 
-For each changed behavior, trace from user/system input through state updates, coroutines, callbacks, and final observable outcome. In particular:
+### 6. Verify UI/runtime claims conditionally
 
-- Find every transition flag, loading state, callback, delayed job, listener, or cleanup method introduced or changed.
-- Verify the method that completes or clears the state has a reachable **production** call site; a call from test code does not prove production wiring.
-- Flag placeholder branches, empty/no-op handlers, unreachable code, stale flags, ignored callback results, feature paths only backed by manually preloaded UI state, and code that is never reached from an in-scope entry point.
-- For permission, lifecycle, navigation, and external-callback requirements, verify the real boundary is invoked and its result reaches the specified UI or cleanup behavior.
+Run UI verification when the slice says `affects_ui`, or when the diff changes a Composable despite
+that flag. Record a planning defect for the mismatch and continue verification. When visual
+verification is required, run every declared visual command and validator; require target-state
+proof, non-empty in-test capture, reference-anchor evidence, applicable golden comparison, and
+rendered-node pixels for rich-text appearance claims.
 
-Any required row without a reachable production path is **REVISION REQUIRED**.
-
-### 2. Architecture & Design Validation
-
-Review every changed file against the designs in `spec_v<N>.md`:
-- **UiState compliance**: Does the implementation match the designed `UiState`?
-- **Layer boundary check**:
-  - UI → Presentation only
-  - Presentation → Domain only
-  - Data → Domain (implements interfaces only)
-  - No upward or cross-layer dependencies
-- **DI Scope**: Verify Hilt scopes (`@Singleton`, `@ViewModelScoped`) match the plan.
-- **Domain purity**: No Android framework classes in domain layer.
-
-### 3. Per-Rule Diff Review
-
-**Mandatory process — must not be skipped:**
-
-For every rules file loaded in the **Load** section, scan every changed file against it and record each violation explicitly. Work through each rule file in turn:
-
-#### 3a. `rules/compose-rules.md`
-
-Only run this section if the change touches Compose (UI `*.kt`) files. Otherwise mark the entire section N/A in the review report.
-
-**Step 1 — Run the script (Scripted rules)**
-
-The script has already run in step 1. Refer to its output to fill in the 🤖 rows in the Compose Rules Enforcement table. Mark each as ✅ (no violations) or ❌ (violations — list them in the Violations column).
-
-Rules automatically covered by the script:
-- **1.6 / 4.1** No hardcoded strings → localization AST visitors for `Text` calls, named UI arguments, and UI label properties
-- **1.7 / 5.1 / 5.2** No hardcoded colors → Compose AST visitors for `Color(0x...)` and named `Color.*` references
-- **1.3 / 2.2** `hiltViewModel()` / `viewModel()` not in `*Content` → Compose AST visitor over function bodies
-- **1.4** No repository/use-case calls inside Composable → Compose AST visitor over `@Composable` bodies
-- **3.1** Files with interactive elements but no `testTag` → Compose AST visitor over interactive call nodes
-- **3.3** Dynamic `testTag` values are documented → Compose AST visitor plus the registry contract
-- **8.1** `LazyColumn` instead of `Column + forEach` → Compose AST visitor over nested call nodes
-
-**Step 2 — Evaluate remaining rules (Evaluator rules)**
-
-For each changed Composable file, read the source and evaluate the following rules that the script cannot check:
-- **1.1** Composable receives `UiState` + callbacks as params — no data objects from lower layers exposed directly
-- **1.2** Composable only renders state — no sorting, filtering, or formatting logic inside composable body
-- **1.5** No business logic or data transformation anywhere inside the composable body
-- **2.1** Each screen has a `*Screen` stateful wrapper and a `*Content` stateless composable pair
-- **2.3** UI tests target `*Content`, not `*Screen` (check test files)
-- **3.2** Key content containers (list items, empty/error states, loading indicators, nav elements) have `testTag`
-- **3.3** `testTag` names are descriptive — flag any `"btn"`, `"item"`, or single-word tags
-- **4.2** String resource keys follow `<screen>_<element>_<type>` naming pattern
-- **5.3** Colors accessed via `LocalAppColors.current.<token>` — not via module-level `val` workarounds
-- **5.4** Color token names describe semantic purpose (`textSecondary`) not value (`gray`)
-- **5.5** Any new color added to **both** `LightAppColors` and `DarkAppColors` in `AppColors.kt`
-- **6.1** Repeated UI structure extracted to `components/` when it appears on more than one screen
-- **6.2** Components with internal state or complexity extracted to their own composable
-- **6.3** Each component has one visual responsibility
-- **7.1** State hoisted to the lowest common ancestor that needs it
-- **7.2** State not hoisted higher than necessary
-- **7.3** No `remember {}` inside `*Content` composables
-- **8.2** Stable types passed as parameters (no raw `List<>`, `Map<>`, inline lambdas that cause recomposition)
-- **8.3** `key()` used in `items()` / `itemsIndexed()` when items have stable IDs
-- **8.4** Lambdas passed as parameters — not created inside the composable body
-
-**Step 3 — Mark unchecked rules**
-
-For any rule in the Compose Rules Enforcement table that was neither run by the script nor evaluated in Step 2, set the Status to `👁️ Human` in the review report. This flags it explicitly for human review before merge.
-
-#### 3b. `rules/localization-rules.md`
-
-Only skip this section if the change adds no user-visible text and no Kotlin UI file is modified. Otherwise mark the entire section N/A in the review report.
-
-**Step 1 — Run the script (Scripted rules)**
-
-The script has already run in step 1. Refer to its output to fill in the 🤖 rows in the Localization Rules Enforcement table. Mark each as ✅ (no violations) or ❌ (violations — list them in the Violations column).
-
-Rules automatically covered by the script:
-- **1.1** `Text()` called with a raw string literal → localization AST visitor
-- **1.2** `label=`, `title=`, `placeholder=`, `hint=` set as a raw string → localization AST visitor
-- **1.3** Local UI label variables assigned a raw string → localization AST visitor
-- **6.2** `contentDescription = null` on interactive icons → localization AST visitor
-
-**Step 2 — Evaluate remaining rules (Evaluator rules)**
-
-For each changed source file and `strings.xml`, read the code and evaluate the following rules that the script cannot check:
-- **2.1** All new string values are defined in `strings.xml` — not as Kotlin `const val` or companion object properties
-- **3.1** Every new string resource key follows the `<screen>_<component>_<type>` naming pattern
-- **4.1** Any count-dependent text uses `<plurals>` — not `if (count == 1)` string concatenation
-- **4.2** Plural strings are accessed via `pluralStringResource()` at the call site
-- **5.1** Strings with dynamic values use format arguments (`%s`, `%d`) in `strings.xml` — not string concatenation in Kotlin
-- **5.2** Format arguments are passed correctly via `stringResource(R.string.key, arg)` at the call site
-- **6.1** All non-text interactive elements (icon buttons, image buttons) have a non-null `contentDescription = stringResource(...)` — not missing entirely
-
-**Step 3 — Mark unchecked rules**
-
-For any rule in the Localization Rules Enforcement table that was neither run by the script nor evaluated in Step 2, set the Status to `👁️ Human`.
-
-#### 3c. `rules/android-architecture.md`
-
-Only skip this section if the change touches no Kotlin source files. Otherwise mark the entire section N/A in the review report.
-
-**Step 1 — Run the script (Scripted rules)**
-
-The script has already run in step 1. Refer to its output to fill in the 🤖 rows in the Architecture Rules Enforcement table. Mark each as ✅ (no violations) or ❌ (violations — list them in the Violations column).
-
-Rules automatically covered by the script:
-- **1.1 / 1.5** UI DAO and repository/use-case/data-source calls → architecture AST visitors over UI files and Composable bodies
-- **1.4 / 1.6 / 2.9 / 3.2–3.5 / 4.1 / 6.1 / 6.3** Import boundaries → Detekt `ForbiddenImport`
-- **2.6** API-service calls in ViewModels → architecture AST visitor; Retrofit/Room imports remain Detekt-owned
-- **4.2** `UiState` references in data files → architecture AST visitor
-- **5.3** ViewModel with ≥3 `StateFlow<Boolean>` → architecture AST property visitor
-- **2.5 / 5.4** Permanent state fields named `showDialog`, `navigateTo`, etc. → architecture AST property visitor
-- **3.1 / 7.4** Domain Android imports and constructor `Context` → architecture AST import/constructor visitors
-- **7.2** RepositoryImpl missing `@Singleton` → architecture AST class/annotation visitor
-- **8.1** Fully-qualified class names used inline → architecture AST expression visitor
-- **8.2** `enqueue` / `execute` / `await` in ViewModel bodies → architecture AST call visitor
-- **8.3** `when/if` on domain model fields inside `@Composable` → architecture AST condition visitor
-- **8.4** ViewModel without matching test file → architecture AST declaration visitor
-- **9.1–9.4** Misplaced ViewModel / UseCase / RepositoryImpl / Mapper files → architecture AST declaration/path visitors
-
-**Step 2 — Evaluate remaining rules (Evaluator rules)**
-
-For each changed source file, read the code and evaluate the following rules that the script cannot check:
-- **1.2** No business rules (sorting, filtering, validation logic) inside Composable or Fragment
-- **1.3** UI never parses or interprets API response fields directly
-- **2.1** Each ViewModel has one primary `StateFlow<*UiState>` — not multiple independent streams
-- **2.2** ViewModel injects domain use cases or repository interfaces — not concrete data implementations
-- **2.3** Domain → UI model mapping is invoked in ViewModel or mapper, not inside Composables
-- **2.4** All three states (loading / success / error) are represented in UiState and rendered
-- **2.7** ViewModel body contains no Room / file I/O calls
-- **2.8** Complex business logic lives in a UseCase, not inline in ViewModel `launch {}` blocks
-- **4.3** Data-layer classes contain no NavController references or route strings
-- **5.1** Screen renders from a single consolidated UiState — not from multiple scattered streams
-- **5.2** `sealed class` used only when screen modes are truly distinct — prefer `data class` with nullable fields
-- **6.2** Domain → UI mapping is invoked in Presentation layer only — not inside Composables or data classes
-- **6.4** Composable parameters are domain or UI model types — no raw API response objects passed in
-- **7.1** All dependencies are provided via Hilt — no manual `= MyRepository()` construction
-- **7.3** Hilt modules use `@ViewModelScoped` for ViewModel-bound bindings
-- **9.5** Domain → UI mapper files live under `ui/**/mapper/` — not in `domain/`
-
-**Step 3 — Mark unchecked rules**
-
-For any rule in the Architecture Rules Enforcement table that was neither run by the script nor evaluated in Step 2, set the Status to `👁️ Human` in the review report. Rule **8.5** (AI-generated code reviewed before merge) is always `👁️ Human`.
-
-#### 3d. `rules/navigation-rules.md` *(if navigation changed)*
-- [ ] Check against navigation rules — record any violations or mark N/A.
-
-#### 3e. `rules/api-contract-rules.md` *(if API or data layer changed)*
-- [ ] Check against API contract rules — record any violations or mark N/A.
-
-#### 3f. `rules/analytics-rules.md` *(if analytics events changed)*
-- [ ] Check against analytics rules — record any violations or mark N/A.
-
-#### 3g. `gates/review-checklist.md` — full checklist
-Work through every item and mark it PASS, FAIL, or N/A. Do not leave items blank.
-
-#### 3h. `rules/implementation-rules.md`
-
-Only run this section if the change touches any production source file (anything under `app/src/main/`, `sharedContracts/`, or any module's `main` source set). Otherwise mark the entire section N/A in the review report.
-
-Test sources (`src/test/`, `src/androidTest/`, `src/commonTest/`) are exempt — fakes, mocks, and stubs used as test doubles are permitted and expected there. `@Preview` composables may use sample `UiState` values for tooling; the production composables and `UiState` data classes themselves are still in scope.
-
-For every changed production source file, read the code and evaluate each rule below. There is no scripted check — every rule is 🧠 Evaluator.
-
-- [ ] **1.1** No function returns a hardcoded value where the requirement specifies a computation, query, or transformation. Cross-reference §1b requirement-to-production tracing — a function whose output never reaches the specified outcome is a violation even if it returns a plausible value. Examples to flag: `fun totalPrice(...): Double = 0.0`, `suspend fun search(...): List<T> = emptyList()`.
-- [ ] **1.2** No `TODO()`, `TODO("...")`, `throw NotImplementedError(...)`, or any equivalent marker that lets a function compile without implementing its behavior.
-- [ ] **1.3** No comments indicating the surrounding code is not the real implementation: `// dummy implementation`, `// placeholder`, `// stub for now`, `// TODO: real implementation later`, `// temporary — replace before merge`, `// hardcoded for now`, or any equivalent.
-- [ ] **1.4** No no-op handler bodies (`{}`, `/* TODO */`, or log-only) where the requirement specifies the callback must perform a real action (navigate, persist, dispatch, emit, etc.). Cross-reference §1b — a callback registered in production but with no observable effect is a violation.
-- [ ] **1.5** No function, class, branch, or path that compiles cleanly but does not perform the behavior defined in the active `spec.md`, `implementation_plan_v<N>.md`, `feature_list.json`, or `sprint-contract.md` requirement it claims to fulfill. Includes: early-return branches with placeholder values, methods that delegate to another stub instead of implementing behavior, classes that satisfy an interface by throwing or returning defaults for every member, and reachable `when` / `if` paths that never produce the specified outcome.
-
-Any violation of §3h is **REVISION REQUIRED** — do not approve the review. The Coder must return to implementation and deliver the real behavior. The only acceptable waiver is an explicit, documented user-approved false positive recorded in the code review report with a justification, matching the AGENTS.md rule on suppressed violations.
-
-### 4. UI Verification (if `affects_ui == true` for the active slice, or any Composable changed in the diff)
-
-Run this section when EITHER condition holds:
-- The active slice's `feature_list.json` entry has `"affects_ui": true` (authoritative trigger — set by the Planner during `slice-planning`), OR
-- Any `*.kt` file under a `ui/**` or `**/screen/**` package is in the active diff (safety net for slices missing the flag).
-
-For harness-evaluation reviews, the `affects_ui` flag is the source of truth. If the flag is `false` but a Composable changed, record that as a planning-defect finding ("`affects_ui` should be `true`") and proceed with verification anyway.
-
-When `requires_visual_verification == true`, use the planned state-verifying visual command. It must navigate to and assert the target state before capture. When it is `false`, do not capture an arbitrary screen; run the slice's automated UI/integration acceptance tests instead and record which final user story owns visual verification. Verify no raw string literals appear in any UI-dump output used as state proof — all text must be resolved from `strings.xml`.
-
-When a requirement depends on a system permission, lifecycle event, navigation event, or external callback, UI verification must exercise that boundary directly or document why the chosen deterministic test seam proves the same production wiring. Rendering a pre-populated final `UiState` alone is insufficient.
-
-**Visual verification gate** *(required when `requires_visual_verification == true`)*: For each `TC-US-*-VIS` Test ID row listed in the active slice's user story in `$FEATURE_DIR/sprint-contract.md`, re-run its state-verifying `Exact command`. Attach the target-state proof, captured screenshot path, and command's exit status to the code review report. Then visually compare the captured screenshot against `$FEATURE_DIR/design.md` and record any deviation in layout, typography, color, spacing, or control placement as a review finding — canvas/screen content may legitimately differ between mockup and real app, so the comparison focuses on UI chrome, not image content. A non-zero exit code, missing target-state proof, or missing/empty screenshot is a review-blocking finding — record it under the §3g `gates/review-checklist.md` outcome and do not mark the slice Approved. When `affects_ui == true` but `requires_visual_verification == false`, verify the slice's automated UI/integration acceptance tests and record `DEFERRED — visual verification is owned by <US-ID>`; do not capture an unrelated screen.
-
-### 5. Security and Release Risk
-Verify secrets, PII logging, and backward compatibility. Perform a source-level log audit of every changed file and flag user-generated text, transcripts, image data, identifiers, or sensitive payloads written to logs. "On-device" processing does not permit logging the content.
-
----
+For UI changes without a visual owner, run the mapped automated acceptance tests and name the
+slice that owns final visual verification. Do not capture an unrelated screen.
 
 ## Output
 
-Produce a report from `harness/templates/code-review-template.md`:
+Fill `harness/templates/code-review-template.md` completely:
 
-- Ad-hoc workflows: `docs/current/code_review_v<N>.md`
-- Harness evaluation: `$FEATURE_DIR/code_review_{feature_id}.md`
-
----
+- Ad-hoc: `docs/current/code_review_v<N>.md`.
+- Complex: `$FEATURE_DIR/code_review_{feature_id}.md`.
 
 ## Done When
 
-All conditions must pass before returning to the workflow:
+- All mandatory mechanical gates exit 0 or the verdict is non-passing.
+- Rule Applicability Reconciliation and every applicable template section are complete.
+- Every FR, AC, edge case, state transition, callback, cleanup, and asynchronous completion path
+  has reachable production evidence.
+- Required UI, visual, platform, and security evidence is source-fed and passes its validator.
+- No non-zero, skipped, unavailable, fake-only, or stale result is labelled passing.
+- The report contains an evidence-based verdict and all human-owned rows remain explicit.
 
-- [ ] `assembleDebug` — exit code 0
-- [ ] `ktlintCheck` — exit code 0
-- [ ] `detekt` — exit code 0
-- [ ] `check-full-source-rules.sh` or `check-full-source-rules.cmd` — exit code 0
-- [ ] Compose Rules Enforcement table completed — every rule is ✅, ❌ (acknowledged), ⏭, or `👁️ Human` (no blanks)
-- [ ] All `❌` compose rule violations are either fixed or explicitly accepted with justification
-- [ ] All compose `👁️ Human` rows acknowledged by the human reviewer before merge
-- [ ] Localization Rules Enforcement table completed — every rule is ✅, ❌ (acknowledged), ⏭, or `👁️ Human` (no blanks)
-- [ ] All `❌` localization rule violations are either fixed or explicitly accepted with justification
-- [ ] All localization `👁️ Human` rows acknowledged by the human reviewer before merge
-- [ ] Architecture Rules Enforcement table completed — every rule is ✅, ❌ (acknowledged), ⏭, or `👁️ Human` (no blanks)
-- [ ] All `❌` architecture rule violations are either fixed or explicitly accepted with justification
-- [ ] All architecture `👁️ Human` rows (including rule 8.5) acknowledged by the human reviewer before merge
-- [ ] `navigation-rules.md` — all checks PASS or N/A
-- [ ] `api-contract-rules.md` — all checks PASS or N/A
-- [ ] `analytics-rules.md` — all checks PASS or N/A
-- [ ] `implementation-rules.md` — all §3h checks PASS or N/A (entire section N/A is acceptable when no production source files changed); any violation is REVISION REQUIRED and cannot be waived without an explicit user-approved false positive recorded in the review report
-- [ ] `gates/review-checklist.md` — every item marked PASS or N/A
-- [ ] **Visual verification gate** (when `requires_visual_verification == true` for the active slice): every declared `TC-US-*-VIS` row re-run with its state-verifying command — exit code 0, target-state proof and captured screenshot path recorded in the code review report, and the Evaluator's visual comparison against `$FEATURE_DIR/design.md` (focusing on UI chrome, not canvas/screen content) recorded as a finding or explicit PASS. For intermediate UI slices, record the final visual-verification owner instead.
-- [ ] UI matches the designed states in `spec_v<N>.md`
-- [ ] Every FR, AC, and documented edge case has a requirement-to-production result.
-- [ ] Every new or changed transition, callback, lifecycle cleanup, and asynchronous completion path has a reachable production call site.
-- [ ] Changed source files have no logs containing user-generated or sensitive content.
-- [ ] Every quality-gate result includes command, exit code, provenance, and failure detail; no non-zero gate is labelled passing.
-- [ ] The active workflow's code-review report exists with all sections completed and an evidence-based verdict.
-
-**APPROVED →** Return to the active workflow only when every required requirement-to-production row and quality gate passes.
-
-**REVISION REQUIRED →** Return to Implementation for unreachable, placeholder, missing-completion, privacy, or architecture defects; return to Testing for evidence gaps.
+Return to the active workflow only when required rows and gates pass. Route implementation defects
+to Implementation and evidence gaps to Testing.

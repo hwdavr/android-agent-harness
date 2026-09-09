@@ -42,5 +42,14 @@ require_before harness-generator.md "### Stage 3 — Verify Baseline" "### Stage
 require_before harness-generator.md "### Stage 4 — Implement" "### Stage 5 — Test"
 require_before harness-generator.md "check-acceptance-test-traceability.sh" "### Stage 7 — Update State"
 require_before harness-fix.md "check-acceptance-test-traceability.sh" "### Fix-Stage 5 — Finalize"
+require_before feature-delivery.md "### Stage 3 — Implementation" "### Stage 4 — Testing"
+require_before bug-fixing.md "### Stage 2 — Bug Reproduction" "### Stage 4 — Implementation"
+
+TESTING_SKILL="$PROJECT_ROOT/.agents/skills/android-testing/SKILL.md"
+rg -Fq 'Bug fixes perform RED reproduction through the `bug-reproduction` skill' "$TESTING_SKILL" \
+  || fail_test "android-testing must route RED reproduction exclusively to bug-reproduction"
+if rg -Fq 'Test-First Authoring' "$TESTING_SKILL" || rg -Fq 'bug fixes and new behavior' "$TESTING_SKILL"; then
+  fail_test "android-testing still imposes feature-level TDD"
+fi
 
 echo "PASS: failed generator and fix gates stop the pipeline."

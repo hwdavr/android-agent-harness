@@ -13,15 +13,14 @@ Gather complete session, requirement, and git context, establishing a single sou
 
 ## Load
 
-At a new session, load L1: `rules/android-architecture.md`,
-`rules/implementation-rules.md`, and `rules/testing-strategy.md`.
+At a new session, load L1: `rules/android-architecture.md` and
+`rules/testing-strategy.md`.
 
 After selecting the slice, run `bash harness/scripts/print-context-index.sh
---feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`. Load a conditional rule only
-when the generated index lists it as `Required` or an approved exception. Load
-`rules/android-security.md` whenever the selected scope touches an Android security
-boundary; this cross-cutting rule is intentionally outside the nine-row matrix and
-therefore may not appear in the generated index. Load
+--feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`. Load the exact paths in
+`rule_context.files`; do not translate rule IDs into a second hand-maintained list. During the
+Test stage load `stage_context.testing`. The index includes `android-security.md` when
+the approved `SEC` decision is Required or excepted. Load
 `docs/product/design_system.md`, `design.md`, and mockups only when `affects_ui` is
 true. The index is derived from the approved contract; it does not replace it.
 
@@ -45,4 +44,8 @@ Before making any changes or planning code, gather complete session and git cont
 7. **Select the next task & initialize summary**:
    - Review `$FEATURE_DIR/feature_list.json` and select the highest-priority incomplete task (status `not_started`). Do not work on multiple tasks in parallel.
    - Update its status in `$FEATURE_DIR/feature_list.json` to `in_progress`, update the tracker row to `In Progress`, and run `bash harness/scripts/check-feature-lifecycle.sh` again before continuing.
-   - Generate `$FEATURE_DIR/summary_{feature_id}.md` from `harness/templates/summary-template.md`. Its **Context Provenance** section must cite the approved `sprint-contract.md`, `feature_list.json`, the selected slice, and the generated index hashes. Do not repeat the Rule Applicability matrix, scope, acceptance criteria, or feature-list metadata.
+   - Generate `$FEATURE_DIR/summary_{feature_id}.md` from `harness/templates/summary-template.md`
+     plus only `harness/templates/summary-profiles/harness-generator.md`. Its **Context
+     Provenance** section cites the approved `sprint-contract.md`, `feature_list.json`, selected
+     slice, and generated index hashes. Do not repeat Rule Applicability, scope, acceptance
+     criteria, or feature-list metadata.

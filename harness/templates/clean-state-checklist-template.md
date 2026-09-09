@@ -1,69 +1,96 @@
 # Clean State Checklist
 
-Run this checklist before committing and at the end of each session to ensure codebase health, architectural integrity, and seamless handoff.
+Copy the Core checks and only the conditional sections triggered by the approved Rule
+Applicability matrix, execution flags, or submitted diff. For each omitted conditional section,
+record `N/A — <feature-specific reason>`. A diff-triggered rule overrides an unsupported N/A and
+must be reviewed as a planning defect.
 
----
+Reference fresh evidence from earlier stages when its source, build configuration, command, and
+runtime fingerprints are unchanged. Do not rerun a valid gate merely to copy its output.
 
-## 🛠️ 1. Build & Compilation
-*   [ ] **Compile Check**: Run `./gradlew assembleDebug` locally to ensure the project compiles cleanly with zero compilation errors.
-*   [ ] **Warning Check**: Verify that there are zero compiler warnings in active development modules.
-*   [ ] **Dependency Safety**: Ensure no duplicate dependencies or class conflicts exist in the build configurations.
-*   [ ] **Ktlint Verification**: Run `./gradlew ktlintCheck` and verify that all source code complies with styling standards with zero style violations.
-*   [ ] **Static Analysis**: Run `./gradlew detekt` static analysis and ensure that zero rule violations remain unresolved.
-*   [ ] **Full-Source Rules**: Run `bash harness/scripts/check-full-source-rules.sh` (or `harness\scripts\check-full-source-rules.cmd` on Windows) and verify that architecture, Compose, localization, navigation, and test-assertion checks scan the complete source tree and pass.
-*   [ ] **Suppression Audit**: Verify that no new `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disable comment, baseline, or broader rule exclusion was added to make checks pass. Any genuine false positive must be approved by the user and documented.
+## Core Checks
 
----
+- [ ] Build/compile evidence is successful for every affected module.
+- [ ] `./gradlew ktlintCheck`, `./gradlew detekt`, and applicable Android Lint commands exit 0.
+- [ ] `bash harness/scripts/check-full-source-rules.sh` exits 0 against the complete source tree.
+- [ ] Required tests run with non-zero test counts and applicable coverage thresholds pass.
+- [ ] No new suppression, baseline, exclusion, placeholder, dummy, no-op, or secret is introduced.
+- [ ] Changed files stay within approved scope and architectural boundaries.
+- [ ] Required artifacts, lifecycle state, progress, and handoff evidence are current.
+- [ ] No stale or orphan artifact created by this change remains.
 
-## 📐 2. Architecture & Standards
-*   [ ] **Layer Boundaries**: Verify strict layered architecture boundaries: Data layer must not leak DTOs or DB entities to Domain or UI layers.
-*   [ ] **Domain Isolation**: Ensure the Domain layer contains pure Kotlin business logic with no Android framework imports.
-*   [ ] **State Hoisting**: Confirm all ViewModel state management uses unidirectional data flow (UDF) with stateless UI Composables.
-*   [ ] **Secret Scanner**: Ensure no secrets (API keys, credentials, tokens) are hardcoded in source code; use `local.properties` and `BuildConfig`.
-*   [ ] **API Alignments**: Cross-reference and verify all API model structures against OpenAPI spec definitions in `sharedContracts/openapi.yaml`.
+## Conditional: API
 
----
+Include when API is Required/excepted or the diff changes endpoints, DTOs, schemas, or error
+contracts.
 
-## 💻 3. Runtime & Stability
-*   [ ] **Data Persistence**: Verify database interactions (Room) survive app restarts without crash or schema corruption.
-*   [ ] **Resource Management**: Verify proper lifecycle handling (e.g. no memory leaks or active listeners lingering in inactive states).
-*   [ ] **Navigation Integrity**: Confirm navigation backstack behaves gracefully, handling configuration changes and deep link entries without crashing.
-*   [ ] **Secure Sandbox**: Verify that the application starts up within performance benchmarks and secure sandbox preferences.
-*   [ ] **Dispatcher discipline**: Ensure all async operations are launched on the correct dispatchers (e.g. `Dispatchers.IO` for IO-bound work).
+- [ ] DTOs and mappings match `sharedContracts/openapi.yaml`.
+- [ ] Shared JSON integration scenarios and defensive error/unknown-value cases pass.
 
----
+## Conditional: ROOM
 
-## 🧪 4. Testing & Quality
-*   [ ] **Test Run**: Run `./gradlew testDebugUnitTest` and confirm all unit and integration tests exit GREEN.
-*   [ ] **Global Coverage**: Verify that overall project line coverage meets the minimum threshold of **80%** (via `koverLog`).
-*   [ ] **Feature Coverage**: Verify that new ViewModel and domain Use Cases hit the minimum target of **90%** coverage.
-*   [ ] **Visual Reference Anchors**: When visual verification is required, run `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"`; each visual Test ID must have a non-empty screenshot and reference-anchor proof tied to a visual bounds `testTag` and a runtime assertion.
-*   [ ] **Visual Flow Test Capture**: When visual verification is required, confirm that every `TC-US-*-VIS-*` screenshot was captured by a dedicated `*VisualFlowTest.kt` test using in-test `takeScreenshot()` during `composeRule.waitForIdle()` — not by post-test CLI screencaps (`&& adb exec-out screencap`). Verify `feature_list.json` verification and evidence entries reference the `*VisualFlowTest` class and use `adb pull` to retrieve screenshots.
-*   [ ] **Rendered Rich-Text Evidence**: When an acceptance, reproduction, or visual row claims formatted text is visibly rendered, confirm the named instrumented method passes `bash harness/scripts/check-rendered-output-contract.sh` with source-fed `captureToImage()` and an explicit checked pixel comparison; model marks and screenshot existence are supplemental only.
-*   [ ] **Platform Capability Matrix**: When the feature is platform-bound (`platform_validation.required: true`), verify `platform-capability-matrix.md` declares minimum/target/API-boundary behavior and the `fail_loudly` unsupported-environment policy. Otherwise verify `feature_list.json` declares `required: false` with an explicit `reason` (no matrix artifact is generated).
-*   [ ] **Real Platform Boundary**: For platform-bound behavior, the slice that owns the declared real instrumented test must run it; fake/JVM-only tests are supplemental and missing environments must fail or be marked `Blocked`/`Revise`. Non-owning slices must run `check-platform-evidence.sh --evaluate --slice "$FEATURE_ID"`; the no-slice evaluation remains required before final feature evaluation.
-*   [ ] **Mock Data Discipline**: Ensure no inline mock data is used; utilize shared JSON scenarios loaded from `sharedContracts/test-scenarios/`.
-*   [ ] **TDD Cleanup**: Verify that any temporary `@Ignore` or `@Disabled` annotations added during the TDD bug-reproduction phase are completely removed.
+Include when persistence, Room entities/DAOs, migrations, caches, or restart behavior changes.
 
----
+- [ ] Migration/schema evidence and restart persistence tests pass without data corruption.
+- [ ] Dispatcher, transaction, cache invalidation, and cleanup behavior match the approved plan.
 
-## 📊 5. Observability & Logging
-*   [ ] **Invocation Audits**: Ensure every IPC channel and background service invocation is logged.
-*   [ ] **Standardized Logs**: Verify all logs utilize structured formats (JSON log payloads) with clear severity levels (VERBOSE to ASSERT).
-*   [ ] **Context Payloads**: Ensure service tags and contextual payloads (documentId, sizeBytes, execution durations) are attached to relevant events.
-*   [ ] **Warn on Hard Reset**: Confirm that database resetting or hard failures log a warning (`WARN` or `ERROR`) level event.
+## Conditional: NAV
 
----
+Include when NAV is Required/excepted or the diff changes routes, destinations, saved state,
+back-stack, deep links, or post-return behavior.
 
-## 🧹 6. Cleanliness & State Reset
-*   [ ] **Reset Execution**: Verify that clean state reset clears all databases, local caches, and preferences cleanly.
-*   [ ] **Idempotence**: Ensure that database resetting is idempotent—running it multiple times in a row leaves the system in a consistent empty state.
-*   [ ] **Artifact Cleanup**: Confirm that no stale or orphan artifacts remain in intermediate directories (e.g. run a cleanup script if available).
+- [ ] The declared production-entry journey passes through real UI gestures and visible outcome.
+- [ ] `bash harness/scripts/check-journey-registry.sh --run-all` exits 0.
 
----
+## Conditional: UI
 
-## 📝 7. Documentation & Handoff
-*   [ ] **Progress Audit**: Update progress logs and task checklists in the changes audit directory.
-*   [ ] **Session Handoff**: Create or update the `session-handoff.md` file detailing modifications and next steps.
-*   [ ] **ADRs & Pitfalls**: Confirm that all new features and public API changes are accompanied by ADRs or knowledge updates.
-*   [ ] **Harness Lifecycle**: For complex features, run `bash harness/scripts/check-feature-lifecycle.sh`; verify the stable product workspace, status, completion evidence, and active-feature count are consistent.
+Include when SUI/L10N is Required/excepted, `affects_ui` is true, or a Composable/resource changes.
+
+- [ ] Design-system, state, accessibility, semantics/test-tag, localization, and interaction checks pass.
+- [ ] When visual verification is required, visual artifact, reference-anchor, golden comparison,
+  and applicable rendered-output validators exit 0 with in-test screenshots.
+
+## Conditional: PLATFORM
+
+Include when `platform_validation.required` is true or the behavior depends on an Android SDK,
+device, hardware feature, model, locale, permission, or external service.
+
+- [ ] The capability matrix is complete and its unsupported-environment policy is `fail_loudly`.
+- [ ] Every owned real boundary test runs against the declared runtime and exits 0; fake/JVM tests
+  remain supplemental.
+
+## Conditional: OBS
+
+Include when OBS is Required/excepted or the diff adds/changes application logging or diagnostics.
+
+- [ ] Logs follow `.agents/rules/observability.md` tag and level policy.
+- [ ] No PII, secret, user-generated sensitive content, raw payload, prompt, or token is logged.
+- [ ] Do not add logging only to make this section applicable.
+
+## Conditional: RESET
+
+Include only when the approved behavior adds or changes reset, deletion, cache clearing, database
+clearing, or preference clearing.
+
+- [ ] The reset is explicitly authorized, scoped, idempotent, and verified without unrelated data loss.
+- [ ] Required failure diagnostics follow `.agents/rules/observability.md`.
+
+## Conditional: ADR
+
+Include when the change makes an architectural decision, changes a public contract, or creates a
+reusable non-obvious pitfall.
+
+- [ ] The ADR, change record, or pitfall documents the decision, evidence, compatibility, and risks.
+
+## Conditional Results
+
+| Trigger | Result | Evidence or feature-specific N/A reason |
+|---|---|---|
+| API | PASS / FAIL / `N/A — <feature-specific reason>` | |
+| ROOM | PASS / FAIL / `N/A — <feature-specific reason>` | |
+| NAV | PASS / FAIL / `N/A — <feature-specific reason>` | |
+| UI | PASS / FAIL / `N/A — <feature-specific reason>` | |
+| PLATFORM | PASS / FAIL / `N/A — <feature-specific reason>` | |
+| OBS | PASS / FAIL / `N/A — <feature-specific reason>` | |
+| RESET | PASS / FAIL / `N/A — <feature-specific reason>` | |
+| ADR | PASS / FAIL / `N/A — <feature-specific reason>` | |
