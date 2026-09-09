@@ -379,6 +379,9 @@ For each rule, record how it was checked for **this change** and its outcome.
 
 ## Security
 
+- [ ] If an Android security boundary changed, `.agents/rules/android-security.md`
+  was loaded and its boundary, validation/failure behavior, and evidence are recorded
+  below; the full-source bundle's AI/WebView evaluator and contract passed
 - [ ] No secrets or tokens hardcoded
 - [ ] No user-generated text, transcript, image content, identifier, or other sensitive content logged
 - [ ] Sensitive data not stored unencrypted

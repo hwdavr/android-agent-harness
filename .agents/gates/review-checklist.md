@@ -62,6 +62,7 @@ Checklist for reviewing any code change before it is considered complete.
 
 ## Security
 
+- [ ] If an Android security boundary changed, `.agents/rules/android-security.md` was loaded and the review records its trust boundary, validation/failure behavior, and evidence; the full-source bundle's AI/WebView evaluator and contract passed
 - [ ] No secrets, API keys, or tokens hardcoded in source
 - [ ] No PII (name, email, phone) logged
 - [ ] Sensitive data not stored in plaintext

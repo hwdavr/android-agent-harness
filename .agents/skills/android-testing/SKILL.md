@@ -22,6 +22,8 @@ The article principle: write the failing test *before* touching the application 
 - `skills/android-unit-test/SKILL.md` for unit or JVM integration coverage
 - `skills/android-instrumented-ui-test/SKILL.md` for UI, navigation, visual, or platform-bound coverage
 - `skills/shared-json-scenarios/SKILL.md` only when an API endpoint or shared fixture is in scope
+- `rules/android-security.md` when the test covers a security boundary; use its
+  required real-runtime boundary evidence and fail loudly when the runtime is unavailable
 
 **Adhoc workflows** (`feature-delivery`, `bug-fixing`):
 - `docs/current/test_plan_v<N>.md` — test cases, layers, and coverage targets approved by user

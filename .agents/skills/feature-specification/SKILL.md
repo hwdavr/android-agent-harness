@@ -33,6 +33,7 @@ This skill ends only when every material question has been answered by the user 
 - `rules/android-architecture.md`, `rules/implementation-rules.md`, `rules/testing-strategy.md`
 - `rules/localization-rules.md`, `rules/navigation-rules.md`, `rules/api-contract-rules.md`
 - `rules/observability.md`, `rules/analytics-rules.md`
+- `rules/android-security.md` when the request touches authentication, sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model, SDK, or release-security boundaries
 - `harness/templates/rule-applicability-template.md`
 - `harness/templates/feature-spec-template.md`
 - `harness/templates/feature-design-template.md`

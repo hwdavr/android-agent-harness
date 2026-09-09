@@ -15,6 +15,8 @@ Implement in small, working slices. Verify the build passes before proceeding.
 - `rules/android-architecture.md`
 - `rules/api-contract-rules.md`
 - `rules/implementation-rules.md`
+- `rules/android-security.md` when the change handles sensitive storage, network/TLS,
+  file/URI input, credentials, exported IPC, or third-party SDK data
 - `docs/current/implementation_plan_v<N>.md` (Implementation Plan stage output)
 
 ---

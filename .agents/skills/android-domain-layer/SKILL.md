@@ -14,6 +14,8 @@ The domain layer must remain platform-independent.
 ## Load
 - `rules/android-architecture.md`
 - `rules/implementation-rules.md`
+- `rules/android-security.md` when domain logic validates untrusted backend, file,
+  URI, user, or AI/model input or applies security-sensitive fallback behavior
 - `docs/current/implementation_plan_v<N>.md` (Implementation Plan stage output)
 
 ---

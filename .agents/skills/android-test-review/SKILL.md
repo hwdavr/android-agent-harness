@@ -18,6 +18,8 @@ Identify the active workflow first. The test-review report is an **output**, nev
 - All test files mapped by the active plan or sprint contract, plus the production files that implement the mapped behavior.
 - `rules/testing-strategy.md`, `harness/templates/test-review-template.md`, and
   `harness/templates/rule-applicability-template.md`.
+- Load `rules/android-security.md` when the changed behavior crosses an Android
+  security boundary, even though it is outside the nine-row applicability matrix.
 
 If a required baseline or test-evidence artifact is missing, record it as a blocking finding. Do not substitute a prior `test_review_*.md` for the missing source evidence.
 
@@ -30,6 +32,10 @@ ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, and ANL, verify that the planned tes
 static-check, review evidence, or explicit non-applicable rationale exists and remains
 valid against the diff. Do not invent analytics or logging tests when their triggers are
 absent; an unsupported decision is **REVISION REQUIRED**.
+
+For a triggered Android security boundary, also verify the rule's validation,
+redaction/fallback, and real instrumented boundary evidence. Missing runtime evidence
+is blocked, not passing.
 
 ### B1. Establish review scope and evidence provenance
 

@@ -26,6 +26,14 @@ Complete every row before approval. Use `Required`, `Not applicable — <feature
 | OBS | `observability.md` | <decision> | |
 | ANL | `analytics-rules.md` | <decision> | |
 
+### Android Security Boundary (cross-cutting, outside the nine rows)
+
+Record `Android security: Required` when the feature touches authentication,
+sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model,
+SDK, or release-security boundaries, and name the planned boundary evidence. Otherwise
+record `Android security: Not applicable — no Android security boundary is changed`.
+Load `.agents/rules/android-security.md` when this decision is `Required`.
+
 ## Functional Requirements
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]

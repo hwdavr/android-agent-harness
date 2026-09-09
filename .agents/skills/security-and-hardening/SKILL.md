@@ -9,6 +9,13 @@ description: Hardens Android code against security and privacy risks. Use when h
 
 Security-first development practices for Android applications. Treat every external input as untrusted, every token as sensitive, every exported surface as a security boundary, and every persisted secret as a liability. Security is not a later review step. It constrains storage, networking, manifest design, SDK integrations, and UI behavior from the start.
 
+## Governing Rule
+
+Before applying this skill, load `.agents/rules/android-security.md` whenever the
+change touches one of its Android trust boundaries. That rule is the authoritative
+baseline and evidence contract; this skill provides the operational guidance and
+must not weaken, suppress, or replace it.
+
 ## When to Use
 
 - Handling auth tokens, refresh tokens, or user sessions
@@ -205,4 +212,3 @@ Checks:
 
 - Backend-only concerns like CORS, CSP, HSTS, cookie flags, SQL injection, or server-side rate limiting
 - Payment-industry or platform-compliance audits that require formal legal/compliance review
-

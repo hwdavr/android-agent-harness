@@ -67,7 +67,7 @@ To prevent LLM performance degradation and context dilution, context is loaded i
 | Layer | When to Load | Contents |
 |---|---|---|
 | **L1 — Always Loaded** | Every session start | `AGENTS.md` + `rules/android-architecture.md` + `rules/implementation-rules.md` + `rules/testing-strategy.md` |
-| **L2 — Phase-Triggered** | Per workflow stage | The active stage skill(s), plus the Rule Applicability template and conditional Android rules during requirements, planning, and review |
+| **L2 — Phase-Triggered** | Per workflow stage | The active stage skill(s), plus the Rule Applicability template and conditional Android rules during requirements, planning, and review; load `rules/android-security.md` for security/AI/WebView/network/manifest boundaries |
 | **L3 — On-Demand** | When specifically needed | `docs/knowledge/`, `sharedContracts/openapi.yaml`, feature evidence, and rule detail newly triggered by the approved applicability matrix |
 
 > **Rule:** Never preload all rules and skills upfront. Only load what the active stage requires.
@@ -129,6 +129,10 @@ bash harness/scripts/check-rules-matrix-contract.sh
 The full-source bundle is the required entry point for generator, evaluator, fix,
 and CI quality gates. It forces `--all` scans for the architecture, Compose, and
 localization checkers and still runs the remaining checkers after an earlier failure.
+
+The authoritative conditional Android security baseline is
+`.agents/rules/android-security.md`. It governs trust-boundary handling and
+evidence; the full-source bundle provides the mechanical AI/WebView enforcement.
 
 ---
 

@@ -16,6 +16,12 @@ The Rule Applicability Harness Contract is also mandatory: read the approved mat
 run every applicable checker, and preserve concrete evidence for non-applicable rows
 or approved exceptions.
 
+When a change touches authentication, sensitive storage, URI/IPC, exported
+components, networking/TLS, WebView, AI/model, SDK, or release-security boundaries,
+also load `.agents/rules/android-security.md`. The full-source bundle is the
+canonical mechanical security entry point and includes the AI/WebView evaluator and
+its contract test; do not add suppressions or bypasses to make it pass.
+
 ## When to Use
 
 - Before submitting any code change.

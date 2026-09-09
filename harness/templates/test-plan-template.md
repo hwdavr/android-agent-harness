@@ -24,6 +24,13 @@ Copy the approved nine-row matrix and identify the test or explicit feature-spec
 | OBS | `observability.md` | <decision> | |
 | ANL | `analytics-rules.md` | <decision> | |
 
+### Android Security Boundary (cross-cutting, outside the nine rows)
+
+Carry forward the specification's security decision. When `Android security:
+Required`, load `.agents/rules/android-security.md` and identify the validation,
+redaction/fallback, and real instrumented boundary tests. An unavailable required
+runtime is a blocking result, never a passing test.
+
 ---
 
 ## Layer Selection

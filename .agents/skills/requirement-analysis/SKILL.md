@@ -21,6 +21,7 @@ Do not write any code in this stage.
 - `rules/navigation-rules.md`
 - `rules/observability.md`
 - `rules/analytics-rules.md`
+- `rules/android-security.md` when the request touches authentication, sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model, SDK, or release-security boundaries
 - `harness/templates/rule-applicability-template.md`
 
 ---
@@ -39,6 +40,7 @@ Do not write any code in this stage.
    - Record a decision for all nine rules before planning: `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`.
    - For every `Required` row, record the concrete trigger and planned evidence. Do not delete a conditional-rule row when its trigger is absent.
    - Assess analytics and observability explicitly. Use `Not applicable — analytics: none` when no product event is justified; do not add logging or analytics only to satisfy the matrix.
+   - Record the separate Android security decision (`Required` or `Not applicable — no Android security boundary is changed`) when applicable; it is cross-cutting guidance, not an additional matrix row.
 
 ### 2. UI State & Navigation Design
 1. **Design UiState**: For any new or modified screen, define all possible states (Loading, Success, Empty, Error).

@@ -122,7 +122,8 @@ Every change needs a description that stands alone in version control history.
 Before looking at code, read the active specification's Rule Applicability matrix and the
 implementation/test plans. Load the L1 rules and all conditional rule files:
 `compose-rules.md`, `localization-rules.md`, `navigation-rules.md`,
-`api-contract-rules.md`, `observability.md`, and `analytics-rules.md`.
+`api-contract-rules.md`, `observability.md`, and `analytics-rules.md`; load
+`android-security.md` when the diff touches an Android security boundary.
 
 | If the diff touches... | Load this rule file |
 |------------------------|--------------------|
@@ -132,6 +133,7 @@ implementation/test plans. Load the L1 rules and all conditional rule files:
 | Any navigation code | `rules/navigation-rules.md` |
 | Any API / data layer | `rules/api-contract-rules.md` |
 | Any analytics event | `rules/analytics-rules.md` |
+| Authentication, sensitive storage, URI/IPC, exported component, network/TLS, WebView, AI/model, SDK, or release-security boundary | `rules/android-security.md` |
 
 For ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, and ANL, independently inspect the
 diff for a trigger and record the approved decision, observed trigger, evidence, and

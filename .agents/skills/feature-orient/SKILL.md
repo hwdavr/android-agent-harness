@@ -19,6 +19,9 @@ At a new session, load L1: `rules/android-architecture.md`,
 After selecting the slice, run `bash harness/scripts/print-context-index.sh
 --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`. Load a conditional rule only
 when the generated index lists it as `Required` or an approved exception. Load
+`rules/android-security.md` whenever the selected scope touches an Android security
+boundary; this cross-cutting rule is intentionally outside the nine-row matrix and
+therefore may not appear in the generated index. Load
 `docs/product/design_system.md`, `design.md`, and mockups only when `affects_ui` is
 true. The index is derived from the approved contract; it does not replace it.
 

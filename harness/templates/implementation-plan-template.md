@@ -30,6 +30,13 @@ Copy the complete approved matrix from the specification. Every `Required` row m
 | OBS | `observability.md` | <decision> | |
 | ANL | `analytics-rules.md` | <decision> | |
 
+### Android Security Boundary (cross-cutting, outside the nine rows)
+
+Carry forward the specification's `Android security: Required` or
+`Not applicable — no Android security boundary is changed` decision. When required,
+load `.agents/rules/android-security.md` and map its validation, failure behavior,
+and test evidence to the planned files.
+
 ---
 
 ## Impact Summary

@@ -15,7 +15,7 @@ Load context in layers to keep the context window below 40% fill. More is not be
 | Layer | When | What to load |
 |-------|------|-------------|
 | **L1 — Always** | Every session | This file + `.agents/rules/android-architecture.md` + `.agents/rules/implementation-rules.md` + `.agents/rules/testing-strategy.md` |
-| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) and, for requirements/planning/review, `harness/templates/rule-applicability-template.md` plus `compose-rules.md`, `localization-rules.md`, `navigation-rules.md`, `api-contract-rules.md`, `observability.md`, and `analytics-rules.md`; for UI work also `docs/product/design_system.md` |
+| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) and, for requirements/planning/review, `harness/templates/rule-applicability-template.md` plus `compose-rules.md`, `localization-rules.md`, `navigation-rules.md`, `api-contract-rules.md`, `observability.md`, and `analytics-rules.md`; load `android-security.md` when a security/AI/WebView/network/manifest boundary is touched; for UI work also `docs/product/design_system.md` |
 | **L3 — On-demand** | When needed | `docs/knowledge/` docs, `sharedContracts/openapi.yaml`, and feature-specific evidence or rule detail newly triggered by the approved Rule Applicability matrix |
 
 Do not preload unrelated skills. Requirements, planning, and review must load the full

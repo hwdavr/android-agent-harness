@@ -18,6 +18,11 @@ This is the final gate before implementation begins.
 - `harness/templates/test-plan-template.md`
 - `docs/current/spec_v<N>.md` (Requirement, Impact & Design Analysis stage output)
 
+When the approved scope touches an Android security boundary, also load
+`rules/android-security.md` and carry its required boundary, failure-mode, and test
+evidence into the plan. This conditional rule is cross-cutting and does not add a
+tenth row to the nine-rule applicability matrix.
+
 ---
 
 ## Execute

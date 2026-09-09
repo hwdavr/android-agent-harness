@@ -17,6 +17,8 @@ Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composab
 - `rules/analytics-rules.md`
 - `rules/localization-rules.md`
 - `rules/implementation-rules.md`
+- `rules/android-security.md` when the change handles deep links, URI grants,
+  permissions, WebView, exported entry points, AI/model output, or sensitive UI data
 - `docs/current/implementation_plan_v<N>.md` (Implementation Plan stage output)
 - `docs/current/spec_v<N>.md` — UiState design from the Requirement, Impact & Design Analysis stage
 

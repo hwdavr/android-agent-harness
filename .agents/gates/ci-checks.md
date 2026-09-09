@@ -92,6 +92,15 @@ rejects unsafe cleartext, WebView, Mermaid, AI-input logging, and untrusted-outp
 sink patterns, while the contract test proves unsafe fixtures fail and reports do
 not leak fixture content.
 
+### 7b. Android Security Code Rules
+
+Changes that touch an Android security boundary must load
+`.agents/rules/android-security.md` and carry its boundary, failure-mode, and test
+evidence into the review. The full-source bundle is the canonical CI enforcement
+entry point; Android Lint, Detekt, Ktlint, and the applicable instrumented boundary
+tests remain required. A missing runtime or unavailable platform boundary is
+blocked evidence, not a passing check.
+
 ### 8. Navigation Rules
 ```bash
 bash harness/scripts/check-navigation-rules.sh

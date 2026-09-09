@@ -47,6 +47,23 @@ for required_file in \
     || fail "source-rule bundle is not wired into: $required_file"
 done
 
+security_rule="$REPO_ROOT/.agents/rules/android-security.md"
+[ -f "$security_rule" ] || fail "Android security code rules file is missing"
+grep -Fq 'untrusted' "$security_rule" \
+  || fail "Android security code rules do not define an untrusted-input boundary"
+grep -Fq 'usesCleartextTraffic' "$security_rule" \
+  || fail "Android security code rules do not define cleartext-traffic policy"
+grep -Fq 'WebView' "$security_rule" \
+  || fail "Android security code rules do not define WebView policy"
+grep -Fq 'check-ai-security-rules.sh' "$security_rule" \
+  || fail "Android security code rules do not identify the mechanical evaluator"
+grep -Fq 'android-security.md' "$REPO_ROOT/AGENTS.md" \
+  || fail "root context map does not index Android security code rules"
+grep -Fq 'android-security.md' "$REPO_ROOT/.agents/skills/security-and-hardening/SKILL.md" \
+  || fail "security hardening skill does not defer to Android security code rules"
+grep -Fq 'android-security.md' "$REPO_ROOT/.agents/gates/review-checklist.md" \
+  || fail "review checklist does not require Android security code rules when triggered"
+
 for checker in \
   check-architecture-rules.sh \
   check-compose-rules.sh \

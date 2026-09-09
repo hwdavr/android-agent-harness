@@ -22,6 +22,7 @@ Load before starting (android-test-review SKILL.md context should already be loa
 - `rules/navigation-rules.md`  *(if navigation changed)*
 - `rules/api-contract-rules.md` *(if API or data layer changed)*
 - `rules/analytics-rules.md`   *(if analytics events changed)*
+- `rules/android-security.md` *(if an Android security boundary changed)*
 - `rules/implementation-rules.md`
 - `rules/observability.md`
 - `gates/review-checklist.md`
@@ -41,6 +42,11 @@ plans. Reconcile all nine rows — ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, a
 against the diff. A triggered rule marked `Not applicable` or an exception without the
 cited user approval is **REVISION REQUIRED**. Do not add analytics or logging solely to
 avoid a valid non-applicable decision.
+
+Security is a conditional cross-cutting rule outside those nine rows. If the diff
+touches an Android security boundary, load `rules/android-security.md`, record its
+boundary and evidence result, and treat missing or blocked platform evidence as a
+review failure.
 
 ### 1. Build and Static Quality Checks
 
