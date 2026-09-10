@@ -16,22 +16,23 @@
     cd /path/to/project
     sed -e "s|__PROJECT_ROOT__|$(pwd)|g" \
         -e "s|__HOME__|$HOME|g" \
+        -e "s|__PROJECT_SLUG__|<project-slug>|g" \
       harness/scripts/com.android.harness-generator.plist.template \
-      > ~/Library/LaunchAgents/com.android.harness-generator.plist
-    launchctl load ~/Library/LaunchAgents/com.android.harness-generator.plist
+      > ~/Library/LaunchAgents/com.android.<project-slug>.harness-generator.plist
+    launchctl load ~/Library/LaunchAgents/com.android.<project-slug>.harness-generator.plist
 
   UNINSTALL:
-    launchctl unload ~/Library/LaunchAgents/com.android.harness-generator.plist
-    rm ~/Library/LaunchAgents/com.android.harness-generator.plist
+    launchctl unload ~/Library/LaunchAgents/com.android.<project-slug>.harness-generator.plist
+    rm ~/Library/LaunchAgents/com.android.<project-slug>.harness-generator.plist
 
   RUN ONCE IMMEDIATELY (without waiting for the interval):
-    launchctl start com.android.harness-generator
+    launchctl start com.android.<project-slug>.harness-generator
 
   TAIL THE LOG:
-    tail -f ~/Library/Logs/com.android.harness-generator.log
+    tail -f ~/Library/Logs/com.android.<project-slug>.harness-generator.log
 
   PRINT JOB INFO:
-    launchctl print gui/$(id -u)/com.android.harness-generator
+    launchctl print gui/$(id -u)/com.android.<project-slug>.harness-generator
 
   Notes:
   - RunAtLoad is false so it does NOT fire the moment you load it; the first run
@@ -47,7 +48,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.android.harness-generator</string>
+    <string>com.android.__PROJECT_SLUG__.harness-generator</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -71,9 +72,9 @@
 
     <!-- Persist output for debugging in user's Library/Logs directory. -->
     <key>StandardOutPath</key>
-    <string>__HOME__/Library/Logs/com.android.harness-generator.log</string>
+    <string>__HOME__/Library/Logs/com.android.__PROJECT_SLUG__.harness-generator.log</string>
     <key>StandardErrorPath</key>
-    <string>__HOME__/Library/Logs/com.android.harness-generator.log</string>
+    <string>__HOME__/Library/Logs/com.android.__PROJECT_SLUG__.harness-generator.log</string>
 
     <!-- Run only while the user is logged in at the GUI session. -->
     <key>LimitLoadToSessionType</key>

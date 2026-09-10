@@ -26,6 +26,34 @@ This repository provides an **Agent Harness** designed to:
 
 ## 🚀 Setting Up the Harness in Your Android Project
 
+### Initialize the complete harness
+
+After cloning the submodule, run this from the Android project root:
+
+```bash
+bash .harness/harness/scripts/init-harness.sh
+```
+
+The initializer installs the pinned HTML design-prototype dependencies, downloads Chromium for
+local rendering, validates harness lifecycle state, and runs the full source-rule checks. The
+submodule ignores all `node_modules/` directories; dependencies must never be committed. If the
+browser cannot be installed in a restricted environment, keep rendering blocked and do not record
+HTML render evidence as passing.
+
+It creates the `.agents` and `harness` root symlinks and copies `AGENTS.md` to the project root if
+it is absent (an existing project-specific version is kept). It then checks the project-owned
+documentation baseline: `docs/product/product.md` and `docs/product/design_system.md`. If either
+is missing, it prints instructions. The design system is not generated automatically; use the
+`ux-design` skill to draft it from product requirements and obtain approval before UI work.
+
+On macOS it also creates `~/Library/LaunchAgents/com.android.<project-name>.harness-generator.plist`
+from the template, with a project-specific launchd label and log name. The script prints the
+explicit `launchctl load` command; it does not schedule the job automatically.
+
+`docs/product/journey-registry.yaml` is not required for initial setup. It becomes required when a
+feature declares a production journey; the generator then registers it and verification runs
+`bash harness/scripts/check-journey-registry.sh --run-all`.
+
 ### 1. Add as a Git Submodule
 
 From your Android project root:
@@ -34,29 +62,15 @@ From your Android project root:
 git submodule add -b main git@github.com:hwdavr/android-agent-harness.git .harness
 ```
 
-### 2. Create Root Symlinks
+### 2. Create Root Symlinks (handled by the initializer)
 
-Create symlinks at the root of your project pointing into the `.harness` submodule:
+The initializer creates `.agents` and `harness` symlinks automatically. It stops with a clear
+message if either path already exists as a real file or directory.
 
-**macOS / Linux:**
-```bash
-ln -s .harness/.agents .agents
-ln -s .harness/harness harness
-```
+### 3. Copy `AGENTS.md` to Project Root (handled by the initializer)
 
-**Windows (PowerShell as Admin):**
-```powershell
-New-Item -ItemType SymbolicLink -Path ".agents" -Target ".harness/.agents"
-New-Item -ItemType SymbolicLink -Path "harness" -Target ".harness/harness"
-```
-
-### 3. Copy `AGENTS.md` to Project Root
-
-Copy or adapt `.harness/AGENTS.md` to your project root so agent tools can discover it immediately:
-
-```bash
-cp .harness/AGENTS.md ./AGENTS.md
-```
+The initializer copies `.harness/AGENTS.md` to the project root on first setup. If the project
+already has an `AGENTS.md`, it preserves that project-specific file.
 
 ---
 
