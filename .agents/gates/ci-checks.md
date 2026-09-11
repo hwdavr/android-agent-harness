@@ -224,6 +224,16 @@ bash harness/scripts/check-keyboard-mockup-contract.sh "$FEATURE_DIR"
 ```
 **Must pass during harness planning.** A design with a bottom-sheet textbox, text field, search field, or other text input — or screen content with text input and a bottom toolbar — must describe the keyboard-visible state and reference distinct non-empty base and keyboard-visible mockup assets. For a bottom sheet, the keyboard-visible state must state that the sheet stays open (tapping the text input must not dismiss it). When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must state that the bottom toolbar is dismissed while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `.agents/rules/compose-rules.md`.
 
+### 13a. Existing-Surface Planning Baseline (when a planned screen is updated)
+```bash
+bash harness/scripts/check-existing-screen-baseline-contract.sh "$FEATURE_DIR"
+bash harness/scripts/tests/existing-screen-baseline-contract-test.sh
+```
+**Must pass during harness planning.** Every `Updated` screen needs an unchanged, source-fed
+emulator capture produced inside the named instrumented test. The design must trace the test file,
+method, test-produced capture name, pulled `design/baseline_*.png` asset, and passing emulator
+execution. Generic mockups and post-test command-line screencaps cannot satisfy this baseline.
+
 ---
 
 ## Conditional Checks

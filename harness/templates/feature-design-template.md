@@ -9,6 +9,21 @@
 
 ---
 
+## Existing Surface Baseline
+
+Complete this table for every screen marked `Updated` in **Screens Covered**. Run the named
+instrumented test on an Android emulator; the test must produce its capture while the Compose
+screen is active using `UiAutomation.takeScreenshot()` or `captureToImage()`, then pull the
+unchanged image into `design/`. A post-test command-line screencap or an AI-generated image is
+not a baseline. For a net-new-only design, write one row with `Not applicable — no existing
+surface is modified` and leave the evidence columns as `N/A`.
+
+| Existing surface | Baseline decision | Source test | Test method | Test-produced capture | Pulled baseline asset | Emulator execution evidence |
+|------------------|-------------------|-------------|-------------|-----------------------|-----------------------|-----------------------------|
+| <exact Updated screen name> | Required | `app/src/androidTest/.../<Screen>VisualFlowTest.kt` | `<captureMethod>` | `<capture_name>.png` | `design/baseline_<screen>.png` | `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<test-class>` — PASSED, <N>/<N> tests | 
+
+---
+
 ## Conditional Keyboard-Visible Mockup Contract
 
 If any screen contains a bottom sheet with a textbox, text field, search field, or other text-input control, define a separate keyboard-visible visual state. Explain how the sheet changes while the keyboard is shown, and reference a distinct non-empty image such as `design/mockup_<screen_name>_keyboard.png` in addition to the base mockup. The keyboard-visible mockup is required even when the keyboard changes only the sheet height or available content region.

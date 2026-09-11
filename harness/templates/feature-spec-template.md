@@ -39,6 +39,7 @@ Complete every row before approval. Use `Required`, `Not applicable — <feature
 | API | `api-contract-rules.md` | <decision> | |
 | OBS | `observability.md` | <decision> | |
 | ANL | `analytics-rules.md` | <decision> | |
+| SEC | `android-security.md` | <decision> | |
 
 ## Technical Spec
 
