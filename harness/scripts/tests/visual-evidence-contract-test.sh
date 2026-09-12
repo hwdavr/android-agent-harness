@@ -100,6 +100,37 @@ valid="$fixture_root/valid"
 write_valid_fixture "$valid"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$valid")
 
+app_shell_without_scope="$fixture_root/app-shell-without-scope"
+write_valid_fixture "$app_shell_without_scope"
+sed 's/| fixture | screenshot saved at/| Render full-page app shell | screenshot saved at/' \
+  "$app_shell_without_scope/sprint-contract.md" \
+  > "$app_shell_without_scope/sprint-contract.tmp"
+mv "$app_shell_without_scope/sprint-contract.tmp" "$app_shell_without_scope/sprint-contract.md"
+expect_failure "must declare Capture scope: app-shell" \
+  bash "$VALIDATOR" "$app_shell_without_scope"
+
+app_shell_without_root_call="$fixture_root/app-shell-without-root-call"
+write_valid_fixture "$app_shell_without_root_call"
+sed 's/| fixture | screenshot saved at/| Capture scope: app-shell; production root: `AppNavHost`. Render full-page app shell | screenshot saved at/' \
+  "$app_shell_without_root_call/sprint-contract.md" \
+  > "$app_shell_without_root_call/sprint-contract.tmp"
+mv "$app_shell_without_root_call/sprint-contract.tmp" "$app_shell_without_root_call/sprint-contract.md"
+expect_failure "must invoke declared production root AppNavHost" \
+  bash "$VALIDATOR" "$app_shell_without_root_call"
+
+app_shell_with_root_call="$fixture_root/app-shell-with-root-call"
+write_valid_fixture "$app_shell_with_root_call"
+sed 's/| fixture | screenshot saved at/| Capture scope: app-shell; production root: `AppNavHost`. Render full-page app shell | screenshot saved at/' \
+  "$app_shell_with_root_call/sprint-contract.md" \
+  > "$app_shell_with_root_call/sprint-contract.tmp"
+mv "$app_shell_with_root_call/sprint-contract.tmp" "$app_shell_with_root_call/sprint-contract.md"
+sed 's/check(true)/AppNavHost()/' \
+  "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt" \
+  > "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.tmp"
+mv "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.tmp" \
+  "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt"
+(cd "$REPO_ROOT" && bash "$VALIDATOR" "$app_shell_with_root_call")
+
 missing_anchor_report="$fixture_root/missing-anchor-report"
 write_valid_fixture "$missing_anchor_report"
 mv "$missing_anchor_report/visual_evidence/reference-anchor-verification.md" \
@@ -261,4 +292,4 @@ printf '{\n  "emoji_picker_content.png": null\n}\n' \
   > "$anchor_only_golden_exempt/visual_evidence/reference-map.json"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$anchor_only_golden_exempt")
 
-echo "PASS: visual evidence validator rejects missing anchor proof, blank screenshots, unverified golden promotion, and aligns methods, contract rows, screenshots, and evidence."
+echo "PASS: visual evidence validator rejects missing anchor proof, blank screenshots, unverified golden promotion, app-shell captures without their root, and unaligned methods, contract rows, screenshots, and evidence."
