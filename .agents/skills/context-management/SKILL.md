@@ -8,8 +8,8 @@ description: Set up focused session context and project rules for the active tas
 ## Session Start — Load in Order
 
 1. `AGENTS.md`
-2. `rules/android-architecture.md`
-3. `rules/testing-strategy.md`
+2. `rules/android-architecture.md` (skip if already loaded this session)
+3. `rules/testing-strategy.md` (auto-loaded as system rule — do not re-read)
 4. The workflow file that matches the task
 5. The skill(s) for the current stage only
 6. Source files for the specific feature area (ViewModel, use case, repository interface)

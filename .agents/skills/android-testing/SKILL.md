@@ -18,7 +18,7 @@ approved behavior before invoking this skill.
 ## Load
 
 **At a new session, load L1:**
-- `rules/testing-strategy.md`
+- `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read
 
 **Then load only the selected test-layer guidance:**
 - `rules/testing-practices.md` for test structure, doubles, reliability, and assertion quality
@@ -44,46 +44,16 @@ approved behavior before invoking this skill.
 For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When `production_journey.required` is `true`, implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the approved Rule Applicability matrix. Every required Rule Applicability row must have test, static-check, or review evidence.
 
 ### 2. Unit tests (`app/src/test/`)
-Write unit tests for all new or modified:
-- Domain use case logic
-- ViewModel state transitions
-- Mapper logic (DTO → Domain, Domain → UI)
-- Formatting and fallback logic
-
-Rules:
-- All ViewModel unit tests inherit from `BaseViewModelTest`
-- Class name ends with `Test.kt`
-- One main scenario per test
-- 90% line coverage target for new ViewModel and domain classes
+Write unit tests for all new or modified use cases, ViewModels, mappers, and formatters.
+Follow `skills/android-unit-test/SKILL.md` for framework, naming, and coverage rules.
 
 ### 3. Integration tests (`app/src/test/`)
-Write integration tests if an API is involved.
-
-For each changed API endpoint, test:
-- Success response (2xx)
-- 4xx client error
-- 5xx server error
-- Malformed or partial payload
-- Network timeout / disconnect
-- Unknown enum value (must not crash — must return fallback)
-
-Rules:
-- All ViewModel integration tests inherit from `BaseViewModelIntegrationTest`
-- Class name ends with `IntegrationTest.kt`
-- **Use shared JSON scenarios — do not inline mock data** (read `skills/shared-json-scenarios/SKILL.md`)
-- Store scenarios in `sharedContracts/test-scenarios/`
-- If API used by a ViewModel: assert `expected.ui` from the scenario
-- If API used only by repo / use case: assert `expected.domain`
+Write integration tests if an API is involved. Test success, 4xx, 5xx, malformed payload, timeout, and unknown enum fallback per endpoint.
+Follow `skills/android-integration-test/SKILL.md` — use shared JSON scenarios, do not inline mock data.
 
 ### 4. Instrumented UI tests (`app/src/androidTest/`)
 Write instrumented tests only when Android runtime or real UI rendering is required.
-
-Rules:
-- Target device selection: Use an Android emulator for instrumented UI tests (e.g. `ANDROID_SERIAL=emulator-5554`). Only when an emulator is missing/not connected, use a connected physical device.
-- Use `createComposeRule()` for isolated rendering and callback tests. Use `createAndroidComposeRule` or a production Activity when the Activity, navigation graph, `SavedStateHandle`, destination lifecycle, or post-return state is part of the declared journey.
-- Test the stateless `Content` Composable for isolated rendering, but do not use a `Content`-only test as evidence for a required production journey. Journey tests must mount the production entry point and use real UI semantics/test tags across the return boundary.
-- Do not use `Thread.sleep` — use `waitUntil` or `waitForIdle`
-- One main business scenario per test
+Follow `skills/android-instrumented-ui-test/SKILL.md` — use `testTag`, not static text; no `Thread.sleep`.
 
 ### 5. Import hygiene — applies to ALL test layers
 These rules apply to every test file regardless of layer:

@@ -28,7 +28,8 @@ This skill ends only when every material question has been answered by the user 
 
 ## Load
 
-- `rules/android-architecture.md`, `rules/testing-strategy.md`
+- `rules/android-architecture.md` (skip if already loaded this session — L1 is session-scoped)
+- `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read
 - `harness/templates/rule-applicability-template.md` as the conditional-rule trigger catalog
 - Load the mapped conditional rule only after its row is `Required`, excepted, or
   newly triggered by inspected scope. For UI scope this includes

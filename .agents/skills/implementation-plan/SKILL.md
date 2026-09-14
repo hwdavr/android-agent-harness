@@ -12,7 +12,7 @@ This is the final gate before implementation begins.
 ---
 
 ## Load
-- `rules/testing-strategy.md`
+- `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read
 - `rules/testing-practices.md`
 - `harness/templates/rule-applicability-template.md`
 - `harness/templates/implementation-plan-template.md`
@@ -57,7 +57,7 @@ The implementation plan must include:
 Create a separate, comprehensive test plan document following [test-plan-template.md](../../harness/templates/test-plan-template.md).
 
 The test plan must include:
-- **Test Layer Selection**: Read `rules/testing-strategy.md` to decide the minimum test layers needed (start at the lowest layer that provides enough confidence).
+- **Test Layer Selection**: Use `testing-strategy.md` (already loaded) to decide the minimum test layers needed (start at the lowest layer that provides enough confidence).
 - **Required Tests Coverage**: Check the active task's "Required tests" table in `docs/current/task-list.md` and ensure all specified test cases are explicitly covered in your test plan.
 - **Test Case Definition**: Define test cases per class (Mapper, ViewModel, UI) with Given/When/Then and a unique ID for each test case.
 - **API Integration Tests**: **MANDATORY** to include at least one integration test using a shared JSON scenario for each affected API endpoint.

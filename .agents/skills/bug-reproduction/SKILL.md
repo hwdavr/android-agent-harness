@@ -17,7 +17,7 @@ Do not implement any fix in this stage.
 
 ## Load
 
-Load `rules/testing-strategy.md` and `docs/current/spec_v<N>.md` first. After
+Load `docs/current/spec_v<N>.md` first. `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read. After
 selecting the lowest sufficient reproduction layer, load only its guidance:
 
 - `skills/android-unit-test/SKILL.md` for a unit or JVM integration reproduction
@@ -30,7 +30,7 @@ selecting the lowest sufficient reproduction layer, load only its guidance:
 
 ### 1. Select the reproduction test layer
 
-Read `rules/testing-strategy.md` and pick the **lowest** layer that is sufficient to reproduce the bug:
+Pick the **lowest** layer that is sufficient to reproduce the bug (per `testing-strategy.md`, already loaded):
 
 | Bug type | Preferred layer |
 |---|---|
@@ -41,62 +41,10 @@ Read `rules/testing-strategy.md` and pick the **lowest** layer that is sufficien
 
 ### 2. Write the reproduction test — RED phase
 
-Follow the **Prove-It Pattern** to write a failing test that reproduces the defect before attempting a fix:
-
-#### The Prove-It Pattern Flow
-```
-Bug report arrives
-       │
-       ▼
-  Write a test that demonstrates the bug
-       │
-       ▼
-  Test FAILS (confirming the bug exists)
-       │
-       ▼
-  Implement the fix
-       │
-       ▼
-  Test PASSES (proving the fix works)
-       │
-       ▼
-  Run full test suite (no regressions)
-```
-
-#### Example (Kotlin/Android)
-```kotlin
-// Bug: "ViewModel doesn't emit error state when saving a note with empty title"
-
-// Step 1: Write the reproduction test (it should FAIL)
-@Test
-fun givenNoteWithEmptyTitle_whenSaving_thenEmitsError() {
-    val note = Note(id = "1", title = "")
-    coEvery { repository.saveNote(note) } throws IllegalArgumentException("Empty title")
-
-    viewModel.saveNote(note)
-
-    // This assertion fails because the ViewModel currently ignores the error and stays in Success
-    assertEquals(EditorUiState.Error("Empty title"), viewModel.uiState.value)
-}
-
-// Step 2: Implement the fix in the ViewModel
-fun saveNote(note: Note) {
-    viewModelScope.launch {
-        try {
-            repository.saveNote(note)
-        } catch (e: IllegalArgumentException) {
-            _uiState.value = EditorUiState.Error(e.message ?: "Invalid title")
-        }
-    }
-}
-
-// Step 3: Test passes -> bug fixed, regression guarded
-```
+Write a failing test that reproduces the defect before attempting a fix:
 
 1. **Write the test first**: Do not write the fix first. Do not touch application code.
-2. **Name the test descriptively**: The test name should read as a specification of the failure.
-   - Pattern: `"given <precondition>, when <action>, then <expected outcome>"`
-   - Example: `"given a note with empty title, when saving, then an error state is emitted"`
+2. **Name the test descriptively**: Pattern: `"given <precondition>, when <action>, then <expected outcome>"`
 3. **Write the minimal test** that targets the root cause statement in `spec_v<N>.md`.
 4. **Do not write the fix**. Do not adjust application code to make the test pass.
 5. **Use shared JSON scenarios** if an API response is involved — do not inline mock data.

@@ -47,7 +47,7 @@ Never relabel a `SPEC_GAP`, `MODEL_OR_PLATFORM_CAPABILITY`, or `APPLICATION_DEFE
 
 ### 1. Orient and preserve state
 
-1. Read `AGENTS.md`, `.agents/rules/android-architecture.md`, and `.agents/rules/testing-strategy.md`.
+1. Read `AGENTS.md` and `.agents/rules/android-architecture.md` (skip if already loaded this session). `rules/testing-strategy.md` is auto-loaded as a system rule.
 2. Read the specific workflow, gate, template, or validator named by the incident. Read it completely before editing.
 3. Run `bash harness/scripts/check-feature-lifecycle.sh` when the incident concerns a complex feature. Do not change the tracker or select a slice.
 4. Collect the smallest raw evidence set: failing command, exit code, relevant log, artifact path, and the harness rule that should have caught it.

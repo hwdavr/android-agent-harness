@@ -17,9 +17,9 @@ Do not load or execute a Data, Domain, or UI section merely because another laye
 ## Load
 
 **At a new session, load L1:**
-- `rules/android-architecture.md`
-- `rules/implementation-rules.md`
-- `rules/testing-strategy.md`
+- `rules/android-architecture.md` (skip if already loaded this session — L1 is session-scoped)
+- `rules/implementation-rules.md` (skip if already loaded this session)
+- `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read
 
 **Then load only triggered context:**
 - `rules/api-contract-rules.md` when API is `Required` or excepted
@@ -144,22 +144,9 @@ Update `summary_{feature_id}.md` (or `summary_v<N>.md` depending on the active w
 
 ## Done When
 
-**This stage is complete when every applicable item below is mechanically verified:**
-- [ ] `sharedContracts/openapi.yaml` updated (if API changed)
-- [ ] No DTOs referenced outside the data layer
-- [ ] All new enum fields have an `UNKNOWN` / fallback variant
-- [ ] Room schema version incremented and migration added (if schema changed)
-- [ ] Repository methods return domain models, not DTOs
-- [ ] No Android framework classes imported in domain layer (`grep -r "import android\." domain/`)
-- [ ] Use cases are single-responsibility
-- [ ] ViewModel does not import `retrofit2.*`, `androidx.room.*`, or any data-layer class
-- [ ] Composable screens do not contain business logic
-- [ ] All user-visible text uses `stringResource()` — no hardcoded strings
-- [ ] All interactive elements have `Modifier.testTag(...)` with a stable name
-- [ ] UI conforms to `docs/product/design_system.md` plus explicit approved feature exceptions
-- [ ] UiState covers loading, success, empty, and error states
-- [ ] Log statements use `<AppName>/<ClassName>` tag, correct level, and no PII (see `rules/observability.md`)
-- [ ] No dummy code in production sources — `grep -rn "TODO()\|NotImplementedError\|// dummy\|// placeholder\|// stub" app/src/main/ sharedContracts/` returns 0 matches; no function, branch, or callback returns a hardcoded value or no-op where the spec requires a real computation or action (see `rules/implementation-rules.md`)
-- [ ] Build passes: `./gradlew assembleDebug`
+**This stage is complete when every applicable Execute section rule is mechanically verified:**
+- [ ] All layer rules from Execute sections above are satisfied (no DTO leaks, no business logic in Views, no dummy code, etc.)
+- [ ] Rule Applicability decisions are implemented or retained with their approved rationale
+- [ ] Build compiles without errors (full `./gradlew assembleDebug` gate runs at Code Quality Fix)
 
 **APPROVED →** Return to the active workflow file. 

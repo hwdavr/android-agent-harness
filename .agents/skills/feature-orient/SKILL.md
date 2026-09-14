@@ -13,8 +13,8 @@ Gather complete session, requirement, and git context, establishing a single sou
 
 ## Load
 
-At a new session, load L1: `rules/android-architecture.md` and
-`rules/testing-strategy.md`.
+At a new session, load L1: `rules/android-architecture.md` (skip if already loaded this session).
+`rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read.
 
 After selecting the slice, run `bash harness/scripts/print-context-index.sh
 --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`. Load the exact paths in
