@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Verifies required stage artifacts exist on disk before advancing a workflow stage.
 #
-# Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> [artifact-directory]
-#   workflow: feature-delivery | bug-fixing | api-contract-update | harness-planning | create-ui-and-verify
-#   stage:    requirement-analysis | implementation-plan | feature-specification | slice-planning | testing | ui-verification
+# Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> [artifact-directory] [feature-id]
+#   workflow: feature-delivery | bug-fixing | api-contract-update | harness-generator | harness-planning | create-ui-and-verify
+#   stage:    orient | requirement-analysis | bug-reproduction | implementation-plan | testing | feature-specification | slice-planning | ui-verification
 #
 # Exits 0 if required artifacts are present, 1 otherwise.
 # Designed to run on macOS /bin/bash (Bash 3.2) — no mapfile, no arrays with set -u.
@@ -16,11 +16,12 @@ PROJECT_ROOT="${HARNESS_PROJECT_ROOT:-$(pwd)}"
 WORKFLOW="${1:-}"
 STAGE="${2:-}"
 DOCS_DIR="${3:-docs/current}"
+FEATURE_ID="${4:-}"
 
 if [ -z "$WORKFLOW" ] || [ -z "$STAGE" ]; then
-  echo "Usage: $0 <workflow> <stage> [artifact-directory]" >&2
-  echo "Workflows: feature-delivery, bug-fixing, api-contract-update, harness-planning, create-ui-and-verify" >&2
-  echo "Stages: requirement-analysis, implementation-plan, feature-specification, slice-planning, ui-verification" >&2
+  echo "Usage: $0 <workflow> <stage> [artifact-directory] [feature-id]" >&2
+  echo "Workflows: feature-delivery, bug-fixing, api-contract-update, harness-generator, harness-planning, create-ui-and-verify" >&2
+  echo "Stages: orient, requirement-analysis, bug-reproduction, implementation-plan, testing, feature-specification, slice-planning, ui-verification" >&2
   exit 2
 fi
 
@@ -224,6 +225,13 @@ latest_versioned_file() {
 }
 
 case "$WORKFLOW/$STAGE" in
+  harness-generator/orient)
+    if [ -z "$FEATURE_ID" ]; then
+      echo "FAIL: harness-generator/orient requires the selected feature id to validate its summary." >&2
+      exit 2
+    fi
+    require_file "summary_${FEATURE_ID}.md" "stage progress tracker"
+    ;;
   feature-delivery/requirement-analysis)
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "requirement/impact/design spec"
@@ -398,6 +406,7 @@ EOF
   *)
     echo "FAIL: unknown workflow/stage '$WORKFLOW/$STAGE'." >&2
     echo "Known workflow/stage pairs:" >&2
+    echo "  harness-generator/orient <artifact-directory> <feature-id>" >&2
     echo "  feature-delivery/requirement-analysis" >&2
     echo "  feature-delivery/implementation-plan" >&2
     echo "  bug-fixing/requirement-analysis" >&2

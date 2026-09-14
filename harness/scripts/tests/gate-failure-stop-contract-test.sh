@@ -41,6 +41,8 @@ rg -Fq 'keep the feature non-passing and stop the pipeline' "$WORKFLOW_DIR/harne
 require_before harness-generator.md "### Stage 3 — Verify Baseline" "### Stage 4 — Implement"
 require_before harness-generator.md "### Stage 4 — Implement" "### Stage 5 — Test"
 require_before harness-generator.md "check-acceptance-test-traceability.sh" "### Stage 7 — Update State"
+rg -Fq 'bash harness/scripts/check-stage-artifacts.sh harness-generator orient "$FEATURE_DIR" "$FEATURE_ID"' "$WORKFLOW_DIR/harness-generator.md" \
+  || fail_test "generator Stage 1 does not validate the selected slice summary"
 require_before harness-fix.md "check-acceptance-test-traceability.sh" "### Fix-Stage 5 — Finalize"
 require_before feature-delivery.md "### Stage 3 — Implementation" "### Stage 4 — Testing"
 require_before bug-fixing.md "### Stage 2 — Bug Reproduction" "### Stage 4 — Implementation"
