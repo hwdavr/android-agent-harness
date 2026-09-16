@@ -65,10 +65,9 @@ PNG are supplemental and do not prove rendered appearance. Run
 ## Visual Comparison Contract
 
 - Structural conformance is binding through reference-anchor bounds assertions.
-- Golden regression is binding at similarity >= 0.95 with zero high-severity violations.
-- Mockup conformance is informational because generated/reference copy cannot pixel-match runtime.
-- Each non-anchor-only contract screenshot must have a promoted golden baseline.
-- `reference-map.json` may map a capture to a reference, a masked reference, or `null` for an
-  explicit anchor-only state.
-- Missing or ambiguous references fail as `NO_REFERENCE`; they are never silently skipped.
+- Approved mockup comparison is also binding at similarity >= 0.95 with zero high-severity violations (`compare-visual-evidence.sh`); both conditions are required.
+- `visual_evidence/visual-target.json` is the canonical feature-owned target manifest. It defines appearance, concrete device, logical size, locale, and named deterministic content states. Mockup generation and emulator preflight must both read this manifest (`visual-target-prompt.sh` and `prepare-visual-runtime.sh --target`).
+- `reference-map.json` must map every contract screenshot exactly once to one stable `state_id` from that manifest; filename/token inference, duplicated target metadata, source-baseline references, and `null` anchor-only entries are prohibited. The runtime preflight and anchor report must resolve the same target values.
+- Time, user content, identifiers, and keyboard variation must each be explicitly fixed, cropped, absent, or narrowly masked with an approval rationale.
+- Missing, ambiguous, or mismatched references fail; they are never silently skipped.
 - Preserve actual captures, comparison reports, and diff overlays under `visual_evidence/`.

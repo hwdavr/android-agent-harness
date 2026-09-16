@@ -6,8 +6,6 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 VALIDATOR="$REPO_ROOT/harness/scripts/check-visual-evidence-contract.sh"
 fixture_root=$(mktemp -d "${TMPDIR:-/tmp}/visual-evidence-test.XXXXXX")
 trap 'rm -rf "$fixture_root"' EXIT
-# The gate resolves the golden-baseline directory from the project root; point it
-# at the fixture root so the promoted golden below is found.
 export HARNESS_PROJECT_ROOT="$fixture_root"
 
 write_valid_fixture() {
@@ -26,9 +24,6 @@ write_valid_fixture() {
     '  }' \
     '}' \
     > "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt"
-  # Real PNGs (identical content, incompressible noise so the capture exceeds the
-  # minimum screenshot size) so the perceptual comparator genuinely runs and passes;
-  # text placeholders would be rejected as unparseable images.
   python3 - "$feature_dir" << 'EOF'
 import random
 import sys
@@ -37,15 +32,41 @@ from PIL import Image
 feature_dir = sys.argv[1]
 rng = random.Random(42)
 img = Image.new("RGB", (108, 234))
-img.putdata([(rng.randrange(256), rng.randrange(256), rng.randrange(256)) for _ in range(108 * 234)])
+img.putdata([(200 + rng.randrange(56), 200 + rng.randrange(56), 200 + rng.randrange(56)) for _ in range(108 * 234)])
 img.save(f"{feature_dir}/design/mockup_picker.png")
 img.save(f"{feature_dir}/visual_evidence/emoji_picker_content.png")
 EOF
-  # Approved captures are promoted to golden baselines: the gate requires a
-  # non-empty golden for every non-anchor-only contract screenshot.
-  mkdir -p "$fixture_root/UX/golden-baselines"
-  cp "$feature_dir/visual_evidence/emoji_picker_content.png" \
-    "$fixture_root/UX/golden-baselines/emoji_picker_content.png"
+  printf '%s\n' \
+    '{' \
+    '  "version": 1,' \
+    '  "target_id": "picker-light",' \
+    '  "appearance": "light",' \
+    '  "device": "Pixel 8",' \
+    '  "logical_size_dp": { "width": 108, "height": 234 },' \
+    '  "locale": "en-US",' \
+    '  "states": {' \
+    '    "picker-content": {' \
+    '      "content_state_id": "picker-content",' \
+    '      "reference": "design/mockup_picker.png",' \
+    '      "content_state": "Emoji picker content state.",' \
+    '      "mask": [],' \
+    '      "dynamic_regions": [' \
+    '        { "kind": "time", "handling": "cropped-system-insets", "rationale": "Insets are cropped." },' \
+    '        { "kind": "user-content", "handling": "fixture", "rationale": "Fixture content is deterministic." },' \
+    '        { "kind": "identifier", "handling": "fixture", "rationale": "Fixture identifiers are deterministic." },' \
+    '        { "kind": "keyboard", "handling": "not-present", "rationale": "Keyboard is hidden." }' \
+    '      ]' \
+    '    }' \
+    '  }' \
+    '}' > "$feature_dir/visual_evidence/visual-target.json"
+  printf '%s\n' \
+    '{' \
+    '  "version": 1,' \
+    '  "target_manifest": "visual-target.json",' \
+    '  "captures": {' \
+    '    "emoji_picker_content.png": { "state_id": "picker-content" }' \
+    '  }' \
+    '}' > "$feature_dir/visual_evidence/reference-map.json"
   printf '%s\n' \
     '# Sprint Contract' \
     '' \
@@ -53,7 +74,7 @@ EOF
     '' \
     '| Test ID | Covers AC | Test layer | Test file and method | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|' \
-    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | `app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme` | fixture | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
+    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | `app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme` | fixture; contentState: `picker-content` | screenshot saved at visual_evidence/emoji_picker_content.png | bash harness/scripts/prepare-visual-runtime.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" && env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
     > "$feature_dir/sprint-contract.md"
   printf '%s\n' \
     '{' \
@@ -62,9 +83,9 @@ EOF
     '    "requires_visual_verification": true,' \
     '    "acceptance_test_ids": ["TC-US-3-VIS-001"],' \
     '    "verification": [' \
-    '      "env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme"' \
+    '      "bash harness/scripts/prepare-visual-runtime.sh --target $FEATURE_DIR/visual_evidence/visual-target.json && env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme"' \
     '    ],' \
-    '    "evidence": [{"test_id": "TC-US-3-VIS-001", "exit_status": 0, "executed_command": "env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest"}]' \
+    '    "evidence": [{"test_id": "TC-US-3-VIS-001", "exit_status": 0, "executed_command": "bash harness/scripts/prepare-visual-runtime.sh --target $FEATURE_DIR/visual_evidence/visual-target.json && env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest"}]' \
     '  }]' \
     '}' \
     > "$feature_dir/feature_list.json"
@@ -72,6 +93,10 @@ EOF
     '# Visual Reference Anchor Verification' \
     '' \
     '**Reference design**: `design/mockup_picker.png`' \
+    '**Appearance**: `light`' \
+    '**Device**: `Pixel 8`' \
+    '**Logical size**: `108x234 dp`' \
+    '**Locale**: `en-US`' \
     '' \
     '## Reference Anchor Verification' \
     '' \
@@ -100,9 +125,51 @@ valid="$fixture_root/valid"
 write_valid_fixture "$valid"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$valid")
 
+missing_runtime_setup="$fixture_root/missing-runtime-setup"
+write_valid_fixture "$missing_runtime_setup"
+sed 's#bash harness/scripts/prepare-visual-runtime.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" && ##' \
+  "$missing_runtime_setup/sprint-contract.md" > "$missing_runtime_setup/sprint-contract.tmp"
+mv "$missing_runtime_setup/sprint-contract.tmp" "$missing_runtime_setup/sprint-contract.md"
+jq '.features[0].verification[0] = "env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme"' \
+  "$missing_runtime_setup/feature_list.json" > "$missing_runtime_setup/feature_list.tmp"
+mv "$missing_runtime_setup/feature_list.tmp" "$missing_runtime_setup/feature_list.json"
+expect_failure "must run prepare-visual-runtime.sh" bash "$VALIDATOR" "$missing_runtime_setup"
+
+missing_runtime_target="$fixture_root/missing-runtime-target"
+write_valid_fixture "$missing_runtime_target"
+sed 's# --target "$FEATURE_DIR/visual_evidence/visual-target.json"##' "$missing_runtime_target/sprint-contract.md" > "$missing_runtime_target/sprint-contract.tmp"
+mv "$missing_runtime_target/sprint-contract.tmp" "$missing_runtime_target/sprint-contract.md"
+jq '.features[0].verification[0] |= sub(" --target \\$FEATURE_DIR/visual_evidence/visual-target.json"; "")' "$missing_runtime_target/feature_list.json" > "$missing_runtime_target/feature_list.tmp"
+mv "$missing_runtime_target/feature_list.tmp" "$missing_runtime_target/feature_list.json"
+expect_failure "must pass the canonical visual-target.json" bash "$VALIDATOR" "$missing_runtime_target"
+
+stale_evidence="$fixture_root/stale-evidence"
+write_valid_fixture "$stale_evidence"
+jq '.features[0].evidence[0].executed_command = "env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest"' \
+  "$stale_evidence/feature_list.json" > "$stale_evidence/feature_list.tmp"
+mv "$stale_evidence/feature_list.tmp" "$stale_evidence/feature_list.json"
+expect_failure "successful evidence must record prepare-visual-runtime.sh" bash "$VALIDATOR" "$stale_evidence"
+
+wrong_runtime_theme="$fixture_root/wrong-runtime-theme"
+write_valid_fixture "$wrong_runtime_theme"
+python3 - "$wrong_runtime_theme/visual_evidence/emoji_picker_content.png" <<'EOF'
+import random
+import sys
+from PIL import Image
+
+rng = random.Random(7)
+image = Image.new("RGB", (108, 234))
+image.putdata([
+    (18 + rng.randrange(8), 18 + rng.randrange(8), 18 + rng.randrange(8))
+    for _ in range(108 * 234)
+])
+image.save(sys.argv[1])
+EOF
+expect_failure "does not match declared runtime appearance light" bash "$VALIDATOR" "$wrong_runtime_theme"
+
 app_shell_without_scope="$fixture_root/app-shell-without-scope"
 write_valid_fixture "$app_shell_without_scope"
-sed 's/| fixture | screenshot saved at/| Render full-page app shell | screenshot saved at/' \
+sed 's/| fixture; contentState: `picker-content` | screenshot saved at/| Render full-page app shell | screenshot saved at/' \
   "$app_shell_without_scope/sprint-contract.md" \
   > "$app_shell_without_scope/sprint-contract.tmp"
 mv "$app_shell_without_scope/sprint-contract.tmp" "$app_shell_without_scope/sprint-contract.md"
@@ -111,7 +178,7 @@ expect_failure "must declare Capture scope: app-shell" \
 
 app_shell_without_root_call="$fixture_root/app-shell-without-root-call"
 write_valid_fixture "$app_shell_without_root_call"
-sed 's/| fixture | screenshot saved at/| Capture scope: app-shell; production root: `AppNavHost`. Render full-page app shell | screenshot saved at/' \
+sed 's/| fixture; contentState: `picker-content` | screenshot saved at/| Capture scope: app-shell; production root: `AppNavHost`; contentState: `picker-content`. Render full-page app shell | screenshot saved at/' \
   "$app_shell_without_root_call/sprint-contract.md" \
   > "$app_shell_without_root_call/sprint-contract.tmp"
 mv "$app_shell_without_root_call/sprint-contract.tmp" "$app_shell_without_root_call/sprint-contract.md"
@@ -120,7 +187,7 @@ expect_failure "must invoke declared production root AppNavHost" \
 
 app_shell_with_root_call="$fixture_root/app-shell-with-root-call"
 write_valid_fixture "$app_shell_with_root_call"
-sed 's/| fixture | screenshot saved at/| Capture scope: app-shell; production root: `AppNavHost`. Render full-page app shell | screenshot saved at/' \
+sed 's/| fixture; contentState: `picker-content` | screenshot saved at/| Capture scope: app-shell; production root: `AppNavHost`; contentState: `picker-content`. Render full-page app shell | screenshot saved at/' \
   "$app_shell_with_root_call/sprint-contract.md" \
   > "$app_shell_with_root_call/sprint-contract.tmp"
 mv "$app_shell_with_root_call/sprint-contract.tmp" "$app_shell_with_root_call/sprint-contract.md"
@@ -169,9 +236,23 @@ printf 'too small' > "$tiny_screenshot/visual_evidence/emoji_picker_content.png"
 expect_failure "likely a blank or transparent capture" \
   bash "$VALIDATOR" "$tiny_screenshot"
 
+missing_mockup_map="$fixture_root/missing-mockup-map"
+write_valid_fixture "$missing_mockup_map"
+rm "$missing_mockup_map/visual_evidence/reference-map.json"
+expect_failure "every runtime capture requires an explicit approved mockup mapping" \
+  bash "$VALIDATOR" "$missing_mockup_map"
+
+wrong_mockup_locale="$fixture_root/wrong-mockup-locale"
+write_valid_fixture "$wrong_mockup_locale"
+jq '.locale = "fr-FR"' \
+  "$wrong_mockup_locale/visual_evidence/visual-target.json" > "$wrong_mockup_locale/visual_evidence/visual-target.tmp"
+mv "$wrong_mockup_locale/visual_evidence/visual-target.tmp" "$wrong_mockup_locale/visual_evidence/visual-target.json"
+expect_failure "visual target locale fr-FR must match runtime locale en-US" \
+  bash "$VALIDATOR" "$wrong_mockup_locale"
+
 missing_contract_row="$fixture_root/missing-contract-row"
 write_valid_fixture "$missing_contract_row"
-jq '.features[0].verification += ["env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerExpandsToAvailableHeightWhenKeyboardIsVisible"]' \
+jq '.features[0].verification += ["bash harness/scripts/prepare-visual-runtime.sh --target $FEATURE_DIR/visual_evidence/visual-target.json && env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerExpandsToAvailableHeightWhenKeyboardIsVisible"]' \
   "$missing_contract_row/feature_list.json" > "$missing_contract_row/feature_list.tmp"
 mv "$missing_contract_row/feature_list.tmp" "$missing_contract_row/feature_list.json"
 expect_failure "is not named by a US-3 visual row" bash "$VALIDATOR" "$missing_contract_row"
@@ -218,7 +299,7 @@ expect_failure "no method-scoped VisualFlowTest verification command" \
 
 rich_text_false_pass="$fixture_root/rich-text-false-pass"
 write_valid_fixture "$rich_text_false_pass"
-sed 's/ | fixture | screenshot saved at/ | Render marked text | Following text visibly inherits Bold; screenshot saved at/' \
+sed 's/ | fixture; contentState: `picker-content` | screenshot saved at/ | Render marked text; contentState: `picker-content` | Following text visibly inherits Bold; screenshot saved at/' \
   "$rich_text_false_pass/sprint-contract.md" \
   > "$rich_text_false_pass/sprint-contract.tmp"
 mv "$rich_text_false_pass/sprint-contract.tmp" "$rich_text_false_pass/sprint-contract.md"
@@ -241,7 +322,7 @@ expect_failure "must capture a Compose node with captureToImage()" \
 
 rich_text_visual_proof="$fixture_root/rich-text-visual-proof"
 write_valid_fixture "$rich_text_visual_proof"
-sed 's/ | fixture | screenshot saved at/ | Render marked text | Following text visibly inherits Bold; screenshot saved at/' \
+sed 's/ | fixture; contentState: `picker-content` | screenshot saved at/ | Render marked text; contentState: `picker-content` | Following text visibly inherits Bold; screenshot saved at/' \
   "$rich_text_visual_proof/sprint-contract.md" \
   > "$rich_text_visual_proof/sprint-contract.tmp"
 mv "$rich_text_visual_proof/sprint-contract.tmp" "$rich_text_visual_proof/sprint-contract.md"
@@ -273,23 +354,10 @@ duplicate_screenshot="$fixture_root/duplicate-screenshot"
 write_valid_fixture "$duplicate_screenshot"
 sed -i.bak \
   '/TC-US-3-VIS-001/a\
-| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme | fixture | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
+| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#emojiPickerContentLightTheme | fixture; contentState: `picker-content` | screenshot saved at visual_evidence/emoji_picker_content.png | env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme |' \
   "$duplicate_screenshot/sprint-contract.md"
 rm -f "$duplicate_screenshot/sprint-contract.md.bak"
 expect_failure "is used by more than one visual row" \
   bash "$VALIDATOR" "$duplicate_screenshot"
 
-missing_golden="$fixture_root/missing-golden"
-write_valid_fixture "$missing_golden"
-rm "$fixture_root/UX/golden-baselines/emoji_picker_content.png"
-expect_failure "has no promoted golden baseline" \
-  bash "$VALIDATOR" "$missing_golden"
-
-anchor_only_golden_exempt="$fixture_root/anchor-only-golden-exempt"
-write_valid_fixture "$anchor_only_golden_exempt"
-rm "$fixture_root/UX/golden-baselines/emoji_picker_content.png"
-printf '{\n  "emoji_picker_content.png": null\n}\n' \
-  > "$anchor_only_golden_exempt/visual_evidence/reference-map.json"
-(cd "$REPO_ROOT" && bash "$VALIDATOR" "$anchor_only_golden_exempt")
-
-echo "PASS: visual evidence validator rejects missing anchor proof, blank screenshots, unverified golden promotion, app-shell captures without their root, and unaligned methods, contract rows, screenshots, and evidence."
+echo "PASS: visual evidence validator rejects missing approved mockup mappings, appearance/locale drift, blank screenshots, app-shell captures without their root, and unaligned methods, contract rows, screenshots, and structural-anchor evidence."

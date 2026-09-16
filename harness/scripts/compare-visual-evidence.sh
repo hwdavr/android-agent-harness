@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Semantic & Visual Evidence Comparator (Validation Level 5)
-# Compares actual runtime UI screenshots against reference designs or golden baselines,
-# normalizes system insets, generates visual diff overlays, and classifies defects.
+# Compares actual runtime UI screenshots against explicitly mapped approved mockups,
+# normalizes system insets, applies approved dynamic-region masks, generates visual
+# diff overlays, and classifies defects.
 
 set -euo pipefail
 
@@ -13,7 +14,6 @@ REFERENCE_PATH=""
 ACTUAL_PATH=""
 DIFF_OUTPUT=""
 FEATURE_DIR=""
-GOLDEN_NAME=""
 THRESHOLD="0.95"
 CROP_INSETS=0
 MASK_JSON=""
@@ -26,9 +26,7 @@ Modes:
   --reference <ref.png> --actual <act.png> [--diff-output <diff.png>]
                                  Compare a single image pair
   --feature <feature_dir>        Batch evaluate all visual evidence for a feature
-                                 (golden baselines bind; design mockups are informational)
-  --promote-golden <act.png> --name <screen_name>
-                                 Promote an actual screenshot to UX/golden-baselines/
+                                 (each capture requires an explicit approved mockup map)
 
 Options:
   --threshold <float>            Minimum similarity score to pass (default: 0.95)
@@ -66,17 +64,6 @@ while [ $# -gt 0 ]; do
       [ $# -ge 2 ] || usage
       MODE="feature"
       FEATURE_DIR="$2"
-      shift 2
-      ;;
-    --promote-golden)
-      [ $# -ge 2 ] || usage
-      MODE="promote-golden"
-      ACTUAL_PATH="$2"
-      shift 2
-      ;;
-    --name)
-      [ $# -ge 2 ] || usage
-      GOLDEN_NAME="$2"
       shift 2
       ;;
     --threshold)
@@ -135,7 +122,6 @@ export REFERENCE_PATH
 export ACTUAL_PATH
 export DIFF_OUTPUT
 export FEATURE_DIR
-export GOLDEN_NAME
 export THRESHOLD
 export CROP_INSETS
 export MASK_JSON
@@ -160,7 +146,6 @@ ref_path_str = os.environ.get("REFERENCE_PATH", "")
 act_path_str = os.environ.get("ACTUAL_PATH", "")
 diff_output_str = os.environ.get("DIFF_OUTPUT", "")
 feature_dir_str = os.environ.get("FEATURE_DIR", "")
-golden_name = os.environ.get("GOLDEN_NAME", "")
 threshold = float(os.environ.get("THRESHOLD", "0.95"))
 crop_insets = os.environ.get("CROP_INSETS", "0") == "1"
 mask_json_str = os.environ.get("MASK_JSON", "")
@@ -324,45 +309,185 @@ def run_pair():
     print("======================================================")
     sys.exit(0 if result["passed"] else 1)
 
-def run_promote_golden():
-    act_p = Path(act_path_str).resolve()
-    if not act_p.is_file():
-        print(f"FAIL: Actual image not found: {act_p}", file=sys.stderr)
-        sys.exit(2)
-    if not golden_name:
-        print("FAIL: --name <screen_name> required for --promote-golden", file=sys.stderr)
-        sys.exit(2)
+class ReferenceConfigurationError(Exception):
+    pass
 
-    golden_dir = project_root / "UX" / "golden-baselines"
-    golden_dir.mkdir(parents=True, exist_ok=True)
-    clean_name = golden_name if golden_name.endswith(".png") else f"{golden_name}.png"
-    target_p = golden_dir / clean_name
+REQUIRED_DYNAMIC_KINDS = {"time", "user-content", "identifier", "keyboard"}
+VALID_DYNAMIC_HANDLING = {"mask", "fixture", "cropped-system-insets", "not-present"}
 
-    img = Image.open(act_p)
-    img.save(target_p)
+def configuration_error(message):
+    raise ReferenceConfigurationError(message)
 
-    print("======================================================")
-    print("  Promoted to Golden Baseline")
-    print("======================================================")
-    print(f"  Source: {act_p}")
-    print(f"  Golden: {target_p}")
-    print("======================================================")
-    sys.exit(0)
+def valid_mask(region, label):
+    if not isinstance(region, dict):
+        configuration_error(f"{label} must be an object with x, y, w, h, and rationale")
+    for key in ("x", "y", "w", "h"):
+        if not isinstance(region.get(key), (int, float)):
+            configuration_error(f"{label}.{key} must be a number")
+    if region["w"] <= 0 or region["h"] <= 0:
+        configuration_error(f"{label} width and height must be positive")
+    if not isinstance(region.get("rationale"), str) or not region["rationale"].strip():
+        configuration_error(f"{label} must state an approval rationale")
+    return {key: region[key] for key in ("x", "y", "w", "h")}
+
+def image_luminance(path):
+    sample = Image.open(path).convert("RGB").resize((64, 64), Image.Resampling.BILINEAR)
+    pixels = list(sample.getdata())
+    return sum((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0 for r, g, b in pixels) / len(pixels)
+
+def validate_appearance(reference_path, appearance, label):
+    luminance = image_luminance(reference_path)
+    if appearance == "light" and luminance < 0.25:
+        configuration_error(f"{label} is dark (mean luminance {luminance:.3f}) but its metadata requires light appearance")
+    if appearance == "dark" and luminance > 0.75:
+        configuration_error(f"{label} is light (mean luminance {luminance:.3f}) but its metadata requires dark appearance")
+
+def validate_logical_size(image_path, target, label):
+    size = target.get("logical_size_dp") or target.get("logical_size_pt")
+    if not isinstance(size, dict):
+        configuration_error(f"{label}.logical_size_dp must be an object")
+    width, height = size.get("width"), size.get("height")
+    if not isinstance(width, (int, float)) or not isinstance(height, (int, float)) or width <= 0 or height <= 0:
+        configuration_error(f"{label}.logical_size_dp must contain positive numeric width and height")
+    with Image.open(image_path) as image:
+        scale_x = image.width / width
+        scale_y = image.height / height
+    if abs(scale_x - scale_y) > 0.03:
+        unit = "dp" if "logical_size_dp" in target else "pt"
+        configuration_error(f"{label} image dimensions do not match declared logical device size {width}x{height} {unit}")
+    return width, height
+
+def validate_dynamic_regions(state, label):
+    masks = state.get("mask")
+    if not isinstance(masks, list):
+        configuration_error(f"{label}.mask must be a list, including when no static mask is needed")
+    approved_masks = [valid_mask(mask, f"{label}.mask[{index}]") for index, mask in enumerate(masks)]
+
+    dynamic_regions = state.get("dynamic_regions")
+    if not isinstance(dynamic_regions, list):
+        configuration_error(f"{label}.dynamic_regions must be a list")
+    seen_kinds = set()
+    for index, dynamic_region in enumerate(dynamic_regions):
+        dynamic_label = f"{label}.dynamic_regions[{index}]"
+        if not isinstance(dynamic_region, dict):
+            configuration_error(f"{dynamic_label} must be an object")
+        kind = dynamic_region.get("kind")
+        handling = dynamic_region.get("handling")
+        if kind not in REQUIRED_DYNAMIC_KINDS or kind in seen_kinds:
+            configuration_error(f"{dynamic_label}.kind must be one unique required dynamic kind")
+        seen_kinds.add(kind)
+        if handling not in VALID_DYNAMIC_HANDLING:
+            configuration_error(f"{dynamic_label}.handling must be mask, fixture, cropped-system-insets, or not-present")
+        if not isinstance(dynamic_region.get("rationale"), str) or not dynamic_region["rationale"].strip():
+            configuration_error(f"{dynamic_label} must state an approval rationale")
+        if handling == "mask":
+            mask_data = dynamic_region.get("mask")
+            if not isinstance(mask_data, dict):
+                configuration_error(f"{dynamic_label}.mask is required when handling is mask")
+            approved_masks.append(valid_mask(mask_data, f"{dynamic_label}.mask"))
+
+    missing_kinds = REQUIRED_DYNAMIC_KINDS - seen_kinds
+    if missing_kinds:
+        configuration_error(f"{label}.dynamic_regions is missing {', '.join(sorted(missing_kinds))}")
+
+    return approved_masks
+
+def validate_target_manifest(feature_dir, target_path):
+    try:
+        raw = json.loads(target_path.read_text(encoding="utf-8"))
+    except Exception as error:
+        configuration_error(f"could not parse visual target manifest: {error}")
+    if not isinstance(raw, dict) or raw.get("version") != 1:
+        configuration_error("visual target manifest must use version 1")
+    required = ["target_id", "appearance", "device", "locale", "states"]
+    missing = [key for key in required if key not in raw]
+    if "logical_size_dp" not in raw and "logical_size_pt" not in raw:
+        missing.append("logical_size_dp")
+    if missing:
+        configuration_error(f"visual target manifest is missing {', '.join(missing)}")
+    appearance = raw["appearance"]
+    if appearance not in {"light", "dark"}:
+        configuration_error("visual target appearance must be light or dark")
+    locale = raw["locale"]
+    if not isinstance(locale, str) or not re.fullmatch(r"[A-Za-z]{2,3}-[A-Za-z]{2}", locale):
+        configuration_error("visual target locale must be a concrete BCP-47 language-region value")
+    states = raw["states"]
+    if not isinstance(states, dict) or not states:
+        configuration_error("visual target states must be a non-empty object")
+    for state_id, state in states.items():
+        if not isinstance(state, dict):
+            configuration_error(f"visual target state {state_id} must be an object")
+        for key in ("reference", "content_state", "dynamic_regions"):
+            if key not in state:
+                configuration_error(f"visual target state {state_id} is missing {key}")
+        ref_path = (feature_dir / state["reference"]).resolve()
+        if not ref_path.name.startswith("mockup_"):
+            configuration_error(f"visual target state {state_id} reference must name an approved design/mockup_*.png asset")
+        if not ref_path.is_file() or ref_path.stat().st_size == 0:
+            configuration_error(f"visual target state {state_id} reference is missing or empty: {state['reference']}")
+        validate_appearance(ref_path, appearance, f"visual target mockup {state['reference']}")
+    return raw
 
 def load_reference_map(visual_evidence_dir):
-    """Load optional reference-map.json: {capture filename: reference path relative to the feature dir, or null (anchor-only)}."""
     map_path = visual_evidence_dir / "reference-map.json"
     if not map_path.is_file():
-        return {}
+        configuration_error(f"missing {map_path}; each runtime capture requires an explicit approved mockup mapping")
     try:
         raw = json.loads(map_path.read_text(encoding="utf-8"))
-    except Exception as e:
-        print(f"FAIL: Could not parse {map_path}: {e}", file=sys.stderr)
-        sys.exit(2)
-    if not isinstance(raw, dict):
-        print(f"FAIL: {map_path} must be a JSON object mapping capture filenames to reference paths or null", file=sys.stderr)
-        sys.exit(2)
-    return raw
+    except Exception as error:
+        configuration_error(f"could not parse {map_path}: {error}")
+    if not isinstance(raw, dict) or raw.get("version") != 1 or "captures" not in raw:
+        configuration_error(f"{map_path} must be a version 1 object with target_manifest and captures")
+    if not isinstance(raw.get("captures"), dict):
+        configuration_error(f"{map_path}.captures must be an object mapping screenshot filenames to explicit state mappings")
+    target_manifest = raw.get("target_manifest")
+    if not isinstance(target_manifest, str) or not target_manifest.strip() or ".." in Path(target_manifest).parts:
+        configuration_error(f"{map_path}.target_manifest must name a manifest under visual_evidence/")
+    target_path = (visual_evidence_dir / target_manifest).resolve()
+    try:
+        target_path.relative_to(visual_evidence_dir.resolve())
+    except ValueError:
+        configuration_error(f"{map_path}.target_manifest must stay under visual_evidence/")
+    if not target_path.is_file():
+        configuration_error(f"visual target manifest is missing: {target_manifest}")
+    target = validate_target_manifest(visual_evidence_dir.parent, target_path)
+    return raw["captures"], target
+
+def validate_mapping(feature_dir, actual_path, entry, target):
+    file_name = actual_path.name
+    label = f"reference-map.json entry for {file_name}"
+    if not isinstance(entry, dict):
+        configuration_error(f"{label} must be an object; string, null, and inferred mappings are prohibited")
+    if set(entry) != {"state_id"}:
+        configuration_error(f"{label} must contain only the explicit state_id; target metadata belongs in visual-target.json")
+    state_id = entry.get("state_id")
+    if not isinstance(state_id, str) or not state_id.strip():
+        configuration_error(f"{label}.state_id must be a non-empty stable content state ID")
+    state = target["states"].get(state_id)
+    if not isinstance(state, dict):
+        configuration_error(f"{label}.state_id '{state_id}' is not declared in visual-target.json")
+    reference = state["reference"]
+    reference_path = (feature_dir / reference).resolve()
+    design_root = (feature_dir / "design").resolve()
+    try:
+        reference_path.relative_to(design_root)
+    except ValueError:
+        configuration_error(f"{label}.reference must stay under design/")
+    if reference_path.suffix.lower() != ".png" or not reference_path.is_file() or reference_path.stat().st_size == 0:
+        configuration_error(f"{label}.reference is missing or empty: {reference}")
+
+    logical_width, logical_height = validate_logical_size(reference_path, target, label)
+    validate_logical_size(actual_path, target, f"runtime capture {file_name}")
+    approved_masks = validate_dynamic_regions(state, label)
+
+    return {
+        "reference_path": reference_path,
+        "reference": reference,
+        "state_id": state_id,
+        "content_state": state["content_state"],
+        "mask_regions": approved_masks,
+        "logical_size": (logical_width, logical_height),
+    }
 
 def run_feature():
     f_dir = Path(feature_dir_str).resolve()
@@ -374,266 +499,94 @@ def run_feature():
     if not visual_evidence_dir.is_dir():
         print("PASS: No visual_evidence directory in feature workspace; visual evaluation skipped.")
         sys.exit(0)
-
-    # Find reference designs in design/ or UX/golden-baselines
-    design_dir = f_dir / "design"
-    golden_dir = project_root / "UX" / "golden-baselines"
-    golden_root = golden_dir.resolve()
-
-    def is_golden_reference(p):
-        try:
-            p.resolve().relative_to(golden_root)
-            return True
-        except ValueError:
-            return False
-
-    actual_images = list(visual_evidence_dir.glob("*.png"))
-    # filter out existing *_diff.png
-    actual_images = [img for img in actual_images if not img.name.endswith("_diff.png")]
-
+    actual_images = sorted(
+        image for image in visual_evidence_dir.glob("*.png") if not image.name.endswith("_diff.png")
+    )
     if not actual_images:
         print("PASS: No actual screenshots in visual_evidence/; visual evaluation skipped.")
         sys.exit(0)
 
     print("======================================================")
-    print("  Batch Visual Comparison — Feature Evaluation")
+    print("  Batch Visual Comparison — Approved Mockup Gate")
     print("======================================================")
     print(f"  Feature directory: {f_dir}")
     print(f"  Actual screenshots found: {len(actual_images)}")
 
+    try:
+        reference_map, target_manifest = load_reference_map(visual_evidence_dir)
+        actual_names = {image.name for image in actual_images}
+        mapped_names = set(reference_map)
+        unknown = sorted(mapped_names - actual_names)
+        missing = sorted(actual_names - mapped_names)
+        if unknown:
+            configuration_error(f"reference-map.json maps unknown capture(s): {', '.join(unknown)}")
+        if missing:
+            configuration_error(f"reference-map.json has no explicit mapping for capture(s): {', '.join(missing)}")
+        mappings = {image.name: validate_mapping(f_dir, image, reference_map[image.name], target_manifest) for image in actual_images}
+    except ReferenceConfigurationError as error:
+        print(f"FAIL: {error}", file=sys.stderr)
+        sys.exit(2)
+
     all_passed = True
-    config_error = False
     comparison_records = []
-
-    reference_map = load_reference_map(visual_evidence_dir)
-    actual_names = {p.name for p in actual_images}
-    for mapped_name in reference_map:
-        if mapped_name not in actual_names:
-            print(f"FAIL: reference-map.json maps unknown capture '{mapped_name}'; visual_evidence/ has no such PNG", file=sys.stderr)
-            config_error = True
-
-    anchor_md = visual_evidence_dir / "reference-anchor-verification.md"
-    default_ref = None
-    if anchor_md.is_file():
-        m = re.search(r"\*\*Reference design\*\*:\s*`?([^`\n]+)`?", anchor_md.read_text(encoding="utf-8"))
-        if m:
-            ref_rel = m.group(1).strip()
-            cand = f_dir / ref_rel
-            if cand.is_file():
-                default_ref = cand
-
-    for act_img_path in actual_images:
-        base_name = act_img_path.stem
-        file_name = act_img_path.name
-        base_tokens = set(re.findall(r"[a-z0-9]+", base_name.lower()))
-        ref_candidate = None
-        match_via = None
-        mask_regions = None
-
-        targets = []
-
-        if file_name in reference_map:
-            mapped = reference_map[file_name]
-            if mapped is None:
-                # Explicit anchor-only declaration: no pixel reference applies to this state.
-                print(f"  [ANCHOR_ONLY] {file_name}: declared anchor-only in reference-map.json (no pixel reference)")
-                comparison_records.append({
-                    "actual": file_name,
-                    "reference": "—",
-                    "gate_role": "—",
-                    "score": None,
-                    "diff_percentage": None,
-                    "status": "ANCHOR_ONLY",
-                    "diff_image": "—",
-                    "matched_via": "explicit-map(null)"
-                })
-                continue
-
-            cand = None
-            if isinstance(mapped, str):
-                c = f_dir / mapped
-                if not c.is_file():
-                    print(f"FAIL: reference-map.json maps {file_name} to missing reference '{mapped}'", file=sys.stderr)
-                    config_error = True
-                    continue
-                cand = c
-                mask_regions = None
-            elif isinstance(mapped, dict):
-                ref_val = mapped.get("reference")
-                mask_regions = mapped.get("mask")
-                if not isinstance(ref_val, str) or not ref_val:
-                    print(f"FAIL: reference-map.json object entry for {file_name} must contain a string 'reference'", file=sys.stderr)
-                    config_error = True
-                    continue
-                if mask_regions is not None and not isinstance(mask_regions, list):
-                    print(f"FAIL: reference-map.json 'mask' for {file_name} must be a list of regions", file=sys.stderr)
-                    config_error = True
-                    continue
-                c = f_dir / ref_val
-                if not c.is_file():
-                    print(f"FAIL: reference-map.json maps {file_name} to missing reference '{ref_val}'", file=sys.stderr)
-                    config_error = True
-                    continue
-                cand = c
-            else:
-                print(f"FAIL: reference-map.json entry for {file_name} must be null, a reference path string, or an object with 'reference' and optional 'mask'", file=sys.stderr)
-                config_error = True
-                continue
-
-            is_gold = is_golden_reference(cand)
-            targets.append({
-                "ref": cand,
-                "match_via": "explicit-map",
-                "gate_role": "binding" if is_gold else "informational",
-                "mask": mask_regions,
-                "is_golden": is_gold
-            })
-        else:
-            # 1. Exact-name golden baseline: binding regression reference.
-            golden_exact = golden_dir / f"{base_name}.png"
-            if golden_exact.is_file():
-                targets.append({
-                    "ref": golden_exact,
-                    "match_via": "golden-baseline",
-                    "gate_role": "binding",
-                    "mask": None,
-                    "is_golden": True
-                })
-
-            # 2. Deterministic token matching against design mockups (informational):
-            # highest token overlap first, then the most parsimonious reference
-            # (fewest tokens absent from the capture name), then reference name
-            # order. Never depends on glob order.
-            candidates = []
-            if design_dir.is_dir():
-                for p in design_dir.glob("*.png"):
-                    p_tokens = set(re.findall(r"[a-z0-9]+", p.stem.lower()))
-                    p_tokens.discard("mockup")
-                    overlap = len(base_tokens & p_tokens)
-                    if overlap > 0:
-                        candidates.append((overlap, len(p_tokens - base_tokens), p.stem, p))
-            if candidates:
-                candidates.sort(key=lambda c: (-c[0], c[1], c[2]))
-                targets.append({
-                    "ref": candidates[0][3],
-                    "match_via": "token-match",
-                    "gate_role": "informational",
-                    "mask": None,
-                    "is_golden": False
-                })
-            elif default_ref is not None:
-                targets.append({
-                    "ref": default_ref,
-                    "match_via": "anchor-default",
-                    "gate_role": "informational",
-                    "mask": None,
-                    "is_golden": False
-                })
-
-        if not targets:
-            print(f"  [NO_REFERENCE] No reference found for {file_name}; add an approved design/ mockup, promote a golden baseline, or add a visual_evidence/reference-map.json entry (or declare it anchor-only with null)", file=sys.stderr)
+    for actual_path in actual_images:
+        mapping = mappings[actual_path.name]
+        reference_path = mapping["reference_path"]
+        diff_file = visual_evidence_dir / f"{actual_path.stem}_diff.png"
+        try:
+            with Image.open(reference_path) as reference_image, Image.open(actual_path) as actual_image:
+                result = compare_images(reference_image, actual_image, mask_regions=mapping["mask_regions"])
+            result["diff_overlay"].save(diff_file)
+            status = "PASS" if result["passed"] else "FAIL"
+            all_passed = all_passed and result["passed"]
+            print(f"  [{status}] {actual_path.name} vs {reference_path.name} (state={mapping['state_id']}; explicit-mockup-map, binding) -> score: {result['similarity_score']:.4f} (diff: {result['diff_percentage']}%)")
             comparison_records.append({
-                "actual": file_name,
-                "reference": "—",
-                "gate_role": "—",
+                "actual": actual_path.name,
+                "reference": mapping["reference"],
+                "score": result["similarity_score"],
+                "diff_percentage": result["diff_percentage"],
+                "status": status,
+                "diff_image": diff_file.name,
+            })
+        except Exception as error:
+            print(f"  [ERROR] Failed to compare {actual_path.name} vs {reference_path.name}: {error}", file=sys.stderr)
+            all_passed = False
+            comparison_records.append({
+                "actual": actual_path.name,
+                "reference": mapping["reference"],
                 "score": None,
                 "diff_percentage": None,
-                "status": "NO_REFERENCE",
+                "status": "ERROR",
                 "diff_image": "—",
-                "matched_via": "—"
             })
-            config_error = True
-            continue
 
-        has_golden = any(t["is_golden"] for t in targets)
-        has_multiple = len(targets) > 1
-
-        for target in targets:
-            ref_candidate = target["ref"]
-            gate_role = target["gate_role"]
-            binding = (gate_role == "binding")
-            match_via = target["match_via"]
-            mask_regions = target["mask"]
-
-            try:
-                ref_img = Image.open(ref_candidate)
-                act_img = Image.open(act_img_path)
-                res = compare_images(ref_img, act_img, mask_regions=mask_regions)
-
-                if has_multiple and not target["is_golden"]:
-                    diff_file = visual_evidence_dir / f"{base_name}_mockup_diff.png"
-                else:
-                    diff_file = visual_evidence_dir / f"{base_name}_diff.png"
-                res["diff_overlay"].save(diff_file)
-
-                if binding:
-                    status_str = "PASS" if res["passed"] else "FAIL"
-                    if not res["passed"]:
-                        all_passed = False
-                    print(f"  [{status_str}] {file_name} vs {ref_candidate.name} ({match_via}, binding golden regression) -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
-                else:
-                    # Mockup comparisons are informational: mock copy and AI-mockup
-                    # rendering can never pixel-match a real implementation.
-                    status_str = "INFO"
-                    print(f"  [INFO] {file_name} vs {ref_candidate.name} ({match_via}, informational) -> score: {res['similarity_score']:.4f} (diff: {res['diff_percentage']}%)")
-
-                comparison_records.append({
-                    "actual": file_name,
-                    "reference": ref_candidate.name,
-                    "gate_role": gate_role,
-                    "score": res["similarity_score"],
-                    "diff_percentage": res["diff_percentage"],
-                    "status": status_str,
-                    "diff_image": diff_file.name,
-                    "matched_via": match_via
-                })
-            except Exception as e:
-                print(f"  [ERROR] Failed to compare {file_name} vs {ref_candidate.name}: {e}", file=sys.stderr)
-                comparison_records.append({
-                    "actual": file_name,
-                    "reference": ref_candidate.name,
-                    "gate_role": gate_role,
-                    "score": None,
-                    "diff_percentage": None,
-                    "status": "ERROR",
-                    "diff_image": "—",
-                    "matched_via": match_via
-                })
-                all_passed = False
-
-    # Write summary report markdown
     report_md = visual_evidence_dir / "visual_comparison_report.md"
-    overall = "PASS" if (all_passed and not config_error) else "FAIL"
+    overall = "PASS" if all_passed else "FAIL"
+    size_obj = target_manifest.get("logical_size_dp") or target_manifest.get("logical_size_pt", {"width": 0, "height": 0})
+    size_unit = "dp" if "logical_size_dp" in target_manifest else "pt"
     md_lines = [
         "# Visual Comparison Evaluation Report\n",
         f"**Feature Directory**: `{f_dir.name}`\n",
-        f"**Threshold**: `{threshold}` (binding on golden-baseline regression comparisons; design-mockup comparisons are informational)\n",
+        f"**Visual Target Manifest**: `visual_evidence/visual-target.json` (target `{target_manifest['target_id']}`, {target_manifest['appearance']}, {target_manifest['device']}, {size_obj.get('width', 0)}x{size_obj.get('height', 0)} {size_unit}, `{target_manifest['locale']}`)\n",
+        f"**Threshold**: `{threshold}` (binding approved mockup comparison; structural-anchor proof is separately binding in `check-visual-evidence-contract.sh`)\n",
         f"**Overall Status**: `{overall}`\n\n",
-        "| Actual Screenshot | Reference Design | Gate Role | Matched Via | Similarity Score | Diff % | Diff Overlay | Status |\n",
-        "|---|---|---|---|---|---|---|---|\n"
+        "| Actual Screenshot | Approved Mockup | Gate Role | Matched Via | Similarity Score | Diff % | Diff Overlay | Status |\n",
+        "|---|---|---|---|---|---|---|---|\n",
     ]
-    for r in comparison_records:
-        score_str = f"{r['score']:.4f}" if r["score"] is not None else "—"
-        diff_str = f"{r['diff_percentage']}%" if r["diff_percentage"] is not None else "—"
-        ref_cell = f"`{r['reference']}`" if r["reference"] != "—" else "—"
-        if r["diff_image"] != "—":
-            diff_cell = f"[`{r['diff_image']}`]({r['diff_image']})"
-        else:
-            diff_cell = "—"
-        md_lines.append(f"| `{r['actual']}` | {ref_cell} | {r['gate_role']} | {r['matched_via']} | {score_str} | {diff_str} | {diff_cell} | **{r['status']}** |\n")
-
+    for record in comparison_records:
+        score = f"{record['score']:.4f}" if record["score"] is not None else "—"
+        diff = f"{record['diff_percentage']}%" if record["diff_percentage"] is not None else "—"
+        diff_cell = f"[`{record['diff_image']}`]({record['diff_image']})" if record["diff_image"] != "—" else "—"
+        md_lines.append(
+            f"| `{record['actual']}` | `{Path(record['reference']).name}` | binding | explicit-mockup-map | {score} | {diff} | {diff_cell} | **{record['status']}** |\n"
+        )
     report_md.write_text("".join(md_lines), encoding="utf-8")
     print(f"\n  Consolidated report written to: {report_md}")
     print("======================================================")
-
-    if config_error:
-        sys.exit(2)
     sys.exit(0 if all_passed else 1)
 
 if mode == "pair":
     run_pair()
-elif mode == "promote-golden":
-    run_promote_golden()
 elif mode == "feature":
     run_feature()
 else:

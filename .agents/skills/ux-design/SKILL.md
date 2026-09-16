@@ -21,6 +21,7 @@ Turn user requirements and feature specifications into a complete, state-of-the-
 - `skills/ux-design/references/quick-reference.md` — 10 priority categories for Android/Compose UX rules
 - `skills/ux-design/references/pro-rules.md` — Pre-delivery polish checklist & app interface standards
 - `harness/templates/feature-design-template.md` — Standard structure for `design.md`
+- `harness/templates/visual-target-template.json` — Canonical target/state manifest shape shared by mockup generation and runtime capture
 
 ---
 
@@ -63,6 +64,12 @@ Ensure each screen block includes:
 - Responsive & Configuration Behavior
 
 ### 3. Visual Mockup Generation (When No User Mockup Provided)
+
+Before generating any mockup, create or load the feature's canonical
+`visual_evidence/visual-target.json`. It is the single source of truth for the
+appearance, concrete device, logical size, locale, and named content states.
+For each state, run
+`bash harness/scripts/visual-target-prompt.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" --state <content_state_id>` and use its output as the target context for `generate_image`. Do not restate those values from memory or create a second mockup-only configuration; the emulator preflight must consume this same manifest with `prepare-visual-runtime.sh --target`.
 
 For **each screen** defined in `design.md`:
 1. Formulate a rich prompt for `generate_image` describing an Android app screen running Jetpack Compose Material 3. Begin with the mandatory mockup prompt baseline from `docs/product/design_system.md` and include the exact relevant hex/alpha values, typography, component sizes, shapes, and visual-state rules:

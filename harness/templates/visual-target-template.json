@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "target_id": "<feature>-<appearance>-<device>-<locale>",
+  "appearance": "light",
+  "device": "Pixel 8",
+  "logical_size_dp": { "width": 412, "height": 915 },
+  "locale": "en-US",
+  "states": {
+    "<stable-content-state-id>": {
+      "content_state_id": "<stable-content-state-id>",
+      "reference": "design/mockup_<screen>.png",
+      "content_state": "<deterministic state description>",
+      "mask": [],
+      "dynamic_regions": [
+        { "kind": "time", "handling": "cropped-system-insets", "rationale": "<approved reason>" },
+        { "kind": "user-content", "handling": "fixture", "rationale": "<approved reason>" },
+        { "kind": "identifier", "handling": "fixture", "rationale": "<approved reason>" },
+        { "kind": "keyboard", "handling": "not-present", "rationale": "<approved reason>" }
+      ]
+    }
+  }
+}

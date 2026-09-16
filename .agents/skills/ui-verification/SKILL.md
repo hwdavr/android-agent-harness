@@ -88,12 +88,11 @@ bash harness/scripts/compare-visual-evidence.sh \
 bash harness/scripts/compare-visual-evidence.sh --feature "$FEATURE_DIR" --crop-insets
 ```
 
-- Golden comparisons are binding at similarity >= 0.95 with zero high-severity defects.
-- Approved mockup comparisons are informational and support semantic design review.
-- Reference-anchor geometry remains the binding structural proof.
-- `reference-map.json` resolves explicit references/masks; `null` declares anchor-only evidence.
-- Missing, ambiguous, dangling, or stale references fail as `NO_REFERENCE`.
-- Promote every approved non-anchor-only capture to its golden baseline.
+- Every feature has one approved `visual_evidence/visual-target.json` manifest defining the target appearance, concrete device, logical size, locale, and named content states. The mockup generator reads it through `visual-target-prompt.sh`; the emulator preflight reads it through `prepare-visual-runtime.sh --target`.
+- `reference-map.json` must map every runtime capture exactly once to one stable `state_id` from that manifest; filename/token matching, duplicated target metadata, and anchor-only `null` entries are prohibited. The comparator resolves the approved `design/mockup_*.png`, content state, geometry, and dynamic handling from the same manifest.
+- Time, user content, identifiers, and keyboard variation each require an explicit approved handling. A `mask` must name only the dynamic region it excludes and state a rationale.
+- Binding mockup comparison passes at similarity >= 0.95 with zero high-severity defects, and reference-anchor geometry remains separately binding structural proof.
+- Missing, ambiguous, dangling, stale, or metadata-mismatched references fail the gate.
 - Preserve the report, actual capture, and neon-magenta diff overlay.
 
 Evaluate composition, visual weight, palette, boundaries, icon identity, and typography hierarchy.
@@ -146,7 +145,7 @@ command results and referenced evidence paths.
 - Normalization, scope, regions, masks, and out-of-scope regressions are recorded.
 - Every critical element has source-fed bounds evidence within its approved tolerance.
 - Every required visual role has a runtime-backed visual tag and concrete assertion.
-- Required captures, anchors, references/goldens, comparisons, and rendered-output checks pass.
+- Required captures, explicit approved mockup mappings, dynamic-region approvals, comparisons, anchors, and rendered-output checks pass.
 - No Critical or unresolved Major finding remains.
 - The canonical JSON artifact passes its validator with no placeholders or contradictory results.
 

@@ -1,6 +1,14 @@
 {
   "version": "<N>",
   "reference_design": "design/<approved_mockup_or_screenshot>.png",
+  "visual_target": {
+    "path": "visual_evidence/visual-target.json",
+    "contract": "Single source of truth for appearance, concrete device, logical_size_dp, locale, and named content states; consumed by visual-target-prompt.sh and prepare-visual-runtime.sh --target"
+  },
+  "reference_map": {
+    "path": "visual_evidence/reference-map.json",
+    "contract": "Every runtime capture maps exactly once to a stable state_id in visual_target. The target state resolves one approved design/mockup_*.png, content state, and explicit handling for time, user-content, identifier, and keyboard dynamic regions. Masks are allowed only for approved dynamic regions with a rationale."
+  },
   "design_anchors": "design/design_anchors.json",
   "runtime_evidence": "evidence/ui_frames.json",
 
@@ -115,14 +123,17 @@
 
   "dynamic_content_masking": [
     {
-      "region": "<region>",
-      "rationale": "<why masked — e.g. runtime-variable balance>"
+      "kind": "time / user-content / identifier / keyboard",
+      "handling": "fixture / cropped-system-insets / not-present / mask",
+      "region": "<region when handling is mask>",
+      "rationale": "<approved reason; preserve static layout and controls>"
     }
   ],
 
   "perceptual_comparison": [
     {
       "region": "<region>",
+      "gate_role": "binding approved mockup comparison plus structural-anchor proof",
       "confidence": "high / medium / low",
       "notes": "<observations>"
     }
