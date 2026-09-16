@@ -4,9 +4,6 @@
 These rules define the mandatory layer boundaries and patterns for this project.
 All contributors (human and AI) must follow these rules. Any change that violates these rules must be rejected unless this file is updated with explicit justification in the same change.
 
-> **Enforcement Matrix** — each rule below is tagged as Scripted 🤖 / Evaluator 🧠 / Human 👁️  
-> in [`architecture-rules-enforcement-matrix.md`](../../harness/rules-matrix/architecture-rules-enforcement-matrix.md).
-
 ---
 
 ## Layer Model
@@ -151,6 +148,39 @@ These are never allowed without explicit architectural justification:
 - AI-generated code merged without review
 - Fully-qualified class names used inline in **any** file — production **or** test code (e.g. `com.example.Foo()` in function bodies, `io.mockk.mockk` in property declarations) — always use `import` at the top of the file
 - Wildcard imports (e.g., `import com.example.*`) and unsorted imports — always keep imports clean and sorted alphabetically according to standard Android Studio / Ktlint guidelines
+
+---
+
+## Architecture Verification
+
+Automated structural checks are the evidence for mechanically detectable rules:
+
+```bash
+bash harness/scripts/check-architecture-rules.sh
+./gradlew ktlintCheck
+./gradlew detekt
+```
+
+The repository-wide `bash harness/scripts/check-full-source-rules.sh` remains the
+required CI evidence; run an individual checker only to diagnose a failure. Do not
+repeat automated checker findings as manual review work.
+
+When the diff introduces or changes an architectural boundary, review only the
+semantic risks it triggers:
+
+- **Business-logic ownership** — decisions and validation belong in Domain or a
+  ViewModel, never in a Composable or persistence/network adapter.
+- **Layer boundaries** — dependencies flow inward and DTOs remain in Data.
+- **State and event design** — state has a clear owner, transitions are complete,
+  and one-off events are not retained as persistent UI state.
+- **Mappings** — DTO → Domain stays in Data and Domain → UI stays in ViewModel
+  or its dedicated mapper.
+- **DI scope** — dependencies have an appropriate app or screen lifetime and do
+  not leak `RoomDatabase`, `Retrofit`, or implementation types across layers.
+
+The code-review report records only the applicable items above. Human approval and
+any user-approved exception are governed by the review and merge workflow in
+[`review-checklist.md`](../gates/review-checklist.md), not by duplicated per-rule documentation.
 
 ---
 

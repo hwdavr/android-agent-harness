@@ -125,7 +125,6 @@ The harness includes validation scripts located in `harness/scripts/`:
 | `check-visual-evidence-contract.sh` | Enforces visual screenshot verification artifacts |
 | `check-acceptance-test-traceability.sh` | Verifies acceptance IDs map to real Kotlin methods, scenarios, scoped commands, and evidence |
 | `check-evaluation-fix-contract.sh` | Enforces deterministic evaluator scoring, evidence, and fix-stage routing |
-| `check-rules-matrix-contract.sh` | Validates rule-matrix rows, summaries, and scripted owners |
 | `kotlin_ast_checker.py` | Shared AST-backed Compose, localization, architecture, navigation, and assertion checks |
 | `check-test-assertions-quality.sh` | Ensures tests do not use shallow/envelope-only assertions |
 | `check-ai-security-rules.sh` | Evaluates AI/WebView trust-boundary policies and runs its negative-case contract |
@@ -137,7 +136,6 @@ Run any check directly from your project root:
 bash harness/scripts/check-full-source-rules.sh
 bash harness/scripts/check-acceptance-test-traceability.sh <feature-dir> --evaluate
 bash harness/scripts/check-evaluation-fix-contract.sh <feature-dir> --evaluation
-bash harness/scripts/check-rules-matrix-contract.sh
 ```
 
 The full-source bundle is the required entry point for generator, evaluator, fix,

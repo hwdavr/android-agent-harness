@@ -3,9 +3,6 @@
 ## Purpose
 Rules for writing Jetpack Compose UI in this project.
 
-> **Enforcement Matrix** — each rule below is tagged as Scripted 🤖 / Evaluator 🧠 / Human 👁️  
-> in [`compose-rules-enforcement-matrix.md`](../../harness/rules-matrix/compose-rules-enforcement-matrix.md).
-
 ---
 
 ## Composable Responsibilities
@@ -90,12 +87,10 @@ Modifier.testTag("btn")                          // ❌ — not descriptive
 ```
 
 Dynamic tags are allowed only when the interpolated value is an immutable,
-domain-owned identifier and the prefix is explicitly documented by the
-feature design. For example, the bundled emoji catalog uses
-`emoji_picker_item_<catalog-id>`, `emoji_category_<category-id>`, and
-`emoji_skin_tone_selector_<catalog-id>` so every rendered picker element can
-be targeted uniquely. Transient indexes, random IDs, timestamps, and
-user-generated text remain prohibited.
+domain-owned identifier or a fixed catalog key. Each must be registered in
+`docs/harness/documented-dynamic-test-tags.json`; the Compose
+checker validates the source file, approved template, source type, and line pattern.
+Transient indexes, random IDs, timestamps, and user-generated text remain prohibited.
 
 ---
 
@@ -215,3 +210,24 @@ Avoid `remember` in tests by keeping stateless content Composables as the primar
 - Tapping a text box, text field, or search field inside a bottom sheet must **not** dismiss the sheet. The sheet stays open and expands above the keyboard while the IME is visible; only a scrim tap, swipe-down, or an explicit close action dismisses it.
 - Apply `imePadding()` to the sheet content so the focused field and remaining controls stay visible above the keyboard, and keep the sheet's results region scrollable.
 - The design (`design.md`) must include a distinct keyboard-visible mockup showing the sheet **still open** with the keyboard, alongside the base mockup — never a dismissed sheet.
+
+---
+
+## Jetpack Compose Verification
+
+Automated source evidence:
+
+```bash
+bash harness/scripts/check-compose-rules.sh
+bash harness/scripts/check-localization-rules.sh
+```
+
+The full-source rules bundle is the required CI evidence. When the diff changes a
+Compose surface, review the semantic concerns it introduces: rendering versus
+business-logic ownership, state hoisting and stateful/stateless boundaries,
+component extraction, semantic token use, accessible interaction labels and
+testTags, lazy list performance, and keyboard-visible behavior. Runtime and visual
+claims require the declared UI evidence; they are not inferred from a source check.
+
+Human approval and exceptions are handled by the review and merge workflow, not by
+duplicated per-rule documentation.

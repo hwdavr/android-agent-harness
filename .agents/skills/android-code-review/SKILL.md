@@ -71,10 +71,12 @@ missing cleanup, and unimplemented completion paths as `REVISION REQUIRED`.
 
 ### 5. Review applicable rules
 
-Use the canonical template rows and enforcement matrices rather than a second checklist here:
+Use the canonical template rows. Automated checker results prove mechanically
+detectable rules; review semantic concerns only when the diff introduces their
+trigger:
 
-- Architecture: dependencies flow inward, domain remains platform-independent, DTOs remain in
-  data, state ownership matches the approved plan, and Hilt scopes are correct.
+- Architecture: business-logic ownership, layer boundaries, state/event design,
+  mapping placement, and DI scope/lifetime.
 - Implementation: every reachable production branch implements the requirement; no placeholder,
   dummy, suppression, or no-op path is accepted without explicit documented approval.
 - Compose/localization: apply only when UI or user-visible copy is triggered; reconcile scripted,
@@ -84,8 +86,9 @@ Use the canonical template rows and enforcement matrices rather than a second ch
 - Security/release: audit secrets, sensitive/user-generated logging, untrusted inputs, exported or
   IPC boundaries, compatibility, and required runtime proof when triggered.
 
-Every loaded rule receives a report result. Any unchecked human-owned row remains visible for
-human review rather than being inferred as passing.
+Every loaded rule receives a report result. Human approval and rule exceptions are
+recorded through the review/merge workflow; do not invent a duplicate per-rule
+approval checklist.
 
 ### 6. Verify UI/runtime claims conditionally
 

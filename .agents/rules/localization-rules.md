@@ -3,10 +3,6 @@
 ## Purpose
 Rules for handling all user-visible text in this project.
 
-> **Enforcement Matrix** — each rule below is tagged as Scripted 🤖 / Evaluator 🧠 / Human 👁️  
-> in [`localization-rules-enforcement-matrix.md`](../../harness/rules-matrix/localization-rules-enforcement-matrix.md).  
-> Scripted checks run via [`check-localization-rules.sh`](../../harness/scripts/check-localization-rules.sh) on Unix/Git Bash or [`check-localization-rules.cmd`](../../harness/scripts/check-localization-rules.cmd) on Windows.
-
 ---
 
 ## String Resources Are Mandatory
@@ -94,4 +90,20 @@ IconButton(onClick = onDeleteClick) {
         contentDescription = stringResource(R.string.note_delete_icon_description)
     )
 }
+
+---
+
+## Localization Verification
+
+Automated source evidence:
+
+```bash
+bash harness/scripts/check-localization-rules.sh
+```
+
+When a diff adds or changes localized copy, review only the semantic risks it
+introduces: ownership in `strings.xml`, descriptive key naming, plural and
+format-argument behavior, and accessibility content descriptions for non-text controls. The
+full-source rules bundle is the required CI evidence; review and merge approval are
+handled in the review workflow.
 ```
