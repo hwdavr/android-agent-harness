@@ -82,7 +82,7 @@ Do not let one AC bundle multiple named outcomes — split a multi-outcome AC so
 
 **Strongly Prefer Vertical Slices**: Always default to the **Vertical Slices** strategy to ensure that each slice delivers an end-to-end, testable user value and leaves the codebase in a clean, shippable state. 
 
-**Calibrate Granularity**: Each feature item should be scoped to "completable in one session." Too broad and it won't finish; too narrow and the management overhead grows. Calibrate each slice against the incremental cycle in `skills/incremental-implementation/SKILL.md` — it should be a single implementable increment, deliverable in one Implement → Test → Verify pass.
+**Calibrate Granularity**: Each feature item should be scoped to "completable in one session." Too broad and it won't finish; too narrow and the management overhead grows. Calibrate each slice against the vertical slice cycle — it should be a single implementable increment, deliverable in one Implement → Test → Verify pass.
 - *Good granularity*: "User can add items to cart"
 - *Too broad*: "Implement the shopping cart"
 - *Too narrow*: "Create the name field on the Cart model"

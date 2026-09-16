@@ -19,8 +19,8 @@ Determine scope before running any stage:
 
 | Scope | Stages to run |
 |-------|--------------|
-| **Full** (contract + repo + UI + tests) | All stages (1 → 2 → 3 → 4 → 5 → 6 → 7 → 8) |
-| **Data & Domain only** (no UI changes) | 1 → 2 → 3 → 4 → 6 → 7 (lightweight). Skip 5, 8. |
+| **Full** (contract + repo + UI + tests) | All stages (1 → 2 → 3 → 4 → 5 → 6) |
+| **Data & Domain only** (no UI changes) | 1 → 2 → 3 → 4 → 5 (lightweight). Skip UI in stage 3, skip 6. |
 
 ---
 
@@ -59,40 +59,34 @@ Run `bash harness/scripts/check-stage-artifacts.sh api-contract-update implement
 
 ---
 
-### Stage 3 — Data Layer ✅ Always
-**INVOKE** the `android-data-layer` skill via the Skill tool (name: `android-data-layer`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+### Stage 3 — Implementation (Data + Domain + UI) ✅ Always
+**INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+
+Implement affected layers sequentially:
+1. Update `sharedContracts/openapi.yaml` first if contract changed.
+2. Implement DTOs and Data Layer.
+3. Implement Domain models, repository interface, and use cases.
+4. Implement UI layer (ViewModel, Compose) only if contract change surfaces in UI.
 
 ---
 
-### Stage 4 — Domain Layer ✅ Always
-**INVOKE** the `android-domain-layer` skill via the Skill tool (name: `android-domain-layer`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-
----
-
-### Stage 5 — UI Layer ⏭️ Skip if no UI changes
-**INVOKE** the `android-ui-layer` skill via the Skill tool (name: `android-ui-layer`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-
-Only run this stage if the contract change surfaces in the UI (new fields displayed, new screens, changed error states).
-
----
-
-### Stage 6 — Testing ✅ Always
+### Stage 4 — Testing ✅ Always
 **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Mandatory: at least one integration test per changed API endpoint using shared JSON scenarios. See `testing-strategy.md`.
 
 ---
 
-### Stage 7 — Code Quality Fix ⚠️ Lightweight if Data & Domain only
+### Stage 5 — Code Quality Fix ⚠️ Lightweight if Data & Domain only
 **INVOKE** the `code-quality-fix` skill via the Skill tool (name: `code-quality-fix`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Scope guidance:
 - Always run static analysis checks (Ktlint, Detekt, Lint).
-- Skip UI-related scripts or rules if Stage 5 was skipped.
+- Skip UI-related scripts or rules if UI was not modified.
 
 ---
 
-### Stage 8 — Knowledge Capture ⏭️ Skip unless change is non-obvious
+### Stage 6 — Knowledge Capture ⏭️ Skip unless change is non-obvious
 **INVOKE** the `knowledge-capture` skill via the Skill tool (name: `knowledge-capture`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Only run if the contract change involves a tricky mapping, a breaking change, a non-standard pattern, or a decision future agents need to understand.

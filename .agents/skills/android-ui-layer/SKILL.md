@@ -12,6 +12,7 @@ Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composab
 
 ## Load
 - `docs/product/design_system.md` — mandatory project-wide visual tokens and component contracts
+- `rules/android-architecture.md` (skip if already loaded this session — L1 is session-scoped)
 - `rules/compose-rules.md`
 - `rules/navigation-rules.md`
 - `rules/analytics-rules.md`

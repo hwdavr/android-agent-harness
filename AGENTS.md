@@ -72,7 +72,7 @@ triggered rule. For a complex slice, run
 Key skills under `.agents/skills/`:
 - **Planning & Requirements**: `spec-driven-development`, `feature-specification`, `slice-planning`, `implementation-plan`
 - **UX & Design**: `ux-design`
-- **Implementation**: `android-implementation`, `android-data-layer`, `android-domain-layer`, `android-ui-layer`, `api-contract-update`
+- **Implementation**: `android-implementation`, `android-ui-layer`, `api-contract-update`
 - **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `android-instrumented-ui-test`, `shared-json-scenarios`
 - **Review & Quality**: `code-quality-fix`, `android-code-review`, `code-review-and-quality`, `android-test-review`, `android-code-quality-checks`
 - **Session & Knowledge**: `context-management`, `knowledge-capture`, `documentation-and-adrs`, `karpathy-guidelines`

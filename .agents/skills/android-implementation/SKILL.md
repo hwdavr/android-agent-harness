@@ -47,92 +47,24 @@ unaffected sections and their checklist rows; a skipped layer must be recorded a
 `Not applicable — <slice-specific reason>`, never silently treated as completed.
 
 ### Layer 1 — Data Layer
-
-#### 1.1 API / DTO changes
-If the API contract changed:
-1. Update `sharedContracts/openapi.yaml` to reflect the new contract — **do this first**
-2. Create or modify DTO data classes in `data/remote/dto/`
-3. Use correct nullability: `String?` for optional fields, `String` for required fields
-4. Handle unknown enum values with a fallback variant:
-   ```kotlin
-   enum class NoteStatus {
-       ACTIVE, ARCHIVED, UNKNOWN;
-       companion object {
-           fun fromString(value: String) = entries.firstOrNull { it.name == value } ?: UNKNOWN
-       }
-   }
-   ```
-
-#### 1.2 Room / local data changes
-If local storage is affected:
-1. Create or modify Room entity in `data/local/`
-2. Update DAO with new query methods
-3. **Increment `AppDatabase` version**
-4. Add a migration — only use `fallbackToDestructiveMigration` if data loss is explicitly acceptable and stated in the plan
-
-#### 1.3 Repository implementation & Mapper
-1. Implement or update the repository method
-2. Map DTO → Domain model inside the repository — **never pass DTOs to upper layers**
-3. Translate API errors to domain errors before they leave this layer
-4. Map every field explicitly — no reflection, no structural mapping
-5. Handle null defensively: `dto.field ?: defaultValue`
+1. **API / DTO**: If API changed, update `sharedContracts/openapi.yaml` first. Add/modify DTOs in `data/remote/dto/`. Optional fields use `T?`. Enums must decode with an unknown/fallback case defensively.
+2. **Room / Persistence**: Room entity in `data/local/`. Update DAO queries and increment `AppDatabase` version with migration.
+3. **Repository**: Implement in Data layer. Explicitly map DTO → Domain model inside repository (**never pass DTOs to upper layers**). Translate API errors to domain errors before leaving this layer. Handle null defensively: `dto.field ?: defaultValue`.
 
 ---
 
 ### Layer 2 — Domain Layer
-
-#### 2.1 Domain model changes
-1. Add or remove fields in domain model data classes
-2. Import **no Android framework classes** (`Context`, `Bundle`, SDK types)
-3. If an enum is added, include an `UNKNOWN` / fallback variant
-
-#### 2.2 Repository interface changes
-1. Add or update method signatures in the repository interface (defined in domain layer)
-2. Keep interfaces stable and framework-independent
-3. Use `suspend` functions or `Flow` based on existing conventions in the codebase
-4. Confirm the interface change matches the Data Layer implementation above
-
-#### 2.3 Use case changes
-1. Create or update use cases — one use case does one thing
-2. Use cases may coordinate multiple repository methods but must not call data sources directly
-3. Implement business validation, filtering, and decision logic here — not in the ViewModel
-
-**Business logic that belongs in use cases (not ViewModel or Composable):**
-- Access permission checks
-- Filter / sort logic driven by business rules
-- Validation before mutations
-- Data combination from multiple repositories
+1. **Domain Models**: Data classes only. Import **no Android framework classes** (`Context`, `Bundle`, SDK types). Add UNKNOWN/fallback to enums.
+2. **Repository Interface**: Define signatures in domain layer with domain models and `suspend` functions / `Flow`. Framework-independent.
+3. **Use Cases**: One use case does one thing. Owns business validation, filtering, sorting, and coordination. Never call data sources directly or import UI frameworks.
 
 ---
 
 ### Layer 3 — UI Layer
-
-#### 3.1 ViewModel
-1. Expose screen state as `StateFlow<UiState>` — one state object per screen
-2. Handle all states: loading, success, empty, error, retry, permission
-3. Emit one-off events (navigation, toast, dialog) via a separate `Channel<Event>`
-4. Call use cases only — **never call repositories or data sources directly**
-5. Do not import `retrofit2.*`, `androidx.room.*`, or any data-layer class
-6. Add structured logs at state transitions and error boundaries — follow `rules/observability.md` for tag format and level selection (DEBUG for state snapshots, WARN for recoverable errors, ERROR for failures)
-
-#### 3.2 UI model and mapper
-1. Create or update UI model data classes if the domain model needs formatting for display
-2. Create or update the Domain → UI mapper in the Presentation layer
-3. Do not pass domain models directly to Composables when UI formatting is needed
-
-#### 3.3 Composable screen
-1. Split every screen into stateless `Content` + stateful `Screen` wrapper (see `rules/compose-rules.md`)
-2. The stateless `Content` Composable receives `UiState` and callbacks — it does not call the ViewModel
-3. **View the mockup images** in the active design directory (`$FEATURE_DIR/design/` or `docs/current/design/`) before writing UI code — use both `design.md` text and visual mockup images (user-provided or generated) as visual context for component layout, spacing, and visual hierarchy
-4. Use `stringResource()` for all user-visible text — **no hardcoded strings**
-5. Add `Modifier.testTag("stable_name")` to all interactive elements and key content areas
-6. Map every visual choice to `docs/product/design_system.md` semantic tokens/shared components or to an explicit approved exception in the active `design.md`; do not introduce raw colors or a parallel component family
-7. **Visual-verification owner**: if this slice owns `requires_visual_verification: true` in `feature_list.json`, implement its `*VisualFlowTest` capture per the sprint contract's visual-verification gate (the `TC-US-*-VIS` rows) — in-test `takeScreenshot()` during `waitForIdle()`, `adb pull` to `visual_evidence/` with a non-empty check, `reference-anchor-verification.md`; never a post-test CLI `screencap`
-
-#### 3.4 Navigation, Analytics & String resources
-1. Update the navigation graph if new routes are added — use serializable argument types only
-2. Fire analytics events from the ViewModel — not from Composables
-3. Add all new user-visible text to `res/values/strings.xml`
+1. **ViewModel**: `StateFlow<UiState>` — one per screen. Handle all states: loading, success, empty, error, retry. Call use cases only (**never call repositories or data sources directly**). Emit one-off events via `Channel<Event>`. Add structured logs only when OBS is `Required`.
+2. **UI Models & Mappers**: Create UI models and Domain → UI mappers in Presentation layer when formatting is needed.
+3. **Composable Screen**: Split into stateless `Content` + stateful `Screen` wrapper. View design mockups before writing UI. All text via `stringResource()` (**no hardcoded strings**). Add `Modifier.testTag("stable_name")` to all interactive elements. Follow `docs/product/design_system.md` semantic tokens. If owning `requires_visual_verification: true`, implement capture per contract.
+4. **Navigation, Analytics & Strings**: Update nav graph with serializable args when NAV is `Required`. Fire analytics from ViewModel (not Composables) when ANL is `Required`; otherwise keep `analytics: none`. Add strings to `res/values/strings.xml`.
 
 ---
 
