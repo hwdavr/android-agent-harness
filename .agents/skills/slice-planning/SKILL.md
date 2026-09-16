@@ -44,7 +44,7 @@ Then answer:
 
 ### 2. Compile Sprint Contract
 
-Decompose the high-level requirement into a detailed scope, acceptance criteria, and verification plan. Strictly follow the structure in `harness/templates/sprint-contract-template.md` to generate `sprint-contract.md`. Fill in the Sprint Overview (Sprint ID, Feature Name, Duration), Scope (In Scope, Out of Scope), the **Spec Coverage Matrix**, and User Scenarios & Testing (user stories with acceptance criteria and acceptance test cases).
+Decompose the high-level requirement into a detailed scope, acceptance criteria, and verification plan. Strictly follow the structure in `harness/templates/sprint-contract-template.md` to generate `sprint-contract.md`. Fill in the Sprint Overview (Sprint ID, Feature Name, Duration), Scope reference to `spec.md`, the **Spec Coverage Matrix**, and User Scenarios & Testing (user stories with acceptance criteria and acceptance test cases).
 
 The Spec Coverage Matrix is mandatory. It must include the source requirement ID, concise requirement text, primary user-story ID, acceptance-test ID, and handling. A requirement may map to multiple secondary tests, but it must have exactly one primary owner. Preserve the source requirement ID verbatim so the planning gate can verify coverage.
 
@@ -110,9 +110,9 @@ For each slice, you must populate the `features` list in the `feature_list.json`
 - **`priority`**: Integer priority indicating delivery order (lower number = higher priority).
 - **`area`**: The codebase component or feature area (e.g., `comments`, `folders`, `editor`).
 - **`title`**: A short, readable title summarizing the slice.
-- **`description`**: A comprehensive detailed instruction mapping the precise code-level logic, domain model changes, and database structures required. **This field specifically tells the generator agent exactly what to do** at a technical execution level.
+- **`description`**: A concise technical instruction specifying code-level changes, domain model updates, and data structures. Do NOT copy the user story narrative or acceptance criteria here; focus on execution directions for the generator agent.
 - **`ui_design`**: A file path to a layout asset/mockup or a reference name from an external design tool (e.g. Figma or Pencil.dev) depicting the UI specifications for the feature.
-- **`user_visible_behavior`**: A clear explanation of what observable UI elements, texts, behavior, or default flows are affected by this task.
+- **`user_visible_behavior`**: A concise summary (1–2 sentences) of what observable UI elements, texts, behavior, or default flows are affected by this task.
 - **`affects_ui`**: Boolean. `true` if the slice adds, removes, or modifies any Composable, screen layout, or visible UI state. It always triggers UI-focused automated acceptance testing and `android-code-review` SKILL.md §4 during harness-evaluation. It does not, by itself, require a screenshot gate. When `false`, the slice is treated as a non-UI change.
 - **`requires_visual_verification`**: Boolean. Set this to `true` only for the final user story that makes the completed visual flow reachable and reviewable. Set it to `false` for intermediate UI slices, including a slice that changes Composables but has no standalone production entry point. A `true` owner MUST include the required `TC-US-*-VIS` rows and state-verifying screenshot commands; `false` slices require automated UI/integration proof for their acceptance criteria but no screenshot gate.
 - **`production_journey`**: Object mirrored in the sprint contract's Production Journey Planning Contract. It contains `required` (boolean), a feature-specific `reason`, and, when required, the primary `acceptance_test_id`, `production_entry_point`, `test_file`, `test_method`, `user_actions`, `return_boundary`, and `post_return_assertion`. A required journey must target `app/src/androidTest/`; a non-required journey uses null/empty details.
