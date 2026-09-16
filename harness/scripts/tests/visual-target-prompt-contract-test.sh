@@ -48,6 +48,18 @@ printf '%s\n' \
   '        { "kind": "identifier", "handling": "fixture", "rationale": "Fixture IDs are fixed." },' \
   '        { "kind": "keyboard", "handling": "not-present", "rationale": "The state is not editing." }' \
   '      ]' \
+  '    },' \
+  '    "editor-keyboard": {' \
+  '      "content_state_id": "editor-keyboard",' \
+  '      "reference": "design/mockup_editor_keyboard.png",' \
+  '      "content_state": "Editor with keyboard focused.",' \
+  '      "mask": [],' \
+  '      "dynamic_regions": [' \
+  '        { "kind": "time", "handling": "cropped-system-insets", "rationale": "Insets are cropped." },' \
+  '        { "kind": "user-content", "handling": "fixture", "rationale": "Fixture content is fixed." },' \
+  '        { "kind": "identifier", "handling": "fixture", "rationale": "Fixture IDs are fixed." },' \
+  '        { "kind": "keyboard", "handling": "fixture", "rationale": "Keyboard is active." }' \
+  '      ]' \
   '    }' \
   '  }' \
   '}' > "$FIXTURE_ROOT/visual-target.json"
@@ -59,6 +71,10 @@ printf '%s\n' "$output" | grep -Fq 'Logical size: 412x915 dp' || fail_test "prom
 printf '%s\n' "$output" | grep -Fq 'Locale: fr-FR' || fail_test "prompt omitted locale"
 printf '%s\n' "$output" | grep -Fq 'Content state ID: editor-empty' || fail_test "prompt omitted stable state ID"
 printf '%s\n' "$output" | grep -Fq 'keyboard=not-present' || fail_test "prompt omitted approved dynamic handling"
+
+kb_output=$(bash "$PROMPT_TOOL" --target "$FIXTURE_ROOT/visual-target.json" --state editor-keyboard)
+printf '%s\n' "$kb_output" | grep -Fq 'keyboard=fixture' || fail_test "prompt omitted keyboard handling"
+printf '%s\n' "$kb_output" | grep -Fq 'docs/product/reference_components/Pixel 8/keyboard_dark.png' || fail_test "prompt omitted emulator keyboard reference component"
 
 expect_failure "has no content state 'missing-state'" bash "$PROMPT_TOOL" --target "$FIXTURE_ROOT/visual-target.json" --state missing-state
 expect_failure "visual target manifest not found" bash "$PROMPT_TOOL" --target "$FIXTURE_ROOT/missing.json" --state editor-empty

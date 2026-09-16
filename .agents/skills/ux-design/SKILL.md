@@ -18,6 +18,7 @@ Turn user requirements and feature specifications into a complete, state-of-the-
 ## Load
 
 - `docs/product/design_system.md` — mandatory project-wide visual source of truth; load before making any visual decision
+- `docs/product/reference_components/` — authentic emulator-captured reference components (e.g. software keyboards) organized by device name
 - `skills/ux-design/references/quick-reference.md` — 10 priority categories for Android/Compose UX rules
 - `skills/ux-design/references/pro-rules.md` — Pre-delivery polish checklist & app interface standards
 - `harness/templates/feature-design-template.md` — Standard structure for `design.md`
@@ -77,12 +78,16 @@ For **each screen** defined in `design.md`:
    - Use the project-defined app-shell or editor mode and its existing semantic accent; do not invent vibrant/purple/glassmorphism treatments
    - Include only the top bars, content regions, toolbars, controls, and component families required by the approved feature design
    - Crisp rendering, UI component detail, no device frame
-2. Call `generate_image` tool with `ImageName: mockup_<screen_name>`
-3. Move/save the generated image artifact to `<active_design_dir>/mockup_<screen_name>.png`
-4. Reference the image in the **Design Assets** section of `design.md`:
+2. **Keyboard-Visible Mockup Protocol**: When generating a keyboard-visible state (`mockup_<screen_name>_keyboard.png`):
+   - Retrieve the authentic emulator keyboard component from `docs/product/reference_components/<device>/keyboard_<appearance>.png` matching the declared target `device` and `appearance`.
+   - Do NOT allow generative models to hallucinate synthetic keyboard keys. Composite or align the real emulator keyboard component at its exact native bounds.
+3. Call `generate_image` tool with `ImageName: mockup_<screen_name>`
+4. Move/save the generated image artifact to `<active_design_dir>/mockup_<screen_name>.png`
+5. Reference the image in the **Design Assets** section of `design.md`:
    ```markdown
    ### Design Assets
    - **Generated mockup**: `design/mockup_<screen_name>.png` — AI-generated visual mockup reflecting this screen's layout, components, and visual states.
+   - **Keyboard-visible mockup**: `design/mockup_<screen_name>_keyboard.png` — Visual mockup incorporating the emulator keyboard reference component from `docs/product/reference_components/<device>/keyboard_<appearance>.png`.
    ```
 
 ---

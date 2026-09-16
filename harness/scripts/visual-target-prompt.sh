@@ -102,6 +102,12 @@ for key in ("reference", "content_state", "dynamic_regions"):
         print(f"FAIL: visual target state '{state_id}' is missing {key}", file=sys.stderr)
         sys.exit(2)
 
+keyboard_region = next((r for r in state["dynamic_regions"] if r.get("kind") == "keyboard"), None)
+keyboard_ref = ""
+if keyboard_region and keyboard_region.get("handling") != "not-present":
+    ref_comp_path = f"docs/product/reference_components/{device}/keyboard_{appearance}.png"
+    keyboard_ref = f" For keyboard rendering, use the authentic emulator reference component: {ref_comp_path}."
+
 print(
     "Create or edit a high-fidelity Android Jetpack Compose Material 3 mockup for the canonical visual target. "
     f"Target ID: {manifest['target_id']}. Appearance: {appearance}. Device: {device}. "
@@ -115,5 +121,6 @@ print(
         for region in state["dynamic_regions"]
     )
     + "."
+    + keyboard_ref
 )
 PYTHON_SCRIPT
