@@ -47,9 +47,11 @@ For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For th
 Write unit tests for all new or modified use cases, ViewModels, mappers, and formatters.
 Follow `skills/android-unit-test/SKILL.md` for framework, naming, and coverage rules.
 
-### 3. Integration tests (`app/src/test/`)
+### 3. Integration tests (`app/src/test/` or `app/src/androidTest/` loopback boundary)
 Write integration tests if an API is involved. Test success, 4xx, 5xx, malformed payload, timeout, and unknown enum fallback per endpoint.
-Follow `skills/android-integration-test/SKILL.md` — use shared JSON scenarios, do not inline mock data.
+Follow `skills/android-integration-test/SKILL.md` — use shared JSON scenarios, do not inline mock data. When the
+instrumented target owns a loopback server, start it before app launch, drive the shipped Retrofit/OkHttp client,
+assert redacted receipts and decoded results, and fail if listener or endpoint setup is missing.
 
 ### 4. Instrumented UI tests (`app/src/androidTest/`)
 Write instrumented tests only when Android runtime or real UI rendering is required.
@@ -109,7 +111,7 @@ dedicated stage evidence.
 - [ ] `./gradlew koverLog` — overall ≥ 80%, new classes ≥ 90%
 - [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — weighted line thresholds pass
 - [ ] Total test count `> 0` (not `0/0` — this is a gate failure)
-- [ ] At least one integration test per new or changed API endpoint (when API is in scope)
+- [ ] At least one integration test per new or changed API endpoint (when API is in scope), owned by the lowest useful target; an instrumented loopback boundary is valid when the real app process is part of the claim
 - [ ] Shared JSON scenarios used — no inline mock response data in test files (when API is in scope)
 - [ ] Instrumented tests pass (if added): `./gradlew connectedDebugAndroidTest`
 - [ ] Harness workflow: acceptance-test traceability gate passes in evaluation mode for the selected slice

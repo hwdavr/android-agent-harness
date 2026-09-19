@@ -47,6 +47,11 @@ Android security boundary is changed`.
 - Any development or host-specific exception must be narrowly scoped, documented,
   approved, and excluded from release configuration. Never trust all certificates
   or hostnames in production.
+- An instrumented-test-only cleartext endpoint is permitted only when the test
+  composition is explicitly gated, the host is allow-listed to the emulator or
+  device-local loopback boundary (`127.0.0.1`, `10.0.2.2`, or another approved
+  local address) with a valid port, and invalid or missing configuration fails
+  closed. It must never fall back to the live production API.
 - Validate and map remote payloads before domain/UI use; do not let a transport
   success imply authorization.
 

@@ -96,5 +96,9 @@ A force update may be required when:
 
 ## Testing Rule
 
-Every API endpoint must have at least one integration test.
-Use shared JSON scenarios — do not inline mock data in test cases.
+Every API endpoint must have at least one integration test. Use shared JSON scenarios — do not inline mock data in
+test cases. When a test must cross the shipped app process, an instrumented loopback server may own the integration
+boundary, but the test must drive the shipped Retrofit/OkHttp client and assert request receipts plus decoded behavior.
+Keep contract-shaped API payloads in shared or feature-owned JSON resources where practical; a typed fixture-server
+adapter is also allowed for UI-only state variants when its payloads are covered by boundary tests. Never inline API
+mock payloads in individual test methods.

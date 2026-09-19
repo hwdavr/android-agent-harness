@@ -32,7 +32,7 @@ reducers, and fallback logic that do not require Android runtime behavior.
 - Test class names end with `Test.kt`.
 - Keep one main scenario per test.
 
-### Integration tests (`app/src/test/`)
+### Integration tests (`app/src/test/` or the instrumented loopback boundary)
 
 Use for repository/use-case/ViewModel data flow, DTO parsing, error mapping, cache behavior, retry,
 and fallback behavior that can run deterministically on the JVM.
@@ -42,6 +42,10 @@ and fallback behavior that can run deterministically on the JVM.
 - API tests use shared JSON scenarios; do not inline mock response bodies.
 - Assert `expected.ui` when the ViewModel owns the endpoint and `expected.domain` when only the
   repository or use case owns it.
+- When the claim crosses the real app process and Retrofit/OkHttp transport, the integration owner may live in
+  `app/src/androidTest/` beside a deterministic loopback HTTP server. The test must launch the shipped app, exercise
+  the shipped client, assert server request receipts and decoded state, and never call the server helper directly as
+  a substitute for the client boundary.
 
 ### Instrumented tests (`app/src/androidTest/`)
 
@@ -94,5 +98,6 @@ bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ## Shared JSON Scenarios
 
 Every affected API endpoint has at least one integration test backed by
-`sharedContracts/test-scenarios/`. A scenario may contain `apiMocks`, `expected.domain`, and
+`sharedContracts/test-scenarios/` or a feature-owned test-target scenario resource when the endpoint is exercised
+through an instrumented loopback server. A scenario may contain `apiMocks`, `expected.domain`, and
 `expected.ui`; each test asserts only the layer it owns.

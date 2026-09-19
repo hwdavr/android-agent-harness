@@ -63,7 +63,7 @@ The test plan must include:
 - **Test Layer Selection**: Use `testing-strategy.md` (already loaded) to decide the minimum test layers needed (start at the lowest layer that provides enough confidence).
 - **Required Tests Coverage**: Check the active task's "Required tests" table in `docs/current/task-list.md` and ensure all specified test cases are explicitly covered in your test plan.
 - **Test Case Definition**: Define test cases per class (Mapper, ViewModel, UI) with Given/When/Then and a unique ID for each test case.
-- **API Integration Tests**: **MANDATORY** to include at least one integration test using a shared JSON scenario for each affected API endpoint.
+- **API Integration Tests**: **MANDATORY** to include at least one integration test using a shared JSON scenario for each affected API endpoint. If the claim requires the real app process and Retrofit/OkHttp, the owning test may live in `app/src/androidTest/` beside a loopback server; name the server harness, shipped-client path, receipts, and runtime gate explicitly.
 - **Rule-Driven Verification**: Link the canonical specification record and map each
   required applicability row to test IDs, static checks, review evidence, or an
   explicit reason no executable test is needed.

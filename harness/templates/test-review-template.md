@@ -59,6 +59,7 @@ List every FR, AC, and documented edge case from the active specification and sp
 - [ ] Unit/integration/UI test isolation is appropriate for its layer.
 - [ ] API tests use shared JSON scenarios where applicable; instrumented loopback ownership is documented when the real app process is required.
 - [ ] Loopback-boundary tests drive the shipped client and record redacted request receipts; direct fixture-helper calls are not the sole evidence.
+- [ ] Loopback-boundary tests drive the shipped client and record redacted request receipts; direct fixture-helper calls are not the sole evidence.
 - [ ] Import hygiene passes.
 
 ### Conditional Categories

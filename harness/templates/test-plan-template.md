@@ -63,7 +63,7 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 | T1 | \<precondition\> | \<action / trigger\> | \<expected outcome\> |
 | T2 | \<precondition\> | \<action / trigger\> | \<expected outcome\> |
 
-### `<ClassName>IntegrationTest.kt` or `<FixtureServer>Test.kt` — Integration
+### `<ClassName>IntegrationTest.kt` or `<FixtureServer>InstrumentedTest.kt` — Integration
 
 > **MANDATORY**: Every new or exercised API endpoint must have at least one integration test using a shared JSON
 > scenario. When a real app-process HTTP boundary is required, the owning test may run in the instrumented target

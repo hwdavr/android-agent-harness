@@ -35,8 +35,9 @@ Checklist for reviewing any code change before it is considered complete.
 ## Testing
 
 - [ ] New use cases, ViewModels, and mappers have unit tests
-- [ ] At least one integration test per new API endpoint
-- [ ] Shared JSON scenarios used — no inline mock data in test cases
+- [ ] At least one integration test per new API endpoint; an instrumented loopback boundary is valid when the shipped app process is part of the claim
+- [ ] Shared JSON scenarios used — no inline API mock data in test cases or fixture-server contract payloads
+- [ ] Loopback-boundary tests start the server before app launch, drive the shipped Retrofit/OkHttp client, record redacted receipts, and fail closed on listener/setup failure
 - [ ] Platform capability matrix exists and covers minimum, target, and important API boundaries
 - [ ] Unsupported runtime/device/model/locale/permission conditions fail loudly; no skipped environment is recorded as pass
 - [ ] Platform-bound behavior has a real instrumented boundary test; fake recognizers and JVM-only intent tests are supplemental only

@@ -76,6 +76,12 @@ Each scenario may contain:
 - if an API is used by a ViewModel function, create an integration test backed by a shared JSON scenario and assert the ViewModel-exposed `UiState` against `expected.ui`
 - if an API is used only by domain/repository/use case logic without directly changing UI state, create an integration test backed by a shared JSON scenario and assert `expected.domain`
 - instrumented UI tests may also consume `expected.ui` when Android runtime behavior must be verified
+- Android instrumented targets may own an integration boundary when a real app-process Retrofit/OkHttp call must reach
+  a local loopback server; the test still consumes a shared or feature-owned JSON scenario and asserts the shipped
+  client's observable result.
+- A typed fixture-server adapter may supply UI-only state variants when shared JSON cannot express the state cleanly,
+  but its response shape must be covered by the boundary test and payloads must not be embedded in individual test
+  methods.
 - a shared scenario may contain both `expected.domain` and `expected.ui`, but each test should assert the layer it owns
 - do not force every UI detail into the shared contract
 - keep expectations logical, not pixel-perfect

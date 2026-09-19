@@ -28,9 +28,9 @@ usage() {
   cat >&2 <<'USAGE'
 Usage: check-full-source-rules.sh [--project-root <path>]
 
-Runs architecture, Compose, localization, navigation, and test-assertion
-checkers against the complete source tree, followed by the AI/WebView security
-evaluator and its contract test. Every checker runs; the command returns
+Runs architecture, Compose, localization, navigation, test-assertion, and
+Android UI-test HTTP boundary checkers against the complete source tree,
+followed by the AI/WebView security evaluator and its contract tests. Every checker runs; the command returns
 non-zero when one or more checkers report violations.
 USAGE
   exit 2
@@ -90,6 +90,11 @@ run_check "Navigation rules (full source)" \
 run_check "Test assertion rules (full test source)" \
   bash "$SCRIPT_DIR/check-test-assertions-quality.sh" \
   --project-root "$PROJECT_ROOT"
+run_check "Android UI-test HTTP boundary" \
+  bash "$SCRIPT_DIR/check-android-test-http-boundary.sh" \
+  --project-root "$PROJECT_ROOT"
+run_check "Android UI-test HTTP boundary contract" \
+  bash "$SCRIPT_DIR/tests/android-test-http-boundary-contract-test.sh"
 run_check "AI security rules" \
   bash "$SCRIPT_DIR/check-ai-security-rules.sh" \
   --root "$PROJECT_ROOT"

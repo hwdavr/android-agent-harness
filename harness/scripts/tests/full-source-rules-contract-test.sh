@@ -5,7 +5,9 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+# The harness is a submodule mounted at .harness, so this contract lives four
+# levels below the Android project root (tests → scripts → harness → .harness).
+REPO_ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
 BUNDLE="$REPO_ROOT/harness/scripts/check-full-source-rules.sh"
 fixture_root="$(mktemp -d "${TMPDIR:-/tmp}/full-source-rules-test.XXXXXX")"
 trap 'rm -rf "$fixture_root"' EXIT
@@ -71,6 +73,8 @@ grep -Fq -- '--all' "$BUNDLE" || fail "bundle does not force full-source scans"
 grep -Fq 'failed=0' "$BUNDLE" || fail "bundle does not aggregate checker failures"
 grep -Fq 'check-ai-security-rules.sh' "$BUNDLE" \
   || fail "bundle does not invoke the AI security evaluator"
+grep -Fq 'check-android-test-http-boundary.sh' "$BUNDLE" \
+  || fail "bundle does not invoke the Android UI-test HTTP boundary checker"
 grep -Fq 'ai-security-rules-contract-test.sh' "$BUNDLE" \
   || fail "bundle does not invoke the AI security contract test"
 
@@ -107,6 +111,8 @@ for expected in \
   "Localization rules (full source)" \
   "Navigation rules (full source)" \
   "Test assertion rules (full test source)" \
+  "Android UI-test HTTP boundary" \
+  "Android UI-test HTTP boundary contract" \
   "AI security rules" \
   "AI security rule contract"; do
   printf '%s\n' "$output" | grep -Fq ">> $expected" \

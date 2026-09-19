@@ -57,7 +57,9 @@ Gate: Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery implem
 
 Feature delivery is implementation-first: implement the approved plan before the Testing stage.
 
-Output: All source files across Data, Domain, and UI layers created or modified; `docs/current/summary_v<N>.md` updated with Implementation stage marked complete.
+Output: All required source files across Data, Domain, UI, or test-infrastructure layers created or modified;
+`docs/current/summary_v<N>.md` updated with Implementation stage marked complete. Test-infrastructure changes must
+keep fixture state in the test target and leave production ViewModels/repositories unaware of fixture selection.
 Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI changes conform to `docs/product/design_system.md` plus any explicit approved exception in `docs/current/design.md`.
 
 ---
@@ -68,7 +70,8 @@ Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI ch
 Create or complete the approved tests against the implementation and verify them GREEN. Do not
 introduce a separate feature-level RED/TDD stage.
 
-Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with test count and coverage.
+Output: Unit tests, integration tests, loopback-boundary tests when required, and shared JSON scenarios created or
+updated; `docs/current/summary_v<N>.md` updated with test count, request-receipt evidence, and coverage.
 Gate: tests pass, coverage targets met. Additionally, run `bash harness/scripts/check-journey-registry.sh --run-all` to verify no existing critical journey is regressed. For any instrumented claim that rich text or an inline formatting mark is visibly rendered, run `bash harness/scripts/check-rendered-output-contract.sh` for the named method and require source-fed `captureToImage()` plus an explicit pixel comparison; state-only marks and a non-empty screenshot are supplemental evidence.
 
 ---

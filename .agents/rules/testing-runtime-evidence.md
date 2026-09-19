@@ -16,6 +16,11 @@ SDK behavior, hardware/device services, models, locales, permissions, or visual 
 - Use stable semantics/test tags and real UI gestures.
 - Do not use `Thread.sleep`; use `waitUntil` or `waitForIdle`.
 - Do not call a real production backend; use deterministic local fixtures.
+- When an instrumented loopback server supplies the endpoint, start it before
+  app launch, pass a validated local URL through composition or DI, record
+  redacted method/path/status receipts, and stop it during teardown. Listener
+  failure, missing URL, zero requests, or a live-network fallback is blocked
+  evidence.
 
 ## Platform-Bound Evidence
 
