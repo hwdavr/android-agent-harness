@@ -96,6 +96,40 @@ expect_success bash "$VALIDATOR" \
   --destinations-file "$FIXTURE_ROOT/app/src/main/java/com/example/notesapp/navigation/Destinations.kt" \
   --validate
 
+# Case 1b: A test class may be declared in a split-name Kotlin file. The
+# Gradle selector is valid when the class is present in the declared source.
+cat << 'EOF' > "$FIXTURE_ROOT/app/src/androidTest/java/com/example/test/DummyJourneyManagementTest.kt"
+package com.example.test
+
+class DummyJourneyManagementTestSupport
+
+class DummyJourneyTest {
+    fun splitFileJourneyMethod() {
+    }
+}
+EOF
+
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
+journeys:
+  - id: J-DUMMY-SPLIT-FILE
+    description: "Home -> Editor -> save -> return to Home"
+    introduced_by: test-feature/US-1
+    destinations:
+      - Home
+      - Editor
+    test_file: app/src/androidTest/java/com/example/test/DummyJourneyManagementTest.kt
+    test_method: splitFileJourneyMethod
+    gradle_selector: "com.example.test.DummyJourneyTest#splitFileJourneyMethod"
+    boundary: "Editor pops back to Home"
+    post_return_assertion: "Saved note visible in Home list"
+EOF
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
+  --destinations-file "$FIXTURE_ROOT/app/src/main/java/com/example/notesapp/navigation/Destinations.kt" \
+  --validate
+
 # Case 2: Missing registry file fails
 expect_failure 2 "Journey registry file not found" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
@@ -253,4 +287,42 @@ expect_success bash "$VALIDATOR" \
   --run-all \
   --dry-run
 
-echo "PASS: All 10 journey-registry contract test cases passed."
+# Case 11: A Gradle runner that exits 0 without executing the selected test is rejected.
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
+journeys:
+  - id: J-DUMMY-JOURNEY
+    description: "Home -> Editor -> save"
+    introduced_by: test-feature/US-1
+    destinations:
+      - Home
+      - Editor
+    test_file: app/src/androidTest/java/com/example/test/DummyJourneyTest.kt
+    test_method: validJourneyMethod
+    gradle_selector: "com.example.test.DummyJourneyTest#validJourneyMethod"
+    boundary: "Editor pops back to Home"
+    post_return_assertion: "Saved note visible in Home list"
+EOF
+
+cat << 'EOF' > "$FIXTURE_ROOT/gradlew"
+#!/usr/bin/env bash
+printf '%s\n' 'com.example.test.DummyJourneyTest#validJourneyMethod PASSED'
+EOF
+chmod +x "$FIXTURE_ROOT/gradlew"
+
+expect_success bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
+  --run-one J-DUMMY-JOURNEY
+
+cat << 'EOF' > "$FIXTURE_ROOT/gradlew"
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "$FIXTURE_ROOT/gradlew"
+
+expect_failure 1 "did not execute registered journey method(s)" bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
+  --run-one J-DUMMY-JOURNEY
+
+echo "PASS: All 12 journey-registry contract test cases passed."

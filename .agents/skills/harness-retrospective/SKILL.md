@@ -20,8 +20,6 @@ Work only on harness-environment concerns:
 - `docs/knowledge/pitfalls/` and `docs/changes/` audit records.
 
 Do not fix or reinterpret:
-
-- product or acceptance-specification gaps;
 - model capability, model quality, OEM behavior, or platform-service limitations;
 - application source defects or feature implementation;
 - lifecycle status transitions, slice selection, or implementation authorization.
@@ -37,11 +35,11 @@ Classify before editing. Use exactly one primary classification:
 | `HARNESS_ENVIRONMENT` | A workflow, gate, validator, fixture, environment probe, or evidence rule allowed a false pass or misleading result. | Repair and regression-test the harness. |
 | `WORKFLOW_GAP` | The correct rule exists nowhere or is not attached to the required stage. | Add it to the authoritative workflow/template/gate and test enforcement. |
 | `TEST_EVIDENCE_GAP` | The test runner or evidence schema cannot prove the required boundary. | Add a mechanical evidence requirement; do not implement the product behavior. |
-| `SPEC_GAP` | The expected product behavior or acceptance criteria are ambiguous, conflicting, or absent. | Stop; route to Planner/Product Owner. |
+| `SPEC_GAP` | The expected product behavior or acceptance criteria are ambiguous, conflicting, or absent. | Repair `spec.md`, `design.md`, and `sprint-contract.md` in the feature workspace; then re-validate downstream artifacts. |
 | `MODEL_OR_PLATFORM_CAPABILITY` | The runtime, model, OEM, SDK, or service cannot provide the requested capability. | Stop; route to product/architecture decision. Add only fail-loud diagnostics if needed. |
 | `APPLICATION_DEFECT` | The harness correctly exposed a defect in shipped application behavior. | Stop; route to the application bug-fixing workflow. |
 
-Never relabel a `SPEC_GAP`, `MODEL_OR_PLATFORM_CAPABILITY`, or `APPLICATION_DEFECT` as a harness issue just to keep working.
+Never relabel a `MODEL_OR_PLATFORM_CAPABILITY` or `APPLICATION_DEFECT` as a harness issue just to keep working.
 
 ## Workflow
 
@@ -88,7 +86,17 @@ Make the smallest change that closes the gap at its source:
 
 Use `apply_patch` for file edits. Do not add suppressions, exclusions, warning-only paths, silent skips, or broad “best effort” fallbacks. Do not modify product code, product requirements, model behavior, or platform capabilities while acting as this skill.
 
-### 5. Enforce fail-loud environment behavior
+### 5. Repair specification artifacts (SPEC_GAP only)
+
+When the classification is `SPEC_GAP`, repair the feature workspace artifacts in `docs/product/<dated-feature-dir>/`:
+
+1. **`spec.md`** — Clarify the ambiguous, conflicting, or absent acceptance criteria. Add or rewrite the affected requirement with unambiguous language. Preserve all unrelated requirements.
+2. **`design.md`** — Update the design to reflect the corrected specification. Adjust affected UI states, flows, or component descriptions. Preserve unrelated design decisions.
+3. **`sprint-contract.md`** — Update affected slices, acceptance criteria, and scope to align with the repaired spec and design. Preserve unrelated slices and their status.
+
+After repairing, verify internal consistency: every acceptance criterion in `spec.md` must trace to a design element in `design.md` and to at least one slice or task in `sprint-contract.md`. Flag any remaining gaps that require user confirmation before proceeding.
+
+### 6. Enforce fail-loud environment behavior
 
 For every required emulator, physical device, model, locale, permission, hardware feature, SDK, or external service, require one of these outcomes:
 
@@ -97,7 +105,7 @@ For every required emulator, physical device, model, locale, permission, hardwar
 
 Missing, skipped, warning-only, empty, fake-only, or unexecuted evidence must never be recorded as passing. A product-approved fallback is allowed only when it is explicitly represented in the capability matrix and covered by a test. Keep unsupported environments diagnosable instead of converting them into green results.
 
-### 6. Validate the harness change
+### 7. Validate the harness change
 
 Run the narrowest relevant checks, then the project gates affected by the change. Typical checks are:
 
@@ -113,7 +121,7 @@ git diff --check
 
 Expected negative cases must be asserted as expected failures in a contract test; do not hide them with `|| true` or suppress their output. Run Android build, unit, coverage, lint, or instrumented checks when the harness change affects app compilation or that gate’s behavior. Otherwise, state explicitly that no app source changed and why those gates were not relevant.
 
-### 7. Record and hand off
+### 8. Record and hand off
 
 Create `docs/changes/harness-retro-<YYYY-MM-DD>-<short-slug>/retrospective.md` with:
 
@@ -125,7 +133,7 @@ Create `docs/changes/harness-retro-<YYYY-MM-DD>-<short-slug>/retrospective.md` w
 - Routed items that are intentionally outside harness scope.
 - Remaining risk.
 
-Quote exact artifact paths and one-line excerpts so a reviewer can verify the change. If the incident is a specification, model-capability, platform-capability, or application defect, route it clearly and leave the harness unchanged except for an independently justified fail-loud diagnostic or handoff improvement.
+Quote exact artifact paths and one-line excerpts so a reviewer can verify the change. If the incident is a model-capability, platform-capability, or application defect, route it clearly and leave the harness unchanged except for an independently justified fail-loud diagnostic or handoff improvement.
 
 ## Completion Criteria
 
@@ -135,7 +143,8 @@ The retrospective is complete only when:
 - The authoritative workflow, rule, gate, template, or validator is minimally repaired.
 - A regression fixture proves the old false pass is rejected.
 - Required unavailable environments cannot pass silently.
-- Out-of-scope product, specification, model, and application concerns are routed rather than “fixed” here.
+- `SPEC_GAP` repairs are reflected consistently across `spec.md`, `design.md`, and `sprint-contract.md`.
+- Out-of-scope model, platform, and application concerns are routed rather than "fixed" here.
 - Relevant validators and contract tests pass, including the expected negative cases.
 - The retrospective artifact records commands, results, paths, excerpts, and remaining risk.
 - The working tree and any lifecycle state remain accurate; no slice is selected or transitioned merely to complete the retrospective.

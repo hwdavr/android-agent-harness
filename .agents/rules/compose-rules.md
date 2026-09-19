@@ -211,6 +211,12 @@ Avoid `remember` in tests by keeping stateless content Composables as the primar
 - Apply `imePadding()` to the sheet content so the focused field and remaining controls stay visible above the keyboard, and keep the sheet's results region scrollable.
 - The design (`design.md`) must include a distinct keyboard-visible mockup showing the sheet **still open** with the keyboard, alongside the base mockup — never a dismissed sheet.
 
+### Bottom-Sheet Composition
+
+- Use the platform presentation drag handle as the sheet's single grabber. Do not add a custom drag capsule when the native handle is visible.
+- Do not add an `Icons.Default.Close` or other generic header close button to a bottom sheet unless the approved design or requirement explicitly calls for that control.
+- Native swipe-down and scrim dismissal are the default sheet exit affordances; any additional dismissal control requires a documented design reason and a stable test tag.
+
 ---
 
 ## Jetpack Compose Verification

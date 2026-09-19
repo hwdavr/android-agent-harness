@@ -250,8 +250,15 @@ def validate_registry():
                         if method and meth_part != method:
                             violations.append(f"{entry_desc}: gradle_selector method '{meth_part}' does not match test_method '{method}'")
                         simple_class = cls_part.split(".")[-1]
-                        if simple_class not in test_file_str:
-                            violations.append(f"{entry_desc}: gradle_selector class '{simple_class}' does not match file name '{test_file_str}'")
+                        class_declared = re.search(
+                            rf"\b(?:class|object)\s+{re.escape(simple_class)}\b",
+                            test_content,
+                        )
+                        if simple_class not in test_file_str and not class_declared:
+                            violations.append(
+                                f"{entry_desc}: gradle_selector class '{simple_class}' "
+                                f"does not match file name or declaration in '{test_file_str}'"
+                            )
 
     if violations:
         print("======================================================", file=sys.stderr)
@@ -313,6 +320,58 @@ def check_coverage(journeys):
 
     print("======================================================")
 
+def _fresh_result_methods(start_ns):
+    result_root = project_root / "app" / "build" / "outputs" / "androidTest-results" / "connected"
+    if not result_root.is_dir():
+        return set()
+
+    methods = set()
+    for result_file in result_root.rglob("TEST-*.xml"):
+        try:
+            if result_file.stat().st_mtime_ns < start_ns:
+                continue
+            import xml.etree.ElementTree as ElementTree
+            root = ElementTree.parse(result_file).getroot()
+        except (OSError, ElementTree.ParseError):
+            continue
+        for testcase in root.iter("testcase"):
+            method = testcase.attrib.get("name")
+            if method:
+                methods.add(method)
+    return methods
+
+def run_journey_command(cmd, expected_methods):
+    import time
+
+    start_ns = time.time_ns()
+    result = subprocess.run(
+        cmd,
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+    )
+    output = (result.stdout or "") + (result.stderr or "")
+    print(output, end="")
+    if result.returncode != 0:
+        return result.returncode
+
+    result_methods = _fresh_result_methods(start_ns)
+    if result_methods:
+        missing_methods = [method for method in expected_methods if method not in result_methods]
+    else:
+        missing_methods = [
+            method for method in expected_methods
+            if not re.search(rf"(?:#|\.|Test case '\S+\.){re.escape(method)}(?:\b|\(\))", output)
+        ]
+    if missing_methods:
+        print(
+            "FAIL: connectedDebugAndroidTest exited 0 but did not execute registered journey "
+            f"method(s): {', '.join(missing_methods)}",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
 if mode == "validate":
     valid, _ = validate_registry()
     sys.exit(0 if valid else 2)
@@ -354,8 +413,7 @@ elif mode == "run-one":
         print("[DRY-RUN] Command would be executed successfully.")
         sys.exit(0)
 
-    res = subprocess.run(cmd, cwd=project_root)
-    sys.exit(0 if res.returncode == 0 else 1)
+    sys.exit(0 if run_journey_command(cmd, [entry["test_method"]]) == 0 else 1)
 
 elif mode == "run-all":
     valid, journeys = validate_registry()
@@ -383,8 +441,7 @@ elif mode == "run-all":
         print("[DRY-RUN] Command would be executed successfully.")
         sys.exit(0)
 
-    res = subprocess.run(cmd, cwd=project_root)
-    sys.exit(0 if res.returncode == 0 else 1)
+    sys.exit(0 if run_journey_command(cmd, [j["test_method"] for j in journeys]) == 0 else 1)
 
 else:
     print(f"FAIL: Unknown mode '{mode}'", file=sys.stderr)
