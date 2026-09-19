@@ -43,8 +43,8 @@ Gate: requirements clear, impacted files identified, API classified, UiState/Nav
 ---
 
 ### Stage 2 — Implementation Plan ⛔ STOP
-The implementation and test plans must preserve every approved Rule Applicability
-decision and identify evidence for each Required row.
+The implementation and test plans must link the canonical Rule Applicability record
+and identify evidence for each `Required` row.
 **INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: `docs/current/implementation_plan_v<N>.md` created; `docs/current/test_plan_v<N>.md` created; `docs/current/summary_v<N>.md` updated.

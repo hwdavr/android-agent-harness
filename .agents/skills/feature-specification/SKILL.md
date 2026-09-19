@@ -125,7 +125,7 @@ The spec file must always describe:
 - Explicit assumptions
 - Open questions (all must be ✅ Answered)
 - Verification expectations
-- The complete **Rule Applicability** matrix, copied from the canonical template
+- The complete **Rule Applicability** matrix, copied from the canonical template; this specification is the canonical record for downstream plans and reviews
 
 **Outcome decomposition (one AC per named outcome):** Each functional requirement decomposes into acceptance criteria covering every distinct behavior its text promises — the happy path plus each fallback, error, boundary, and persistence/compatibility outcome. A single AC per FR is valid only when the FR names exactly one outcome. In particular, a requirement that promises *backward/forward compatibility* or *graceful fallback for missing/unknown input* must include a dedicated AC for each fallback path — a clean round-trip AC alone does not cover it.
 

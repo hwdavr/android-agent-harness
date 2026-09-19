@@ -4,7 +4,12 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+if [[ ! -f "$PROJECT_ROOT/settings.gradle.kts" && -f "$PROJECT_ROOT/../settings.gradle.kts" ]]; then
+  PROJECT_ROOT="$(cd "$PROJECT_ROOT/.." && pwd)"
+fi
 TEMPLATE="$PROJECT_ROOT/harness/templates/rule-applicability-template.md"
+IMPLEMENTATION_PLAN_TEMPLATE="$PROJECT_ROOT/harness/templates/implementation-plan-template.md"
+TEST_PLAN_TEMPLATE="$PROJECT_ROOT/harness/templates/test-plan-template.md"
 STAGE_CHECKER="$PROJECT_ROOT/harness/scripts/check-stage-artifacts.sh"
 HARNESS_AGENTS="$PROJECT_ROOT/.harness/AGENTS.md"
 
@@ -26,6 +31,8 @@ assert_exists() {
 
 for required_file in \
   "$TEMPLATE" \
+  "$IMPLEMENTATION_PLAN_TEMPLATE" \
+  "$TEST_PLAN_TEMPLATE" \
   "$PROJECT_ROOT/harness/templates/requirement-summary-template.md" \
   "$STAGE_CHECKER" \
   "$PROJECT_ROOT/AGENTS.md" \
@@ -62,11 +69,14 @@ assert_contains "$TEMPLATE" "Not applicable — <feature-specific reason>"
 assert_contains "$TEMPLATE" "Exception — approved by <user/date>"
 assert_contains "$TEMPLATE" "analytics: none"
 assert_contains "$STAGE_CHECKER" "require_rule_applicability"
+assert_contains "$STAGE_CHECKER" "require_rule_applicability_mapping"
+assert_contains "$IMPLEMENTATION_PLAN_TEMPLATE" "spec_v<N>.md#rule-applicability"
+assert_contains "$TEST_PLAN_TEMPLATE" "spec_v<N>.md#rule-applicability"
 assert_contains "$PROJECT_ROOT/.agents/skills/requirement-analysis/SKILL.md" "Rule Applicability"
 assert_contains "$PROJECT_ROOT/.agents/skills/feature-specification/SKILL.md" "Rule Applicability"
 assert_contains "$PROJECT_ROOT/.agents/skills/requirement-capture/SKILL.md" "Rule Applicability"
 assert_contains "$PROJECT_ROOT/.agents/skills/implementation-plan/SKILL.md" "Rule Applicability Implementation"
-assert_contains "$PROJECT_ROOT/.agents/skills/android-testing/SKILL.md" "Every required Rule Applicability row"
+assert_contains "$PROJECT_ROOT/.agents/skills/android-testing/SKILL.md" 'Every `Required` Rule Applicability row'
 assert_contains "$PROJECT_ROOT/.agents/skills/feature-orient/SKILL.md" "print-context-index.sh"
 assert_contains "$PROJECT_ROOT/.agents/skills/code-quality-fix/SKILL.md" "Rule Applicability matrix"
 assert_contains "$PROJECT_ROOT/.agents/skills/android-code-quality-checks/SKILL.md" "Rule Applicability Harness Contract"
@@ -85,7 +95,7 @@ assert_contains "$PROJECT_ROOT/.agents/gates/ci-checks.md" "Rule Applicability H
 assert_contains "$PROJECT_ROOT/harness/templates/code-review-template.md" "Rule Applicability Reconciliation"
 assert_contains "$PROJECT_ROOT/harness/templates/test-review-template.md" "Rule Applicability Test Reconciliation"
 assert_contains "$PROJECT_ROOT/AGENTS.md" "rule-applicability-template.md"
-assert_contains "$PROJECT_ROOT/AGENTS.md" "feature-specific evidence"
+assert_contains "$PROJECT_ROOT/AGENTS.md" "approved specification is canonical"
 assert_contains "$PROJECT_ROOT/AGENTS.md" "print-context-index.sh"
 
 cmp -s "$PROJECT_ROOT/AGENTS.md" "$HARNESS_AGENTS" || \
@@ -111,10 +121,33 @@ create_spec() {
 
 VALID_DOCS="$TEMP_ROOT/valid"
 INVALID_DOCS="$TEMP_ROOT/invalid"
-mkdir -p "$VALID_DOCS" "$INVALID_DOCS"
+UNLINKED_PLAN_DOCS="$TEMP_ROOT/unlinked-plan"
+UNMAPPED_PLAN_DOCS="$TEMP_ROOT/unmapped-plan"
+mkdir -p "$VALID_DOCS" "$INVALID_DOCS" "$UNLINKED_PLAN_DOCS" "$UNMAPPED_PLAN_DOCS"
 touch "$VALID_DOCS/summary_v1.md" "$INVALID_DOCS/summary_v1.md"
 create_spec "$VALID_DOCS/spec_v1.md"
 create_spec "$INVALID_DOCS/spec_v1.md" SEC
+
+create_rule_mapping() {
+  local output="$1"
+  local specification_reference="$2"
+  local omit_rule_id="${3:-}"
+  local heading="$4"
+  local rule_id
+
+  printf '%s\n' '# Plan' '' "$heading" '' \
+    "Canonical decisions: [$specification_reference]($specification_reference)." '' \
+    '| Required Rule ID | Evidence |' \
+    '|---|---|' > "$output"
+  for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC; do
+    if [ "$rule_id" != "$omit_rule_id" ]; then
+      printf '| %s | contract evidence |\n' "$rule_id" >> "$output"
+    fi
+  done
+}
+
+create_rule_mapping "$VALID_DOCS/implementation_plan_v1.md" "spec_v1.md#rule-applicability" "" "## Rule Applicability Implementation"
+create_rule_mapping "$VALID_DOCS/test_plan_v1.md" "spec_v1.md#rule-applicability" "" "## Rule Applicability Test Mapping"
 
 bash "$STAGE_CHECKER" feature-delivery requirement-analysis "$VALID_DOCS" >/dev/null \
   || fail "complete rule-applicability matrix did not pass the requirement gate"
@@ -128,4 +161,36 @@ set -e
 printf '%s\n' "$invalid_output" | rg -Fq "missing the SEC rule-applicability row" \
   || fail "incomplete matrix did not report the missing rule row"
 
-echo "PASS: rule-applicability contract accepts complete and rejects incomplete requirement artifacts."
+if ! bash "$STAGE_CHECKER" feature-delivery implementation-plan "$VALID_DOCS" >/dev/null; then
+  fail "canonical rule mapping did not pass the implementation-plan gate"
+fi
+
+touch "$UNLINKED_PLAN_DOCS/summary_v1.md"
+create_spec "$UNLINKED_PLAN_DOCS/spec_v1.md"
+create_rule_mapping "$UNLINKED_PLAN_DOCS/implementation_plan_v1.md" "other_spec.md#rule-applicability" "" "## Rule Applicability Implementation"
+create_rule_mapping "$UNLINKED_PLAN_DOCS/test_plan_v1.md" "spec_v1.md#rule-applicability" "" "## Rule Applicability Test Mapping"
+
+set +e
+unlinked_output="$(bash "$STAGE_CHECKER" feature-delivery implementation-plan "$UNLINKED_PLAN_DOCS" 2>&1)"
+unlinked_status=$?
+set -e
+
+[ "$unlinked_status" -ne 0 ] || fail "implementation-plan gate passed without the canonical specification reference"
+printf '%s\n' "$unlinked_output" | rg -Fq "missing the canonical Rule Applicability reference" \
+  || fail "implementation-plan gate did not report the missing canonical reference"
+
+touch "$UNMAPPED_PLAN_DOCS/summary_v1.md"
+create_spec "$UNMAPPED_PLAN_DOCS/spec_v1.md"
+create_rule_mapping "$UNMAPPED_PLAN_DOCS/implementation_plan_v1.md" "spec_v1.md#rule-applicability" API "## Rule Applicability Implementation"
+create_rule_mapping "$UNMAPPED_PLAN_DOCS/test_plan_v1.md" "spec_v1.md#rule-applicability" "" "## Rule Applicability Test Mapping"
+
+set +e
+unmapped_output="$(bash "$STAGE_CHECKER" feature-delivery implementation-plan "$UNMAPPED_PLAN_DOCS" 2>&1)"
+unmapped_status=$?
+set -e
+
+[ "$unmapped_status" -ne 0 ] || fail "implementation-plan gate passed without an API evidence mapping"
+printf '%s\n' "$unmapped_output" | rg -Fq "missing the required API evidence mapping" \
+  || fail "implementation-plan gate did not report the missing required-rule mapping"
+
+echo "GREEN: rule-applicability contract passes canonical mappings and rejects incomplete or unlinked artifacts."

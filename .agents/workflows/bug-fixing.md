@@ -54,8 +54,8 @@ Gate: test exits RED (non-zero), failure message matches root cause, no applicat
 ---
 
 ### Stage 3 — Fix Plan ⛔ STOP
-The plan must preserve the approved Rule Applicability decisions, including changed
-triggers and verification evidence.
+The plan must link the approved Rule Applicability record and map every `Required` rule,
+including changed triggers and verification evidence.
 **INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Adapt — the plan must include:

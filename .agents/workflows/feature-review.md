@@ -39,7 +39,7 @@ Read all four baseline documents produced by the `/feature-delivery` workflow be
 > [!IMPORTANT]
 > If any of these files are missing, **immediately flag it as a blocking gap** in the Stage 5 rubric (`Handoff readiness` category). Do not silently skip a missing baseline — absent plans mean the review has no ground truth to compare against.
 
-After reading, summarise the key constraints and open decisions you will verify during Stages 2–4. Use these notes as your checklist anchor throughout the review.
+After reading, summarise the key constraints and all ten rule decisions you will verify during Stages 2–4. Independently compare the diff with the matrix: missing rows, unsupported `Not applicable` outcomes, and unapproved exceptions are blocking findings. Use these notes as your checklist anchor throughout the review.
 
 ---
 

@@ -27,9 +27,11 @@ detailed checklist; `code-review-and-quality` supplies routing, review order, an
 
 ## Rule Applicability Reconciliation
 
-Copy the approved decisions from the specification and implementation plan. Reconcile
-each row against the diff and cite the corresponding check or review evidence. A
-triggered `Not applicable` rule or an unapproved exception is **REVISION REQUIRED**.
+Read the approved decisions and rationales from the canonical specification, then read
+the required-rule evidence mapping from the implementation plan. Independently
+reconcile all ten rules against the diff and cite the corresponding check or review
+evidence. A triggered `Not applicable` rule or an unapproved exception is **REVISION
+REQUIRED**.
 
 | Rule ID | Approved decision / rationale | Trigger observed | Evidence checked | Result |
 |---|---|---|---|---|

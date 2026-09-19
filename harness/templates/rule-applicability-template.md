@@ -1,7 +1,9 @@
 # Rule Applicability Template
 
-Copy this section into every requirement artifact. Keep all ten rows. The approved
-artifact is the source of truth for planning, implementation, and review.
+Copy this section into the active specification artifact. Keep all ten rows. The
+approved specification is the single source of truth for planning, implementation, and
+review. Downstream implementation and test plans link this `#rule-applicability`
+section and map its `Required` rows; they do not copy the full matrix.
 
 ## Rule Applicability
 

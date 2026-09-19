@@ -8,22 +8,17 @@ Use this template when producing the test plan in the **Implementation Plan** st
 
 > One line description of what is being tested.
 
-## Rule Applicability Test Reconciliation
+## Rule Applicability Test Mapping
 
-Copy the approved ten-row matrix and identify the test or explicit feature-specific reason for each decision. Every `Required` row needs a verification entry or a documented blocking failure.
+Canonical decisions: [`spec_v<N>.md#rule-applicability`](spec_v<N>.md#rule-applicability).
+Do not duplicate the ten-row matrix. Map every `Required` row from that exact approved
+specification to a test, static check, review evidence, or documented blocking failure.
+Its `Not applicable` and `Exception` rationales remain canonical in the specification;
+update the specification if a new test trigger appears.
 
-| Rule ID | Rule document | Decision | Test/evidence |
-|---|---|---|---|
-| ARCH | `android-architecture.md` | <decision> | |
-| IMPL | `implementation-rules.md` | <decision> | |
-| TEST | `testing-strategy.md` | <decision> | |
-| SUI | `compose-rules.md` | <decision> | |
-| L10N | `localization-rules.md` | <decision> | |
-| NAV | `navigation-rules.md` | <decision> | |
-| API | `api-contract-rules.md` | <decision> | |
-| OBS | `observability.md` | <decision> | |
-| ANL | `analytics-rules.md` | <decision> | |
-| SEC | `android-security.md` | <decision> | |
+| Required Rule ID | Test / evidence |
+|---|---|
+| <RULE_ID> | <test IDs, command, or blocking evidence> |
 
 ---
 
@@ -32,7 +27,7 @@ Copy the approved ten-row matrix and identify the test or explicit feature-speci
 | Layer | Included | Reason |
 |-------|----------|--------|
 | Unit tests (`app/src/test/`) | ✅ / ❌ | |
-| Integration tests (`app/src/test/`) | ✅ / ❌ | |
+| Integration tests (`app/src/test/` or instrumented loopback boundary) | ✅ / ❌ | |
 | Instrumented UI tests (`app/src/androidTest/`) | ✅ / ❌ | |
 
 ---
@@ -68,9 +63,11 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 | T1 | \<precondition\> | \<action / trigger\> | \<expected outcome\> |
 | T2 | \<precondition\> | \<action / trigger\> | \<expected outcome\> |
 
-### `<ClassName>IntegrationTest.kt` — Integration
+### `<ClassName>IntegrationTest.kt` or `<FixtureServer>Test.kt` — Integration
 
-> **MANDATORY**: Every new API endpoint must have at least one integration test using a shared JSON scenario.
+> **MANDATORY**: Every new or exercised API endpoint must have at least one integration test using a shared JSON
+> scenario. When a real app-process HTTP boundary is required, the owning test may run in the instrumented target
+> beside a local loopback server and must assert request receipts plus the shipped client's observable result.
 
 | ID | Given | When | Then | Shared Scenario |
 |----|-------|------|------|-----------------|
@@ -121,7 +118,7 @@ supplemental and cannot replace the rendered-node pixel comparison.
 |---------------|----------|-----------------|-------------|
 | `scenario.json` | ✅ | ✅ | ✅ |
 
-Location: `sharedContracts/test-scenarios/`
+Location: `sharedContracts/test-scenarios/` or a feature-owned JSON resource catalog in the test target.
 
 ---
 

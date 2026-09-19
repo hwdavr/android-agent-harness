@@ -14,22 +14,17 @@ Use this template when producing the plan in the **Implementation Plan** stage.
 
 > 2–3 sentences. What is being built, why, and for whom.
 
-## Rule Applicability
+## Rule Applicability Implementation
 
-Copy the complete approved matrix from the specification. Every `Required` row must have implementation work and verification evidence below; every conditional document must be loaded only when its row is `Required` or an approved exception applies.
+Canonical decisions: [`spec_v<N>.md#rule-applicability`](spec_v<N>.md#rule-applicability).
+Do not duplicate the ten-row matrix. Map every `Required` row from that exact approved
+specification to implementation work and verification evidence below. Its `Not
+applicable` and `Exception` rationales remain canonical in the specification; update
+the specification if implementation introduces a new trigger.
 
-| Rule ID | Rule document | Decision | Implementation work / verification evidence |
-|---|---|---|---|
-| ARCH | `android-architecture.md` | <decision> | |
-| IMPL | `implementation-rules.md` | <decision> | |
-| TEST | `testing-strategy.md` | <decision> | |
-| SUI | `compose-rules.md` | <decision> | |
-| L10N | `localization-rules.md` | <decision> | |
-| NAV | `navigation-rules.md` | <decision> | |
-| API | `api-contract-rules.md` | <decision> | |
-| OBS | `observability.md` | <decision> | |
-| ANL | `analytics-rules.md` | <decision> | |
-| SEC | `android-security.md` | <decision> | |
+| Required Rule ID | Implementation work / verification evidence |
+|---|---|
+| <RULE_ID> | <planned files, check, and evidence> |
 
 ---
 
@@ -42,6 +37,7 @@ Copy the complete approved matrix from the specification. Every `Required` row m
 | Domain | `path/to/UseCase.kt` | new |
 | Data | `path/to/Dto.kt`, `path/to/Mapper.kt` | modify |
 | Navigation | `path/to/NavGraph.kt` | extend |
+| Test infrastructure | `path/to/FixtureServer.kt`, `path/to/TestHarness.kt` | new/modify |
 | Tests | `path/to/ViewModelTest.kt` | modify |
 
 ---

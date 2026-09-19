@@ -26,7 +26,7 @@ As a <user type>, I want to <action> so that <outcome>.
 
 ## Rule Applicability
 
-Complete every row before approval. Use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`, and cite the evidence expected for every `Required` row.
+Complete every row before approval. Use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`, and cite the evidence expected for every `Required` row. This specification is canonical; downstream plans link its `#rule-applicability` section and reviews independently reconcile all ten decisions.
 
 | Rule ID | Rule document | Decision | Feature-specific evidence or reason |
 |---|---|---|---|

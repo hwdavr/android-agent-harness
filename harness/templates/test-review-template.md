@@ -22,10 +22,12 @@ Do not label recorded, up-to-date, skipped, or unexecuted evidence as a fresh pa
 
 ## Rule Applicability Test Reconciliation
 
-Copy the approved decisions from the specification and test plan. Confirm the planned
-test, static-check, review evidence, or explicit non-applicable rationale exists and
-remains valid against the diff. Do not invent analytics or logging tests when their
-triggers are absent.
+Read the approved decisions and rationales from the canonical specification, then read
+the required-rule evidence mapping from the test plan. Independently reconcile all ten
+rules against the diff. Confirm the planned test/static/review evidence exists, uses a
+real production trigger where applicable, and remains valid against the diff. A
+triggered `Not applicable` rule or an unapproved exception is **REVISION REQUIRED**;
+do not invent logging or analytics tests when the trigger is absent.
 
 | Rule ID | Approved decision / rationale | Trigger or planned evidence checked | Test / static-check evidence | Result |
 |---|---|---|---|---|
@@ -55,7 +57,8 @@ List every FR, AC, and documented edge case from the active specification and sp
 - [ ] Each mapped test has a direct observable assertion for the requirement.
 - [ ] No unused capture variables, tautological assertions, empty verifies, or assertion-free interaction tests.
 - [ ] Unit/integration/UI test isolation is appropriate for its layer.
-- [ ] API tests use shared JSON scenarios where applicable.
+- [ ] API tests use shared JSON scenarios where applicable; instrumented loopback ownership is documented when the real app process is required.
+- [ ] Loopback-boundary tests drive the shipped client and record redacted request receipts; direct fixture-helper calls are not the sole evidence.
 - [ ] Import hygiene passes.
 
 ### Conditional Categories

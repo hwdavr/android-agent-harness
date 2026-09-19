@@ -12,7 +12,7 @@ Use this template when producing `spec_v<N>.md` in the **Requirement, Impact & D
 
 ## Rule Applicability
 
-Complete every row before approval. Use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`, and preserve this matrix in the implementation and review artifacts.
+Complete every row before approval. Use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`. This is the canonical matrix: implementation and test plans link this section and map every `Required` row; reviews independently reconcile all ten decisions against the diff.
 
 | Rule ID | Rule document | Decision | Feature-specific evidence or reason |
 |---|---|---|---|

@@ -41,7 +41,7 @@ approved behavior before invoking this skill.
 ## Execute
 
 ### 1. Execute Planned Tests
-For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When `production_journey.required` is `true`, implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the approved Rule Applicability matrix. Every required Rule Applicability row must have test, static-check, or review evidence.
+For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When `production_journey.required` is `true`, implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the canonical specification's Rule Applicability matrix. Every `Required` Rule Applicability row must have test, static-check, or review evidence.
 
 ### 2. Unit tests (`app/src/test/`)
 Write unit tests for all new or modified use cases, ViewModels, mappers, and formatters.

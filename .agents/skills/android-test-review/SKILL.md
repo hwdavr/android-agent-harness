@@ -30,9 +30,10 @@ If a required baseline or test-evidence artifact is missing, record it as a bloc
 
 ### B0. Rule Applicability Test Reconciliation
 
-Read the approved Rule Applicability matrix and test plan before assessing tests. For
-ARCH, IMPL, TEST, SUI, L10N, NAV, API, OBS, ANL, and SEC, verify that the planned test,
-static-check, review evidence, or explicit non-applicable rationale exists and remains
+Read the canonical specification's approved Rule Applicability matrix and the test
+plan's required-rule evidence mapping before assessing tests. For ARCH, IMPL, TEST,
+SUI, L10N, NAV, API, OBS, ANL, and SEC, independently verify that the planned test,
+static-check, review evidence, or canonical non-applicable rationale exists and remains
 valid against the diff. Do not invent analytics or logging tests when their triggers are
 absent; an unsupported decision is **REVISION REQUIRED**.
 
