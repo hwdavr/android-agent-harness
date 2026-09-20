@@ -1331,6 +1331,10 @@ def build_parser() -> argparse.ArgumentParser:
     rendered_output.add_argument("--test-method", required=True)
     rendered_output.add_argument("--claim", default="")
     rendered_output.add_argument("--require-source", action="store_true")
+    keyboard_visual = subparsers.add_parser("keyboard-visual")
+    keyboard_visual.add_argument("--project-root", type=Path, default=None)
+    keyboard_visual.add_argument("--test-file", required=True, type=Path)
+    keyboard_visual.add_argument("--test-method", required=True)
     return parser
 
 
@@ -1350,6 +1354,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return run_assertions(args)
     if args.checker == "rendered-output":
         return run_rendered_output(args)
+    if args.checker == "keyboard-visual":
+        return run_keyboard_visual(args)
     raise AssertionError(f"Unknown checker: {args.checker}")
 
 
@@ -2098,6 +2104,84 @@ def run_rendered_output(args: argparse.Namespace) -> int:
 
     print_rule("Rendered rich-text appearance evidence", result.violations)
     return finish(result, "rendered rich-text appearance contract")
+
+
+def run_keyboard_visual(args: argparse.Namespace) -> int:
+    """Require a keyboard visual method to prove that the IME is visible."""
+
+    project_root = (args.project_root or repository_root()).resolve()
+    test_path = args.test_file
+    if not test_path.is_absolute():
+        test_path = project_root / test_path
+    test_path = test_path.resolve()
+
+    result = Result(project_root)
+    print("\n======================================================")
+    print("  Keyboard Visual Method Contract Checker")
+    print("======================================================")
+    print(f"  Test: {project_relative(test_path, project_root)}#{args.test_method}")
+
+    if not path_is_under(test_path, project_root):
+        result.add_path(test_path, 1, "keyboard visual test file must stay inside the project")
+    elif not test_path.is_file():
+        result.add_path(test_path, 1, "keyboard visual test file does not exist")
+    else:
+        try:
+            source_file = KotlinFile(test_path)
+        except (OSError, UnicodeError) as error:
+            result.add_path(test_path, 1, f"unable to parse keyboard visual test source: {error}")
+        else:
+            functions = [function for function in source_file.functions if function.name == args.test_method]
+            if not functions:
+                result.add_path(test_path, 1, f"keyboard visual test method is missing: {args.test_method}")
+            else:
+                target = functions[0]
+                body_calls = [
+                    call
+                    for call in source_file.calls
+                    if target.body_start < call.open_index < target.body_end
+                ]
+                helper_names = {"ensureImeVisible", "assertImeVisible", "requireImeVisible"}
+                if not any(call.name in helper_names for call in body_calls):
+                    result.add(
+                        source_file,
+                        target.name_index,
+                        "keyboard visual method must explicitly prove IME visibility via "
+                        "ensureImeVisible(), assertImeVisible(), or requireImeVisible()",
+                    )
+                if not any(call.name in {"check", "assertTrue", "assertThat"} for call in body_calls):
+                    result.add(
+                        source_file,
+                        target.name_index,
+                        "keyboard visual method must assert the IME-visibility proof before capture",
+                    )
+
+                token_texts = [token.text for token in source_file.tokens]
+                has_ime_type = any(
+                    token_texts[index : index + 5] == ["WindowInsetsCompat", ".", "Type", ".", "ime"]
+                    for index in range(max(0, len(token_texts) - 4))
+                )
+                if not has_ime_type:
+                    result.add(
+                        source_file,
+                        target.name_index,
+                        "keyboard visual helper must inspect WindowInsetsCompat.Type.ime()",
+                    )
+                if "showSoftInput" not in token_texts:
+                    result.add(
+                        source_file,
+                        target.name_index,
+                        "keyboard visual helper must request the software IME with showSoftInput()",
+                    )
+                if "isVisible" not in token_texts:
+                    result.add(
+                        source_file,
+                        target.name_index,
+                        "keyboard visual helper must poll IME visibility with isVisible()",
+                    )
+
+    print_rule("Keyboard visual method evidence", result.violations)
+    return finish(result, "keyboard visual method contract")
 
 
 if __name__ == "__main__":

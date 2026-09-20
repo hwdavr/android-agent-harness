@@ -125,6 +125,62 @@ valid="$fixture_root/valid"
 write_valid_fixture "$valid"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$valid")
 
+# A keyboard-visible target must resolve the migrated device-keyed reference
+# component before the visual gate can evaluate the capture.
+keyboard_reference_missing="$fixture_root/keyboard-reference-missing"
+write_valid_fixture "$keyboard_reference_missing"
+jq '.states["picker-content"].dynamic_regions[3] = {"kind": "keyboard", "handling": "fixture", "rationale": "The fixture requires the real emulator keyboard component."}' \
+  "$keyboard_reference_missing/visual_evidence/visual-target.json" \
+  > "$keyboard_reference_missing/visual_evidence/visual-target.tmp"
+mv "$keyboard_reference_missing/visual_evidence/visual-target.tmp" \
+  "$keyboard_reference_missing/visual_evidence/visual-target.json"
+expect_failure "missing reference-component manifest" \
+  bash "$VALIDATOR" "$keyboard_reference_missing"
+
+# A keyboard-labeled visual state must not pass when the test only captures after
+# Compose focus and never proves that the software IME is visible. This fixture
+# reproduces the old false pass: the screenshot and manifest are valid, but the
+# method has no IME request, inset check, or visibility assertion.
+keyboard_visual_without_ime="$fixture_root/keyboard-visual-without-ime"
+write_valid_fixture "$keyboard_visual_without_ime"
+sed \
+  -e 's/picker-content/picker-keyboard/g' \
+  -e 's/emojiPickerContentLightTheme/emojiPickerKeyboardVisible/g' \
+  "$keyboard_visual_without_ime/sprint-contract.md" \
+  > "$keyboard_visual_without_ime/sprint-contract.tmp"
+mv "$keyboard_visual_without_ime/sprint-contract.tmp" "$keyboard_visual_without_ime/sprint-contract.md"
+sed \
+  -e 's/picker-content/picker-keyboard/g' \
+  -e 's/emojiPickerContentLightTheme/emojiPickerKeyboardVisible/g' \
+  "$keyboard_visual_without_ime/feature_list.json" \
+  > "$keyboard_visual_without_ime/feature_list.tmp"
+mv "$keyboard_visual_without_ime/feature_list.tmp" "$keyboard_visual_without_ime/feature_list.json"
+sed 's/picker-content/picker-keyboard/g' \
+  "$keyboard_visual_without_ime/visual_evidence/visual-target.json" \
+  > "$keyboard_visual_without_ime/visual_evidence/visual-target.tmp"
+mv "$keyboard_visual_without_ime/visual_evidence/visual-target.tmp" \
+  "$keyboard_visual_without_ime/visual_evidence/visual-target.json"
+sed 's/picker-content/picker-keyboard/g' \
+  "$keyboard_visual_without_ime/visual_evidence/reference-map.json" \
+  > "$keyboard_visual_without_ime/visual_evidence/reference-map.tmp"
+mv "$keyboard_visual_without_ime/visual_evidence/reference-map.tmp" \
+  "$keyboard_visual_without_ime/visual_evidence/reference-map.json"
+sed \
+  -e 's/picker-content/picker-keyboard/g' \
+  -e 's/emojiPickerContentLightTheme/emojiPickerKeyboardVisible/g' \
+  "$keyboard_visual_without_ime/visual_evidence/reference-anchor-verification.md" \
+  > "$keyboard_visual_without_ime/visual_evidence/reference-anchor-verification.tmp"
+mv "$keyboard_visual_without_ime/visual_evidence/reference-anchor-verification.tmp" \
+  "$keyboard_visual_without_ime/visual_evidence/reference-anchor-verification.md"
+sed \
+  -e 's/emojiPickerContentLightTheme/emojiPickerKeyboardVisible/g' \
+  "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt" \
+  > "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.tmp"
+mv "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.tmp" \
+  "$fixture_root/app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt"
+expect_failure "keyboard visual method must explicitly prove IME visibility" \
+  bash "$VALIDATOR" "$keyboard_visual_without_ime"
+
 missing_runtime_setup="$fixture_root/missing-runtime-setup"
 write_valid_fixture "$missing_runtime_setup"
 sed 's#bash harness/scripts/prepare-visual-runtime.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" && ##' \

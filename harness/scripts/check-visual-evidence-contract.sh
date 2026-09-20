@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FEATURE_DIR="${1:-}"
 MODE="${2:---evaluate}"
 CHECK_THEME="$SCRIPT_DIR/check-visual-theme.sh"
+CHECK_REFERENCE_COMPONENTS="$SCRIPT_DIR/check-reference-components.sh"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -182,6 +183,14 @@ if [ "$MODE" = "--evaluate" ]; then
   [ "$TARGET_LOCALE" = "$RUNTIME_LOCALE" ] \
     || fail "visual target locale $TARGET_LOCALE must match runtime locale $RUNTIME_LOCALE"
 
+  if jq -e 'any(.states | to_entries[] | .value.dynamic_regions[]?; .kind == "keyboard" and .handling != "not-present")' "$TARGET_MANIFEST" >/dev/null; then
+    bash "$CHECK_REFERENCE_COMPONENTS" \
+      --project-root "$ROOT_DIR" \
+      --device "$TARGET_DEVICE" \
+      --appearance "$TARGET_APPEARANCE" \
+      || fail "keyboard-visible visual states require a valid device-keyed software-keyboard reference component"
+  fi
+
   while IFS= read -r visual_command; do
     [ -n "$visual_command" ] || continue
     printf '%s\n' "$visual_command" | grep -Fq 'harness/scripts/prepare-visual-runtime.sh' \
@@ -286,6 +295,13 @@ EOF
       || fail "$test_id mockup mapping must declare the intended content state"
     printf '%s\n' "$CONTRACT_ROW" | grep -Fq "contentState: \`$MAP_CONTENT_STATE_ID\`" \
       || fail "$test_id contract row must declare contentState: \`$MAP_CONTENT_STATE_ID\` to bind the runtime fixture to its mockup"
+    if printf '%s\n' "$MAP_CONTENT_STATE_ID $MAP_CONTENT_STATE $VISUAL_METHOD" | grep -Eiq 'keyboard|ime'; then
+      bash "$SCRIPT_DIR/check-keyboard-visual-method-contract.sh" \
+        --project-root "$ROOT_DIR" \
+        --test-file "$VISUAL_FILE" \
+        --test-method "$VISUAL_METHOD" \
+        || fail "$test_id keyboard visual method does not prove software-IME visibility"
+    fi
     bash "$CHECK_THEME" \
       --expected "$RUNTIME_APPEARANCE" \
       --image "$FEATURE_DIR/$REFERENCE_ASSET" \
