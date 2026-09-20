@@ -10,7 +10,7 @@ description: Set up focused session context and project rules for the active tas
 1. `AGENTS.md`
 2. `rules/android-architecture.md` (skip if already loaded this session)
 3. `rules/testing-strategy.md` (auto-loaded as system rule — do not re-read)
-4. The workflow file that matches the task
+4. The workflow or direct skill that matches the task
 5. The skill(s) for the current stage only
 6. Source files for the specific feature area (ViewModel, use case, repository interface)
 
@@ -39,10 +39,32 @@ documents. During testing/review load `rules/testing-practices.md`; add
 
 | Task type | File to load |
 |-----------|-------------|
+| Small UI-only adjustment to an existing screen | `skills/android-ui-layer/SKILL.md` (direct skill lane) |
 | New feature or enhancement | `workflows/feature-delivery.md` |
 | Bug, crash, or regression | `workflows/bug-fixing.md` |
 | UI implementation or update | `workflows/create-ui-and-verify.md` |
 | API contract change | `workflows/api-contract-update.md` |
+
+### Small UI Patch Triage
+
+Use the `android-ui-layer` skill directly when the request is a localized presentation
+change to one existing screen or component and all of the following are true:
+
+- the change is limited to Compose presentation, design-system tokens, accessibility
+  presentation, or focused UI-test/visual evidence;
+- no API, persistence, domain, ViewModel behavior, navigation, or new user journey
+  changes are required; and
+- the change is an intentional visual adjustment, not an unexplained regression,
+  crash, failed gesture, wrong state transition, or unknown root cause.
+
+Direct skill lanes still load the skill's required rules and design system, preserve
+accessibility/localization/architecture constraints, and run the skill's build gate;
+they do not create unrelated workflow artifacts. Do not route a small UI patch
+through `bug-fixing` merely because a current-state screenshot is supplied as
+evidence. Use `bug-fixing` when the reported problem is unexpected runtime behavior,
+a regression, a crash, or a root cause that must be reproduced before it can be
+safely changed. If a request contains both concerns, split the visual adjustment
+from the behavioral defect and route each concern to its own path.
 
 ---
 
@@ -81,7 +103,7 @@ documents. During testing/review load `rules/testing-practices.md`; add
 ## Session Start Checklist
 
 - [ ] `AGENTS.md` + both L1 rule files loaded
-- [ ] Correct workflow identified
+- [ ] Correct workflow or direct skill identified
 - [ ] Only current-stage skill(s) loaded
 - [ ] Implementation rules loaded only when the Implementation stage is selected
 - [ ] Feature-area source files loaded

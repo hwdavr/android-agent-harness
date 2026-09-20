@@ -9,6 +9,14 @@ Use this workflow when:
 - Implementing a new screen from a design screenshot or generated mockup
 - Updating an existing screen to match a revised design
 
+## Triage: Small UI Patch
+
+Do not use this workflow for a small, localized UI-only adjustment to one existing
+presentation surface. Invoke `android-ui-layer` directly for Compose layout or
+styling, design-system tokens, accessibility presentation, or a focused existing
+component change when no API, persistence, domain, ViewModel behavior, navigation,
+or new user journey change is required.
+
 ---
 
 ## Stages

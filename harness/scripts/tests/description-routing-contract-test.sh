@@ -25,6 +25,13 @@ assert_contains() {
     || fail "$file description must contain routing term: $expected"
 }
 
+assert_file_contains() {
+  local file="$1"
+  local expected="$2"
+  rg -qi -- "$expected" "$PROJECT_ROOT/$file" \
+    || fail "$file must contain routing rule: $expected"
+}
+
 DESCRIPTION_FILES="$(rg -l '^description:' "$PROJECT_ROOT/.agents" | sort)"
 DESCRIPTION_COUNT="$(printf '%s\n' "$DESCRIPTION_FILES" | sed '/^$/d' | wc -l | tr -d ' ')"
 [ "$DESCRIPTION_COUNT" -eq "$EXPECTED_DESCRIPTION_COUNT" ] \
@@ -58,6 +65,17 @@ assert_contains .agents/workflows/harness-generator.md 'complex.*slice'
 assert_contains .agents/workflows/harness-evaluation.md 'complex.*code.*test.*review'
 assert_contains .agents/workflows/harness-fix.md 'evaluator.*finding'
 assert_contains .agents/skills/context-management/SKILL.md 'session.*context'
+assert_file_contains .agents/skills/context-management/SKILL.md 'Small UI Patch Triage'
+assert_file_contains .agents/skills/context-management/SKILL.md 'android-ui-layer.*direct skill lane'
+assert_file_contains .agents/skills/context-management/SKILL.md 'current-state'
+assert_file_contains .agents/skills/context-management/SKILL.md 'supplied as'
+assert_file_contains .agents/skills/context-management/SKILL.md 'evidence'
+assert_file_contains .agents/workflows/bug-fixing.md 'UI-only triage'
+assert_file_contains .agents/workflows/bug-fixing.md 'RED'
+assert_file_contains .agents/workflows/bug-fixing.md 'fix-plan'
+assert_file_contains .agents/workflows/create-ui-and-verify.md 'Triage: Small UI Patch'
+assert_file_contains .agents/workflows/create-ui-and-verify.md 'Invoke.*android-ui-layer.*directly'
+assert_file_contains .agents/skills/android-ui-layer/SKILL.md 'direct implementation lane'
 assert_contains .agents/skills/ui-verification/SKILL.md 'UI.*visual'
 assert_contains .agents/skills/security-and-hardening/SKILL.md 'Android.*security'
 assert_contains .agents/skills/api-contract-update/SKILL.md 'API.*contract'

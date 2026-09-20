@@ -8,6 +8,11 @@ description: Implement Compose UI screens and components with unidirectional sta
 ## Purpose
 Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composable screens, and navigation wiring.
 
+For a small UI-only adjustment to one existing screen or component, this skill is a
+direct implementation lane. Do not create unrelated feature, bug-fixing, or
+`create-ui-and-verify` workflow artifacts unless the change expands beyond the
+skill's scope or explicitly requires their visual-verification contract.
+
 ---
 
 ## Load
