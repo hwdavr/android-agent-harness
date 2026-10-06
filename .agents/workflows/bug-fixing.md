@@ -42,6 +42,15 @@ Adapt for bugs:
 - Root cause statement (triggered when \<cond\>, causing \<behavior\>)
 - Design the fix (UiState changes if needed)
 
+For bugs that involve a user journey, Compose rendering, navigation, Android runtime,
+external authentication, permissions, lifecycle, or device-specific behavior, reproduce
+the report with `agent-device` before writing the test. Open the installed app with
+`agent-device open <application-id> --foreground`, use the returned semantic references
+to follow the reported path, inspect the resulting UI and logs, and close the session
+with `agent-device close`. Record the device, installed build, steps, expected result,
+actual result, and any crash or log evidence in the bug context. This runtime exploration
+defines the test path; it does not replace the required RED regression test.
+
 Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with Context Provenance and stage evidence. The summary references the approved Rule Applicability matrix in the spec rather than copying it.
 Gate: root cause is specific enough that a reproduction test can be written. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing requirement-analysis` — must exit 0.
 
@@ -52,6 +61,11 @@ Gate: root cause is specific enough that a reproduction test can be written. Run
 
 Write a failing test that mechanically proves the root cause before any fix is written.
 This is the only workflow stage that requires pre-implementation RED/TDD evidence.
+
+When Stage 1 used `agent-device`, translate the observed journey into the lowest
+sufficient deterministic test layer. Keep external services such as Auth0 deterministic
+in test code while preserving the app-owned transition and visible result that failed on
+the device.
 
 Output: Failing reproduction test file created; `docs/current/spec_v<N>.md` updated with a Reproduction Test section; `docs/current/summary_v<N>.md` updated.
 Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. For a visual or rich-text rendering reproduction, the named instrumented test must include source-fed `captureToImage()` and an explicit pixel comparison; the stage gate enforces this. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
@@ -131,10 +145,16 @@ non-runtime N/A.
     ./gradlew installDebug
     ```
 2. Record the install command, connected device IDs, and exit status in `docs/current/summary_v<N>.md`.
+3. When Stage 1 included a runtime journey, use `agent-device` to repeat the original
+   journey against the installed debug app. Record the command, device, installed build,
+   observed result, and any saved logs or screenshots in `docs/current/summary_v<N>.md`,
+   then close the `agent-device` session. This is release smoke evidence; the GREEN
+   regression test remains the required automated proof.
 
 Output: Debug app installed on every connected device and emulator.
-Gate: when required, installation exits 0; failure or no connected device is blocked. Otherwise
-the feature-specific N/A rationale completes the stage.
+Gate: when required, installation exits 0 and any declared `agent-device` journey reaches
+its expected visible result; failure or no connected device is blocked. Otherwise the
+feature-specific N/A rationale completes the stage.
 ---
 
 ## Human-in-the-Loop Confirmation Points
