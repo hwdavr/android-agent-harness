@@ -152,6 +152,36 @@ if [ "$MODE" = "--evaluate" ]; then
 
   [ -f "$TARGET_MANIFEST" ] || fail "every visual feature requires visual_evidence/visual-target.json"
   [ -f "$REFERENCE_MAP" ] || fail "every runtime capture requires an explicit approved mockup mapping in visual_evidence/reference-map.json"
+
+  COMPARISON_ENGINE=$(jq -r '.comparison.engine // "legacy-runtime-only"' "$TARGET_MANIFEST")
+  if [ "$COMPARISON_ENGINE" = "roborazzi" ]; then
+    PEN_SOURCE=$(jq -r '.pen_source // empty' "$TARGET_MANIFEST")
+    PEN_NODE_ID=$(jq -r '.pen_node_id // empty' "$TARGET_MANIFEST")
+    [ -n "$PEN_SOURCE" ] || fail "Roborazzi visual targets must declare pen_source in visual-target.json"
+    [ -n "$PEN_NODE_ID" ] || fail "Roborazzi visual targets must declare pen_node_id in visual-target.json"
+    case "$PEN_SOURCE" in
+      /*|*..*) fail "pen_source must be a project-relative path without traversal: $PEN_SOURCE" ;;
+    esac
+    [ -s "$ROOT_DIR/$PEN_SOURCE" ] || fail "pen_source does not exist: $PEN_SOURCE"
+
+    ROBORAZZI_COMMANDS=$(jq -r --arg owner "$VISUAL_OWNER" '
+      .features[]
+      | select(.id == $owner)
+      | (.verification // [])[]
+      | select(test("verifyRoborazzi(Debug)?"))
+    ' "$FEATURE_JSON")
+    [ -n "$ROBORAZZI_COMMANDS" ] \
+      || fail "Roborazzi visual targets must declare a verifyRoborazziDebug verification command"
+    while IFS= read -r roborazzi_command; do
+      [ -n "$roborazzi_command" ] || continue
+      printf '%s\n' "$roborazzi_command" | grep -Fq 'verifyRoborazziDebug' \
+        || fail "Roborazzi verification commands must run verifyRoborazziDebug"
+      printf '%s\n' "$roborazzi_command" | grep -Eq 'recordRoborazziDebug|verifyAndRecordRoborazziDebug' \
+        && fail "implementation-recording Roborazzi commands are not acceptance evidence"
+    done <<EOF
+$ROBORAZZI_COMMANDS
+EOF
+  fi
   [ -f "$ANCHOR_REPORT" ] || fail "missing $ANCHOR_REPORT; visual evidence needs reference-anchor verification"
   grep -Fq "## Reference Anchor Verification" "$ANCHOR_REPORT" \
     || fail "$ANCHOR_REPORT has no '## Reference Anchor Verification' section"
@@ -330,10 +360,8 @@ EOF
       || fail "$test_id reference-anchor row must end with PASS"
   done
 
-  if [ -f "$SCRIPT_DIR/compare-visual-evidence.sh" ]; then
-    echo "Running perceptual visual comparison checks..."
-    bash "$SCRIPT_DIR/compare-visual-evidence.sh" --feature "$FEATURE_DIR" --crop-insets --project-root "$ROOT_DIR" \
-      || fail "perceptual visual comparison failed"
+  if [ "$COMPARISON_ENGINE" = "roborazzi" ]; then
+    echo "PASS: Roborazzi verification command and approved Pen source are declared."
   fi
 fi
 

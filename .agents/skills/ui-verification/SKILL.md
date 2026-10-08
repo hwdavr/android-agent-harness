@@ -8,8 +8,8 @@ description: Verify Android UI visually and interactively against approved desig
 ## Purpose
 
 Verify implemented UI against the approved design and design system after implementation. Keep
-deterministic structure and runtime evidence binding; use perceptual and AI comparison for scoped
-design judgment. The report schema exists only in
+deterministic structure and runtime evidence binding; use Roborazzi to compare the JVM Compose
+render with the approved PNG exported from the canonical `.pen` design. The report schema exists only in
 `harness/templates/ui-verification-template.json`.
 
 ## Load
@@ -76,24 +76,29 @@ Mask only runtime-variable content such as user text, identifiers, timestamps, b
 data, dynamic images, or counts. Preserve container bounds, layout, static labels, icons, borders,
 and background treatment. Record every mask and rationale.
 
-### Phase 6 — Perceptual comparison
+### Phase 6 — Roborazzi design comparison
+
+The canonical `.pen` file is the source of truth. Export the named frame/node to a PNG with the
+headless pen.dev CLI, normalize it to the same pixel dimensions as the Roborazzi device
+configuration, and commit that export beside the test as the approved design reference. The
+implementation test must render the same deterministic state and call `captureRoboImage()` with
+that reference path. Run the comparison only through Roborazzi:
 
 ```bash
-bash harness/scripts/compare-visual-evidence.sh \
-  --reference <approved-reference> \
-  --actual <runtime-capture> \
-  --diff-output <diff-overlay> \
-  --crop-insets
-
-bash harness/scripts/compare-visual-evidence.sh --feature "$FEATURE_DIR" --crop-insets
+./gradlew app:verifyRoborazziDebug
 ```
 
-- Every feature has one approved `visual_evidence/visual-target.json` manifest defining the target appearance, concrete device, logical size, locale, and named content states. The mockup generator reads it through `visual-target-prompt.sh`; the emulator preflight reads it through `prepare-visual-runtime.sh --target`.
-- `reference-map.json` must map every runtime capture exactly once to one stable `state_id` from that manifest; filename/token matching, duplicated target metadata, and anchor-only `null` entries are prohibited. The comparator resolves the approved `design/mockup_*.png`, content state, geometry, and dynamic handling from the same manifest.
+Do not run `recordRoborazziDebug`, `verifyAndRecordRoborazziDebug`, or the removed Python/Pillow
+comparator as part of verification. A screenshot recorded from the implementation is not an
+approved design baseline. `compareRoborazziDebug` is optional local review output; only
+`verifyRoborazziDebug` is the binding gate.
+
+- Every feature has one approved `visual_evidence/visual-target.json` manifest defining the target appearance, concrete device, logical size, locale, named content states, canonical `pen_source`, and `pen_node_id`. The mockup generator reads it through `visual-target-prompt.sh`; the emulator preflight reads it through `prepare-visual-runtime.sh --target`.
+- `reference-map.json` must map every runtime capture exactly once to one stable `state_id` from that manifest; filename/token matching, duplicated target metadata, and anchor-only `null` entries are prohibited. The state resolves the approved Pen-export PNG, content state, geometry, and dynamic handling from the same manifest.
 - Time, user content, identifiers, and keyboard variation each require an explicit approved handling. A `mask` must name only the dynamic region it excludes and state a rationale.
-- Binding mockup comparison passes at similarity >= 0.95 with zero high-severity defects, and reference-anchor geometry remains separately binding structural proof.
+- Binding mockup comparison passes through `verifyRoborazziDebug` against the approved Pen export, and reference-anchor geometry remains separately binding structural proof. No implementation-recorded golden is used.
 - Missing, ambiguous, dangling, stale, or metadata-mismatched references fail the gate.
-- Preserve the report, actual capture, and neon-magenta diff overlay.
+- Preserve the Roborazzi report and compare/actual artifacts when a difference is found.
 
 Evaluate composition, visual weight, palette, boundaries, icon identity, and typography hierarchy.
 A score cannot override a hidden CTA, clipping, overlap, or missing component.

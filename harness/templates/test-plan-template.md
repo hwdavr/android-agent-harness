@@ -74,13 +74,6 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 | T3 | \<precondition\> | \<action / trigger\> | \<expected outcome\> | `scenario.json` |
 | T4 | API returns error | load data | show error UiState | `scenario-error.json` |
 
-### `<ScreenName>ScreenTest.kt` — Instrumented UI
-
-| ID | Given | When | Then |
-|----|-------|------|------|
-| T5 | \<UiModel / UiState\> | render screen | \<visible / hidden elements\> |
-| T6 | \<user gesture\> | tap element | \<navigation / state change\> |
-
 ### `<Feature>VisualFlowTest.kt` — Dedicated Visual Flow *(only when `requires_visual_verification == true`)*
 
 > **MANDATORY**: When visual verification is required, write a dedicated `*VisualFlowTest.kt` instrumented test class that renders the active Composable in each critical visual state, calls `composeRule.waitForIdle()`, and captures a screenshot from within the running test via `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()`. Screenshots are saved to `/sdcard/Download/<name>.png` and pulled via `adb pull`. Post-test CLI screencaps (`&& adb exec-out screencap`) are prohibited.
@@ -95,6 +88,18 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 Each visual row's sprint-contract command must select the exact method using
 -Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#<method>,
 then pull the in-test screenshot with adb pull and verify it is non-empty.
+
+### `<ScreenName>RoborazziMockupTest.kt` — Pen-export comparison *(when the visual target is `.pen`-backed)*
+
+The JVM Compose test renders the same deterministic state and calls
+`captureRoboImage("<reference>.png")`. The reference PNG must be exported from the canonical
+`pen_source`/`pen_node_id` in `visual-target.json`; it must not be recorded from the implementation.
+The binding command is `./gradlew app:verifyRoborazziDebug`. `recordRoborazziDebug` and
+`verifyAndRecordRoborazziDebug` are authoring/recovery commands only and are not acceptance evidence.
+
+| ID | Pen source/node | Composable under test | Verification command | Reference PNG |
+|----|----------------|-----------------------|----------------------|---------------|
+| T-VIS-R1 | `UX/NotesApp.pen#<node-id>` | `<Composable name>` | `./gradlew app:verifyRoborazziDebug` | `app/src/test/roborazzi/<screen>.png` |
 
 ### Rendered Output Contract *(when a visual claim concerns rich text or inline formatting)*
 

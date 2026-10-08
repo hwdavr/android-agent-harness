@@ -9,18 +9,12 @@
 
 ---
 
-## Existing Surface Baseline
+## Canonical Pen Reference
 
-Complete this table for every screen marked `Updated` in **Screens Covered**. Run the named
-instrumented test on an Android emulator; the test must produce its capture while the Compose
-screen is active using `UiAutomation.takeScreenshot()` or `captureToImage()`, then pull the
-unchanged image into `design/`. A post-test command-line screencap or an AI-generated image is
-not a baseline. For a net-new-only design, write one row with `Not applicable — no existing
-surface is modified` and leave the evidence columns as `N/A`.
-
-| Existing surface | Baseline decision | Source test | Test method | Test-produced capture | Pulled baseline asset | Emulator execution evidence |
-|------------------|-------------------|-------------|-------------|-----------------------|-----------------------|-----------------------------|
-| <exact Updated screen name> | Required | `app/src/androidTest/.../<Screen>VisualFlowTest.kt` | `<captureMethod>` | `<capture_name>.png` | `design/baseline_<screen>.png` | `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<test-class>` — PASSED, <N>/<N> tests | 
+For a UI change, record the canonical `pen_source` and `pen_node_id` in
+`visual_evidence/visual-target.json`. Updated screens must describe the intended delta from the
+existing Compose surface, but do not create or retain an implementation screenshot baseline. The
+Pen export is the sole image reference for Roborazzi verification.
 
 ---
 

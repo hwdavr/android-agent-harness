@@ -1,6 +1,6 @@
 ---
 name: pen-design-editor
-description: Create, inspect, and precisely edit pen.dev .pen design files with the headless pen.dev CLI. Use for new pen designs, adding screens, targeted layout or style edits, visual inspection, and before/after comparison; not for Android implementation alone.
+description: Create, inspect, and edit pen.dev .pen designs with the CLI for screens, visual review, and targeted layout changes.
 ---
 
 # Pen Design Editor
