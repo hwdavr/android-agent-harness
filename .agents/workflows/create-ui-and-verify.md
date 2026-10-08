@@ -31,18 +31,21 @@ defect evidence. A screenshot showing the current/wrong behavior is evidence onl
 design reference.
 
 - **Approved reference provided:** Save the image to `docs/current/design/` and use it as the
-  original design reference. Do not invoke `ux-design` for this task.
+  original design reference. Do not invoke `pen-design-editor` for this task.
 - **Defect evidence provided, or no approved reference:** Save defect evidence separately under
-  `docs/current/evidence/`, then **INVOKE** the `ux-design` skill via the Skill tool (name:
-  `ux-design`). The skill must read `docs/product/design_system.md`, create the feature design
-  specification and mockup(s) under `docs/current/`, and record any deliberate exceptions to the
-  design system. Do not begin UI implementation until the generated mockup and design decisions
-  are approved by the user.
+  `docs/current/evidence/`, then **INVOKE** the `pen-design-editor` skill via the Skill tool (name:
+  `pen-design-editor`). The skill must read `docs/product/design_system.md`, use the canonical
+  `.pen` design source to create the feature design, export a verified mockup under `docs/current/`,
+  and record deliberate exceptions to the design system in `docs/current/design.md`. Do not begin
+  UI implementation until the exported mockup and design decisions are approved by the user.
 - **Reference path unavailable:** Stop and ask the user to attach the missing screenshot again;
   do not substitute an inferred design.
 
 The active plan must cite the approved design reference/mockup path and keep defect evidence
 separate. A generated mockup becomes the Stage 2 design reference only after user approval.
+After approval, promote the validated `.pen` source in place and delete only the run-owned
+intermediate design outputs according to `pen-design-editor`; retain the approved review PNG and
+continue through the existing implementation and verification stages unchanged.
 
 ### Stage 1 — UI Implementation
 **INVOKE** the `android-ui-layer` skill via the Skill tool (name: `android-ui-layer`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.

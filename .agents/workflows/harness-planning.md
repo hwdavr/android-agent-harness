@@ -51,6 +51,10 @@ needs a supported decision, trigger or rationale, and planned evidence before sl
 
 Output: `$FEATURE_DIR/spec.md` + `$FEATURE_DIR/design.md` + `$FEATURE_DIR/visual_evidence/visual-target.json` + `$FEATURE_DIR/design/mockup_*.png` visual mockup images (user-provided or AI-generated, if the change includes UI modifications) + a source-fed `design/baseline_*.png` image for every updated existing surface. Conditional requirements — design-system conformance, existing-surface baseline evidence, the complete Rule Applicability contract, and the keyboard-visible state/mockups for text-input surfaces — are defined in the `feature-specification` skill's Output section.
 Gate: Update the tracker status to `Awaiting specification approval`, then run `bash harness/scripts/check-stage-artifacts.sh harness-planning feature-specification "$FEATURE_DIR"` — it validates stage artifacts, lifecycle state, existing-surface baseline evidence, and the keyboard-visible mockup contract and must exit 0. For UI work, also verify `design.md` cites `docs/product/design_system.md`. **STOP — present specification, design document, source-fed baseline captures, and visual mockup images to user for review. Do not proceed until user explicitly approves.**
+After explicit design approval, apply the `pen-design-editor` finalization contract: promote the
+validated `.pen` over the original source, retain the approved review PNGs, and delete only the
+run-owned intermediate design outputs. This does not alter the slice-planning gate or any later
+harness-planning behavior.
 
 ### Stage 2 — Slice Planning ⛔ STOP FOR APPROVAL
 **INVOKE** the `slice-planning` skill via the Skill tool (name: `slice-planning`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.

@@ -37,8 +37,9 @@ Gate: requirements clear, impacted files identified, API classified, UiState/Nav
 
 **If the feature involves new screens or UI changes:**
 - Read `docs/product/design_system.md` before writing requirements or design artifacts. Treat it as the project-wide visual source of truth; record any explicit user-approved exception in `docs/current/design.md`.
-- **If user provided a screenshot or mockup image**: Save image(s) unchanged to `docs/current/design/`, write `docs/current/design.md` referencing them. Do **NOT** invoke the `ux-design` skill.
-- **If NO screenshot/mockup was provided**: **INVOKE** the `ux-design` skill via the Skill tool (name: `ux-design`). Reading SKILL.md manually is not a substitute. Output: `docs/current/design.md` + `docs/current/design/mockup_*.png` AI-generated visual mockup images.
+- **If user provided a screenshot or mockup image**: Save image(s) unchanged to `docs/current/design/`, write `docs/current/design.md` referencing them. Do **NOT** invoke the `pen-design-editor` skill.
+- **If NO screenshot/mockup was provided**: **INVOKE** the `pen-design-editor` skill via the Skill tool (name: `pen-design-editor`). Reading SKILL.md manually is not a substitute. Use the canonical `.pen` design source (or create one), then output `docs/current/design.md` plus verified `docs/current/design/mockup_*.png` exports. The `.pen` file is the editable source; the PNG is the review artifact.
+- After the user approves a generated design, follow `pen-design-editor`'s finalization contract: promote the validated `.pen` over the original source, retain the approved PNG review asset, and delete only run-owned intermediate outputs. All later feature-delivery stages and approval gates remain unchanged.
 
 ---
 

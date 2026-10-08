@@ -138,23 +138,34 @@ Do not include an "Open Questions" section with unresolved items. If there are u
 
 The spec is a living document — if a clarified answer changes a decision, update `spec.md` (and `design.md`, if produced) before proceeding.
 
-### 6. Generate Design & Mockups (New Screen or UI Enhancement)
+### 6. Generate Design with `pen-design-editor` (New Screen or UI Enhancement)
 
 **Skip this step** for logic-only changes.
 
 Before handling either design-input path, read `docs/product/design_system.md`. The active `design.md` must link it and list every explicit user-approved exception, or state that there are none.
 
+For generated UI designs, `pen-design-editor` is the canonical design workflow. It replaces the
+former AI-image mockup path: do not invoke `ux-design`, `generate_image`, or any other mockup
+generator from this skill. The editable `.pen` file is the source of truth; exported PNGs are
+review artifacts derived from that file.
+
 **If the user provided a screenshot or mockup image:**
 1. Save the user-provided image(s) unchanged to the active `design/` folder (`$FEATURE_DIR/design/` or `docs/current/design/`).
 2. Write `design.md` using `harness/templates/feature-design-template.md`, referencing the user-provided mockup(s) in the Design Assets section.
 3. Record any explicit user-approved differences between the supplied mockup and `docs/product/design_system.md`.
-4. **Do NOT invoke the `ux-design` skill** — the user-provided mockup is the feature-specific source of truth, with the global design system supplying all unspecified decisions.
+4. **Do NOT invoke the `pen-design-editor` skill** — the user-provided mockup is the feature-specific source of truth, with the global design system supplying all unspecified decisions.
 
 **If NO screenshot or mockup was provided:**
-**INVOKE** the `ux-design` skill via the Skill tool (name: `ux-design`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+**INVOKE** the `pen-design-editor` skill via the Skill tool (name: `pen-design-editor`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Input: The clarified requirements from Steps 1–5, the active artifact directory, and the task type classification.
-Output: `design.md` + `design/mockup_*.png` AI-generated visual mockup images in the active artifact directory.
+Output: canonical `.pen` design source plus `design.md` and verified `design/mockup_*.png` exports in the active artifact directory. `design.md` must link both the `.pen` source and each exported PNG.
+
+Do not promote or clean up the design source before approval. After the user approves the design,
+follow `pen-design-editor`'s finalization contract: replace the original `.pen` file with the
+validated final, retain the approved review PNG, and delete only the run-owned intermediate
+outputs. This approval transition must not change the remaining specification or implementation
+workflow stages.
 
 **Keyboard-visible state (any screen or bottom sheet with text input):** If the screen content or a bottom sheet contains a text box, text field, search field, or other text input, `design.md` must define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup. For a bottom sheet, that mockup must show the sheet **still open** with the keyboard — tapping the text input must not dismiss the sheet; only a scrim tap, swipe-down, or close action does (per the Keyboard / IME Behavior rule in `rules/compose-rules.md`). When the screen has a bottom toolbar, the keyboard-visible state must show the bottom toolbar **dismissed** while the keyboard is visible, per the same rule. The bottom toolbar must never be depicted behind the keyboard.
 
@@ -162,8 +173,8 @@ Output: `design.md` + `design/mockup_*.png` AI-generated visual mockup images in
 
 ## Output
 
-- Ad-hoc workflows: `docs/current/spec.md`, `docs/current/design.md`, and `docs/current/design/` mockup assets (user-provided or generated)
-- Harness planning: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/design.md`, and `$FEATURE_DIR/design/` mockup assets (user-provided or generated)
+- Ad-hoc workflows: `docs/current/spec.md`, `docs/current/design.md`, the canonical `.pen` source, and `docs/current/design/` review assets (user-provided or exported by `pen-design-editor`)
+- Harness planning: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/design.md`, the canonical `.pen` source, and `$FEATURE_DIR/design/` review assets (user-provided or exported by `pen-design-editor`)
 
 **Design-system conformance:** for UI work, `design.md` must link `docs/product/design_system.md` and list every explicit user-approved exception (or state that none exist).
 
@@ -178,7 +189,9 @@ Present the produced artifacts to the user and confirm:
 - [ ] `spec.md` exists with all required sections filled and no open questions.
 - [ ] `design.md` exists (if task type is new screen or UI enhancement) with all sections filled according to template.
 - [ ] `design.md` links to `docs/product/design_system.md` and records approved exceptions (or states that none exist).
+- [ ] For generated UI, `design.md` links the canonical `.pen` source produced by `pen-design-editor`; PNGs are derived review artifacts, not the editable source.
 - [ ] Visual mockup images exist in `design/` for every screen in `design.md` (user-provided screenshot or generated `mockup_*.png`).
+- [ ] After user approval, the validated `.pen` replaces the original source and only run-owned intermediate design outputs are deleted; approved review assets remain.
 - [ ] No assumptions or open questions remain.
 - [ ] The user has approved the specification (and design/mockups, if produced).
 - [ ] The artifacts are ready for slice planning.
