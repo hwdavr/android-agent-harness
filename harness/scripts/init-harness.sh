@@ -4,6 +4,7 @@ set -e
 
 HARNESS_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT_ROOT="$(cd "$HARNESS_ROOT/.." && pwd)"
+HARNESS_RELATIVE_PATH="${HARNESS_ROOT#"$PROJECT_ROOT"/}"
 PROJECT_NAME="$(basename "$PROJECT_ROOT")"
 PROJECT_SLUG="$(printf '%s' "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
 cd "$PROJECT_ROOT"
@@ -11,8 +12,13 @@ cd "$PROJECT_ROOT"
 ensure_link() {
   local target="$1"
   local link="$2"
-  if [ -L "$link" ]; then
-    echo "OK: $link is linked"
+  if [ -L "$link" ] && [ "$(readlink "$link")" = "$target" ]; then
+    echo "OK: $link -> $target"
+  elif [ -L "$link" ]; then
+    echo "REPAIRING: $link -> $(readlink "$link") (expected $target)"
+    rm "$link"
+    ln -s "$target" "$link"
+    echo "CREATED: $link -> $target"
   elif [ -e "$link" ]; then
     echo "MISSING SETUP: $link exists but is not the required symlink" >&2
     return 1
@@ -46,12 +52,12 @@ install_generator_plist() {
 
 initialize_project_entrypoints() {
   local failed=0
-  ensure_link ".harness/.agents" ".agents" || failed=1
-  ensure_link ".harness/harness" "harness" || failed=1
+  ensure_link "$HARNESS_RELATIVE_PATH/.agents" ".agents" || failed=1
+  ensure_link "$HARNESS_RELATIVE_PATH/harness" "harness" || failed=1
 
   if [ ! -e "AGENTS.md" ]; then
     cp "$HARNESS_ROOT/AGENTS.md" "AGENTS.md"
-    echo "CREATED: AGENTS.md from .harness/AGENTS.md"
+    echo "CREATED: AGENTS.md from $HARNESS_RELATIVE_PATH/AGENTS.md"
   elif [ -s "AGENTS.md" ]; then
     echo "OK: AGENTS.md already exists (kept project-specific version)"
   else
