@@ -18,6 +18,7 @@ This is the final gate before implementation begins.
 - `harness/templates/implementation-plan-template.md`
 - `harness/templates/test-plan-template.md`
 - `docs/current/spec_v<N>.md` (Requirement, Impact & Design Analysis stage output)
+- `docs/current/UI_contract.md` when the feature affects UI.
 
 When the approved `SEC` decision is `Required` or excepted, load
 `rules/android-security.md` and carry its required boundary, failure-mode, and test
@@ -50,6 +51,8 @@ The implementation plan must include:
   - Check if any new/modified endpoints are in `sharedContracts/openapi.yaml`.
   - If not, explicitly list the OpenAPI spec changes required.
 - **UiState Implementation**: Define the new fields and states matching the spec's designed state structure.
+- **UI State Stages**: For UI work, copy every Plan stage ID from `UI_contract.md` into its own
+  implementation and runtime-verification row. Do not collapse selected subtools into one row.
 - **Navigation Flow**: Reference routes, arguments, and backstack details from the design.
 - **Risks & Mitigations**: Identify technical risks (such as payload changes, synchronization issues, database migration) and document their mitigation strategies.
 - **Rule Applicability Implementation**: Link the canonical specification record and

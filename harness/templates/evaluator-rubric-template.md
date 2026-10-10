@@ -47,7 +47,7 @@ If any required answer is `No`, the evaluator MUST use `Revise`.
 - `ui_verification.json` present and passes `check-ui-verification-artifact.sh`: Yes / No / N/A
 - `reference-anchor-verification.md` references `*VisualFlowTest` methods in Runtime proof column: Yes / No / N/A
 - Canonical `pen_source`/`pen_node_id` and approved Pen-export PNG are declared: Yes / No / N/A
-- `./gradlew app:verifyRoborazziDebug` exits 0 without recording an implementation golden: Yes / No / N/A
+- Exact-content target: `./gradlew app:verifyRoborazziDebug` exits 0 without recording an implementation golden. Different-content target: structural evidence passes and full-screen pixel parity is explicitly not claimed: Yes / No / N/A
 - `check-visual-evidence-contract.sh` exits 0: Yes / No / N/A
 - Rich-text/inline-formatting appearance claims have source-fed `captureToImage()` evidence and an explicit checked pixel comparison in the named method: Yes / No / N/A
 

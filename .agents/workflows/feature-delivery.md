@@ -32,13 +32,14 @@ The specification must include the complete ten-row Rule Applicability matrix, a
 stage gate must reject missing or unsupported decisions.
 **INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
-Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with Context Provenance and stage evidence. The summary references the approved Rule Applicability matrix in the spec rather than copying it.
-Gate: requirements clear, impacted files identified, API classified, UiState/Navigation designed. Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery requirement-analysis` — must exit 0.
+Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with Context Provenance and stage evidence. For UI changes, also create `docs/current/UI_contract.md` from `harness/templates/UI_contract-template.md`. The summary references the approved Rule Applicability matrix in the spec rather than copying it.
+Gate: requirements clear, impacted files identified, API classified, UiState/Navigation designed. Complete the UI branch below when applicable, then run `bash harness/scripts/check-stage-artifacts.sh feature-delivery requirement-analysis` — must exit 0.
 
 **If the feature involves new screens or UI changes:**
-- Read `docs/product/design_system.md` before writing requirements or design artifacts. Treat it as the project-wide visual source of truth; record any explicit user-approved exception in `docs/current/design.md`.
-- **If user provided a screenshot or mockup image**: Save image(s) unchanged to `docs/current/design/`, write `docs/current/design.md` referencing them. Do **NOT** invoke the `pen-design-editor` skill.
-- **If NO screenshot/mockup was provided**: **INVOKE** the `pen-design-editor` skill via the Skill tool (name: `pen-design-editor`). Reading SKILL.md manually is not a substitute. Use the canonical `.pen` design source (or create one), then output `docs/current/design.md` plus verified `docs/current/design/mockup_*.png` exports. The `.pen` file is the editable source; the PNG is the review artifact.
+- Read `docs/product/design_system.md` before writing requirements or design artifacts. Treat it as the project-wide visual source of truth; record any explicit user-approved exception in `docs/current/UI_contract.md`.
+- Declare every visually distinct screen/state in the spec's `## Screen States` table. Inspect existing runtime states and controls, then copy the complete inventory to `UI_contract.md`, giving each state a unique design reference, deterministic runtime fixture, comparison mode, and plan stage ID. The requirement-analysis gate checks set equality.
+- **If user provided a screenshot or mockup image**: Save image(s) unchanged to `docs/current/design/` and map each approved state image in `docs/current/UI_contract.md`. Invoke `pen-design-editor` only for states the supplied images do not cover.
+- **If NO screenshot/mockup was provided**: **INVOKE** the `pen-design-editor` skill via the Skill tool (name: `pen-design-editor`). Reading SKILL.md manually is not a substitute. Use the canonical `.pen` design source (or create one), create missing screen/state frames, then output `docs/current/UI_contract.md` plus a verified `docs/current/design/mockup_*.png` export for each state. Render and inspect every export for correct icons and missing glyphs. The `.pen` file is the editable source; the PNGs are review artifacts.
 - After the user approves a generated design, follow `pen-design-editor`'s finalization contract: promote the validated `.pen` over the original source, retain the approved PNG review asset, and delete only run-owned intermediate outputs. All later feature-delivery stages and approval gates remain unchanged.
 
 ---
@@ -49,6 +50,7 @@ and identify evidence for each `Required` row.
 **INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: `docs/current/implementation_plan_v<N>.md` created; `docs/current/test_plan_v<N>.md` created; `docs/current/summary_v<N>.md` updated.
+For UI changes, include a `## UI State Stages` table in the implementation plan with one implementation and verification step for each Plan stage ID in `UI_contract.md`.
 Gate: Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery implementation-plan` — must exit 0. **STOP — present plan to user. Do not proceed until user explicitly approves.**
 
 ---
@@ -61,7 +63,7 @@ Feature delivery is implementation-first: implement the approved plan before the
 Output: All required source files across Data, Domain, UI, or test-infrastructure layers created or modified;
 `docs/current/summary_v<N>.md` updated with Implementation stage marked complete. Test-infrastructure changes must
 keep fixture state in the test target and leave production ViewModels/repositories unaware of fixture selection.
-Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI changes conform to `docs/product/design_system.md` plus any explicit approved exception in `docs/current/design.md`.
+Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI changes conform to `docs/product/design_system.md` plus any explicit approved exception in `docs/current/UI_contract.md`.
 
 ---
 

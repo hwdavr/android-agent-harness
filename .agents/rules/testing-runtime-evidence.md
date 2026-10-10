@@ -70,10 +70,11 @@ PNG are supplemental and do not prove rendered appearance. Run
 ## Visual Comparison Contract
 
 - Structural conformance is binding through reference-anchor bounds assertions.
-- Approved design comparison is also binding through `verifyRoborazziDebug`; both conditions are required.
+- A full-screen pixel comparison is binding only when the Pen export and runtime render the same content state, including text, images, list items, and selection. `verifyRoborazziDebug` is required for that matched-content mode. A shared state ID alone does not establish content equality.
+- When the approved Pen frame contains different content, use the structural mode declared in `visual-target.json`. Reference-anchor bounds and runtime-backed visual assertions remain binding, and the report must explicitly state that full-screen pixel parity was not evaluated. Do not run or claim a passing full-screen Roborazzi comparison for this state.
 - The approved reference is a PNG exported from the canonical `.pen` source named by `pen_source` and `pen_node_id` in `visual_evidence/visual-target.json`. A screenshot recorded from the implementation is never promoted as a golden.
 - `visual_evidence/visual-target.json` is the canonical feature-owned target manifest. It defines appearance, concrete device, logical size, locale, and named deterministic content states. Mockup generation and emulator preflight must both read this manifest (`visual-target-prompt.sh` and `prepare-visual-runtime.sh --target`).
 - `reference-map.json` must map every contract screenshot exactly once to one stable `state_id` from that manifest; filename/token inference, duplicated target metadata, source-baseline references, and `null` anchor-only entries are prohibited. The runtime preflight and anchor report must resolve the same target values.
-- Time, user content, identifiers, and keyboard variation must each be explicitly fixed, cropped, absent, or narrowly masked with an approval rationale.
+- Time, user content, identifiers, and keyboard variation must each be explicitly fixed, cropped, absent, or narrowly masked with an approval rationale. Masks may exclude only genuinely variable content; they cannot make fundamentally different design and runtime screens count as the same pixel target.
 - Missing, ambiguous, or mismatched references fail; they are never silently skipped.
 - Preserve actual captures and Roborazzi compare/actual artifacts under `visual_evidence/` when verification finds a difference.

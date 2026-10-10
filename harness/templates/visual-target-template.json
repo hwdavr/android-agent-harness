@@ -5,11 +5,13 @@
   "device": "Pixel 8",
   "logical_size_dp": { "width": 412, "height": 915 },
   "locale": "en-US",
-  "pen_source": "UX/NotesApp.pen",
+  "pen_source": "../UI_design/fun_photo_editor.pen",
   "pen_node_id": "<pen-frame-or-node-id>",
   "comparison": {
-    "engine": "roborazzi",
-    "verify_task": "./gradlew app:verifyRoborazziDebug",
+    "engine": "structural",
+    "content_alignment": "different",
+    "mismatch_reason": "<name the Pen and runtime content that differ>",
+    "pixel_parity": "not-claimed",
     "reference_policy": "approved-pen-export"
   },
   "states": {

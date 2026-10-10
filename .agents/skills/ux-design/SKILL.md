@@ -31,7 +31,7 @@ Turn user requirements and feature specifications into a complete, state-of-the-
 ### 1. Analyze Feature & Apply The Project Design System
 
 > **Update vs. New Screen Rule**:
-> - **If the screen is an update of an existing feature**: Read the existing Compose source for that screen and its components first. Extract the current layout, component inventory, semantic tokens, typography, `testTag` IDs, and visual states directly from the code. Preserve those constraints while describing the approved delta in the canonical Pen design. Record the Pen source and node ID in `visual_evidence/visual-target.json`; the exported Pen frame is the only image reference used for Roborazzi verification. Do not create or require an implementation screenshot baseline.
+> - **If the screen is an update of an existing feature**: Read the existing Compose source for that screen and its components first. Extract the current layout, component inventory, semantic tokens, typography, `testTag` IDs, and visual states directly from the code. Preserve those constraints while describing the approved delta in the canonical Pen design. Record the Pen source and node ID in `visual_evidence/visual-target.json`; the exported Pen frame is the approved design reference. Use Roborazzi only if the runtime fixture renders the same content. Do not create or require an implementation screenshot baseline.
 > - **If the screen is net-new**: Proceed to design from the project design system as described below.
 
 Read `docs/product/design_system.md`, inspect the relevant existing Compose screen/components, and extract from the user request and `spec.md`:

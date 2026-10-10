@@ -153,17 +153,37 @@ if [ "$MODE" = "--evaluate" ]; then
   [ -f "$TARGET_MANIFEST" ] || fail "every visual feature requires visual_evidence/visual-target.json"
   [ -f "$REFERENCE_MAP" ] || fail "every runtime capture requires an explicit approved mockup mapping in visual_evidence/reference-map.json"
 
-  COMPARISON_ENGINE=$(jq -r '.comparison.engine // "legacy-runtime-only"' "$TARGET_MANIFEST")
-  if [ "$COMPARISON_ENGINE" = "roborazzi" ]; then
-    PEN_SOURCE=$(jq -r '.pen_source // empty' "$TARGET_MANIFEST")
-    PEN_NODE_ID=$(jq -r '.pen_node_id // empty' "$TARGET_MANIFEST")
-    [ -n "$PEN_SOURCE" ] || fail "Roborazzi visual targets must declare pen_source in visual-target.json"
-    [ -n "$PEN_NODE_ID" ] || fail "Roborazzi visual targets must declare pen_node_id in visual-target.json"
-    case "$PEN_SOURCE" in
-      /*|*..*) fail "pen_source must be a project-relative path without traversal: $PEN_SOURCE" ;;
-    esac
-    [ -s "$ROOT_DIR/$PEN_SOURCE" ] || fail "pen_source does not exist: $PEN_SOURCE"
+  COMPARISON_ENGINE=$(jq -r '.comparison.engine // empty' "$TARGET_MANIFEST")
+  [ -n "$COMPARISON_ENGINE" ] || fail "visual targets must declare comparison.engine as roborazzi or structural"
+  if [ "$COMPARISON_ENGINE" = "structural" ]; then
+    jq -e '.comparison.content_alignment == "different" and .comparison.pixel_parity == "not-claimed" and ((.comparison.mismatch_reason // "") | length > 10)' "$TARGET_MANIFEST" >/dev/null \
+      || fail "structural comparison must declare different content, a concrete mismatch_reason, and pixel_parity: not-claimed"
+    STRUCTURAL_ROBORAZZI_COUNT=$(jq --arg owner "$VISUAL_OWNER" '[.features[] | select(.id == $owner) | (.verification // [])[] | select(test("verifyRoborazzi(Debug)?"))] | length' "$FEATURE_JSON")
+    [ "$STRUCTURAL_ROBORAZZI_COUNT" -eq 0 ] \
+      || fail "structural comparison cannot claim full-screen Roborazzi verification for different content"
+  elif [ "$COMPARISON_ENGINE" = "roborazzi" ]; then
+    jq -e '.comparison.content_alignment == "exact"' "$TARGET_MANIFEST" >/dev/null \
+      || fail "Roborazzi comparison requires exact Pen and runtime content alignment"
+  else
+    fail "unsupported visual comparison engine: $COMPARISON_ENGINE"
+  fi
+  PEN_SOURCE=$(jq -r '.pen_source // empty' "$TARGET_MANIFEST")
+  PEN_NODE_ID=$(jq -r '.pen_node_id // empty' "$TARGET_MANIFEST")
+  [ -n "$PEN_SOURCE" ] || fail "Pen visual targets must declare pen_source in visual-target.json"
+  [ -n "$PEN_NODE_ID" ] || fail "Pen visual targets must declare pen_node_id in visual-target.json"
+  case "$PEN_SOURCE" in
+    /*) fail "pen_source must be relative to the project or its sibling UI_design folder: $PEN_SOURCE" ;;
+    ../UI_design/*.pen)
+      PEN_FILENAME=${PEN_SOURCE#../UI_design/}
+      case "$PEN_FILENAME" in
+        */*|*..*) fail "pen_source traversal is limited to a .pen file directly in ../UI_design/: $PEN_SOURCE" ;;
+      esac
+      ;;
+    *..*) fail "pen_source traversal is limited to ../UI_design/: $PEN_SOURCE" ;;
+  esac
+  [ -s "$ROOT_DIR/$PEN_SOURCE" ] || fail "pen_source does not exist: $PEN_SOURCE"
 
+  if [ "$COMPARISON_ENGINE" = "roborazzi" ]; then
     ROBORAZZI_COMMANDS=$(jq -r --arg owner "$VISUAL_OWNER" '
       .features[]
       | select(.id == $owner)
@@ -181,6 +201,9 @@ if [ "$MODE" = "--evaluate" ]; then
     done <<EOF
 $ROBORAZZI_COMMANDS
 EOF
+    ROBORAZZI_EVIDENCE_COUNT=$(jq --arg owner "$VISUAL_OWNER" '[.features[] | select(.id == $owner) | (.evidence // [])[] | select(.exit_status == 0 and ((.executed_command // "") | contains("verifyRoborazziDebug")))] | length' "$FEATURE_JSON")
+    [ "$ROBORAZZI_EVIDENCE_COUNT" -gt 0 ] \
+      || fail "Roborazzi visual targets need successful verifyRoborazziDebug execution evidence"
   fi
   [ -f "$ANCHOR_REPORT" ] || fail "missing $ANCHOR_REPORT; visual evidence needs reference-anchor verification"
   grep -Fq "## Reference Anchor Verification" "$ANCHOR_REPORT" \
@@ -361,7 +384,9 @@ EOF
   done
 
   if [ "$COMPARISON_ENGINE" = "roborazzi" ]; then
-    echo "PASS: Roborazzi verification command and approved Pen source are declared."
+    echo "PASS: Roborazzi verification command, successful execution evidence, and approved Pen source are declared."
+  elif [ "$COMPARISON_ENGINE" = "structural" ]; then
+    echo "PASS: structural visual evidence is declared; full-screen pixel parity is not claimed."
   fi
 fi
 

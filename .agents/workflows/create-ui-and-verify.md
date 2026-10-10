@@ -31,28 +31,53 @@ defect evidence. A screenshot showing the current/wrong behavior is evidence onl
 design reference.
 
 - **Approved reference provided:** Save the image to `docs/current/design/` and use it as the
-  original design reference. Do not invoke `pen-design-editor` for this task.
+  original design reference for the state it depicts. Preserve that image unchanged. If the state
+  inventory contains states with no approved reference, invoke `pen-design-editor` only to design
+  and export those missing states.
 - **Defect evidence provided, or no approved reference:** Save defect evidence separately under
   `docs/current/evidence/`, then **INVOKE** the `pen-design-editor` skill via the Skill tool (name:
   `pen-design-editor`). The skill must read `docs/product/design_system.md`, use the canonical
-  `.pen` design source to create the feature design, export a verified mockup under `docs/current/`,
-  and record deliberate exceptions to the design system in `docs/current/design.md`. Do not begin
-  UI implementation until the exported mockup and design decisions are approved by the user.
+  `.pen` design source to create every visually distinct screen/state, export a verified PNG for
+  each state under `docs/current/design/`, and record deliberate exceptions to the design system
+  in `docs/current/UI_contract.md`. Do not begin UI implementation until all exported states and
+  design decisions are approved by the user.
 - **Reference path unavailable:** Stop and ask the user to attach the missing screenshot again;
   do not substitute an inferred design.
 
-The active plan must cite the approved design reference/mockup path and keep defect evidence
-separate. A generated mockup becomes the Stage 2 design reference only after user approval.
+Create `docs/current/UI_contract.md` from `harness/templates/UI_contract-template.md`. Enumerate
+each visible screen/state from requirements and the current runtime, including selected subtools,
+overlays, empty/error states, and keyboard states when applicable. Give each state one distinct
+Pen node and export, or identify the supplied approved image as an external reference. Record the
+deterministic runtime fixture, comparison mode, and unique plan stage ID. Render and inspect every
+Pen export, including icon identity and missing-glyph placeholders. Then run:
+
+```bash
+bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify reference-design docs/current
+```
+
+The active plan must cite the approved state references and keep defect evidence separate. A
+generated mockup becomes the Stage 2 design reference only after user approval.
 After approval, promote the validated `.pen` source in place and delete only the run-owned
 intermediate design outputs according to `pen-design-editor`; retain the approved review PNG and
-continue through the existing implementation and verification stages unchanged.
+continue through implementation and verification.
+
+### Stage 0b — Per-State Implementation Plan ⛔ STOP
+
+Create `docs/current/implementation_plan_v<N>.md` with a `## UI State Stages` table. Give every
+Plan stage ID in `UI_contract.md` its own implementation and verification steps. Run:
+
+```bash
+bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify implementation-plan docs/current
+```
+
+Present the plan and wait for the user's approval before writing application code.
 
 ### Stage 1 — UI Implementation
 **INVOKE** the `android-ui-layer` skill via the Skill tool (name: `android-ui-layer`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Read `docs/product/design_system.md`, then implement the UI changes using the approved reference
 from Stage 0. If the reference intentionally differs from the project design system, record the
-explicit user-approved exception in `docs/current/design.md`; otherwise reuse the project tokens
+explicit user-approved exception in `docs/current/UI_contract.md`; otherwise reuse the project tokens
 and component patterns.
 
 ### Stage 2 — UI Verification ↩️ Loop
@@ -61,7 +86,9 @@ and component patterns.
 Compare the implemented UI against the approved generated mockup or original design screenshot
 in `docs/current/design/`, never against defect evidence in `docs/current/evidence/`, and against
 `docs/product/design_system.md`. When the approved reference is a `.pen` design, export the named
-frame to PNG and run `./gradlew app:verifyRoborazziDebug`; do not record an implementation golden.
+frame to PNG. Run `./gradlew app:verifyRoborazziDebug` only when its visible content matches the
+runtime fixture. For different content, verify structural anchors and static visual components,
+and record that full-screen pixel parity was not evaluated. Do not record an implementation golden.
 Any deviation from either source must be an explicit approved exception.
 
 Before recording a PASS, create `docs/current/ui_verification.json` using the `ui-verification`

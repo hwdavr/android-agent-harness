@@ -4,13 +4,17 @@ set -e
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 VALIDATOR="$REPO_ROOT/harness/scripts/check-visual-evidence-contract.sh"
-fixture_root=$(mktemp -d "${TMPDIR:-/tmp}/visual-evidence-test.XXXXXX")
-trap 'rm -rf "$fixture_root"' EXIT
+fixture_parent=$(mktemp -d "${TMPDIR:-/tmp}/visual-evidence-test.XXXXXX")
+fixture_root="$fixture_parent/project"
+mkdir -p "$fixture_root"
+trap 'rm -rf "$fixture_parent"' EXIT
 export HARNESS_PROJECT_ROOT="$fixture_root"
 
 write_valid_fixture() {
   local feature_dir="$1"
   mkdir -p "$feature_dir/design" "$feature_dir/visual_evidence"
+  mkdir -p "$fixture_parent/UI_design"
+  printf '{"version":"2.21","children":[]}\n' > "$fixture_parent/UI_design/source.pen"
   mkdir -p "$fixture_root/app/src/androidTest/java/example"
   printf '%s\n' \
     'package example' \
@@ -44,6 +48,9 @@ EOF
     '  "device": "Pixel 8",' \
     '  "logical_size_dp": { "width": 108, "height": 234 },' \
     '  "locale": "en-US",' \
+    '  "pen_source": "../UI_design/source.pen",' \
+    '  "pen_node_id": "design-frame",' \
+    '  "comparison": {"engine":"structural","content_alignment":"different","mismatch_reason":"The Pen portrait differs from the runtime user photo.","pixel_parity":"not-claimed"},' \
     '  "states": {' \
     '    "picker-content": {' \
     '      "content_state_id": "picker-content",' \
@@ -124,6 +131,63 @@ expect_failure() {
 valid="$fixture_root/valid"
 write_valid_fixture "$valid"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$valid")
+
+missing_comparison="$fixture_root/missing-comparison"
+write_valid_fixture "$missing_comparison"
+jq 'del(.comparison)' "$missing_comparison/visual_evidence/visual-target.json" \
+  > "$missing_comparison/visual_evidence/visual-target.tmp"
+mv "$missing_comparison/visual_evidence/visual-target.tmp" \
+  "$missing_comparison/visual_evidence/visual-target.json"
+expect_failure "visual targets must declare comparison.engine" \
+  bash "$VALIDATOR" "$missing_comparison"
+
+false_pixel_claim="$fixture_root/false-pixel-claim"
+write_valid_fixture "$false_pixel_claim"
+jq '.comparison = {"engine":"roborazzi","content_alignment":"different"}' \
+  "$false_pixel_claim/visual_evidence/visual-target.json" > "$false_pixel_claim/visual_evidence/visual-target.tmp"
+mv "$false_pixel_claim/visual_evidence/visual-target.tmp" "$false_pixel_claim/visual_evidence/visual-target.json"
+jq '.features[0].verification += ["./gradlew app:verifyRoborazziDebug"]' \
+  "$false_pixel_claim/feature_list.json" > "$false_pixel_claim/feature_list.tmp"
+mv "$false_pixel_claim/feature_list.tmp" "$false_pixel_claim/feature_list.json"
+expect_failure "Roborazzi comparison requires exact Pen and runtime content alignment" \
+  bash "$VALIDATOR" "$false_pixel_claim"
+
+exact_content="$fixture_root/exact-content"
+write_valid_fixture "$exact_content"
+jq '.comparison = {"engine":"roborazzi","content_alignment":"exact"}' \
+  "$exact_content/visual_evidence/visual-target.json" > "$exact_content/visual_evidence/visual-target.tmp"
+mv "$exact_content/visual_evidence/visual-target.tmp" "$exact_content/visual_evidence/visual-target.json"
+jq '.features[0].verification += ["./gradlew app:verifyRoborazziDebug"] | .features[0].evidence += [{"exit_status":0,"executed_command":"./gradlew app:verifyRoborazziDebug"}]' \
+  "$exact_content/feature_list.json" > "$exact_content/feature_list.tmp"
+mv "$exact_content/feature_list.tmp" "$exact_content/feature_list.json"
+(cd "$REPO_ROOT" && bash "$VALIDATOR" "$exact_content")
+
+unexecuted_pixel_check="$fixture_root/unexecuted-pixel-check"
+write_valid_fixture "$unexecuted_pixel_check"
+jq '.comparison = {"engine":"roborazzi","content_alignment":"exact"}' \
+  "$unexecuted_pixel_check/visual_evidence/visual-target.json" > "$unexecuted_pixel_check/visual_evidence/visual-target.tmp"
+mv "$unexecuted_pixel_check/visual_evidence/visual-target.tmp" "$unexecuted_pixel_check/visual_evidence/visual-target.json"
+jq '.features[0].verification += ["./gradlew app:verifyRoborazziDebug"]' \
+  "$unexecuted_pixel_check/feature_list.json" > "$unexecuted_pixel_check/feature_list.tmp"
+mv "$unexecuted_pixel_check/feature_list.tmp" "$unexecuted_pixel_check/feature_list.json"
+expect_failure "Roborazzi visual targets need successful verifyRoborazziDebug execution evidence" \
+  bash "$VALIDATOR" "$unexecuted_pixel_check"
+
+undisclosed_mismatch="$fixture_root/undisclosed-mismatch"
+write_valid_fixture "$undisclosed_mismatch"
+jq '.comparison = {"engine":"structural","content_alignment":"different","pixel_parity":"not-claimed"}' \
+  "$undisclosed_mismatch/visual_evidence/visual-target.json" > "$undisclosed_mismatch/visual_evidence/visual-target.tmp"
+mv "$undisclosed_mismatch/visual_evidence/visual-target.tmp" "$undisclosed_mismatch/visual_evidence/visual-target.json"
+expect_failure "structural comparison must declare different content" \
+  bash "$VALIDATOR" "$undisclosed_mismatch"
+
+structural_pixel_claim="$fixture_root/structural-pixel-claim"
+write_valid_fixture "$structural_pixel_claim"
+jq '.features[0].verification += ["./gradlew app:verifyRoborazziDebug"]' \
+  "$structural_pixel_claim/feature_list.json" > "$structural_pixel_claim/feature_list.tmp"
+mv "$structural_pixel_claim/feature_list.tmp" "$structural_pixel_claim/feature_list.json"
+expect_failure "structural comparison cannot claim full-screen Roborazzi verification" \
+  bash "$VALIDATOR" "$structural_pixel_claim"
 
 # A keyboard-visible target must resolve the migrated device-keyed reference
 # component before the visual gate can evaluate the capture.

@@ -12,6 +12,19 @@
   "design_anchors": "design/design_anchors.json",
   "runtime_evidence": "evidence/ui_frames.json",
 
+  "state_results": [
+    {
+      "screen": "<screen name from UI_contract.md>",
+      "state_id": "<state ID from UI_contract.md>",
+      "design_image": "design/mockup_<screen_state>.png",
+      "runtime_screen": "<unique screen name in runtime_evidence.screens>",
+      "comparison": "exact / structural",
+      "pixel_parity": "verified / not-claimed",
+      "assertion": "<runtime-backed visible control and anchor assertion>",
+      "result": "PASS / FAIL"
+    }
+  ],
+
   "visual_contract": {
     "required_roles": ["icon_identity", "layout_relationship", "action_presence"],
     "checks": [
@@ -133,7 +146,7 @@
   "perceptual_comparison": [
     {
       "region": "<region>",
-      "gate_role": "binding approved mockup comparison plus structural-anchor proof",
+      "gate_role": "exact-content Roborazzi comparison or different-content structural proof; state explicitly when full-screen pixel parity was not evaluated",
       "confidence": "high / medium / low",
       "notes": "<observations>"
     }

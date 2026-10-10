@@ -48,7 +48,8 @@ Include when SUI/L10N is Required/excepted, `affects_ui` is true, or a Composabl
 
 - [ ] Design-system, state, accessibility, semantics/test-tag, localization, and interaction checks pass.
 - [ ] When visual verification is required, visual artifact, explicit approved mockup mapping,
-  dynamic-region handling, binding mockup comparison, reference-anchor, and applicable rendered-output validators exit 0 with in-test screenshots.
+  dynamic-region handling, the declared exact-content pixel or different-content structural mode,
+  reference-anchor, and applicable rendered-output validators exit 0 with in-test screenshots.
 
 ## Conditional: PLATFORM
 

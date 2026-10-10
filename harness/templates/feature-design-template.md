@@ -14,7 +14,9 @@
 For a UI change, record the canonical `pen_source` and `pen_node_id` in
 `visual_evidence/visual-target.json`. Updated screens must describe the intended delta from the
 existing Compose surface, but do not create or retain an implementation screenshot baseline. The
-Pen export is the sole image reference for Roborazzi verification.
+The Pen export is the approved image reference. Roborazzi comparison applies only when its visible
+content matches the runtime fixture; otherwise the visual contract uses structural evidence and
+does not claim full-screen pixel parity.
 
 ---
 
