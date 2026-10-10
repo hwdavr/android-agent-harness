@@ -88,6 +88,10 @@ sed 's/rotate-node/crop-node/' "$FIXTURE/original-contract" > "$FIXTURE/UI_contr
 expect_failure "design node reused across states" python3 "$CHECK" "$FIXTURE/UI_contract.md"
 cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
 
+sed 's|design/source.pen|../UI_design/../../design/source.pen|' "$FIXTURE/original-contract" > "$FIXTURE/UI_contract.md"
+expect_failure "unsafe design path" python3 "$CHECK" "$FIXTURE/UI_contract.md"
+cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
+
 rm "$FIXTURE/design/mockup_rotate.png"
 expect_failure "missing or empty design PNG" python3 "$CHECK" "$FIXTURE/UI_contract.md"
 printf 'PNG fixture rotate' > "$FIXTURE/design/mockup_rotate.png"

@@ -53,7 +53,9 @@ def table(path, heading, columns):
 
 
 def existing_path(contract, value):
-    if Path(value).is_absolute() or (".." in Path(value).parts and not value.startswith("../UI_design/")):
+    parts = Path(value).parts
+    sibling_pen = len(parts) == 3 and parts[0] == ".." and parts[1] == "UI_design" and parts[2].endswith(".pen")
+    if Path(value).is_absolute() or (".." in parts and not sibling_pen):
         fail(f"unsafe design path: {value}")
     candidates = [contract.parent / value, Path.cwd() / value]
     return next((path for path in candidates if path.is_file() and path.stat().st_size > 0), None)
@@ -125,7 +127,10 @@ def validate(contract, spec, plan, report):
         result_keys = {(item.get("screen"), item.get("state_id")) for item in results if isinstance(item, dict)}
         if len(result_keys) != len(results) or result_keys != states:
             fail(f"UI verification states differ from contract: missing {states - result_keys}, extra {result_keys - states}")
-        evidence_path = report.parent / data.get("runtime_evidence", "")
+        evidence_ref = data.get("runtime_evidence", "")
+        if not isinstance(evidence_ref, str) or not evidence_ref.startswith("evidence/") or ".." in Path(evidence_ref).parts:
+            fail("runtime evidence path must stay under evidence/")
+        evidence_path = report.parent / evidence_ref
         if not evidence_path.is_file():
             fail(f"missing runtime evidence: {evidence_path}")
         evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
