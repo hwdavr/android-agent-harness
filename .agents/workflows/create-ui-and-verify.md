@@ -61,7 +61,9 @@ and component patterns.
 Compare the implemented UI against the approved generated mockup or original design screenshot
 in `docs/current/design/`, never against defect evidence in `docs/current/evidence/`, and against
 `docs/product/design_system.md`. When the approved reference is a `.pen` design, export the named
-frame to PNG and run `./gradlew app:verifyRoborazziDebug`; do not record an implementation golden.
+frame to PNG. Run `./gradlew app:verifyRoborazziDebug` only when its visible content matches the
+runtime fixture. For different content, verify structural anchors and static visual components,
+and record that full-screen pixel parity was not evaluated. Do not record an implementation golden.
 Any deviation from either source must be an explicit approved exception.
 
 Before recording a PASS, create `docs/current/ui_verification.json` using the `ui-verification`

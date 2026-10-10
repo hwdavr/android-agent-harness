@@ -133,7 +133,7 @@
   "perceptual_comparison": [
     {
       "region": "<region>",
-      "gate_role": "binding approved mockup comparison plus structural-anchor proof",
+      "gate_role": "exact-content Roborazzi comparison or different-content structural proof; state explicitly when full-screen pixel parity was not evaluated",
       "confidence": "high / medium / low",
       "notes": "<observations>"
     }

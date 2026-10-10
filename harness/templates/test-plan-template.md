@@ -89,17 +89,21 @@ Each visual row's sprint-contract command must select the exact method using
 -Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#<method>,
 then pull the in-test screenshot with adb pull and verify it is non-empty.
 
-### `<ScreenName>RoborazziMockupTest.kt` — Pen-export comparison *(when the visual target is `.pen`-backed)*
+### `<ScreenName>RoborazziMockupTest.kt` — Pen-export comparison *(only for exact-content targets)*
 
-The JVM Compose test renders the same deterministic state and calls
+The JVM Compose test renders the same deterministic state, including visible text, images, and
+selection, and calls
 `captureRoboImage("<reference>.png")`. The reference PNG must be exported from the canonical
 `pen_source`/`pen_node_id` in `visual-target.json`; it must not be recorded from the implementation.
-The binding command is `./gradlew app:verifyRoborazziDebug`. `recordRoborazziDebug` and
+When the Pen design contains different content, declare structural comparison in
+`visual-target.json` and do not claim full-screen pixel parity; the dedicated VisualFlowTest and
+reference-anchor evidence remain required. For exact-content targets, the binding command is
+`./gradlew app:verifyRoborazziDebug`. `recordRoborazziDebug` and
 `verifyAndRecordRoborazziDebug` are authoring/recovery commands only and are not acceptance evidence.
 
 | ID | Pen source/node | Composable under test | Verification command | Reference PNG |
 |----|----------------|-----------------------|----------------------|---------------|
-| T-VIS-R1 | `UX/NotesApp.pen#<node-id>` | `<Composable name>` | `./gradlew app:verifyRoborazziDebug` | `app/src/test/roborazzi/<screen>.png` |
+| T-VIS-R1 | `../UI_design/fun_photo_editor.pen#<node-id>` | `<Composable name>` | `./gradlew app:verifyRoborazziDebug` | `app/src/test/roborazzi/<screen>.png` |
 
 ### Rendered Output Contract *(when a visual claim concerns rich text or inline formatting)*
 
