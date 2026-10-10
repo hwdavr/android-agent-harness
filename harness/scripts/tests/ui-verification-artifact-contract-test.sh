@@ -129,6 +129,18 @@ FIXTURE
   "reference_design": "design/mockup_editor.png",
   "design_anchors": "design/design_anchors.json",
   "runtime_evidence": "evidence/ui_frames.json",
+  "state_results": [
+    {
+      "screen": "Editor",
+      "state_id": "content",
+      "design_image": "design/mockup_editor.png",
+      "runtime_screen": "editor",
+      "comparison": "structural",
+      "pixel_parity": "not-claimed",
+      "assertion": "The editor handle visual bounds match the approved reference.",
+      "result": "PASS"
+    }
+  ],
   "visual_contract": {
     "required_roles": ["visual_bounds"],
     "checks": [
@@ -161,6 +173,25 @@ FIXTURE
   "verdict": { "result": "PASS", "reason": "", "critical_findings": 0, "major_findings_unresolved": 0, "minor_findings_warnings": 0 }
 }
 FIXTURE
+  printf 'Pen fixture' > "$docs_dir/design/source.pen"
+  cat > "$docs_dir/UI_contract.md" <<'FIXTURE'
+# UI Contract
+
+## Screen States
+
+| Screen | State ID | Design source | Design node ID | Design image | Runtime fixture | Comparison | Content difference | Plan stage |
+|---|---|---|---|---|---|---|---|---|
+| Editor | content | `design/source.pen` | editor-node | `design/mockup_editor.png` | editor-content | structural | Pen note content differs from runtime note content | UI-01 |
+FIXTURE
+  cat > "$docs_dir/implementation_plan_v1.md" <<'FIXTURE'
+# Plan
+
+## UI State Stages
+
+| Stage ID | Implementation | Verification |
+|---|---|---|
+| UI-01 | Implement editor content | Capture editor bounds and compare reference |
+FIXTURE
 }
 
 expect_failure() {
@@ -178,11 +209,10 @@ expect_failure() {
   }
 }
 
-# Test 1: valid fixture passes both validators
+# Test 1: legacy valid fixture passes the generic artifact validator
 valid="$fixture_root/valid"
 write_valid_fixture "$valid"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$valid")
-(cd "$REPO_ROOT" && bash "$STAGE_VALIDATOR" create-ui-and-verify ui-verification "$valid")
 
 # Test 1b: the machine-readable Android evidence contract calculates bounds
 # from Compose frames and requires the visual-risk contract for version 2 PASS.

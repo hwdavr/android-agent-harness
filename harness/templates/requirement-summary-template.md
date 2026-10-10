@@ -20,6 +20,14 @@ As a <user type>, I want to <action> so that <outcome>.
 
 - <technical or platform constraint, such as minSdk 24>
 
+## Screen States
+
+For UI changes, copy every visually distinct screen/state to `UI_contract.md`.
+
+| Screen | State ID | Requirement | Acceptance Criteria |
+|---|---|---|---|
+| <screen> | <screen-state> | <requirement ID> | <acceptance ID> |
+
 ## Non-Goals
 
 - <explicitly out-of-scope behavior>

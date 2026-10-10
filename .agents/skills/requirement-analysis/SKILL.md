@@ -40,6 +40,11 @@ Do not write any code in this stage.
 ### 2. UI State & Navigation Design
 1. **Design UiState**: For any new or modified screen, define all possible states (Loading, Success, Empty, Error).
    - Prefer a single immutable `data class`.
+   - Inspect existing runtime controls and flows. Enumerate each visually distinct screen/state
+     pair in the spec's `## Screen States` table; include selected subtools and overlays, not only
+     loading/content/error categories. Create `UI_contract.md` from the harness template and map
+     each pair to a unique approved image or Pen node, deterministic fixture, comparison mode,
+     and plan stage. Missing Pen states must be designed and exported before the stage gate.
 2. **Design Navigation**: If navigation is affected, define routes, serializable arguments, and back-stack behavior.
 3. **DI Scope**: Identify the required Hilt scope for new components (`@Singleton`, `@ViewModelScoped`).
 
@@ -71,6 +76,7 @@ Use the template from `harness/templates/spec-template.md`.
 - Reframe vague requests into concrete, testable verification expectations the user can confirm.
 - Include the complete **Rule Applicability** matrix with a concrete decision, trigger or rationale, and planned evidence for all ten rules.
 - Keep the spec alive — when scope or decisions change, update `spec_v<N>.md` first.
+- For UI changes, produce `UI_contract.md` and a distinct verified design PNG per state.
 
 ---
 
@@ -81,6 +87,7 @@ Use the template from `harness/templates/spec-template.md`.
 - [ ] `docs/current/spec_v<N>.md` exists with requirement, impact, and design sections filled.
 - [ ] Every affected file is listed with a change type.
 - [ ] UiState design covers all visual states.
+- [ ] For UI changes, the spec and `UI_contract.md` have identical screen/state pairs and the UI contract gate passes.
 - [ ] API change is classified.
 - [ ] Rule Applicability contains all ten rows with no implicit or missing decision.
 

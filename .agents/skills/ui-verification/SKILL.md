@@ -16,6 +16,7 @@ only when the JVM Compose render has matching content. The report schema exists 
 
 - `docs/product/design_system.md` and the approved feature design/reference assets.
 - The active spec, implementation/test plan or selected sprint-contract rows, and execution flags.
+- `UI_contract.md` for ad-hoc UI workflows; verify every declared screen/state separately.
 - `.agents/rules/testing-runtime-evidence.md`.
 - Only Required, excepted, or diff-triggered Compose, localization, navigation, and security rules.
 - `harness/templates/ui-verification-template.json`.
@@ -152,6 +153,11 @@ active workflow's `ui_verification.json`. Validate it with:
 bash harness/scripts/check-ui-verification-artifact.sh <ui_verification.json>
 bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate
 ```
+
+For `create-ui-and-verify`, populate one `state_results` entry for each `UI_contract.md` row.
+Bind it to the approved state image and a unique screen in `runtime_evidence.screens`; record the
+runtime assertion and the declared comparison mode. Run the workflow's stage-artifact gate to
+check complete state coverage before reporting PASS.
 
 Do not reproduce or maintain the JSON schema in this skill. Update the active summary with concise
 command results and referenced evidence paths.

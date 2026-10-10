@@ -114,7 +114,11 @@ create_spec() {
     '|---|---|---|---|---|---|' > "$output"
   for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC; do
     if [ "$rule_id" != "$omit_rule_id" ]; then
-      printf '| %s | rule.md | Always | Required | contract test | shell evidence |\n' "$rule_id" >> "$output"
+      if [ "$rule_id" = "SUI" ]; then
+        printf '| SUI | rule.md | Conditional | Not applicable — no UI change | contract test | shell evidence |\n' >> "$output"
+      else
+        printf '| %s | rule.md | Always | Required | contract test | shell evidence |\n' "$rule_id" >> "$output"
+      fi
     fi
   done
 }

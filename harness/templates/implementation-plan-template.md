@@ -97,6 +97,16 @@ States covered:
 
 ---
 
+## UI State Stages
+
+For UI changes, copy each unique Plan stage ID from `UI_contract.md`. Give each state its own implementation step and runtime verification step. Remove this section for non-UI work.
+
+| Stage ID | Implementation | Verification |
+|---|---|---|
+| UI-01 | <screen/state-specific code change> | <state-specific runtime capture and comparison> |
+
+---
+
 ## Test Plan
 
 > Produce a separate test plan document using **[`harness/templates/test-plan-template.md`](test-plan-template.md)** and link it here once created.
