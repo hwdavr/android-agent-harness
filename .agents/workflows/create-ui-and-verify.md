@@ -47,9 +47,11 @@ design reference.
 Create `docs/current/UI_contract.md` from `harness/templates/UI_contract-template.md`. Enumerate
 each visible screen/state from requirements and the current runtime, including selected subtools,
 overlays, empty/error states, and keyboard states when applicable. Give each state one distinct
-Pen node and export, or identify the supplied approved image as an external reference. Record the
-deterministic runtime fixture, comparison mode, and unique plan stage ID. Render and inspect every
-Pen export, including icon identity and missing-glyph placeholders. Then run:
+top-level screen frame and full-viewport export, or identify the supplied approved image as an
+external-screen reference. Each export must visibly include primary content, all state-specific
+controls, and persistent interactive surfaces; a control-only or component crop is invalid.
+Record the deterministic runtime fixture, comparison mode, and unique plan stage ID.
+Render and inspect every Pen export, including icon identity and missing-glyph placeholders. Then run:
 
 ```bash
 bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify reference-design docs/current

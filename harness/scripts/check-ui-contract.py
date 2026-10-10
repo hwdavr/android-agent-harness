@@ -4,13 +4,15 @@
 import argparse
 import json
 import re
+import struct
 import sys
 from pathlib import Path
 
 
 STATE_COLUMNS = [
-    "Screen", "State ID", "Design source", "Design node ID", "Design image",
-    "Runtime fixture", "Comparison", "Content difference", "Plan stage",
+    "Screen", "State ID", "Design source", "Design node ID", "Design node role",
+    "Design image", "Viewport", "Required regions", "State controls", "Runtime fixture",
+    "Comparison", "Content difference", "Plan stage",
 ]
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
 PLAN_COLUMNS = ["Stage ID", "Implementation", "Verification"]
@@ -61,6 +63,32 @@ def existing_path(contract, value):
     return next((path for path in candidates if path.is_file() and path.stat().st_size > 0), None)
 
 
+def png_dimensions(path):
+    with path.open("rb") as image:
+        header = image.read(24)
+    if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
+        fail(f"design image is not a valid PNG: {path}")
+    return struct.unpack(">II", header[16:24])
+
+
+def viewport(value, state_id):
+    match = re.fullmatch(r"([1-9][0-9]{1,4})\s*[x×]\s*([1-9][0-9]{1,4})", value)
+    if not match:
+        fail(f"state {state_id} needs a viewport in WIDTHxHEIGHT form")
+    width, height = (int(part) for part in match.groups())
+    if min(width, height) < 240 or width * height < 76800:
+        fail(f"state {state_id} viewport is too small for a complete screen: {value}")
+    return width, height
+
+
+def complete_regions(value, state_id):
+    regions = {region.strip().lower() for region in value.split(";") if region.strip()}
+    required = {"primary-content", "state-controls", "persistent-controls"}
+    missing = sorted(required - regions)
+    if missing:
+        fail(f"state {state_id} is missing required visible regions: {', '.join(missing)}")
+
+
 def validate(contract, spec, plan, report):
     rows = table(contract, "Screen States", STATE_COLUMNS)
     states = set()
@@ -75,19 +103,35 @@ def validate(contract, spec, plan, report):
         states.add(key)
         source = row["Design source"]
         node = row["Design node ID"]
+        role = row["Design node role"]
         if not existing_path(contract, source):
             fail(f"missing or empty design source: {source}")
-        if source.endswith(".pen") and node.lower() == "external":
-            fail(f"Pen state {key[1]} needs a Pen node ID")
-        if not source.endswith(".pen") and node.lower() != "external":
-            fail(f"external design state {key[1]} must use node ID external")
+        if source.endswith(".pen"):
+            if node.lower() == "external" or role != "screen-frame":
+                fail(f"Pen state {key[1]} needs a top-level screen-frame node")
+        elif node.lower() != "external" or role != "external-screen":
+            fail(f"external design state {key[1]} must use node ID external and role external-screen")
         node_key = (source, node)
         if node_key in nodes:
             fail(f"design node reused across states: {source} / {node}")
         nodes.add(node_key)
         image = row["Design image"]
-        if not image.startswith("design/") or not image.endswith(".png") or not existing_path(contract, image):
+        image_path = existing_path(contract, image)
+        if not image.startswith("design/") or not image.endswith(".png") or not image_path:
             fail(f"missing or empty design PNG: {image}")
+        viewport_width, viewport_height = viewport(row["Viewport"], key[1])
+        image_width, image_height = png_dimensions(image_path)
+        expected_ratio = viewport_width / viewport_height
+        actual_ratio = image_width / image_height
+        if abs(actual_ratio - expected_ratio) / expected_ratio > 0.015:
+            fail(
+                f"state {key[1]} design PNG aspect ratio {image_width}x{image_height} "
+                f"does not match viewport {viewport_width}x{viewport_height}"
+            )
+        complete_regions(row["Required regions"], key[1])
+        controls = row["State controls"].strip().lower()
+        if controls in ("none", "n/a") or len(controls) < 8:
+            fail(f"state {key[1]} needs named state-specific controls")
         if image in images:
             fail(f"design image reused across states: {image}")
         images.add(image)
@@ -151,7 +195,7 @@ def validate(contract, spec, plan, report):
             parity = "verified" if row["Comparison"] == "exact" else "not-claimed"
             if item.get("pixel_parity") != parity:
                 fail(f"UI state {key[1]} needs pixel_parity: {parity}")
-    print(f"PASS: {len(states)} UI state(s) have unique design, fixture, comparison, and plan mappings.")
+    print(f"PASS: {len(states)} complete UI state(s) have unique screen-frame, viewport, coverage, fixture, comparison, and plan mappings.")
 
 
 if __name__ == "__main__":

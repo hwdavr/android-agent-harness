@@ -30,17 +30,30 @@ expect_failure "no file matching 'UI_contract.md'" \
 
 mkdir -p "$FIXTURE/design"
 printf 'Pen fixture' > "$FIXTURE/design/source.pen"
-printf 'PNG fixture crop' > "$FIXTURE/design/mockup_crop.png"
-printf 'PNG fixture rotate' > "$FIXTURE/design/mockup_rotate.png"
+write_png_header() {
+  python3 - "$1" "$2" "$3" <<'PY'
+import struct
+import sys
+
+path, width, height = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+with open(path, "wb") as output:
+    output.write(b"\x89PNG\r\n\x1a\n")
+    output.write(struct.pack(">I", 13))
+    output.write(b"IHDR")
+    output.write(struct.pack(">II", width, height))
+PY
+}
+write_png_header "$FIXTURE/design/mockup_crop.png" 860 1864
+write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
 cat > "$FIXTURE/UI_contract.md" <<'EOF'
 # UI Contract
 
 ## Screen States
 
-| Screen | State ID | Design source | Design node ID | Design image | Runtime fixture | Comparison | Content difference | Plan stage |
-|---|---|---|---|---|---|---|---|---|
-| Transform | crop | `design/source.pen` | crop-node | `design/mockup_crop.png` | crop-fixture | structural | Pen photo differs from device photo | UI-01 |
-| Transform | rotate | `design/source.pen` | rotate-node | `design/mockup_rotate.png` | rotate-fixture | exact | None | UI-02 |
+| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Transform | crop | `design/source.pen` | crop-node | screen-frame | `design/mockup_crop.png` | 430x932 | primary-content; state-controls; persistent-controls | Straighten dial; aspect buttons | crop-fixture | structural | Pen photo differs from device photo | UI-01 |
+| Transform | rotate | `design/source.pen` | rotate-node | screen-frame | `design/mockup_rotate.png` | 430x932 | primary-content; state-controls; persistent-controls | Rotate Left; Rotate Right buttons | rotate-fixture | exact | None | UI-02 |
 EOF
 cat > "$FIXTURE/spec_v1.md" <<'EOF'
 # Spec
@@ -84,6 +97,11 @@ bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE" >/dev/null
 bash "$GATE" feature-delivery requirement-analysis "$FIXTURE" >/dev/null
 
 cp "$FIXTURE/UI_contract.md" "$FIXTURE/original-contract"
+write_png_header "$FIXTURE/design/mockup_crop_rail.png" 860 177
+sed 's/mockup_crop.png/mockup_crop_rail.png/' "$FIXTURE/original-contract" > "$FIXTURE/UI_contract.md"
+expect_failure "design PNG aspect ratio" python3 "$CHECK" "$FIXTURE/UI_contract.md"
+cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
+
 sed 's/rotate-node/crop-node/' "$FIXTURE/original-contract" > "$FIXTURE/UI_contract.md"
 expect_failure "design node reused across states" python3 "$CHECK" "$FIXTURE/UI_contract.md"
 cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
@@ -94,7 +112,7 @@ cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
 
 rm "$FIXTURE/design/mockup_rotate.png"
 expect_failure "missing or empty design PNG" python3 "$CHECK" "$FIXTURE/UI_contract.md"
-printf 'PNG fixture rotate' > "$FIXTURE/design/mockup_rotate.png"
+write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
 
 cp "$FIXTURE/spec_v1.md" "$FIXTURE/original-spec"
 sed '/| Transform | rotate | FR-02 | AC-02 |/d' "$FIXTURE/original-spec" > "$FIXTURE/spec_v1.md"
@@ -135,4 +153,4 @@ PY
 expect_failure "UI verification states differ from contract" \
   python3 "$CHECK" "$FIXTURE/UI_contract.md" --report "$FIXTURE/ui_verification.json"
 
-echo "PASS: UI contract gates reject absent, duplicate, missing-asset, and unmapped screen states and verification results."
+echo "PASS: UI contract gates reject absent, cropped, duplicate, missing-asset, and unmapped screen states and verification results."

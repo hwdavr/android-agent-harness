@@ -16,18 +16,22 @@ separate implementation capture. It replaces a broad `design.md` for ad-hoc UI w
 
 ## Screen States
 
-List every visually distinct screen and interaction state from the spec and the current runtime. Give each state its own Pen frame and exported image. A supplied approved image may use `external` as its node ID. Use one deterministic runtime fixture and one plan stage per row. `exact` means visible content matches the fixture; `structural` requires a concrete content difference below.
+List every visually distinct screen and interaction state from the spec and the current runtime. Give each state its own **top-level, complete screen frame** and full-viewport export; a toolbar, dialog, or component crop cannot be a state reference. A supplied approved image may use `external` as its node ID and `external-screen` as its node role. Use one deterministic runtime fixture and one plan stage per row. `exact` means visible content matches the fixture; `structural` requires a concrete content difference below.
 
-| Screen | State ID | Design source | Design node ID | Design image | Runtime fixture | Comparison | Content difference | Plan stage |
-|---|---|---|---|---|---|---|---|---|
-| <screen> | <screen-state> | `../UI_design/<file>.pen` | <Pen node ID> | `design/mockup_<screen_state>.png` | <fixture ID> | exact / structural | None / <visible difference> | UI-01 |
+Every row must name the full logical viewport, declare that the primary content, state controls, and persistent interactive surfaces are visible, and inventory the controls that distinguish the state. The implementation plan and runtime capture must use the same complete-state boundary.
+
+| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| <screen> | <screen-state> | `../UI_design/<file>.pen` | <Pen node ID> | screen-frame | `design/mockup_<screen_state>.png` | 430x932 | primary-content; state-controls; persistent-controls | <named state-specific buttons, dials, menus, or controls> | <fixture ID> | exact / structural | None / <visible difference> | UI-01 |
 
 ## State Details
 
 ### UI-01 — <screen-state>
 
 - Entry action and selected controls: <how to reach this state>
-- Visible content and fixed fixture values: <text, image, selection, locale, theme>
+- Primary content: <the image, canvas, list, document, or other fixed primary content and fixture values>
+- State controls: <all visible state-specific buttons, dials, menus, selection states, and labels>
+- Persistent controls: <all visible navigation, command, action, or toolbar controls and their states>
 - Visual anchors and icon identities: <named static elements and relationships>
 - Design-system exception: None / <explicit user approval>
 - Pen export check: <render viewed, icon identities checked, no question-mark placeholders>
