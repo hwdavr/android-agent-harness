@@ -2057,50 +2057,13 @@ def run_rendered_output(args: argparse.Namespace) -> int:
                     if target.body_start < call.open_index < target.body_end
                 ]
                 if has_rendered_claim:
-                    capture_calls = [call for call in body_calls if call.name == "captureToImage"]
-                    if not capture_calls:
+                    roborazzi_calls = [call for call in body_calls if call.name == "captureRoboImage"]
+                    if not roborazzi_calls:
                         result.add(
                             source_file,
                             target.name_index,
-                            "rendered appearance claims must capture a Compose node with captureToImage()",
+                            "rendered appearance claims must call captureRoboImage() in a Roborazzi JVM test",
                         )
-
-                    comparison_calls = [
-                        call
-                        for call in body_calls
-                        if call.name in {
-                            "differingPixelCount",
-                            "assertPixels",
-                            "assertScreenshot",
-                            "assertRenderedAppearance",
-                            "compareRenderedPixels",
-                        }
-                    ]
-                    if not comparison_calls:
-                        result.add(
-                            source_file,
-                            target.name_index,
-                            "rendered appearance claims must assert an explicit pixel comparison "
-                            "(differingPixelCount(), assertPixels(), or an equivalent assertion)",
-                        )
-                    elif any(call.name == "differingPixelCount" or call.name == "compareRenderedPixels" for call in comparison_calls):
-                        assertion_calls = [
-                            call
-                            for call in body_calls
-                            if call.name in {"assertTrue", "assertEquals", "assertNotEquals", "assertThat"}
-                        ]
-                        if not any(
-                            assertion.open_index < comparison.open_index < assertion.close_index
-                            for assertion in assertion_calls
-                            for comparison in comparison_calls
-                            if comparison.name in {"differingPixelCount", "compareRenderedPixels"}
-                        ):
-                            result.add(
-                                source_file,
-                                comparison_calls[0].name_index,
-                                "differingPixelCount() must be inside an assertion; "
-                                "a computed pixel difference without a checked result is not evidence",
-                            )
 
     print_rule("Rendered rich-text appearance evidence", result.violations)
     return finish(result, "rendered rich-text appearance contract")

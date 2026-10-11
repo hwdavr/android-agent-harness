@@ -88,9 +88,9 @@ and component patterns.
 Compare the implemented UI against the approved generated mockup or original design screenshot
 in `docs/current/design/`, never against defect evidence in `docs/current/evidence/`, and against
 `docs/product/design_system.md`. When the approved reference is a `.pen` design, export the named
-frame to PNG. Run `./gradlew app:verifyRoborazziDebug` only when its visible content matches the
-runtime fixture. For different content, verify structural anchors and static visual components,
-and record that full-screen pixel parity was not evaluated. Do not record an implementation golden.
+screen or static component to PNG. Run `./gradlew app:verifyRoborazziDebug` for every visual state;
+use a component-scoped export when surrounding screen content differs. Do not record an
+implementation golden.
 Any deviation from either source must be an explicit approved exception.
 
 Before recording a PASS, create `docs/current/ui_verification.json` using the `ui-verification`
@@ -102,15 +102,15 @@ bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify ui-verificati
 
 For every design-critical spatial relationship—such as edges that meet a border, center alignment,
 overlay anchoring, spacing, or a compact visual inside a larger touch target—the report must link
-the approved reference and actual screenshot to a bounds-based instrumented assertion. Name the
-visual bounds `testTag` (not only the outer touch target) and record the measured relation and
-tolerance. A broad screenshot with a statement such as “matches design” is not sufficient proof
-of placement.
+the approved reference to the Roborazzi compare/actual artifacts and a bounds-based assertion from
+the named JVM test. Name the visual bounds `testTag` (not only the outer touch target) and record
+the measured relation and tolerance. An instrumented device screenshot or a broad statement such
+as “matches design” is not visual-comparison proof.
 
 For version 2+ evidence-backed reports, declare a `visual_contract` with the visual-risk roles
 present in the changed surface (for example `icon_identity`, `layout_relationship`, and
-`action_presence`). Each role must name a runtime-backed `testTag`, the producing instrumented
-test method, and the concrete visual assertion being proved. A button's existence or 48dp
+`action_presence`). Each role must name a runtime-backed `testTag`, the producing `*RoborazziTest`
+method, and the concrete visual assertion being proved. A button's existence or 48dp
 touch-target frame is not proof of its visible icon, label treatment, relative placement, or
 presence of a secondary action.
 
@@ -118,7 +118,7 @@ presence of a secondary action.
 - Return to **Stage 1 — UI Implementation** to fix the implementation.
 - Re-run **Stage 2 — UI Verification** after each fix.
 - **Maximum 3 loops total.**
-- If still failing after 3 loops, stop and surface the deviation to the user with the screenshot attached.
+- If still failing after 3 loops, stop and surface the deviation to the user with the Roborazzi compare/actual artifacts attached.
 
 **PASS →** the UI verification artifact gate above exits 0; then proceed to Stage 3 — Code + Test Review.
 

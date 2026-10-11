@@ -21,7 +21,8 @@ Load `docs/current/spec_v<N>.md` first. `rules/testing-strategy.md` is auto-load
 selecting the lowest sufficient reproduction layer, load only its guidance:
 
 - `skills/android-unit-test/SKILL.md` for a unit or JVM integration reproduction
-- `skills/android-instrumented-ui-test/SKILL.md` for a visual, navigation, or runtime reproduction
+- `skills/ui-verification/SKILL.md` for a rendered-appearance reproduction
+- `rules/testing-runtime-evidence.md` for navigation or other Android runtime behavior
 - `skills/shared-json-scenarios/SKILL.md` only when an API response is part of the root cause
 
 ---
@@ -36,7 +37,8 @@ Pick the **lowest** layer that is sufficient to reproduce the bug (per `testing-
 |---|---|
 | Logic / calculation error | Unit test (`app/src/test/`) |
 | Data-flow / API mapping / error state | Integration test (`app/src/test/`) |
-| Visual glitch / unresponsive element | Instrumented UI test (`app/src/androidTest/`) |
+| Rendered visual mismatch | JVM Roborazzi test (`app/src/test/`) |
+| Unresponsive element | Instrumented UI test (`app/src/androidTest/`) |
 | Navigation crash / deep-link issue | Instrumented UI test (`app/src/androidTest/`) |
 
 ### 2. Write the reproduction test — RED phase
