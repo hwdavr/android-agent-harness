@@ -8,8 +8,8 @@ description: Verify Android UI visually and interactively against approved desig
 ## Purpose
 
 Verify implemented UI against the approved design and design system after implementation. Keep
-deterministic structure and runtime evidence binding; use Roborazzi for an approved Pen export
-only when the JVM Compose render has matching content. The report schema exists only in
+deterministic structure and JVM visual evidence binding; use Roborazzi for every approved Pen
+visual target. The report schema exists only in
 `harness/templates/ui-verification-template.json`.
 
 ## Load
@@ -35,9 +35,10 @@ ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest
 All applicable commands must exit 0. Prefer an emulator and use a physical device only when no
 emulator is connected. Missing required runtime evidence is `Blocked`/`Revise`, never passing.
 
-Visual captures must be created inside the active test after `waitForIdle()` using
-`UiAutomation.takeScreenshot()` or `captureToImage()`, saved under `/sdcard/Download/`, and pulled
-with `adb pull`. Post-test CLI screencaps are invalid.
+Visual acceptance runs through `./gradlew app:verifyRoborazziDebug`. A dedicated JVM
+`*RoborazziTest` renders every named state using deterministic fixtures and calls
+`captureRoboImage()` with the approved Pen export. Instrumented tests remain required for the
+behavior they cover, but do not provide visual-comparison evidence.
 
 For evidence-backed reports, `design_anchors` and `runtime_evidence` are a pair. Expected geometry
 lives only in `design_anchors.json`; captured bounds live only in `ui_frames.json`. Version 2+
@@ -77,39 +78,31 @@ Mask only runtime-variable content such as user text, identifiers, timestamps, b
 data, dynamic images, or counts. Preserve container bounds, layout, static labels, icons, borders,
 and background treatment. Record every mask and rationale.
 
-Compare the Pen frame and planned runtime fixture before selecting a pixel comparison. Check
-visible text, images, item order, selection, keyboard, locale, and theme. If they match, declare
-`comparison.engine: roborazzi` and `content_alignment: exact` in `visual-target.json`. If they
-differ, declare `comparison.engine: structural`, `content_alignment: different`, a concrete
-`mismatch_reason`, and `pixel_parity: not-claimed`. A matching state ID or a mask over most of the
-content does not establish comparability.
+Compare the Pen frame and planned JVM fixture before selecting the target scope. Check visible
+text, images, item order, selection, keyboard, locale, and theme. Use `scope: screen` when they
+match. If surrounding content differs, export and compare the approved static component with
+`scope: component`. Every target declares `comparison.engine: roborazzi` and
+`content_alignment: exact`; a matching state ID or a broad mask does not establish comparability.
 
 ### Phase 6 — Approved design comparison
 
-The canonical `.pen` file is the source of truth. For exact-content states, export the named
-frame/node to a PNG with the headless pen.dev CLI, normalize it to the same pixel dimensions as
-the Roborazzi device configuration, and commit that export beside the test. The implementation
-test must render the identical deterministic content and call `captureRoboImage()` with that
-reference path. Run the pixel comparison through Roborazzi:
+The canonical `.pen` file is the source of truth. Export the named screen or component to a PNG
+with the headless pen.dev CLI, normalize it to the same pixel dimensions as the Roborazzi device
+configuration, and commit that export beside the test. The JVM test must render the identical
+deterministic scope and call `captureRoboImage()` with that reference path. Run:
 
 ```bash
 ./gradlew app:verifyRoborazziDebug
 ```
 
-For different-content states, verify source-fed reference-anchor bounds and the applicable
-runtime-backed visual assertions for static controls, icons, typography, colors, clipping, and
-overlap. Record the unmatched content and explicitly state that full-screen pixel parity was not
-evaluated. Do not call a full-screen Roborazzi comparison a PASS for those states. A screenshot
-recorded from the implementation is not an approved design baseline.
-
 Do not run `recordRoborazziDebug`, `verifyAndRecordRoborazziDebug`, or the removed Python/Pillow
-comparator as acceptance evidence. `compareRoborazziDebug` is optional local review output for
-exact-content states; only `verifyRoborazziDebug` is the binding pixel gate.
+comparator as acceptance evidence. `compareRoborazziDebug` is optional local review output; only
+`verifyRoborazziDebug` is the binding pixel gate.
 
-- Every feature has one approved `visual_evidence/visual-target.json` manifest defining the target appearance, concrete device, logical size, locale, named content states, canonical `pen_source`, and `pen_node_id`. The mockup generator reads it through `visual-target-prompt.sh`; the emulator preflight reads it through `prepare-visual-runtime.sh --target`.
-- `reference-map.json` must map every runtime capture exactly once to one stable `state_id` from that manifest; filename/token matching, duplicated target metadata, and anchor-only `null` entries are prohibited. The state resolves the approved Pen-export PNG, content state, geometry, and dynamic handling from the same manifest.
+- Every feature has one approved `visual_evidence/visual-target.json` manifest defining the target appearance, logical size, locale, named content states, canonical `pen_source`, `pen_node_id`, and Roborazzi comparison scope. The mockup generator reads it through `visual-target-prompt.sh`.
+- Each sprint-contract row names one stable `contentState` from that manifest. The target state resolves the approved Pen-export PNG, deterministic content scope, geometry, and dynamic handling; `reference-map.json` is not used.
 - Time, user content, identifiers, and keyboard variation each require an explicit approved handling. A `mask` must name only the dynamic region it excludes and state a rationale.
-- Exact-content pixel comparison passes through `verifyRoborazziDebug` against the approved Pen export. Different-content states use binding structural and static-component proof and must not claim pixel parity. No implementation-recorded golden is used.
+- Every target passes `verifyRoborazziDebug` against the approved Pen export. No implementation-recorded golden is used.
 - Missing, ambiguous, dangling, stale, or metadata-mismatched references fail the gate.
 - Preserve the Roborazzi report and compare/actual artifacts when a difference is found.
 
@@ -135,9 +128,9 @@ out-of-scope regions. Do not substitute a vague whole-screen similarity judgment
 
 ## Conditional rendered-output proof
 
-For rich-text or inline-formatting appearance claims, the named test must capture plain and
-formatted Compose nodes and assert an explicit pixel difference. Model marks, text content,
-toolbar state, and screenshot existence are supplemental. Run:
+For rich-text or inline-formatting appearance claims, the named `*RoborazziTest` must render the
+approved formatted state and call `captureRoboImage()`. Model marks, text content, toolbar state,
+and device screenshot existence are supplemental. Run:
 
 ```bash
 bash harness/scripts/check-rendered-output-contract.sh \
@@ -155,8 +148,8 @@ bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate
 ```
 
 For `create-ui-and-verify`, populate one `state_results` entry for each `UI_contract.md` row.
-Bind it to the approved state image and a unique screen in `runtime_evidence.screens`; record the
-runtime assertion and the declared comparison mode. Run the workflow's stage-artifact gate to
+Bind it to the approved state image and a unique Roborazzi state in `runtime_evidence.states`; record
+the JVM assertion and comparison mode. Run the workflow's stage-artifact gate to
 check complete state coverage before reporting PASS.
 
 Do not reproduce or maintain the JSON schema in this skill. Update the active summary with concise
@@ -168,7 +161,7 @@ command results and referenced evidence paths.
 - Normalization, scope, regions, masks, and out-of-scope regressions are recorded.
 - Every critical element has source-fed bounds evidence within its approved tolerance.
 - Every required visual role has a runtime-backed visual tag and concrete assertion.
-- Required captures, explicit approved mockup mappings, dynamic-region approvals, the applicable comparison mode, anchors, and rendered-output checks pass.
+- Required Roborazzi comparisons, direct approved state mappings, dynamic-region approvals, anchors, and rendered-output checks pass.
 - No Critical or unresolved Major finding remains.
 - The canonical JSON artifact passes its validator with no placeholders or contradictory results.
 

@@ -11,18 +11,17 @@ Kotlin + Jetpack Compose + Room Android notes app. Treat it as a production prod
 - `sharedContracts/` — OpenAPI contract + shared test scenarios
 ---
 ## Context Loading — L1 / L2 / L3
-Load context in layers to keep the context window below 40% fill. More is not better.
+Load context in layers; more is not better.
 | Layer | When | What to load |
 |-------|------|-------------|
 | **L1 — Always** | Every session | This file + `.agents/rules/android-architecture.md` + `.agents/rules/testing-strategy.md` |
-| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) plus `harness/templates/rule-applicability-template.md` for requirements/planning/review. Load `implementation-rules.md` only during Implementation. Use conditional-rule triggers, then load a conditional rule only when `Required`, excepted, or contradicted by the submitted diff. Load `android-security.md` when `SEC` is Required/excepted or a security/AI/WebView/network/manifest boundary is triggered; load `testing-practices.md` during test authoring/review and `testing-runtime-evidence.md` for UI/navigation/visual/platform/runtime claims; for UI work also load `docs/product/design_system.md`. |
+| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) plus `harness/templates/rule-applicability-template.md` for requirements/planning/review. Load `implementation-rules.md` only during Implementation. Load a conditional rule only if Required, excepted, or diff-triggered. Load `android-security.md` for `SEC` or a security/AI/WebView/network/manifest boundary; load `testing-practices.md` during test authoring/review, `testing-runtime-evidence.md` for UI/navigation/visual/platform/runtime claims, and `docs/product/design_system.md` for UI work. |
 | **L3 — On-demand** | When needed | `docs/knowledge/` docs, `sharedContracts/openapi.yaml`, and feature-specific evidence or rule detail newly triggered by the approved Rule Applicability matrix |
 
 Do not preload unrelated skills or conditional rules. Requirements, planning, and review use the
-compact trigger catalog to decide and reconcile all ten rows, then load only Required, excepted,
-or diff-triggered rule documents. Implementation follows the approved decisions plus any newly
-triggered rule. For a complex slice, run
-`bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` after selection; its disposable output derives from the approved contract and feature list, is never authority or a summary copy, and must be regenerated when either hash changes.
+trigger catalog and load only Required, excepted, or diff-triggered rules. For a complex slice, run
+`bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`
+after selection. Its output is disposable and must be regenerated when either source hash changes.
 ---
 ## Harness Structure
 | Folder | Purpose |

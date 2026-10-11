@@ -31,10 +31,10 @@ grep -Fq 'pen_source' "$RULE" \
   || fail_test "runtime evidence rules must declare the canonical Pen source"
 grep -Fq 'approved-pen-export' "$TEMPLATE" \
   || fail_test "visual target template must declare the approved Pen export policy"
-grep -Fq '"content_alignment": "different"' "$TEMPLATE" \
-  || fail_test "visual target template must not assume identical design and runtime content"
-grep -Fq '"pixel_parity": "not-claimed"' "$TEMPLATE" \
-  || fail_test "different-content template must not claim full-screen pixel parity"
+grep -Fq '"content_alignment": "exact"' "$TEMPLATE" \
+  || fail_test "visual target template must require exact content within its scope"
+grep -Fq '"scope": "screen"' "$TEMPLATE" \
+  || fail_test "visual target template must declare the Roborazzi comparison scope"
 grep -Fq '../UI_design/fun_photo_editor.pen' "$TEMPLATE" \
   || fail_test "visual target template must point to the canonical sibling Pen design"
 grep -Fq 'verifyRoborazziDebug' "$CONTRACT" \
@@ -86,4 +86,4 @@ printf '%s\n' \
   > "$fixture_root/design.md"
 bash "$STAGE_GATE" harness-planning feature-specification "$fixture_root" >/dev/null
 
-echo "PASS: Pen-export verification distinguishes matched-content pixels from different-content structural evidence."
+echo "PASS: Pen-export verification requires deterministic Roborazzi comparisons."

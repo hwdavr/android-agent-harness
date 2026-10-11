@@ -131,7 +131,7 @@ $test_id"
   suite=$(basename "$test_file" .kt)
   printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./)?gradlew([[:space:]]|$)' \
     || fail "$test_id exact command must execute Gradle through ./gradlew"
-  printf '%s' "$command" | grep -Eq '(^|[[:space:]])(connectedDebugAndroidTest|testDebugUnitTest|test[A-Za-z0-9]*UnitTest)([[:space:]]|$)' \
+  printf '%s' "$command" | grep -Eq '(^|[[:space:]])(connectedDebugAndroidTest|testDebugUnitTest|test[A-Za-z0-9]*UnitTest|([A-Za-z0-9_-]+:)?verifyRoborazzi(Debug)?)([[:space:]]|$)' \
     || fail "$test_id exact command must execute a supported Android test task"
 
   case "$test_file" in
@@ -146,6 +146,10 @@ $test_id"
         || fail "$test_id JVM test command must use --tests for suite scoping"
       printf '%s' "$command" | grep -Fq "$suite" \
         || fail "$test_id exact command does not target JVM suite $suite"
+      if printf '%s' "$test_target" | grep -Fq 'RoborazziTest'; then
+        printf '%s' "$command" | grep -Fq 'verifyRoborazziDebug' \
+          || fail "$test_id Roborazzi test command must execute verifyRoborazziDebug"
+      fi
       ;;
   esac
 
@@ -185,15 +189,11 @@ $test_id"
       NR > 1 && /^[[:space:]]*((public|private|protected|internal|suspend|inline|operator|infix|override|final|open)[[:space:]]+)*fun[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(/ { exit }
       { print }
     ')
-    case "$test_file" in
-      app/src/androidTest/*.kt)
-        bash "$SCRIPT_DIR/check-rendered-output-contract.sh" \
-          --project-root "$PROJECT_ROOT" \
-          --test-file "$source_file" \
-          --test-method "$test_method" \
-          --claim "$signal_text"
-        ;;
-    esac
+    bash "$SCRIPT_DIR/check-rendered-output-contract.sh" \
+      --project-root "$PROJECT_ROOT" \
+      --test-file "$source_file" \
+      --test-method "$test_method" \
+      --claim "$signal_text"
     while IFS= read -r scenario_path; do
       [ -n "$scenario_path" ] || continue
       [ -f "$PROJECT_ROOT/$scenario_path" ] \
@@ -228,7 +228,10 @@ EOF
         app/src/test/*.kt)
           if printf '%s' "$evidence_command" | grep -Fq -- '--tests' && \
             printf '%s' "$evidence_command" | grep -Fq "$suite"; then
-            evidence_targets_suite=1
+            if ! printf '%s' "$test_target" | grep -Fq 'RoborazziTest' || \
+              printf '%s' "$evidence_command" | grep -Fq 'verifyRoborazziDebug'; then
+              evidence_targets_suite=1
+            fi
           fi
           ;;
       esac
