@@ -175,7 +175,7 @@ manifest = {
                 "light": "keyboard_light.png",
                 "dark": "keyboard_dark.png",
             },
-            "capture_method": "Device capture while the real emulator IME is visible; this platform reference is not visual-comparison acceptance evidence",
+            "capture_method": "UiAutomation.takeScreenshot() from an instrumented VisualFlowTest while the real emulator IME is visible",
         }
     },
 }

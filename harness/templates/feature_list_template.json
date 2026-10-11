@@ -48,7 +48,7 @@
       ],
       "verification": [
         "./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.notesapp.ItemTests",
-        "./gradlew app:verifyRoborazziDebug --tests \"com.example.notesapp.ItemRoborazziTest.captureItemScreen\""
+        "env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.notesapp.ItemVisualFlowTest#captureItemScreen && adb -s emulator-5554 pull /sdcard/Download/item_screen.png \"$FEATURE_DIR/visual_evidence/item_screen.png\" && test -s \"$FEATURE_DIR/visual_evidence/item_screen.png\""
       ],
       "evidence": [],
       "notes": ""

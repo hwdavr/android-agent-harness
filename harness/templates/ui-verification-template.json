@@ -3,19 +3,24 @@
   "reference_design": "design/<approved_mockup_or_screenshot>.png",
   "visual_target": {
     "path": "visual_evidence/visual-target.json",
-    "contract": "Single source of truth for appearance, logical_size_dp, locale, approved Pen source, deterministic comparison scope, and named content states."
+    "contract": "Single source of truth for appearance, concrete device, logical_size_dp, locale, and named content states; consumed by visual-target-prompt.sh and prepare-visual-runtime.sh --target"
   },
-  "runtime_evidence": "evidence/roborazzi.json",
+  "reference_map": {
+    "path": "visual_evidence/reference-map.json",
+    "contract": "Every runtime capture maps exactly once to a stable state_id in visual_target. The target state resolves one approved design/mockup_*.png, content state, and explicit handling for time, user-content, identifier, and keyboard dynamic regions. Masks are allowed only for approved dynamic regions with a rationale."
+  },
+  "design_anchors": "design/design_anchors.json",
+  "runtime_evidence": "evidence/ui_frames.json",
 
   "state_results": [
     {
       "screen": "<screen name from UI_contract.md>",
       "state_id": "<state ID from UI_contract.md>",
       "design_image": "design/mockup_<screen_state>.png",
-      "runtime_screen": "<unique state name in runtime_evidence.states>",
-      "comparison": "roborazzi",
-      "pixel_parity": "verified",
-      "assertion": "<Roborazzi comparison and visual-anchor assertion>",
+      "runtime_screen": "<unique screen name in runtime_evidence.screens>",
+      "comparison": "exact / structural",
+      "pixel_parity": "verified / not-claimed",
+      "assertion": "<runtime-backed visible control and anchor assertion>",
       "result": "PASS / FAIL"
     }
   ],
@@ -27,15 +32,15 @@
         "screen": "<screen_name>",
         "element_id": "<runtime-backed testTag>",
         "role": "<declared visual-risk role>",
-        "runtime_test": "<RoborazziTest class/method producing the evidence>",
+        "runtime_test": "<ComposeUiTest class/method producing the evidence>",
         "assertion": "<concrete visible icon, label, layout, or action assertion>"
       }
     ]
   },
 
   "evidence_contract": {
-    "rule": "The validator requires a successful deterministic Roborazzi comparison for every named state; do not promote a runtime image to a design baseline.",
-    "frame_capture": "Visual bounds use the visual shape's testTag, not only its interactive target (for example *_handle_visual)."
+    "rule": "The validator calculates all design-anchor deltas from runtime_evidence; do not record expected, actual, or pass/fail values in structural_verification.checks.",
+    "frame_capture": "Produced by a Compose UI test that reads named testTag visual bounds in dp. A compact visual inside a larger hit target must use its own visual-shape identifier (for example *_handle_visual), never only the interactive *_handle identifier."
   },
 
   "build_and_static_checks": {
@@ -115,14 +120,16 @@
   },
 
   "runtime_evidence_schema": {
-    "producer": { "kind": "RoborazziTest", "test_name": "<test class/method>" },
-    "command": "./gradlew app:verifyRoborazziDebug --tests \"<fully.qualified.Class.method>\"",
-    "result": "PASS",
-    "states": [
+    "producer": { "kind": "ComposeUiTest", "test_name": "<test class/method>" },
+    "coordinate_space": { "unit": "dp" },
+    "normalization": { "theme": "light", "font_scale": 1.0, "locale": "en-US" },
+    "screens": [
       {
         "name": "<screen_name>",
-        "reference": "design/mockup_<screen>.png",
-        "scope": "screen / component"
+        "screenshot": "evidence/<screen>.png",
+        "elements": {
+          "<testTag>": { "x": 0, "y": 0, "width": 0, "height": 0 }
+        }
       }
     ]
   },
@@ -139,7 +146,7 @@
   "perceptual_comparison": [
     {
       "region": "<region>",
-      "gate_role": "Roborazzi comparison against an approved exact screen or component scope",
+      "gate_role": "exact-content Roborazzi comparison or different-content structural proof; state explicitly when full-screen pixel parity was not evaluated",
       "confidence": "high / medium / low",
       "notes": "<observations>"
     }

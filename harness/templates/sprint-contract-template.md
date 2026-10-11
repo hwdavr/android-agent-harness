@@ -130,19 +130,20 @@ Every acceptance criterion must have exactly one primary automated test case. A 
 |---|---|---|---|---|---|---|---|
 | TC-US-1-01 | AC-US-1-01 | JVM integration / Instrumented UI | `app/src/.../[Class]Test.kt#[method]` | `sharedContracts/test-scenarios/<scenario>.json` or `N/A — no API` | Given [fixture], when [event] | Assert [state, output, and observable result] | `./gradlew [task] --tests "[fully.qualified.Class]"` |
 | TC-US-1-02 | AC-US-1-02 | JVM unit / Instrumented UI | `app/src/.../[Class]Test.kt#[method]` | `sharedContracts/test-scenarios/<scenario>.json` or `N/A — no API` | Given [fixture], when [event] | Assert [state, output, and observable result] | `./gradlew [task] --tests "[fully.qualified.Class]"` |
-| TC-US-1-VIS | AC-US-1-01 | Visual verification | `app/src/test/.../<Feature>RoborazziTest.kt#capture<State>` | N/A — no API | Comparison scope: component. Given the production Composable is rendered with its deterministic visual fixture | `captureRoboImage()` matches the approved Pen component export | `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.capture<State>"` |
+| TC-US-1-VIS | AC-US-1-01 | Visual verification | Dedicated `*VisualFlowTest.kt#capture<State>` in-test screenshot capture | N/A — no API | Capture scope: component. Given the target production Composable is rendered in the target visual state, when the test is idle and the active window is captured | The in-test capture produces a non-empty PNG on device, pulled to the feature visual evidence directory for review against the feature design | `env ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#capture<State> && adb -s emulator-5554 pull /sdcard/Download/<screen_id>_<state>.png "$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png" && test -s "$FEATURE_DIR/visual_evidence/<screen_id>_<state>.png"` |
 
 When a row claims that rich text or an inline formatting mark is visibly rendered,
-its named `RoborazziTest` method must compare the approved formatted Pen state with
-`captureRoboImage()`. Model marks, toolbar state, text content, and a non-empty
-screenshot do not prove rendered appearance; the acceptance and visual validators
-enforce this source-fed contract.
+its named instrumented method must also capture the relevant Compose node(s) with
+`captureToImage()` and assert an explicit pixel comparison (`differingPixelCount`,
+`assertPixels`, or an equivalent checked comparison). Model marks, toolbar state,
+text content, and a non-empty full-screen screenshot do not prove rendered
+appearance; the acceptance and visual validators enforce this source-fed contract.
 
 **Verification Rules**:
 
 1. Tests must execute production entry points and cover all linked AC outcomes (including fallback and error paths).
 2. Traceability: Validate with `bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --test "$FEATURE_ID"` (and `--evaluate "$FEATURE_ID"` after recording passing evidence).
-3. **Visual gate** (when `requires_visual_verification == true`): The final reviewable user story declares `TC-US-*-VIS` rows targeting dedicated JVM `*RoborazziTest.kt` methods. Each method compares a deterministic screen or component against its approved Pen export through `captureRoboImage()`, and `./gradlew app:verifyRoborazziDebug` must pass. Validate alignment via `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"`. Complete `visual_evidence/reference-anchor-verification.md`.
+3. **Visual gate** (when `requires_visual_verification == true`): The final reviewable user story declares `TC-US-*-VIS` rows targeting dedicated `*VisualFlowTest.kt` methods. In-test captures save to `/sdcard/Download/<name>.png` and pull to `$FEATURE_DIR/visual_evidence/<name>.png`. Validate alignment via `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"`. Complete `visual_evidence/reference-anchor-verification.md`. Post-test external screencaps are strictly forbidden.
 4. **Platform gate**: Validate during planning via `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --planning` and during delivery via `--evaluate --slice "$FEATURE_ID"`.
 
 ---

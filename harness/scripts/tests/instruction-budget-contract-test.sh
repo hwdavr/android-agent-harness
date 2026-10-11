@@ -11,15 +11,10 @@ fail() {
 
 sum_bytes() {
   local total=0
-  local file resolved_file size
+  local file size
   for file in "$@"; do
-    resolved_file="$PROJECT_ROOT/$file"
-    if [ ! -f "$resolved_file" ] && [ -f "$PROJECT_ROOT/../$file" ]; then
-      # The harness is embedded in the product repository; product design guidance is a parent artifact.
-      resolved_file="$PROJECT_ROOT/../$file"
-    fi
-    [ -f "$resolved_file" ] || fail "missing budgeted instruction file: $file"
-    size=$(wc -c < "$resolved_file" | tr -d ' ')
+    [ -f "$PROJECT_ROOT/$file" ] || fail "missing budgeted instruction file: $file"
+    size=$(wc -c < "$PROJECT_ROOT/$file" | tr -d ' ')
     total=$((total + size))
   done
   printf '%s\n' "$total"

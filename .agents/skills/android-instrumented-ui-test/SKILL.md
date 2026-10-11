@@ -8,8 +8,9 @@ description: Implement Android UI tests on a real device or emulator runtime.
 Use this skill for Android UI tests on real runtime.
 
 ## Execute
-- **Scope**: Gestures, navigation flows, critical multi-screen paths, and platform behavior on emulator/device. Roborazzi JVM tests own pixel comparison against approved visual references.
+- **Scope**: Gestures, navigation flows, critical multi-screen paths, visual verification on emulator/device.
 - **Framework**: ComposeTestRule (`createComposeRule` for stateless UI, `createAndroidComposeRule` for stateful).
 - **Identifiers**: Locate elements via `hasTestTag("stable_name")` — **never by static text**.
 - **Timing**: Use `waitForIdle()` or `waitUntil` — **never `Thread.sleep()`**.
-- **Evidence**: Record device assertions for interaction and platform behavior. Do not use device screenshots as visual acceptance evidence; the matching `*RoborazziTest` and `verifyRoborazziDebug` receipt provide that evidence.
+- **Visual Verification**: When required, capture screen in-test (e.g. `takeScreenshot()`) and pull via adb into `visual_evidence/`. Never use post-test CLI screencap.
+

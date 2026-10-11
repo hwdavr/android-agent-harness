@@ -139,7 +139,7 @@ def validate(contract, spec, plan, report):
         if fixture in fixtures:
             fail(f"runtime fixture reused across states: {fixture}")
         fixtures.add(fixture)
-        if row["Comparison"] not in ("exact", "structural", "roborazzi"):
+        if row["Comparison"] not in ("exact", "structural"):
             fail(f"invalid comparison for {key[1]}: {row['Comparison']}")
         difference = row["Content difference"]
         if row["Comparison"] == "structural" and (difference.lower() in ("none", "n/a") or len(difference) < 12):
@@ -178,21 +178,13 @@ def validate(contract, spec, plan, report):
         if not evidence_path.is_file():
             fail(f"missing runtime evidence: {evidence_path}")
         evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-        is_roborazzi = evidence.get("producer", {}).get("kind") == "RoborazziTest"
-        runtime_screens = {
-            item.get("name"): item.get("reference")
-            for item in evidence.get("states", [])
-        } if is_roborazzi else {
-            item.get("name"): item.get("screenshot")
-            for item in evidence.get("screens", [])
-        }
+        runtime_screens = {item.get("name"): item.get("screenshot") for item in evidence.get("screens", [])}
         used_runtime = set()
         by_key = {(row["Screen"], row["State ID"]): row for row in rows}
         for item in results:
             key = (item["screen"], item["state_id"])
             row = by_key[key]
-            expected_comparison = "roborazzi" if is_roborazzi else row["Comparison"]
-            if item.get("design_image") != row["Design image"] or item.get("comparison") != expected_comparison:
+            if item.get("design_image") != row["Design image"] or item.get("comparison") != row["Comparison"]:
                 fail(f"UI verification reference or comparison differs for {key[0]} / {key[1]}")
             runtime = item.get("runtime_screen")
             if not runtime or runtime not in runtime_screens or runtime in used_runtime:
@@ -200,7 +192,7 @@ def validate(contract, spec, plan, report):
             used_runtime.add(runtime)
             if item.get("result") != "PASS" or len(item.get("assertion", "")) < 12:
                 fail(f"UI state {key[1]} needs a passing concrete assertion")
-            parity = "verified" if is_roborazzi or row["Comparison"] == "exact" else "not-claimed"
+            parity = "verified" if row["Comparison"] == "exact" else "not-claimed"
             if item.get("pixel_parity") != parity:
                 fail(f"UI state {key[1]} needs pixel_parity: {parity}")
     print(f"PASS: {len(states)} complete UI state(s) have unique screen-frame, viewport, coverage, fixture, comparison, and plan mappings.")

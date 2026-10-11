@@ -75,59 +75,7 @@ VERDICT_RESULT=$(jq -r '.verdict.result' "$REPORT" 2>/dev/null)
 # source-of-truth frame contract are required.
 HAS_DESIGN_ANCHORS=$(jq -e 'has("design_anchors")' "$REPORT" >/dev/null 2>&1 && echo true || echo false)
 HAS_RUNTIME_EVIDENCE=$(jq -e 'has("runtime_evidence")' "$REPORT" >/dev/null 2>&1 && echo true || echo false)
-IS_ROBORAZZI_EVIDENCE=false
-if [ "$HAS_RUNTIME_EVIDENCE" = true ] && jq -e '.runtime_evidence | type == "string"' "$REPORT" >/dev/null 2>&1; then
-  RUNTIME_EVIDENCE_PATH=$(jq -r '.runtime_evidence' "$REPORT")
-  if [ -f "$DOCS_DIR/$RUNTIME_EVIDENCE_PATH" ] && \
-    jq -e '.producer.kind == "RoborazziTest"' "$DOCS_DIR/$RUNTIME_EVIDENCE_PATH" >/dev/null 2>&1; then
-    IS_ROBORAZZI_EVIDENCE=true
-  fi
-fi
-
-if [ "$IS_ROBORAZZI_EVIDENCE" = true ]; then
-  [ "$HAS_DESIGN_ANCHORS" = false ] \
-    || fail "$REPORT Roborazzi evidence must not pair implementation frame captures with design_anchors"
-  REFERENCE_ASSET=$(jq -r '.reference_design' "$REPORT" 2>/dev/null)
-  case "$REFERENCE_ASSET" in
-    design/*) ;;
-    *) fail "$REPORT reference_design must stay under design/" ;;
-  esac
-  require_relative_asset "$REFERENCE_ASSET" "reference_design asset"
-
-  RUNTIME_EVIDENCE=$(jq -r '.runtime_evidence' "$REPORT" 2>/dev/null)
-  case "$RUNTIME_EVIDENCE" in
-    evidence/*) ;;
-    *) fail "$REPORT runtime_evidence must stay under evidence/" ;;
-  esac
-  require_relative_asset "$RUNTIME_EVIDENCE" "runtime_evidence asset"
-  jq -e '
-    (.producer.kind == "RoborazziTest") and
-    (.producer.test_name | type == "string" and length > 0) and
-    (.command | type == "string" and contains("verifyRoborazziDebug")) and
-    (.result == "PASS") and
-    (.states | type == "array" and length > 0) and
-    all(.states[];
-      (.name | type == "string" and length > 0) and
-      (.reference | type == "string" and startswith("design/mockup_") and endswith(".png")) and
-      (.scope == "screen" or .scope == "component")
-    )
-  ' "$DOCS_DIR/$RUNTIME_EVIDENCE" >/dev/null 2>&1 \
-    || fail "$RUNTIME_EVIDENCE must record a passing RoborazziTest, verifyRoborazziDebug command, and named screen/component states"
-  while IFS= read -r reference; do
-    require_relative_asset "$reference" "Roborazzi reference asset"
-  done <<EOF
-$(jq -r '.states[].reference' "$DOCS_DIR/$RUNTIME_EVIDENCE")
-EOF
-  STATE_COUNT=$(jq '.states | length' "$DOCS_DIR/$RUNTIME_EVIDENCE")
-  STATE_NAME_COUNT=$(jq '[.states[].name] | unique | length' "$DOCS_DIR/$RUNTIME_EVIDENCE")
-  [ "$STATE_COUNT" -eq "$STATE_NAME_COUNT" ] \
-    || fail "$RUNTIME_EVIDENCE contains duplicate Roborazzi state names"
-  jq -e '
-    (.state_results | type == "array" and length > 0) and
-    all(.state_results[]; .comparison == "roborazzi" and .pixel_parity == "verified" and (.runtime_screen | type == "string" and length > 0))
-  ' "$REPORT" >/dev/null 2>&1 \
-    || fail "$REPORT Roborazzi state results must declare comparison: roborazzi and pixel_parity: verified"
-elif [ "$HAS_DESIGN_ANCHORS" = true ] || [ "$HAS_RUNTIME_EVIDENCE" = true ]; then
+if [ "$HAS_DESIGN_ANCHORS" = true ] || [ "$HAS_RUNTIME_EVIDENCE" = true ]; then
   [ "$HAS_DESIGN_ANCHORS" = true ] \
     || fail "$REPORT must declare design_anchors when runtime_evidence is present"
   [ "$HAS_RUNTIME_EVIDENCE" = true ] \
@@ -323,4 +271,4 @@ AI_STATUS=$(jq -r '.ai_visual_evaluation.status' "$REPORT" 2>/dev/null)
 [ -n "$AI_STATUS" ] && [ "$AI_STATUS" != "null" ] \
   || fail "$REPORT ai_visual_evaluation must declare a status"
 
-echo "PASS: UI verification JSON artifact is valid with approved reference design, Roborazzi visual evidence or legacy structural evidence, and AI evaluation."
+echo "PASS: UI verification JSON artifact is valid with reference design, structural checks, and AI evaluation."
