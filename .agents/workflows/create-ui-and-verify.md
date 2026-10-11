@@ -66,7 +66,11 @@ continue through implementation and verification.
 ### Stage 0b — Per-State Implementation Plan ⛔ STOP
 
 Create `docs/current/implementation_plan_v<N>.md` with a `## UI State Stages` table. Give every
-Plan stage ID in `UI_contract.md` its own implementation and verification steps. Run:
+Plan stage ID in `UI_contract.md` its own implementation and verification steps. Each row must
+declare one unique future JVM `*RoborazziTest.kt#method`, cite its approved design image, and name
+the method-scoped `./gradlew app:verifyRoborazziDebug --tests "<package>.<Class>.<method>"`
+command. The test source may be created during implementation, but the plan gate rejects a state
+without this binding. Run:
 
 ```bash
 bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify implementation-plan docs/current
@@ -77,6 +81,11 @@ Present the plan and wait for the user's approval before writing application cod
 ### Stage 1 — UI Implementation
 **INVOKE** the `android-ui-layer` skill via the Skill tool (name: `android-ui-layer`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
+If the current environment does not expose the Skill tool, load the repository skill directly,
+record the unavailable invocation interface in the stage evidence, and continue its executable
+requirements. Do not treat the missing invocation interface as a reason to defer a named Gradle
+gate or verification command.
+
 Read `docs/product/design_system.md`, then implement the UI changes using the approved reference
 from Stage 0. If the reference intentionally differs from the project design system, record the
 explicit user-approved exception in `docs/current/UI_contract.md`; otherwise reuse the project tokens
@@ -84,6 +93,11 @@ and component patterns.
 
 ### Stage 2 — UI Verification ↩️ Loop
 **INVOKE** the `ui-verification` skill via the Skill tool (name: `ui-verification`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+
+If the current environment does not expose the Skill tool, load the repository skill directly,
+record the unavailable invocation interface in the verification evidence, and run the declared
+Roborazzi command. A missing invocation interface makes the stage `Blocked` only when the
+executable verification command itself cannot run or its required evidence is unavailable.
 
 Compare the implemented UI against the approved generated mockup or original design screenshot
 in `docs/current/design/`, never against defect evidence in `docs/current/evidence/`, and against

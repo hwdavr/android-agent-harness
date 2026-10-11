@@ -15,7 +15,10 @@ STATE_COLUMNS = [
     "Comparison", "Content difference", "Plan stage",
 ]
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
-PLAN_COLUMNS = ["Stage ID", "Implementation", "Verification"]
+PLAN_COLUMNS = ["Stage ID", "Implementation", "Roborazzi target", "Verification"]
+ROBORAZZI_TARGET = re.compile(
+    r"app/src/test/java/[A-Za-z0-9_./]+RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
+)
 
 
 def fail(message):
@@ -161,6 +164,22 @@ def validate(contract, spec, plan, report):
         plan_stages = {row["Stage ID"] for row in plan_rows}
         if len(plan_stages) != len(plan_rows) or stages != plan_stages:
             fail(f"UI plan stages differ from contract: missing {sorted(stages - plan_stages)}, extra {sorted(plan_stages - stages)}")
+        states_by_stage = {row["Plan stage"]: row for row in rows}
+        roborazzi_targets = set()
+        for plan_row in plan_rows:
+            stage = plan_row["Stage ID"]
+            target = plan_row["Roborazzi target"]
+            if not ROBORAZZI_TARGET.fullmatch(target):
+                fail(f"UI state {stage} needs a valid Roborazzi target under app/src/test/java ending in RoborazziTest.kt#method")
+            if target in roborazzi_targets:
+                fail(f"Roborazzi target reused across UI plan stages: {target}")
+            roborazzi_targets.add(target)
+            verification = plan_row["Verification"]
+            if "./gradlew app:verifyRoborazziDebug" not in verification:
+                fail(f"UI state {stage} needs a method-scoped verifyRoborazziDebug command")
+            design_image = states_by_stage[stage]["Design image"]
+            if design_image not in verification:
+                fail(f"UI state {stage} verification must cite its approved design image: {design_image}")
     if report:
         if not report.is_file():
             fail(f"missing {report}")

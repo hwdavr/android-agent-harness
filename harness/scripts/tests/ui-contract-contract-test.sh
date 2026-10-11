@@ -85,10 +85,10 @@ cat > "$FIXTURE/implementation_plan_v1.md" <<'EOF'
 
 ## UI State Stages
 
-| Stage ID | Implementation | Verification |
-|---|---|---|
-| UI-01 | Implement crop selected controls | Capture crop fixture and compare anchors |
-| UI-02 | Implement rotate selected controls | Capture rotate fixture and compare pixels |
+| Stage ID | Implementation | Roborazzi target | Verification |
+|---|---|---|---|
+| UI-01 | Implement crop selected controls | `app/src/test/java/example/TransformRoborazziTest.kt#cropSelectedMatchesApprovedDesign` | Compare `design/mockup_crop.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.cropSelectedMatchesApprovedDesign"`. |
+| UI-02 | Implement rotate selected controls | `app/src/test/java/example/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign` | Compare `design/mockup_rotate.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"`. |
 EOF
 touch "$FIXTURE/summary_v1.md"
 
@@ -126,6 +126,24 @@ expect_failure "UI plan stages differ from contract" \
   bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
 cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
 
+sed 's@app/src/test/java/example/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign@app/src/test/java/example/TransformVisualTest.kt#rotateSelectedMatchesApprovedDesign@' \
+  "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
+expect_failure "needs a valid Roborazzi target" \
+  bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
+cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
+
+sed 's#./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"#./gradlew testDebugUnitTest#' \
+  "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
+expect_failure "needs a method-scoped verifyRoborazziDebug command" \
+  bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
+cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
+
+sed 's#design/mockup_rotate.png#design/missing_reference.png#g' \
+  "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
+expect_failure "verification must cite its approved design image" \
+  bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
+cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
+
 mkdir -p "$FIXTURE/evidence"
 cat > "$FIXTURE/evidence/ui_frames.json" <<'EOF'
 {"screens":[{"name":"crop-runtime","screenshot":"evidence/crop.png"},{"name":"rotate-runtime","screenshot":"evidence/rotate.png"}]}
@@ -153,4 +171,4 @@ PY
 expect_failure "UI verification states differ from contract" \
   python3 "$CHECK" "$FIXTURE/UI_contract.md" --report "$FIXTURE/ui_verification.json"
 
-echo "PASS: UI contract gates reject absent, cropped, duplicate, missing-asset, and unmapped screen states and verification results."
+echo "PASS: UI contract gates reject absent, cropped, duplicate, missing-asset, unmapped, and unbound visual screen states."

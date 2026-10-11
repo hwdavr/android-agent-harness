@@ -99,11 +99,16 @@ States covered:
 
 ## UI State Stages
 
-For UI changes, copy each unique Plan stage ID from `UI_contract.md`. Give each state its own implementation step and runtime verification step. Remove this section for non-UI work.
+For UI changes, copy each unique Plan stage ID from `UI_contract.md`. Give each state its own
+implementation step and a unique planned JVM Roborazzi method. The method source can be created
+during implementation, but it must be named before approval so the implementation-plan gate can
+reject UI work with no visual evidence target. Every verification cell must cite the approved
+design image and its method-scoped `verifyRoborazziDebug` command. Remove this section for
+non-UI work.
 
-| Stage ID | Implementation | Verification |
-|---|---|---|
-| UI-01 | <screen/state-specific code change> | <state-specific runtime capture and comparison> |
+| Stage ID | Implementation | Roborazzi target | Verification |
+|---|---|---|---|
+| UI-01 | <screen/state-specific code change> | `app/src/test/java/<package>/<Feature>RoborazziTest.kt#<stateMethod>` | Compare `design/mockup_<state>.png` with `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.<stateMethod>"`. |
 
 ---
 
