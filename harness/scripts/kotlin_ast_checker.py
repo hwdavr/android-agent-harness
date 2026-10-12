@@ -1258,12 +1258,25 @@ def run_localization(args: argparse.Namespace) -> int:
 
     def check_named_ui_literals() -> None:
         names = {"label", "title", "placeholder", "hint"}
+        non_user_facing_label_calls = {
+            "AnimatedContent",
+            "AnimatedVisibility",
+            "animateColorAsState",
+            "animateDpAsState",
+            "animateFloat",
+            "animateFloatAsState",
+            "animateIntAsState",
+            "animateValueAsState",
+            "rememberInfiniteTransition",
+        }
         for source_file in files:
             for call in source_file.calls:
                 enclosing_function = source_file.enclosing_function(call.open_index)
                 if enclosing_function is not None and not is_composable_function(enclosing_function):
                     continue
                 for name, start, end in named_argument_ranges(source_file, call):
+                    if name == "label" and call.name in non_user_facing_label_calls:
+                        continue
                     if name in names and start < end and source_file.tokens[start].is_string:
                         result.add(source_file, start, f"{name}= is assigned a hardcoded string")
 
@@ -1277,6 +1290,16 @@ def run_localization(args: argparse.Namespace) -> int:
                 continue
             for prop in source_file.properties:
                 if not prop.name.endswith(suffixes) or prop.initializer_start is None:
+                    continue
+                is_data_class_constructor_property = any(
+                    "data" in class_node.modifiers
+                    and class_node.keyword_index < prop.declaration_index < class_node.header_end
+                    for class_node in source_file.classes
+                )
+                if (
+                    (prop.enclosing_class is not None and "data" in prop.enclosing_class.modifiers)
+                    or is_data_class_constructor_property
+                ):
                     continue
                 if prop.initializer_start < len(source_file.tokens) and source_file.tokens[prop.initializer_start].is_string:
                     result.add(source_file, prop.initializer_start, "local UI label variable is assigned a hardcoded string")

@@ -86,6 +86,26 @@ expect_pass "comment and literal Compose fixture" \
   bash "$COMPOSE_CHECKER" --all "$fixture_root/comments/com/example/notesapp"
 expect_pass "comment and literal localization fixture" \
   bash "$LOCALIZATION_CHECKER" --all "$fixture_root/comments/com/example/notesapp"
+
+animation_labels_root="$fixture_root/animation-labels/com/example/notesapp/ui"
+mkdir -p "$animation_labels_root"
+cat > "$animation_labels_root/SafeLabels.kt" <<'KOTLIN'
+package com.example.notesapp.ui
+
+@Composable
+fun SafeLabels() {
+    val transition = rememberInfiniteTransition(label = "mic_pulse")
+    AnimatedContent(targetState = transition, label = "content_transition") { }
+}
+
+data class UiState(
+    val inputText: String = "",
+    val title: String = "",
+)
+KOTLIN
+expect_pass "animation labels and data-class state defaults are not user-visible copy" \
+  bash "$LOCALIZATION_CHECKER" --all "$fixture_root/animation-labels/com/example/notesapp"
+
 expect_pass "comment and literal architecture fixture" \
   bash "$ARCHITECTURE_CHECKER" --all "$fixture_root/comments/com/example/notesapp"
 expect_pass "comment and literal assertion fixture" \
