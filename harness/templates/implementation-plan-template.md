@@ -108,7 +108,7 @@ non-UI work.
 
 | Stage ID | Implementation | Roborazzi target | Verification |
 |---|---|---|---|
-| UI-01 | <screen/state-specific code change> | `app/src/test/java/<package>/<Feature>RoborazziTest.kt#<stateMethod>` | Compare `design/mockup_<state>.png` with `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.<stateMethod>"`. |
+| UI-01 | <screen/state-specific code change> | `app/src/test/java/<package>/<Feature>RoborazziTest.kt#<stateMethod>` | Compare the approved PNG exported from the canonical `.pen` state (`design/mockup_<state>.png`) with `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.<stateMethod>"`. |
 
 ---
 

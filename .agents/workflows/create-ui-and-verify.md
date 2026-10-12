@@ -57,8 +57,9 @@ Render and inspect every Pen export, including icon identity and missing-glyph p
 bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify reference-design docs/current
 ```
 
-The active plan must cite the approved state references and keep defect evidence separate. A
-generated mockup becomes the Stage 2 design reference only after user approval.
+The active plan must cite the approved state references and keep defect evidence separate. The
+canonical `.pen` source and its approved PNG export remain the Stage 2 design reference; generated
+mockups are secondary review artifacts and never replace the Pen source.
 After approval, promote the validated `.pen` source in place and delete only the run-owned
 intermediate design outputs according to `pen-design-editor`; retain the approved review PNG and
 continue through implementation and verification.
@@ -99,12 +100,12 @@ record the unavailable invocation interface in the verification evidence, and ru
 Roborazzi command. A missing invocation interface makes the stage `Blocked` only when the
 executable verification command itself cannot run or its required evidence is unavailable.
 
-Compare the implemented UI against the approved generated mockup or original design screenshot
+Compare the implemented UI against the canonical `.pen` design source and its approved PNG export
 in `docs/current/design/`, never against defect evidence in `docs/current/evidence/`, and against
-`docs/product/design_system.md`. When the approved reference is a `.pen` design, export the named
-screen or static component to PNG. Run `./gradlew app:verifyRoborazziDebug` for every visual state;
-use a component-scoped export when surrounding screen content differs. Do not record an
-implementation golden.
+`docs/product/design_system.md`. Generated mockups may be retained as review artifacts, but they
+are not the visual source of truth. Export the named Pen screen or static component to PNG, then
+run `./gradlew app:verifyRoborazziDebug` for every visual state; use a component-scoped export
+when surrounding screen content differs. Do not record an implementation golden.
 Any deviation from either source must be an explicit approved exception.
 
 Before recording a PASS, create `docs/current/ui_verification.json` using the `ui-verification`
