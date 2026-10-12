@@ -51,7 +51,20 @@ top-level screen frame and full-viewport export, or identify the supplied approv
 external-screen reference. Each export must visibly include primary content, all state-specific
 controls, and persistent interactive surfaces; a control-only or component crop is invalid.
 Record the deterministic runtime fixture, comparison mode, and unique plan stage ID.
-Render and inspect every Pen export, including icon identity and missing-glyph placeholders. Then run:
+Render and inspect every Pen export, including icon identity and missing-glyph placeholders. Capture
+the complete headless CLI output for each export and run the fail-closed diagnostic before treating
+the PNG as an approved reference:
+
+```bash
+bash harness/scripts/check-pen-export-log.sh <pen-export-log>
+```
+
+Any `Failed to load font family`, `AssetFetchError`, missing-font, or placeholder-glyph diagnostic
+is a failed reference-design gate. Do not use or approve that PNG; restore the missing font/icon
+asset or the required network/cache prerequisite, re-export, and inspect the PNG again. A zero exit
+from the Pen CLI alone is not evidence that glyphs rendered correctly.
+
+Then run:
 
 ```bash
 bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify reference-design docs/current
@@ -103,8 +116,9 @@ executable verification command itself cannot run or its required evidence is un
 Compare the implemented UI against the canonical `.pen` design source and its approved PNG export
 in `docs/current/design/`, never against defect evidence in `docs/current/evidence/`, and against
 `docs/product/design_system.md`. Generated mockups may be retained as review artifacts, but they
-are not the visual source of truth. Export the named Pen screen or static component to PNG, then
-run `./gradlew app:verifyRoborazziDebug` for every visual state; use a component-scoped export
+are not the visual source of truth. Export the named Pen screen or static component to PNG, capturing
+the complete CLI output. Run `bash harness/scripts/check-pen-export-log.sh <pen-export-log>` before
+normalizing the PNG and then run `./gradlew app:verifyRoborazziDebug` for every visual state; use a component-scoped export
 when surrounding screen content differs. Do not record an implementation golden.
 Any deviation from either source must be an explicit approved exception.
 
