@@ -7,15 +7,21 @@ description: Implement or update Android UI from a provided screenshot or approv
 ## When to use
 Use this workflow when:
 - Implementing a new screen from a design screenshot or generated mockup
-- Updating an existing screen to match a revised design
+- Updating any existing user-visible screen, component, state, layout, style, or interaction
+- Making a single UI-only adjustment to an existing component
 
-## Triage: Small UI Patch
+## No Direct UI-Change Lane
 
-Do not use this workflow for a small, localized UI-only adjustment to one existing
-presentation surface. Invoke `android-ui-layer` directly for Compose layout or
-styling, design-system tokens, accessibility presentation, or a focused existing
-component change when no API, persistence, domain, ViewModel behavior, navigation,
-or new user journey change is required.
+There is no direct implementation path for a user-visible UI request, regardless of
+its size. A one-component styling, layout, selected-state, overlay, or interaction
+change must use this workflow and receive an approved implementation plan before
+application source is modified. Use `bug-fixing` instead only when the request reports
+unexpected behavior, a regression, or a defect that needs RED reproduction.
+
+For a small change, keep the state inventory and plan proportionate: reuse an existing
+approved reference when it covers the target state, add only the changed state(s), and
+declare one focused Roborazzi verification target. The smaller evidence set does not
+remove the plan, approval, or visual-verification gates.
 
 ---
 

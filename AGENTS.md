@@ -45,16 +45,15 @@ after selection. Its output is disposable and must be regenerated when either so
 | **Evaluator** | Performs automated & manual quality gates | Runs code quality checks, static analysis, & test coverage reviews |
 ---
 ## Workflow Routing — Mandatory Step Before Any Task
-**Before starting ANY task, you MUST:** identify the task type, then read the matching workflow or direct skill **in full** and follow its pipeline without skipping stages or stops. Direct skill lanes do not require unrelated workflow artifacts. Do not write code before reading the selected workflow or skill.
+**Before starting ANY task, you MUST:** identify the task type, then read the matching workflow **in full** and follow its pipeline without skipping stages or stops. Do not write code before reading the selected workflow and its current-stage skill.
 
 ### Ad-hoc Development (Simple Features & Bug Fixing)
 
 | Task type | Read this file first |
 |-----------|----------------------|
-| Small UI-only adjustment to an existing screen | `.agents/skills/android-ui-layer/SKILL.md` (direct skill lane; no workflow stages) |
 | Bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
 | New feature or simple enhancement | `.agents/workflows/feature-delivery.md` |
-| UI implementation or update from a mockup | `.agents/workflows/create-ui-and-verify.md` |
+| Any user-visible UI implementation or update, including a single component or state | `.agents/workflows/create-ui-and-verify.md` |
 | Independent code review before merge | `.agents/workflows/feature-review.md` |
 
 ### Project-Based Development (Complex Features)
@@ -88,6 +87,7 @@ Key skills under `.agents/skills/`:
 - **Platform-bound features must include a platform capability matrix and a real instrumented boundary test** — fake/JVM-only tests are supplemental; missing runtimes, devices, models, locales, permissions, or services fail loudly and cannot be recorded as passing evidence
 - **No dummy code in production** — every function, branch, and callback must implement the actual requirement logic; no `TODO()`, `NotImplementedError`, stub return values, no-op handlers, or `// dummy implementation` comments. See `.agents/rules/implementation-rules.md`
 - **Implementation authorization must be approved by the user before code is written** — ad-hoc workflows require approval of `implementation_plan_v<N>.md`; the complex harness path uses the approved `feature_list.json` and `sprint-contract.md` from `harness-planning` and must not generate a duplicate implementation plan in `harness-generator`
+- **No direct UI-change lane** — every user-visible UI request, including a one-component styling, layout, state, or interaction change, must use `create-ui-and-verify` (or `bug-fixing` when it is an unexpected defect) and receive an approved implementation plan before source changes
 - **Every stage gate must pass before advancing** — do not skip gates
 - **Every stage skill must be invoked through the available skill mechanism** — use the Skill tool when it is exposed. If this environment does not expose it, read the repository's matching `SKILL.md`, follow its workflow, and record the unavailable invocation interface in the stage evidence. An unavailable interface never permits skipping an executable stage gate or verification command named by the skill.
 - **Every specification artifact must contain the complete Rule Applicability matrix** — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all ten rules. The approved specification is canonical: implementation and test plans link its `#rule-applicability` anchor and map only `Required` rows to work/evidence; reviews independently reconcile all ten decisions rather than copy them.
