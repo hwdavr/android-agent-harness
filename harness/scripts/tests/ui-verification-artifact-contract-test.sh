@@ -193,7 +193,7 @@ FIXTURE
 
 | Stage ID | Implementation | Roborazzi target | Verification |
 |---|---|---|---|
-| UI-01 | Implement editor content | `app/src/test/java/example/EditorRoborazziTest.kt#contentMatchesApprovedDesign` | Compare `design/mockup_editor.png` with `./gradlew app:verifyRoborazziDebug --tests "example.EditorRoborazziTest.contentMatchesApprovedDesign"`. |
+| UI-01 | Implement editor content | `app/src/test/java/example/roborazzi/EditorRoborazziTest.kt#contentMatchesApprovedDesign` | Compare `design/mockup_editor.png` with `./gradlew app:verifyRoborazziDebug --tests "example.EditorRoborazziTest.contentMatchesApprovedDesign"`. |
 FIXTURE
 }
 

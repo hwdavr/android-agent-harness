@@ -37,7 +37,7 @@ Pick the **lowest** layer that is sufficient to reproduce the bug (per `testing-
 |---|---|
 | Logic / calculation error | Unit test (`app/src/test/`) |
 | Data-flow / API mapping / error state | Integration test (`app/src/test/`) |
-| Rendered visual mismatch | JVM Roborazzi test (`app/src/test/`) |
+| Rendered visual mismatch | JVM Roborazzi test (`app/src/test/java/<package>/roborazzi/`) |
 | Unresponsive element | Instrumented UI test (`app/src/androidTest/`) |
 | Navigation crash / deep-link issue | Instrumented UI test (`app/src/androidTest/`) |
 

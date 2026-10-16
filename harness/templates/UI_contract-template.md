@@ -38,7 +38,7 @@ Every row must name the full logical viewport, declare that the primary content,
 
 ## Planning Handoff
 
-Copy every Plan stage ID into the implementation plan's `## UI State Stages` table. Implementation and verification are separate steps for each state. Before approval, bind each row to a unique planned `app/src/test/.../*RoborazziTest.kt#method`, the exact design image in this contract, and a method-scoped `verifyRoborazziDebug` command. Generate missing Pen frames before asking for design approval. Compare each deterministic JVM state only to its approved Pen screen or component export with Roborazzi.
+Copy every Plan stage ID into the implementation plan's `## UI State Stages` table. Implementation and verification are separate steps for each state. Before approval, bind each row to a unique planned `app/src/test/java/<package>/roborazzi/*RoborazziTest.kt#method`, the exact design image in this contract, and a method-scoped `verifyRoborazziDebug` command. Generate missing Pen frames before asking for design approval. Compare each deterministic JVM state only to its approved Pen screen or component export with Roborazzi.
 
 ## Verification Quickstart
 

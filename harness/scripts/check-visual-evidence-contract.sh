@@ -42,9 +42,9 @@ CONTRACT_IDS=$(printf '%s\n' "$CONTRACT_ROWS" | sed -n 's/^|[[:space:]]*\(TC-[^|
 extract_target() {
   local row="$1"
   local target
-  target=$(printf '%s\n' "$row" | sed -n -E 's/.*`(app\/src\/test\/[^`|[:space:]]*RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*)`.*/\1/p' | head -n 1)
+  target=$(printf '%s\n' "$row" | sed -n -E 's/.*`(app\/src\/test\/java\/[^`|[:space:]]*\/roborazzi\/[^`|[:space:]]*RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*)`.*/\1/p' | head -n 1)
   if [ -z "$target" ]; then
-    target=$(printf '%s\n' "$row" | sed -n -E 's/.*(app\/src\/test\/[^|[:space:]]*RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*).*/\1/p' | head -n 1)
+    target=$(printf '%s\n' "$row" | sed -n -E 's/.*(app\/src\/test\/java\/[^|[:space:]]*\/roborazzi\/[^|[:space:]]*RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*).*/\1/p' | head -n 1)
   fi
   printf '%s' "$target"
 }
@@ -52,7 +52,7 @@ extract_target() {
 for test_id in $CONTRACT_IDS; do
   CONTRACT_ROW=$(printf '%s\n' "$CONTRACT_ROWS" | grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" || true)
   TARGET=$(extract_target "$CONTRACT_ROW")
-  [ -n "$TARGET" ] || fail "$test_id must name a dedicated app/src/test/*RoborazziTest.kt#method target"
+  [ -n "$TARGET" ] || fail "$test_id must name a dedicated app/src/test/java/**/roborazzi/*RoborazziTest.kt#method target"
   printf '%s\n' "$CONTRACT_ROW" | grep -Fq 'verifyRoborazziDebug' \
     || fail "$test_id must declare a verifyRoborazziDebug command"
   printf '%s\n' "$CONTRACT_ROW" | grep -Fq -- '--tests' \
@@ -128,6 +128,10 @@ for test_id in $CONTRACT_IDS; do
   TARGET=$(extract_target "$CONTRACT_ROW")
   TEST_FILE="${TARGET%%#*}"
   TEST_METHOD="${TARGET#*#}"
+  case "$TEST_FILE" in
+    app/src/test/java/*/roborazzi/*RoborazziTest.kt) ;;
+    *) fail "$test_id must name a dedicated app/src/test/java/**/roborazzi/*RoborazziTest.kt#method target" ;;
+  esac
   SOURCE_FILE="$ROOT_DIR/$TEST_FILE"
   [ -f "$SOURCE_FILE" ] || fail "$test_id Roborazzi source is missing: $TEST_FILE"
   grep -Eq "^[[:space:]]*((public|private|protected|internal|suspend|inline|operator|infix|override|final|open)[[:space:]]+)*fun[[:space:]]+$TEST_METHOD[[:space:]]*\\(" "$SOURCE_FILE" \

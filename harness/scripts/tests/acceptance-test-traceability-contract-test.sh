@@ -105,7 +105,7 @@ expect_failure "has no successful evidence command scoped to FixtureIntegrationT
 # satisfy an acceptance row that claims visible text styling.
 write_rendered_fixture() {
   rm -rf "$FEATURE_DIR"
-  mkdir -p "$FEATURE_DIR" "$FIXTURE_ROOT/app/src/test/java/example"
+  mkdir -p "$FEATURE_DIR" "$FIXTURE_ROOT/app/src/test/java/example/roborazzi"
 
   printf '%s\n' \
     '{' \
@@ -130,7 +130,7 @@ write_rendered_fixture() {
     '' \
     '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|---|' \
-    '| TC-US-1-01 | AC-US-1-01 | JVM visual | `app/src/test/java/example/RenderedRoborazziTest.kt#markedTextIsRendered` | N/A — no API | Render marked text in the deterministic editor fixture. | Following text visibly inherits Bold and matches the approved Pen export. | ./gradlew app:verifyRoborazziDebug --tests example.RenderedRoborazziTest.markedTextIsRendered |' \
+    '| TC-US-1-01 | AC-US-1-01 | JVM visual | `app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt#markedTextIsRendered` | N/A — no API | Render marked text in the deterministic editor fixture. | Following text visibly inherits Bold and matches the approved Pen export. | ./gradlew app:verifyRoborazziDebug --tests example.RenderedRoborazziTest.markedTextIsRendered |' \
     > "$FEATURE_DIR/sprint-contract.md"
 }
 
@@ -148,7 +148,7 @@ printf '%s\n' \
   '    assertTrue("bold" in marks)' \
   '  }' \
   '}' \
-  > "$FIXTURE_ROOT/app/src/test/java/example/RenderedRoborazziTest.kt"
+  > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"
 expect_failure "must call captureRoboImage() in a Roborazzi JVM test" \
   bash "$VALIDATOR" docs/product/2026-09-01-fixture --test US-1
 
@@ -164,7 +164,7 @@ printf '%s\n' \
   '    captureRoboImage("design/mockup_formatted_text.png")' \
   '  }' \
   '}' \
-  > "$FIXTURE_ROOT/app/src/test/java/example/RenderedRoborazziTest.kt"
+  > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \
   docs/product/2026-09-01-fixture --test US-1 >/dev/null
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \

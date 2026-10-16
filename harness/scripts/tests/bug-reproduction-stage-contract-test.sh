@@ -111,7 +111,8 @@ assert_rejected "$RENDERED_FALSE_PASS_DOCS" \
 
 create_summary "$RENDERED_VALID_DOCS/summary_v1.md"
 create_rendered_spec "$RENDERED_VALID_DOCS/spec_v1.md" \
-  'app/src/test/java/example/ReproductionRoborazziTest.kt'
+  'app/src/test/java/example/roborazzi/ReproductionRoborazziTest.kt'
+mkdir -p "$RENDERED_VALID_DOCS/app/src/test/java/example/roborazzi"
 printf '%s\n' \
   'package example' \
   '' \
@@ -123,7 +124,7 @@ printf '%s\n' \
   '    captureRoboImage("design/mockup_formatted_text.png")' \
   '  }' \
   '}' \
-  > "$RENDERED_VALID_DOCS/app/src/test/java/example/ReproductionRoborazziTest.kt"
+  > "$RENDERED_VALID_DOCS/app/src/test/java/example/roborazzi/ReproductionRoborazziTest.kt"
 HARNESS_PROJECT_ROOT="$RENDERED_VALID_DOCS" bash "$STAGE_CHECKER" \
   bug-fixing bug-reproduction "$RENDERED_VALID_DOCS" >/dev/null ||
   fail_test "valid rendered RED reproduction evidence did not pass"

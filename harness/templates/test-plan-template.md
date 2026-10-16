@@ -76,7 +76,7 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 
 ### `<Feature>RoborazziTest.kt` — Dedicated Visual Comparison *(only when `requires_visual_verification == true`)*
 
-> **MANDATORY**: When visual verification is required, write a dedicated JVM `*RoborazziTest.kt` class that renders the active Composable in every critical visual state with deterministic fixtures and calls `captureRoboImage()` against the approved Pen PNG. The binding command is `./gradlew app:verifyRoborazziDebug`; device screenshots are not visual acceptance evidence.
+> **MANDATORY**: When visual verification is required, write a dedicated JVM `app/src/test/java/<package>/roborazzi/*RoborazziTest.kt` class that renders the active Composable in every critical visual state with deterministic fixtures and calls `captureRoboImage()` against the approved Pen PNG. The binding command is `./gradlew app:verifyRoborazziDebug`; device screenshots are not visual acceptance evidence.
 
 | ID | Visual State | Composable Under Test | Comparison Scope | Approved Reference |
 |----|-------------|----------------------|------------------|--------------------|
@@ -110,7 +110,7 @@ code, or monospace), record the source-fed proof in the same named Roborazzi met
 
 | Claim | Test file and method | Runtime proof required |
 |---|---|---|
-| `<exact visible formatting claim>` | `app/src/test/.../*RoborazziTest.kt#<method>` | `captureRoboImage()` verifies the approved Pen reference containing the formatted appearance |
+| `<exact visible formatting claim>` | `app/src/test/java/<package>/roborazzi/*RoborazziTest.kt#<method>` | `captureRoboImage()` verifies the approved Pen reference containing the formatted appearance |
 
 The rendered-output contract checker validates this method during acceptance,
 visual-evidence, and bug-reproduction gates. Assertions about marks, toolbar state,

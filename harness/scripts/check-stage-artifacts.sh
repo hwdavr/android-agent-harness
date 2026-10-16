@@ -202,6 +202,11 @@ require_bug_reproduction_evidence() {
     echo "FAIL: reproduction test file does not exist: $reproduction_file" >&2
     exit 1
   fi
+  if [[ "$reproduction_file" == *RoborazziTest.kt ]] &&
+    [[ ! "$reproduction_file" =~ ^app/src/test/java/.+/roborazzi/[^/]+RoborazziTest\.kt$ ]]; then
+    echo "FAIL: Roborazzi reproduction tests must live under app/src/test/java/<package>/roborazzi/: $reproduction_file" >&2
+    exit 1
+  fi
   reproduction_test_method=$(printf '%s\n' "$reproduction_section" |
     sed -n -E 's/^[[:space:]]*-[[:space:]]*\*{0,2}Test name\*{0,2}:[[:space:]]*`([^`]+)`.*/\1/p' |
     head -n 1)

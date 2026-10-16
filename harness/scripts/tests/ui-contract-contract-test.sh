@@ -87,8 +87,8 @@ cat > "$FIXTURE/implementation_plan_v1.md" <<'EOF'
 
 | Stage ID | Implementation | Roborazzi target | Verification |
 |---|---|---|---|
-| UI-01 | Implement crop selected controls | `app/src/test/java/example/TransformRoborazziTest.kt#cropSelectedMatchesApprovedDesign` | Compare `design/mockup_crop.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.cropSelectedMatchesApprovedDesign"`. |
-| UI-02 | Implement rotate selected controls | `app/src/test/java/example/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign` | Compare `design/mockup_rotate.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"`. |
+| UI-01 | Implement crop selected controls | `app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#cropSelectedMatchesApprovedDesign` | Compare `design/mockup_crop.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.cropSelectedMatchesApprovedDesign"`. |
+| UI-02 | Implement rotate selected controls | `app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign` | Compare `design/mockup_rotate.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"`. |
 EOF
 touch "$FIXTURE/summary_v1.md"
 
@@ -126,7 +126,7 @@ expect_failure "UI plan stages differ from contract" \
   bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
 cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
 
-sed 's@app/src/test/java/example/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign@app/src/test/java/example/TransformVisualTest.kt#rotateSelectedMatchesApprovedDesign@' \
+sed 's@app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign@app/src/test/java/example/roborazzi/TransformVisualTest.kt#rotateSelectedMatchesApprovedDesign@' \
   "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
 expect_failure "needs a valid Roborazzi target" \
   bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
