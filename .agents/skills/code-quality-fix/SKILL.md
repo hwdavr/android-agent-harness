@@ -42,8 +42,13 @@ Execute the following baseline checks:
 ./gradlew detekt
 ./gradlew lintDebug
 bash harness/scripts/check-full-source-rules.sh
+./gradlew koverLog :app:koverXmlReportDebug
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ```
+
+Generate the Kover report in this stage so the coverage checker reads evidence from the
+current source and test state. The Testing skill runs only related tests; repository-wide
+coverage is checked here.
 
 `check-full-source-rules.sh` is the mandatory bundle — it passes `--all` to
 architecture, Compose, and localization AST checkers, scans test roots for assertion
@@ -85,7 +90,7 @@ For any remaining failures or warnings:
 - [ ] `./gradlew detekt` — exit code 0
 - [ ] `./gradlew lintDebug` — exit code 0
 - [ ] `bash harness/scripts/check-full-source-rules.sh` or `harness\scripts\check-full-source-rules.cmd` — exit code 0
-- [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — exit code 0
+- [ ] Fresh coverage report passes `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — exit code 0
 - [ ] No dummy code found
 - [ ] Every Rule Applicability decision has required check/review evidence or its approved rationale
 - [ ] Summary updated and marked complete

@@ -74,8 +74,8 @@ Create or complete the approved tests against the implementation and verify them
 introduce a separate feature-level RED/TDD stage.
 
 Output: Unit tests, integration tests, loopback-boundary tests when required, and shared JSON scenarios created or
-updated; `docs/current/summary_v<N>.md` updated with test count, request-receipt evidence, and coverage.
-Gate: tests pass, coverage targets met. Additionally, run `bash harness/scripts/check-journey-registry.sh --run-all` to verify no existing critical journey is regressed. For any claim that rich text or an inline formatting mark is visibly rendered, run `bash harness/scripts/check-rendered-output-contract.sh` for the named `*RoborazziTest` method and require `captureRoboImage()` against the approved Pen export; state-only marks and device screenshots are supplemental evidence.
+updated; `docs/current/summary_v<N>.md` updated with selected test commands, executed counts, and request-receipt evidence.
+Gate: every related test selected by `android-testing` passes with a non-zero executed count; required instrumented boundaries pass on the declared runtime. Run `bash harness/scripts/check-journey-registry.sh --validate` and use `--run-one <journey-id>` for each affected registered journey. Repository-wide coverage is checked in Code Quality Fix and the full JVM suite in CI. For any claim that rich text or an inline formatting mark is visibly rendered, run `bash harness/scripts/check-rendered-output-contract.sh` for the named `*RoborazziTest` method and require `captureRoboImage()` against the approved Pen export; state-only marks and device screenshots are supplemental evidence.
 
 ---
 
@@ -126,7 +126,8 @@ the feature-specific N/A rationale completes the stage.
 |---------|-----------|
 | Requirement ambiguity or Plan rejection | Requirement, Impact & Design Analysis |
 | Compilation error | Implementation (Data + Domain + UI) |
-| Test failure or Coverage gap | Testing (fix implementation if needed, then re-test) |
+| Selected test failure | Testing (fix implementation if needed, then re-test) |
+| CI suite failure or coverage gap | Testing (fix implementation or add related tests, then rerun the failed gate) |
 | Quality check violation | Code Quality Fix (fix root cause, re-run checks) |
 | Install failure or missing connected device | Install App To Device |
 

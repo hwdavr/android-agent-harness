@@ -6,7 +6,8 @@ description: Implement planned Android unit, integration, and instrumented UI te
 # Skill — Android Testing
 
 ## Purpose
-After implementation, write or complete all approved tests and mechanically verify they pass.
+After implementation, write or complete all approved tests and run the tests related to the
+change. Decide whether a real Android runtime is required before selecting test commands.
 This stage **generates** — it does not evaluate quality. That is the Test Review stage's job.
 
 Bug fixes perform RED reproduction through the `bug-reproduction` skill before implementation;
@@ -40,8 +41,18 @@ approved behavior before invoking this skill.
 
 ## Execute
 
-### 1. Execute Planned Tests
+### 1. Analyze runtime and test scope
 For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When `production_journey.required` is `true`, implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the canonical specification's Rule Applicability matrix. Every `Required` Rule Applicability row must have test, static-check, or review evidence.
+
+First determine whether any affected behavior requires instrumented evidence: Compose interaction,
+navigation, lifecycle, Android SDK or platform behavior, permissions, device capabilities, or an
+instrumented loopback boundary. Load `rules/testing-runtime-evidence.md` when it does. Identify
+the named instrumented methods and required runtime before selecting JVM tests. If a required
+runtime is unavailable, record `Blocked` or `Revise`; do not substitute a JVM or fake test.
+
+Then list the affected production paths, the approved test cases, the RED regression test for a
+bug, and any existing tests that cover the changed behavior. Select explicit test classes or
+methods for each required layer. Record why each selected test is related to the change.
 
 ### 2. Unit tests (`app/src/test/`)
 Write unit tests for all new or modified use cases, ViewModels, mappers, and formatters.
@@ -68,16 +79,25 @@ These rules apply to every test file regardless of layer:
   - ✅ `import io.mockk.mockk`, `import io.mockk.every`, `import io.mockk.verify`
 - **Imports sorted lexicographically** with no blank lines between entries
 
-### 6. Verification pass (after implementation)
-```bash
-./gradlew testDebugUnitTest
-./gradlew koverLog
-./gradlew :app:koverXmlReportDebug
-bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
-```
-If instrumented tests were added: run on an emulator (e.g. `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest`), using a connected physical device only if no emulator is present.
+### 6. Run the selected tests (after implementation)
+Run every selected test with a suite-scoped selector. For example:
 
-Record the exact command, exit code, test count, and coverage percentage in the stage evidence. Keep verbose tool output in a referenced log or generated report; do not copy it into the summary.
+```bash
+./gradlew :app:testDebugUnitTest --tests '<fully.qualified.TestClass>'
+ANDROID_SERIAL=<device-serial> ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<fully.qualified.InstrumentedTestClass>
+```
+
+Use the exact method selector when the runner supports it. For Roborazzi, use the approved
+state's scoped verification command. Run instrumented tests whenever the runtime analysis
+requires them, including existing tests affected by the change; adding a new instrumented test
+is not the only trigger. Prefer an emulator, using a connected physical device when the
+required capability or availability calls for one. Do not run unfiltered
+`testDebugUnitTest` or `connectedDebugAndroidTest`, `koverLog`, or full coverage reports in this
+skill. The later workflow or CI gate owns repository-wide test and coverage evidence.
+
+Record each selected test ID or method, exact command, exit code, non-zero executed test count,
+and runtime in the stage evidence. Keep verbose output in a referenced log or generated report.
+Do not report project coverage from a scoped test run.
 
 For the harness workflow, after writing tests and before leaving this stage, run the
 acceptance-test traceability checker in evaluation mode:
@@ -98,29 +118,28 @@ gestures, return boundary, and visible post-return assertion.
 New or updated test files.
 New or updated shared JSON scenarios in `sharedContracts/test-scenarios/`.
 
-Record the declared methods, shared scenarios, exact selectors, GREEN test counts, and coverage
-in the active summary. Bug reproduction RED evidence remains in the bug specification and its
-dedicated stage evidence.
+Record the declared methods, shared scenarios, exact selectors, and GREEN test counts in the
+active summary. Record coverage later from the repository-wide gate. Bug reproduction RED
+evidence remains in the bug specification and its dedicated stage evidence.
 
 ---
 
 ## Done When
 
-**Post-implementation verification is complete when all of the following are true — all must be mechanically verifiable:**
-- [ ] `./gradlew testDebugUnitTest` — exit code 0
-- [ ] `./gradlew koverLog` — overall ≥ 80%, new classes ≥ 90%
-- [ ] `bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml` — weighted line thresholds pass
-- [ ] Total test count `> 0` (not `0/0` — this is a gate failure)
+**Scoped post-implementation verification is complete when all of the following are true:**
+- [ ] The runtime decision and affected-test selection are recorded with reasons
+- [ ] Every selected JVM and instrumented test command exits 0 and executes a non-zero test count
+- [ ] The bug's RED reproduction test is GREEN when this is a bug fix
 - [ ] At least one integration test per new or changed API endpoint (when API is in scope), owned by the lowest useful target; an instrumented loopback boundary is valid when the real app process is part of the claim
 - [ ] Shared JSON scenarios used — no inline mock response data in test files (when API is in scope)
-- [ ] Instrumented tests pass (if added): `./gradlew connectedDebugAndroidTest`
+- [ ] Every required instrumented boundary passes on the declared runtime; unavailable required runtimes are `Blocked`/`Revise`
 - [ ] Harness workflow: acceptance-test traceability gate passes in evaluation mode for the selected slice
 
 **APPROVED →** Return to the active workflow file and proceed to the next stage defined there.
 
 **REVISION REQUIRED →**
-- If `total_tests == 0` → add the missing approved tests and rerun verification
-- If coverage < 80% → return to Verification, add missing unit tests
+- If a selected command runs zero tests → fix the selector or add the missing approved test
+- If the later repository-wide coverage gate fails → add relevant tests and rerun this stage's affected selectors, then rerun that gate
 - If test failures exist → return to Implementation to fix the application root cause, then Verification
 - If a compilation error was introduced → return to the stage that caused it
 

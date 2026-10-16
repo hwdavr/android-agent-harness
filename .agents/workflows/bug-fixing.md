@@ -103,8 +103,8 @@ section naming an instrumented test that mounts the production entry point, perf
 the real UI actions, crosses the return boundary, and asserts the visible result.
 Direct ViewModel or `*Content` tests are supplemental evidence only.
 
-Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with test count and coverage.
-Gate: tests pass, coverage targets met. If `NAV` is `Required`, run
+Output: Unit tests, integration tests, and shared JSON scenarios created or updated; `docs/current/summary_v<N>.md` updated with selected test commands and executed counts.
+Gate: the RED reproduction test and every related test selected by `android-testing` pass with non-zero executed counts; required instrumented boundaries pass on the declared runtime. Repository-wide coverage is checked in Code Quality Fix and the full JVM suite in CI. If `NAV` is `Required`, run
 `bash harness/scripts/check-stage-artifacts.sh bug-fixing testing docs/current`; it
 must exit 0. For a rich-text or visual rendering fix, also require the named
 `*RoborazziTest` to pass `bash harness/scripts/check-rendered-output-contract.sh`;
@@ -120,7 +120,7 @@ Run the code-quality-fix stage to verify complete baseline correctness.
 For bug fixes, additionally verify:
 - Any `@Ignore` annotation added in the Bug Reproduction stage has been removed
 - The reproduction test is GREEN after the fix
-- No regressions in the full suite
+- No failures in the selected related tests; the full JVM suite is checked by CI before merge
 - The minimal-fix constraint: no unrelated changes slipped in
 
 Output: `docs/current/summary_v<N>.md` updated with code quality results.
