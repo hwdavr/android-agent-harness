@@ -147,6 +147,10 @@ $test_id"
       printf '%s' "$command" | grep -Fq "$suite" \
         || fail "$test_id exact command does not target JVM suite $suite"
       if printf '%s' "$test_target" | grep -Fq 'RoborazziTest'; then
+        case "$test_file" in
+          app/src/test/java/*/roborazzi/*RoborazziTest.kt) ;;
+          *) fail "$test_id Roborazzi test source must be under app/src/test/java/**/roborazzi/" ;;
+        esac
         printf '%s' "$command" | grep -Fq 'verifyRoborazziDebug' \
           || fail "$test_id Roborazzi test command must execute verifyRoborazziDebug"
       fi

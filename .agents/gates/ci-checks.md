@@ -17,7 +17,8 @@ Defines the minimum set of checks that must pass before a change is considered r
 ```bash
 ./gradlew testDebugUnitTest
 ```
-**Must pass.** All tests in `app/src/test/` must be green.
+**Must pass.** All non-Roborazzi tests in `app/src/test/` must be green. Roborazzi tests
+live under `app/src/test/java/**/roborazzi/` and run through `verifyRoborazziDebug`.
 
 ### 3. Coverage
 ```bash
@@ -145,7 +146,7 @@ the same gate invokes the rendered-output contract for the named JVM Roborazzi m
 ```bash
 bash harness/scripts/check-rendered-output-contract.sh \
   --project-root "$PWD" \
-  --test-file app/src/test/.../<Feature>RoborazziTest.kt \
+  --test-file app/src/test/java/<package>/roborazzi/<Feature>RoborazziTest.kt \
   --test-method <method> \
   --claim "Following text visibly inherits Bold"
 bash harness/scripts/tests/rendered-output-contract-test.sh

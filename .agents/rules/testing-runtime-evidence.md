@@ -42,8 +42,10 @@ For navigation, saved-state, back-stack, destination recreation, or post-return 
 - Assert the visible result after returning.
 
 Direct ViewModel calls, internal state mutation, manually invoked callbacks, and Content-only tests
-are supplemental. Register shipped required journeys in `docs/product/journey-registry.yaml` and
-run `bash harness/scripts/check-journey-registry.sh --run-all` during verification.
+are supplemental. Register shipped required journeys in `docs/product/journey-registry.yaml`.
+During an ad-hoc Testing stage, run each affected registered journey with
+`bash harness/scripts/check-journey-registry.sh --run-one <journey-id>`. Run `--run-all`
+when the active harness or review workflow requires the full journey regression gate.
 
 ## Visual Evidence Capture
 

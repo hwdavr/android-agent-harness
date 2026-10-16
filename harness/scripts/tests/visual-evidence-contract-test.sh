@@ -15,7 +15,7 @@ write_valid_fixture() {
   mkdir -p "$feature_dir/design" "$feature_dir/visual_evidence"
   mkdir -p "$fixture_parent/UI_design"
   printf '{"version":"2.21","children":[]}\n' > "$fixture_parent/UI_design/source.pen"
-  mkdir -p "$fixture_root/app/src/test/java/example"
+  mkdir -p "$fixture_root/app/src/test/java/example/roborazzi"
   printf '%s\n' \
     'package example' \
     '' \
@@ -27,7 +27,7 @@ write_valid_fixture() {
     '    captureRoboImage("design/mockup_picker.png")' \
     '  }' \
     '}' \
-    > "$fixture_root/app/src/test/java/example/EmojiPickerRoborazziTest.kt"
+    > "$fixture_root/app/src/test/java/example/roborazzi/EmojiPickerRoborazziTest.kt"
   printf 'approved Pen component export' > "$feature_dir/design/mockup_picker.png"
   printf '%s\n' \
     '{' \
@@ -54,7 +54,7 @@ write_valid_fixture() {
     '' \
     '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|---|' \
-    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | `app/src/test/java/example/EmojiPickerRoborazziTest.kt#emojiPickerContentLightTheme` | N/A — no API | Comparison scope: component; contentState: `picker-content` | captureRoboImage compares the deterministic picker to the approved Pen component. | ./gradlew app:verifyRoborazziDebug --tests "example.EmojiPickerRoborazziTest.emojiPickerContentLightTheme" |' \
+    '| TC-US-3-VIS-001 | AC-US-3-03 | Visual verification | `app/src/test/java/example/roborazzi/EmojiPickerRoborazziTest.kt#emojiPickerContentLightTheme` | N/A — no API | Comparison scope: component; contentState: `picker-content` | captureRoboImage compares the deterministic picker to the approved Pen component. | ./gradlew app:verifyRoborazziDebug --tests "example.EmojiPickerRoborazziTest.emojiPickerContentLightTheme" |' \
     > "$feature_dir/sprint-contract.md"
   printf '%s\n' \
     '{' \
@@ -99,11 +99,11 @@ write_valid_fixture "$valid"
 outdated_instrumented="$fixture_root/outdated-instrumented"
 write_valid_fixture "$outdated_instrumented"
 sed -i.bak \
-  -e 's#app/src/test/java/example/EmojiPickerRoborazziTest.kt#app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#g' \
+  -e 's#app/src/test/java/example/roborazzi/EmojiPickerRoborazziTest.kt#app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#g' \
   -e 's/EmojiPickerRoborazziTest/EmojiPickerVisualFlowTest/g' \
   -e 's|./gradlew app:verifyRoborazziDebug --tests "example.EmojiPickerVisualFlowTest.emojiPickerContentLightTheme"|./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme|g' \
   "$outdated_instrumented/sprint-contract.md"
-expect_failure "must name a dedicated app/src/test/*RoborazziTest.kt#method target" \
+expect_failure "must name a dedicated app/src/test/java/**/roborazzi/*RoborazziTest.kt#method target" \
   bash "$VALIDATOR" "$outdated_instrumented"
 
 structural_target="$fixture_root/structural-target"
@@ -117,7 +117,7 @@ expect_failure "visual target comparison must use roborazzi engine" \
 missing_capture="$fixture_root/missing-capture"
 write_valid_fixture "$missing_capture"
 sed -i.bak 's/captureRoboImage("design\/mockup_picker.png")/check(true)/' \
-  "$fixture_root/app/src/test/java/example/EmojiPickerRoborazziTest.kt"
+  "$fixture_root/app/src/test/java/example/roborazzi/EmojiPickerRoborazziTest.kt"
 expect_failure "Roborazzi method source must call captureRoboImage()" \
   bash "$VALIDATOR" "$missing_capture"
 write_valid_fixture "$fixture_root/restore-capture"

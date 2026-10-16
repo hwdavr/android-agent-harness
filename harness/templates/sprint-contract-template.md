@@ -130,7 +130,7 @@ Every acceptance criterion must have exactly one primary automated test case. A 
 |---|---|---|---|---|---|---|---|
 | TC-US-1-01 | AC-US-1-01 | JVM integration / Instrumented UI | `app/src/.../[Class]Test.kt#[method]` | `sharedContracts/test-scenarios/<scenario>.json` or `N/A — no API` | Given [fixture], when [event] | Assert [state, output, and observable result] | `./gradlew [task] --tests "[fully.qualified.Class]"` |
 | TC-US-1-02 | AC-US-1-02 | JVM unit / Instrumented UI | `app/src/.../[Class]Test.kt#[method]` | `sharedContracts/test-scenarios/<scenario>.json` or `N/A — no API` | Given [fixture], when [event] | Assert [state, output, and observable result] | `./gradlew [task] --tests "[fully.qualified.Class]"` |
-| TC-US-1-VIS-001 | AC-US-1-01 | Visual verification | `app/src/test/.../<Feature>RoborazziTest.kt#capture<State>` | N/A — no API | Comparison scope: component. Given the production Composable is rendered with its deterministic visual fixture | `captureRoboImage()` matches the approved Pen component export | `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.capture<State>"` |
+| TC-US-1-VIS-001 | AC-US-1-01 | Visual verification | `app/src/test/java/<package>/roborazzi/<Feature>RoborazziTest.kt#capture<State>` | N/A — no API | Comparison scope: component. Given the production Composable is rendered with its deterministic visual fixture | `captureRoboImage()` matches the approved Pen component export | `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.capture<State>"` |
 
 When a row claims that rich text or an inline formatting mark is visibly rendered,
 its named `RoborazziTest` method must compare the approved formatted Pen state with

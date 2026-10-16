@@ -17,7 +17,7 @@ STATE_COLUMNS = [
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
 PLAN_COLUMNS = ["Stage ID", "Implementation", "Roborazzi target", "Verification"]
 ROBORAZZI_TARGET = re.compile(
-    r"app/src/test/java/[A-Za-z0-9_./]+RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
+    r"app/src/test/java/[A-Za-z0-9_./]+/roborazzi/[A-Za-z0-9_./]+RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
 )
 
 
@@ -170,7 +170,7 @@ def validate(contract, spec, plan, report):
             stage = plan_row["Stage ID"]
             target = plan_row["Roborazzi target"]
             if not ROBORAZZI_TARGET.fullmatch(target):
-                fail(f"UI state {stage} needs a valid Roborazzi target under app/src/test/java ending in RoborazziTest.kt#method")
+                fail(f"UI state {stage} needs a valid Roborazzi target under app/src/test/java/**/roborazzi/ ending in RoborazziTest.kt#method")
             if target in roborazzi_targets:
                 fail(f"Roborazzi target reused across UI plan stages: {target}")
             roborazzi_targets.add(target)
