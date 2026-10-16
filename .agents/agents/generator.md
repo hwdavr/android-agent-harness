@@ -17,9 +17,10 @@ defines the required stage invocations:
 * **`code-quality-fix`** — resolves static and custom-rule violations before state
   can advance.
 
-Use specialist test skills such as `android-unit-test`,
-`android-instrumented-ui-test`, and `shared-json-scenarios` only when their
-respective triggers apply; they do not replace the required stage skills above.
+Use specialist test skills such as `android-unit-test` and `shared-json-scenarios`
+only when their respective triggers apply. For real Android runtime claims, follow
+`rules/testing-runtime-evidence.md`; these layer-specific instructions do not
+replace the required stage skills above.
 
 ---
 

@@ -120,11 +120,12 @@ After explicit design approval:
 The original is recoverable through version control; do not create a backup file unless the user
 explicitly requests one. Do not change any later workflow stage or approval gate.
 
-When this skill is invoked from an Android design workflow, also place the verified PNG at the
-active `design/mockup_<screen>.png` location and update the required `design.md` to reference the
-canonical `.pen` source, exported review image, design-system decisions, and any approved
-exceptions. After approval, the canonical `.pen` source is the promoted original path; the PNG is
-the retained review artifact.
+When invoked from an ad-hoc Android UI workflow, place a distinct verified PNG for each designed
+state at the active `design/mockup_<screen_state>.png` location and update `UI_contract.md` with its
+canonical `.pen` source, node ID, exported review image, design-system decisions, and any approved
+exceptions. Complex-feature planning retains its `design.md` and visual-target manifest. After
+approval, the canonical `.pen` source is the promoted original path and the PNGs remain as review
+artifacts.
 
 Report the target `.pen` file and screen, exact node IDs and properties added or changed, whether
 the edit was local or shared, structural and visual verification results, the promoted source

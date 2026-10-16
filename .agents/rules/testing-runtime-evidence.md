@@ -47,33 +47,40 @@ run `bash harness/scripts/check-journey-registry.sh --run-all` during verificati
 
 ## Visual Evidence Capture
 
-When `requires_visual_verification` is true, a dedicated `*VisualFlowTest.kt` must render every
-contract state and capture evidence while the test is active and idle, using
-`UiAutomation.takeScreenshot()` or `captureToImage()`. Save to `/sdcard/Download/<name>.png` and
-retrieve with `adb pull`.
+When `requires_visual_verification` is true, a dedicated JVM `*RoborazziTest.kt` must render every
+contract state with deterministic fixtures and call `captureRoboImage()` against the approved Pen
+export. Each visual Test ID requires `./gradlew app:verifyRoborazziDebug` evidence and a
+reference-anchor row tied to a visual-bounds `testTag`, JVM method, measured relationship, and
+tolerance.
 
-Post-test external screencaps are prohibited because the test window has already been destroyed.
-Every visual Test ID requires a non-empty screenshot and a reference-anchor row tied to a
-visual-bounds `testTag`, runtime method, measured relationship, and tolerance.
+Instrumented tests prove interaction, navigation, and platform behavior. They do not capture or
+provide visual-comparison acceptance evidence. `UiAutomation.takeScreenshot()`, `captureToImage()`,
+and ADB screencaps are not substitutes for a passing Roborazzi comparison.
 
 ## Rendered Rich-Text Evidence
 
 Claims that bold, italic, underline, strikethrough, code, monospace, or another inline style is
-visibly rendered require Compose-node pixels. Capture plain and formatted nodes with
-`captureToImage()` and assert an explicit checked pixel difference such as
-`differingPixelCount(...) > 0` or `assertPixels(...)`.
+visibly rendered require a Roborazzi comparison of the named deterministic state. The reference
+must contain the approved formatted appearance and the JVM test must call `captureRoboImage()`.
 
-Model marks, `AnnotatedString` contents, toolbar state, text content, and a non-empty full-screen
-PNG are supplemental and do not prove rendered appearance. Run
+Model marks, `AnnotatedString` contents, toolbar state, text content, and a non-empty PNG are
+supplemental and do not prove rendered appearance. Run
 `bash harness/scripts/check-rendered-output-contract.sh` for the named method.
 
 ## Visual Comparison Contract
 
-- Structural conformance is binding through reference-anchor bounds assertions.
-- Approved design comparison is also binding through `verifyRoborazziDebug`; both conditions are required.
+- Roborazzi is the binding visual-comparison engine. Every target declares
+  `comparison.engine: roborazzi`, `content_alignment: exact`, and a `scope` of `screen` or
+  `component`.
+- A whole-screen comparison requires the Pen export and deterministic JVM fixture to contain the
+  same visible content. When surrounding content differs, export the approved static component
+  from the Pen design and compare that component in isolation; do not replace the comparison with
+  an instrumented screenshot or an implementation-recorded golden.
 - The approved reference is a PNG exported from the canonical `.pen` source named by `pen_source` and `pen_node_id` in `visual_evidence/visual-target.json`. A screenshot recorded from the implementation is never promoted as a golden.
-- `visual_evidence/visual-target.json` is the canonical feature-owned target manifest. It defines appearance, concrete device, logical size, locale, and named deterministic content states. Mockup generation and emulator preflight must both read this manifest (`visual-target-prompt.sh` and `prepare-visual-runtime.sh --target`).
-- `reference-map.json` must map every contract screenshot exactly once to one stable `state_id` from that manifest; filename/token inference, duplicated target metadata, source-baseline references, and `null` anchor-only entries are prohibited. The runtime preflight and anchor report must resolve the same target values.
-- Time, user content, identifiers, and keyboard variation must each be explicitly fixed, cropped, absent, or narrowly masked with an approval rationale.
+- `visual_evidence/visual-target.json` is the canonical feature-owned target manifest. It defines
+  appearance, logical size, locale, named deterministic content states, the approved Pen source,
+  and the comparison scope. Each contract row names one stable state ID directly; a runtime
+  screenshot map is not used.
+- Time, user content, identifiers, and keyboard variation must each be explicitly fixed, cropped, absent, or narrowly masked with an approval rationale. Masks may exclude only genuinely variable content; they cannot make fundamentally different design and runtime screens count as the same pixel target.
 - Missing, ambiguous, or mismatched references fail; they are never silently skipped.
-- Preserve actual captures and Roborazzi compare/actual artifacts under `visual_evidence/` when verification finds a difference.
+- Preserve Roborazzi compare/actual artifacts when verification finds a difference.

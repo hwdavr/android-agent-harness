@@ -9,11 +9,7 @@ description: Diagnose and fix an Android bug with RED reproduction, approved pla
 - A regression or test failure
 - Unexpected app behavior
 
-Do not use this workflow for a localized, intentional UI-only adjustment to one
-existing presentation surface when the change has no API, persistence, domain,
-ViewModel behavior, navigation, or new user-journey impact. Route that request to
-the **Small UI Patch Triage** direct `android-ui-layer` skill lane; this UI-only triage
-does not need this workflow's RED reproduction, fix-plan, or other workflow stages.
+
 
 This workflow prioritises root-cause analysis over quick patching.
 
@@ -68,7 +64,7 @@ in test code while preserving the app-owned transition and visible result that f
 the device.
 
 Output: Failing reproduction test file created; `docs/current/spec_v<N>.md` updated with a Reproduction Test section; `docs/current/summary_v<N>.md` updated.
-Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. For a visual or rich-text rendering reproduction, the named instrumented test must include source-fed `captureToImage()` and an explicit pixel comparison; the stage gate enforces this. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
+Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. For a visual or rich-text rendering reproduction, the named `*RoborazziTest` must call `captureRoboImage()` against the approved Pen export; the stage gate enforces this. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
 **STOP — if root cause cannot be reproduced by a test, surface to user before continuing.**
 
 ---
@@ -111,8 +107,8 @@ Output: Unit tests, integration tests, and shared JSON scenarios created or upda
 Gate: tests pass, coverage targets met. If `NAV` is `Required`, run
 `bash harness/scripts/check-stage-artifacts.sh bug-fixing testing docs/current`; it
 must exit 0. For a rich-text or visual rendering fix, also require the named
-instrumented test to pass `bash harness/scripts/check-rendered-output-contract.sh`;
-model marks, toolbar state, or screenshot existence alone do not prove the fix.
+`*RoborazziTest` to pass `bash harness/scripts/check-rendered-output-contract.sh`;
+model marks, toolbar state, or device screenshot existence alone do not prove the fix.
 
 ---
 

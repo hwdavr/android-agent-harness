@@ -74,43 +74,43 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 | T3 | \<precondition\> | \<action / trigger\> | \<expected outcome\> | `scenario.json` |
 | T4 | API returns error | load data | show error UiState | `scenario-error.json` |
 
-### `<Feature>VisualFlowTest.kt` — Dedicated Visual Flow *(only when `requires_visual_verification == true`)*
+### `<Feature>RoborazziTest.kt` — Dedicated Visual Comparison *(only when `requires_visual_verification == true`)*
 
-> **MANDATORY**: When visual verification is required, write a dedicated `*VisualFlowTest.kt` instrumented test class that renders the active Composable in each critical visual state, calls `composeRule.waitForIdle()`, and captures a screenshot from within the running test via `InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()`. Screenshots are saved to `/sdcard/Download/<name>.png` and pulled via `adb pull`. Post-test CLI screencaps (`&& adb exec-out screencap`) are prohibited.
+> **MANDATORY**: When visual verification is required, write a dedicated JVM `*RoborazziTest.kt` class that renders the active Composable in every critical visual state with deterministic fixtures and calls `captureRoboImage()` against the approved Pen PNG. The binding command is `./gradlew app:verifyRoborazziDebug`; device screenshots are not visual acceptance evidence.
 
-| ID | Visual State | Composable Under Test | Capture Method | Output File |
-|----|-------------|----------------------|----------------|-------------|
-| T-VIS-1 | \<state name (e.g. default content)\> | \<Composable name\> | `takeScreenshot()` during `waitForIdle()` | `visual_evidence/<screen>_<state>.png` |
-| T-VIS-2 | \<state name (e.g. expanded/fullscreen)\> | \<Composable name\> | `takeScreenshot()` during `waitForIdle()` | `visual_evidence/<screen>_<state>.png` |
+| ID | Visual State | Composable Under Test | Comparison Scope | Approved Reference |
+|----|-------------|----------------------|------------------|--------------------|
+| T-VIS-1 | \<state name (e.g. default content)\> | \<Composable name\> | `screen` / `component` | `design/mockup_<screen>_<state>.png` |
+| T-VIS-2 | \<state name (e.g. expanded/fullscreen)\> | \<Composable name\> | `screen` / `component` | `design/mockup_<screen>_<state>.png` |
 
 ---
 
-Each visual row's sprint-contract command must select the exact method using
--Pandroid.testInstrumentationRunnerArguments.class=<package>.<Feature>VisualFlowTest#<method>,
-then pull the in-test screenshot with adb pull and verify it is non-empty.
+Each visual row's sprint-contract command must scope `verifyRoborazziDebug` to the exact
+`<package>.<Feature>RoborazziTest.<method>` with `--tests`.
 
-### `<ScreenName>RoborazziMockupTest.kt` — Pen-export comparison *(when the visual target is `.pen`-backed)*
+### Roborazzi target contract
 
-The JVM Compose test renders the same deterministic state and calls
-`captureRoboImage("<reference>.png")`. The reference PNG must be exported from the canonical
-`pen_source`/`pen_node_id` in `visual-target.json`; it must not be recorded from the implementation.
-The binding command is `./gradlew app:verifyRoborazziDebug`. `recordRoborazziDebug` and
+The JVM Compose test renders the same deterministic scope, including visible text, images, and
+selection, and calls `captureRoboImage("<reference>.png")`. The reference PNG must be exported
+from the canonical `pen_source`/`pen_node_id` in `visual-target.json`; it must not be recorded from
+the implementation. If the full screen contains unrelated content, export the approved component
+and declare `comparison.scope: component`; do not fall back to an instrumented screenshot. The
+binding command is `./gradlew app:verifyRoborazziDebug`. `recordRoborazziDebug` and
 `verifyAndRecordRoborazziDebug` are authoring/recovery commands only and are not acceptance evidence.
 
 | ID | Pen source/node | Composable under test | Verification command | Reference PNG |
 |----|----------------|-----------------------|----------------------|---------------|
-| T-VIS-R1 | `UX/NotesApp.pen#<node-id>` | `<Composable name>` | `./gradlew app:verifyRoborazziDebug` | `app/src/test/roborazzi/<screen>.png` |
+| T-VIS-R1 | `../UI_design/fun_photo_editor.pen#<node-id>` | `<Composable name>` | `./gradlew app:verifyRoborazziDebug --tests "<package>.<ScreenName>RoborazziTest.<method>"` | `design/mockup_<screen>.png` |
 
 ### Rendered Output Contract *(when a visual claim concerns rich text or inline formatting)*
 
 If a test-plan, acceptance, or reproduction claim says that formatted text is
 visible or renders a style (for example, bold, italic, underline, strikethrough,
-code, or monospace), record the source-fed proof in the same named instrumented
-method:
+code, or monospace), record the source-fed proof in the same named Roborazzi method:
 
 | Claim | Test file and method | Runtime proof required |
 |---|---|---|
-| `<exact visible formatting claim>` | `app/src/androidTest/.../*Test.kt#<method>` | Capture plain and formatted Compose nodes with `captureToImage()` and assert `differingPixelCount(...) > 0`, `assertPixels(...)`, or an equivalent explicit pixel comparison |
+| `<exact visible formatting claim>` | `app/src/test/.../*RoborazziTest.kt#<method>` | `captureRoboImage()` verifies the approved Pen reference containing the formatted appearance |
 
 The rendered-output contract checker validates this method during acceptance,
 visual-evidence, and bug-reproduction gates. Assertions about marks, toolbar state,

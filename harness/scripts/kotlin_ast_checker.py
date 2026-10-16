@@ -1258,12 +1258,25 @@ def run_localization(args: argparse.Namespace) -> int:
 
     def check_named_ui_literals() -> None:
         names = {"label", "title", "placeholder", "hint"}
+        non_user_facing_label_calls = {
+            "AnimatedContent",
+            "AnimatedVisibility",
+            "animateColorAsState",
+            "animateDpAsState",
+            "animateFloat",
+            "animateFloatAsState",
+            "animateIntAsState",
+            "animateValueAsState",
+            "rememberInfiniteTransition",
+        }
         for source_file in files:
             for call in source_file.calls:
                 enclosing_function = source_file.enclosing_function(call.open_index)
                 if enclosing_function is not None and not is_composable_function(enclosing_function):
                     continue
                 for name, start, end in named_argument_ranges(source_file, call):
+                    if name == "label" and call.name in non_user_facing_label_calls:
+                        continue
                     if name in names and start < end and source_file.tokens[start].is_string:
                         result.add(source_file, start, f"{name}= is assigned a hardcoded string")
 
@@ -1277,6 +1290,16 @@ def run_localization(args: argparse.Namespace) -> int:
                 continue
             for prop in source_file.properties:
                 if not prop.name.endswith(suffixes) or prop.initializer_start is None:
+                    continue
+                is_data_class_constructor_property = any(
+                    "data" in class_node.modifiers
+                    and class_node.keyword_index < prop.declaration_index < class_node.header_end
+                    for class_node in source_file.classes
+                )
+                if (
+                    (prop.enclosing_class is not None and "data" in prop.enclosing_class.modifiers)
+                    or is_data_class_constructor_property
+                ):
                     continue
                 if prop.initializer_start < len(source_file.tokens) and source_file.tokens[prop.initializer_start].is_string:
                     result.add(source_file, prop.initializer_start, "local UI label variable is assigned a hardcoded string")
@@ -2057,50 +2080,13 @@ def run_rendered_output(args: argparse.Namespace) -> int:
                     if target.body_start < call.open_index < target.body_end
                 ]
                 if has_rendered_claim:
-                    capture_calls = [call for call in body_calls if call.name == "captureToImage"]
-                    if not capture_calls:
+                    roborazzi_calls = [call for call in body_calls if call.name == "captureRoboImage"]
+                    if not roborazzi_calls:
                         result.add(
                             source_file,
                             target.name_index,
-                            "rendered appearance claims must capture a Compose node with captureToImage()",
+                            "rendered appearance claims must call captureRoboImage() in a Roborazzi JVM test",
                         )
-
-                    comparison_calls = [
-                        call
-                        for call in body_calls
-                        if call.name in {
-                            "differingPixelCount",
-                            "assertPixels",
-                            "assertScreenshot",
-                            "assertRenderedAppearance",
-                            "compareRenderedPixels",
-                        }
-                    ]
-                    if not comparison_calls:
-                        result.add(
-                            source_file,
-                            target.name_index,
-                            "rendered appearance claims must assert an explicit pixel comparison "
-                            "(differingPixelCount(), assertPixels(), or an equivalent assertion)",
-                        )
-                    elif any(call.name == "differingPixelCount" or call.name == "compareRenderedPixels" for call in comparison_calls):
-                        assertion_calls = [
-                            call
-                            for call in body_calls
-                            if call.name in {"assertTrue", "assertEquals", "assertNotEquals", "assertThat"}
-                        ]
-                        if not any(
-                            assertion.open_index < comparison.open_index < assertion.close_index
-                            for assertion in assertion_calls
-                            for comparison in comparison_calls
-                            if comparison.name in {"differingPixelCount", "compareRenderedPixels"}
-                        ):
-                            result.add(
-                                source_file,
-                                comparison_calls[0].name_index,
-                                "differingPixelCount() must be inside an assertion; "
-                                "a computed pixel difference without a checked result is not evidence",
-                            )
 
     print_rule("Rendered rich-text appearance evidence", result.violations)
     return finish(result, "rendered rich-text appearance contract")

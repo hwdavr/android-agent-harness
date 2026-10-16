@@ -11,7 +11,8 @@ trap 'rm -rf "$fixture_root"' EXIT
 write_valid_fixture() {
   local docs_dir="$1"
   mkdir -p "$docs_dir/design" "$docs_dir/evidence"
-  printf 'reference mockup' > "$docs_dir/design/mockup_editor.png"
+  printf '\211PNG\r\n\032\n\000\000\000\rIHDR\000\000\001\206\000\000\003\114' \
+    > "$docs_dir/design/mockup_editor.png"
   printf 'actual screenshot' > "$docs_dir/evidence/editor_actual.png"
   cat > "$docs_dir/ui_verification.json" <<'FIXTURE'
 {
@@ -86,7 +87,8 @@ FIXTURE
 write_evidence_backed_fixture() {
   local docs_dir="$1"
   mkdir -p "$docs_dir/design" "$docs_dir/evidence"
-  printf 'reference mockup' > "$docs_dir/design/mockup_editor.png"
+  printf '\211PNG\r\n\032\n\000\000\000\rIHDR\000\000\001\206\000\000\003\114' \
+    > "$docs_dir/design/mockup_editor.png"
   printf '%2048s' 'x' > "$docs_dir/evidence/editor_actual.png"
   cat > "$docs_dir/design/design_anchors.json" <<'FIXTURE'
 {
@@ -103,6 +105,7 @@ write_evidence_backed_fixture() {
   ]
 }
 FIXTURE
+
   cat > "$docs_dir/evidence/ui_frames.json" <<'FIXTURE'
 {
   "version": "1",
@@ -129,6 +132,18 @@ FIXTURE
   "reference_design": "design/mockup_editor.png",
   "design_anchors": "design/design_anchors.json",
   "runtime_evidence": "evidence/ui_frames.json",
+  "state_results": [
+    {
+      "screen": "Editor",
+      "state_id": "content",
+      "design_image": "design/mockup_editor.png",
+      "runtime_screen": "editor",
+      "comparison": "structural",
+      "pixel_parity": "not-claimed",
+      "assertion": "The editor handle visual bounds match the approved reference.",
+      "result": "PASS"
+    }
+  ],
   "visual_contract": {
     "required_roles": ["visual_bounds"],
     "checks": [
@@ -161,6 +176,85 @@ FIXTURE
   "verdict": { "result": "PASS", "reason": "", "critical_findings": 0, "major_findings_unresolved": 0, "minor_findings_warnings": 0 }
 }
 FIXTURE
+  printf 'Pen fixture' > "$docs_dir/design/source.pen"
+  cat > "$docs_dir/UI_contract.md" <<'FIXTURE'
+# UI Contract
+
+## Screen States
+
+| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Editor | content | `design/source.pen` | editor-node | screen-frame | `design/mockup_editor.png` | 390x844 | primary-content; state-controls; persistent-controls | editor controls | editor-content | structural | Pen note content differs from runtime note content | UI-01 |
+FIXTURE
+  cat > "$docs_dir/implementation_plan_v1.md" <<'FIXTURE'
+# Plan
+
+## UI State Stages
+
+| Stage ID | Implementation | Roborazzi target | Verification |
+|---|---|---|---|
+| UI-01 | Implement editor content | `app/src/test/java/example/EditorRoborazziTest.kt#contentMatchesApprovedDesign` | Compare `design/mockup_editor.png` with `./gradlew app:verifyRoborazziDebug --tests "example.EditorRoborazziTest.contentMatchesApprovedDesign"`. |
+FIXTURE
+}
+
+write_roborazzi_fixture() {
+  local docs_dir="$1"
+  mkdir -p "$docs_dir/design" "$docs_dir/evidence"
+  printf 'approved Pen component export' > "$docs_dir/design/mockup_editor.png"
+  cat > "$docs_dir/evidence/roborazzi.json" <<'FIXTURE'
+{
+  "producer": { "kind": "RoborazziTest", "test_name": "com.example.notesapp.EditorRoborazziTest#editorContent" },
+  "command": "./gradlew app:verifyRoborazziDebug --tests com.example.notesapp.EditorRoborazziTest.editorContent",
+  "result": "PASS",
+  "states": [
+    { "name": "editor", "reference": "design/mockup_editor.png", "scope": "component" }
+  ]
+}
+FIXTURE
+  cat > "$docs_dir/ui_verification.json" <<'FIXTURE'
+{
+  "version": "3",
+  "reference_design": "design/mockup_editor.png",
+  "runtime_evidence": "evidence/roborazzi.json",
+  "state_results": [
+    {
+      "screen": "Editor",
+      "state_id": "content",
+      "design_image": "design/mockup_editor.png",
+      "runtime_screen": "editor",
+      "comparison": "roborazzi",
+      "pixel_parity": "verified",
+      "assertion": "The deterministic editor rail matches the approved Pen component.",
+      "result": "PASS"
+    }
+  ],
+  "visual_contract": {
+    "required_roles": ["icon_identity"],
+    "checks": [{
+      "screen": "editor",
+      "element_id": "editor_rail_visual",
+      "role": "icon_identity",
+      "runtime_test": "com.example.notesapp.EditorRoborazziTest#editorContent",
+      "assertion": "Roborazzi verifies the approved icon and rail treatment."
+    }]
+  },
+  "build_and_static_checks": { "assembleDebug": "PASS", "lintDebug": "PASS", "ktlintCheck": "PASS" },
+  "normalization": {
+    "reference_resolution": "390x844",
+    "runtime_resolution": "390x844",
+    "logical_space": "390x844 dp",
+    "theme": { "reference": "light", "runtime": "light", "match": true },
+    "font_scale": { "reference": 1, "runtime": 1, "match": true },
+    "locale": { "reference": "en-US", "runtime": "en-US", "match": true }
+  },
+  "scope": { "type": "partial", "area_of_interest": "editor rail", "rationale": "spec US-2", "in_scope_regions": ["editor_rail"], "out_of_scope_regions": ["header"] },
+  "region_decomposition": [{ "region": "editor_rail", "bounds_dp": { "x_start": 0, "x_end": 390, "y_start": 700, "y_end": 760 } }],
+  "structural_verification": { "checks": [{ "region": "editor_rail", "screen": "editor", "element_id": "editor_rail_visual", "metric": "height", "note": "The compared component has fixed rail bounds." }] },
+  "defect_classification": [],
+  "ai_visual_evaluation": { "status": "PASS", "area_of_interest": "editor rail", "issues": [], "regression_summary": { "header": "PASS" } },
+  "verdict": { "result": "PASS", "reason": "", "critical_findings": 0, "major_findings_unresolved": 0, "minor_findings_warnings": 0 }
+}
+FIXTURE
 }
 
 expect_failure() {
@@ -178,11 +272,10 @@ expect_failure() {
   }
 }
 
-# Test 1: valid fixture passes both validators
+# Test 1: legacy valid fixture passes the generic artifact validator
 valid="$fixture_root/valid"
 write_valid_fixture "$valid"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$valid")
-(cd "$REPO_ROOT" && bash "$STAGE_VALIDATOR" create-ui-and-verify ui-verification "$valid")
 
 # Test 1b: the machine-readable Android evidence contract calculates bounds
 # from Compose frames and requires the visual-risk contract for version 2 PASS.
@@ -247,4 +340,15 @@ rm "$missing_asset/design/mockup_editor.png"
 expect_failure "references missing or empty design asset" \
   bash "$VALIDATOR" "$missing_asset"
 
-echo "PASS: UI verification artifact validator correctly validates JSON structure and rejects invalid fixtures."
+roborazzi="$fixture_root/roborazzi"
+write_roborazzi_fixture "$roborazzi"
+(cd "$REPO_ROOT" && bash "$VALIDATOR" "$roborazzi")
+
+missing_roborazzi_command="$fixture_root/missing-roborazzi-command"
+write_roborazzi_fixture "$missing_roborazzi_command"
+jq 'del(.command)' "$missing_roborazzi_command/evidence/roborazzi.json" > "$missing_roborazzi_command/evidence/roborazzi.tmp"
+mv "$missing_roborazzi_command/evidence/roborazzi.tmp" "$missing_roborazzi_command/evidence/roborazzi.json"
+expect_failure "must record a passing RoborazziTest, verifyRoborazziDebug command, and named screen/component states" \
+  bash "$VALIDATOR" "$missing_roborazzi_command"
+
+echo "PASS: UI verification artifact validator accepts Roborazzi evidence and rejects invalid fixtures."

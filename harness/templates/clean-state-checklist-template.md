@@ -47,8 +47,9 @@ back-stack, deep links, or post-return behavior.
 Include when SUI/L10N is Required/excepted, `affects_ui` is true, or a Composable/resource changes.
 
 - [ ] Design-system, state, accessibility, semantics/test-tag, localization, and interaction checks pass.
-- [ ] When visual verification is required, visual artifact, explicit approved mockup mapping,
-  dynamic-region handling, binding mockup comparison, reference-anchor, and applicable rendered-output validators exit 0 with in-test screenshots.
+- [ ] When visual verification is required, visual artifact, direct approved state mapping,
+  dynamic-region handling, deterministic Roborazzi screen or component scope, reference-anchor,
+  and applicable rendered-output validators exit 0 with `verifyRoborazziDebug` evidence.
 
 ## Conditional: PLATFORM
 

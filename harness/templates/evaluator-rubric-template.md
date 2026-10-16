@@ -42,16 +42,16 @@ If any required answer is `No`, the evaluator MUST use `Revise`.
 
 ### Visual Verification Hard Gate *(when `requires_visual_verification == true`)*
 
-- Dedicated `*VisualFlowTest.kt` exists and captures screenshots in-test via `takeScreenshot()` during `waitForIdle()`: Yes / No / N/A
-- No post-test CLI screencaps (`&& adb exec-out screencap`) in `feature_list.json` verification or evidence commands: Yes / No / N/A
+- Dedicated JVM `*RoborazziTest.kt` renders every visual state and calls `captureRoboImage()` with an approved Pen export: Yes / No / N/A
+- Every visual acceptance command and receipt runs `./gradlew app:verifyRoborazziDebug`: Yes / No / N/A
 - `ui_verification.json` present and passes `check-ui-verification-artifact.sh`: Yes / No / N/A
-- `reference-anchor-verification.md` references `*VisualFlowTest` methods in Runtime proof column: Yes / No / N/A
+- `reference-anchor-verification.md` references `*RoborazziTest` methods in JVM proof column: Yes / No / N/A
 - Canonical `pen_source`/`pen_node_id` and approved Pen-export PNG are declared: Yes / No / N/A
-- `./gradlew app:verifyRoborazziDebug` exits 0 without recording an implementation golden: Yes / No / N/A
+- `./gradlew app:verifyRoborazziDebug` exits 0 without recording an implementation golden; component-scoped references are used when surrounding screen content differs: Yes / No / N/A
 - `check-visual-evidence-contract.sh` exits 0: Yes / No / N/A
-- Rich-text/inline-formatting appearance claims have source-fed `captureToImage()` evidence and an explicit checked pixel comparison in the named method: Yes / No / N/A
+- Rich-text/inline-formatting appearance claims have `captureRoboImage()` evidence in the named `*RoborazziTest` method: Yes / No / N/A
 
-If any required answer is `No`, the evaluator MUST score `Verification` below `5.0 / 5` and use `Revise`. Screenshots from post-test CLI screencaps are invalid evidence because the test Activity/window is destroyed before the capture runs.
+If any required answer is `No`, the evaluator MUST score `Verification` below `5.0 / 5` and use `Revise`.
 
 ### Harness File Assessment
 

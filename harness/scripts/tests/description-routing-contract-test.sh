@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 MAX_DESCRIPTION_CHARS=120
 MAX_TOTAL_CHARS=3600
-EXPECTED_DESCRIPTION_COUNT=40
+EXPECTED_DESCRIPTION_COUNT=39
 
 fail() {
   echo "FAIL: $1" >&2
@@ -30,6 +30,14 @@ assert_file_contains() {
   local expected="$2"
   rg -qi -- "$expected" "$PROJECT_ROOT/$file" \
     || fail "$file must contain routing rule: $expected"
+}
+
+assert_file_not_contains() {
+  local file="$1"
+  local unexpected="$2"
+  if rg -qi -- "$unexpected" "$PROJECT_ROOT/$file"; then
+    fail "$file must not retain the obsolete direct UI-change route: $unexpected"
+  fi
 }
 
 DESCRIPTION_FILES="$(rg -l '^description:' "$PROJECT_ROOT/.agents" | sort)"
@@ -64,18 +72,26 @@ assert_contains .agents/workflows/harness-planning.md 'complex.*slice'
 assert_contains .agents/workflows/harness-generator.md 'complex.*slice'
 assert_contains .agents/workflows/harness-evaluation.md 'complex.*code.*test.*review'
 assert_contains .agents/workflows/harness-fix.md 'evaluator.*finding'
+assert_file_contains AGENTS.md 'No direct UI-change lane'
+assert_file_contains AGENTS.md 'Any user-visible UI implementation or update'
+assert_file_not_contains AGENTS.md 'direct skill lane'
 assert_contains .agents/skills/context-management/SKILL.md 'session.*context'
-assert_file_contains .agents/skills/context-management/SKILL.md 'Small UI Patch Triage'
-assert_file_contains .agents/skills/context-management/SKILL.md 'android-ui-layer.*direct skill lane'
+assert_file_contains .agents/skills/context-management/SKILL.md 'UI Request Routing'
+assert_file_contains .agents/skills/context-management/SKILL.md 'create-ui-and-verify'
 assert_file_contains .agents/skills/context-management/SKILL.md 'current-state'
-assert_file_contains .agents/skills/context-management/SKILL.md 'supplied as'
+assert_file_contains .agents/skills/context-management/SKILL.md 'defect'
 assert_file_contains .agents/skills/context-management/SKILL.md 'evidence'
-assert_file_contains .agents/workflows/bug-fixing.md 'UI-only triage'
+assert_file_contains .agents/workflows/bug-fixing.md 'create-ui-and-verify'
 assert_file_contains .agents/workflows/bug-fixing.md 'RED'
-assert_file_contains .agents/workflows/bug-fixing.md 'fix-plan'
-assert_file_contains .agents/workflows/create-ui-and-verify.md 'Triage: Small UI Patch'
-assert_file_contains .agents/workflows/create-ui-and-verify.md 'Invoke.*android-ui-layer.*directly'
-assert_file_contains .agents/skills/android-ui-layer/SKILL.md 'direct implementation lane'
+assert_file_contains .agents/workflows/bug-fixing.md 'Fix Plan'
+assert_file_contains .agents/workflows/create-ui-and-verify.md 'No Direct UI-Change Lane'
+assert_file_contains .agents/workflows/create-ui-and-verify.md 'approved implementation plan'
+assert_file_contains .agents/skills/android-ui-layer/SKILL.md 'implementation-stage skill'
+assert_file_not_contains .agents/skills/context-management/SKILL.md 'Small UI Patch Triage'
+assert_file_not_contains .agents/skills/context-management/SKILL.md 'direct skill lane'
+assert_file_not_contains .agents/workflows/create-ui-and-verify.md 'Triage: Small UI Patch'
+assert_file_not_contains .agents/workflows/create-ui-and-verify.md 'Invoke.*android-ui-layer.*directly'
+assert_file_not_contains .agents/skills/android-ui-layer/SKILL.md 'direct implementation lane'
 assert_contains .agents/skills/ui-verification/SKILL.md 'UI.*visual'
 assert_contains .agents/skills/security-and-hardening/SKILL.md 'Android.*security'
 assert_contains .agents/skills/api-contract-update/SKILL.md 'API.*contract'

@@ -11,18 +11,17 @@ Kotlin + Jetpack Compose + Room Android notes app. Treat it as a production prod
 - `sharedContracts/` — OpenAPI contract + shared test scenarios
 ---
 ## Context Loading — L1 / L2 / L3
-Load context in layers to keep the context window below 40% fill. More is not better.
+Load context in layers; more is not better.
 | Layer | When | What to load |
 |-------|------|-------------|
 | **L1 — Always** | Every session | This file + `.agents/rules/android-architecture.md` + `.agents/rules/testing-strategy.md` |
-| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) plus `harness/templates/rule-applicability-template.md` for requirements/planning/review. Load `implementation-rules.md` only during Implementation. Use conditional-rule triggers, then load a conditional rule only when `Required`, excepted, or contradicted by the submitted diff. Load `android-security.md` when `SEC` is Required/excepted or a security/AI/WebView/network/manifest boundary is triggered; load `testing-practices.md` during test authoring/review and `testing-runtime-evidence.md` for UI/navigation/visual/platform/runtime claims; for UI work also load `docs/product/design_system.md`. |
+| **L2 — Phase-triggered** | Per stage | The current stage's skill(s) plus `harness/templates/rule-applicability-template.md` for requirements/planning/review. Load `implementation-rules.md` only during Implementation. Load a conditional rule only if Required, excepted, or diff-triggered. Load `android-security.md` for `SEC` or a security/AI/WebView/network/manifest boundary; load `testing-practices.md` during test authoring/review, `testing-runtime-evidence.md` for UI/navigation/visual/platform/runtime claims, and `docs/product/design_system.md` for UI work. |
 | **L3 — On-demand** | When needed | `docs/knowledge/` docs, `sharedContracts/openapi.yaml`, and feature-specific evidence or rule detail newly triggered by the approved Rule Applicability matrix |
 
 Do not preload unrelated skills or conditional rules. Requirements, planning, and review use the
-compact trigger catalog to decide and reconcile all ten rows, then load only Required, excepted,
-or diff-triggered rule documents. Implementation follows the approved decisions plus any newly
-triggered rule. For a complex slice, run
-`bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` after selection; its disposable output derives from the approved contract and feature list, is never authority or a summary copy, and must be regenerated when either hash changes.
+trigger catalog and load only Required, excepted, or diff-triggered rules. For a complex slice, run
+`bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`
+after selection. Its output is disposable and must be regenerated when either source hash changes.
 ---
 ## Harness Structure
 | Folder | Purpose |
@@ -46,16 +45,15 @@ triggered rule. For a complex slice, run
 | **Evaluator** | Performs automated & manual quality gates | Runs code quality checks, static analysis, & test coverage reviews |
 ---
 ## Workflow Routing — Mandatory Step Before Any Task
-**Before starting ANY task, you MUST:** identify the task type, then read the matching workflow or direct skill **in full** and follow its pipeline without skipping stages or stops. Direct skill lanes do not require unrelated workflow artifacts. Do not write code before reading the selected workflow or skill.
+**Before starting ANY task, you MUST:** identify the task type, then read the matching workflow **in full** and follow its pipeline without skipping stages or stops. Do not write code before reading the selected workflow and its current-stage skill.
 
 ### Ad-hoc Development (Simple Features & Bug Fixing)
 
 | Task type | Read this file first |
 |-----------|----------------------|
-| Small UI-only adjustment to an existing screen | `.agents/skills/android-ui-layer/SKILL.md` (direct skill lane; no workflow stages) |
 | Bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
 | New feature or simple enhancement | `.agents/workflows/feature-delivery.md` |
-| UI implementation or update from a mockup | `.agents/workflows/create-ui-and-verify.md` |
+| Any user-visible UI implementation or update, including a single component or state | `.agents/workflows/create-ui-and-verify.md` |
 | Independent code review before merge | `.agents/workflows/feature-review.md` |
 
 ### Project-Based Development (Complex Features)
@@ -73,7 +71,7 @@ Key skills under `.agents/skills/`:
 - **Planning & Requirements**: `spec-driven-development`, `feature-specification`, `slice-planning`, `implementation-plan`
 - **UX & Design**: `ux-design`
 - **Implementation**: `android-implementation`, `android-ui-layer`, `api-contract-update`
-- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `android-instrumented-ui-test`, `shared-json-scenarios`
+- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`
 - **Review & Quality**: `code-quality-fix`, `android-code-review`, `code-review-and-quality`, `android-test-review`, `android-code-quality-checks`
 - **Session & Knowledge**: `context-management`, `knowledge-capture`, `documentation-and-adrs`, `karpathy-guidelines`
 
@@ -89,8 +87,9 @@ Key skills under `.agents/skills/`:
 - **Platform-bound features must include a platform capability matrix and a real instrumented boundary test** — fake/JVM-only tests are supplemental; missing runtimes, devices, models, locales, permissions, or services fail loudly and cannot be recorded as passing evidence
 - **No dummy code in production** — every function, branch, and callback must implement the actual requirement logic; no `TODO()`, `NotImplementedError`, stub return values, no-op handlers, or `// dummy implementation` comments. See `.agents/rules/implementation-rules.md`
 - **Implementation authorization must be approved by the user before code is written** — ad-hoc workflows require approval of `implementation_plan_v<N>.md`; the complex harness path uses the approved `feature_list.json` and `sprint-contract.md` from `harness-planning` and must not generate a duplicate implementation plan in `harness-generator`
+- **No direct UI-change lane** — every user-visible UI request, including a one-component styling, layout, state, or interaction change, must use `create-ui-and-verify` (or `bug-fixing` when it is an unexpected defect) and receive an approved implementation plan before source changes
 - **Every stage gate must pass before advancing** — do not skip gates
-- **Every stage skill must be invoked via the Skill tool** — reading the SKILL.md manually is not a substitute. The workflow's "INVOKE" instruction is a command, not a suggestion
+- **Every stage skill must be invoked through the available skill mechanism** — use the Skill tool when it is exposed. If this environment does not expose it, read the repository's matching `SKILL.md`, follow its workflow, and record the unavailable invocation interface in the stage evidence. An unavailable interface never permits skipping an executable stage gate or verification command named by the skill.
 - **Every specification artifact must contain the complete Rule Applicability matrix** — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all ten rules. The approved specification is canonical: implementation and test plans link its `#rule-applicability` anchor and map only `Required` rows to work/evidence; reviews independently reconcile all ten decisions rather than copy them.
 - **Memory of prior approval does not bypass workflow stages** — source of truth is on disk. Ad-hoc workflows use `docs/current/`; every complex harness feature uses one stable dated workspace under `docs/product/`. If a required artifact is missing, re-run the stage via its skill. Require the approved `spec.md`, `design.md` when UI is affected, `feature_list.json`, and `sprint-contract.md` in that workspace.
 - **Validate harness lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting a complex feature and after every tracker transition. Folder location never represents status; the tracker and per-slice evidence do.

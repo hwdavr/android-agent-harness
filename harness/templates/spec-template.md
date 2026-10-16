@@ -58,6 +58,16 @@ Complete every row before approval. Use `Required`, `Not applicable — <feature
 
 ---
 
+## Screen States
+
+For UI changes, list every visually distinct screen and state, including selected subtools, overlays, empty/error content, and keyboard-visible variants. Use the same pairs in `UI_contract.md`. Remove this section when `SUI` is not required.
+
+| Screen | State ID | Requirement | Acceptance Criteria |
+|---|---|---|---|
+| <screen> | <screen-state> | <FR ID> | <AC ID> |
+
+---
+
 ## Explicit Assumptions
 1. <assumption>
 

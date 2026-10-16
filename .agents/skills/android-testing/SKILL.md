@@ -23,8 +23,8 @@ approved behavior before invoking this skill.
 **Then load only the selected test-layer guidance:**
 - `rules/testing-practices.md` for test structure, doubles, reliability, and assertion quality
 - `skills/android-unit-test/SKILL.md` for unit or JVM integration coverage
-- `skills/android-instrumented-ui-test/SKILL.md` for UI, navigation, visual, or platform-bound coverage
-- `rules/testing-runtime-evidence.md` only for UI, navigation, visual, platform, or runtime claims
+- `skills/ui-verification/SKILL.md` for approved visual comparison through JVM Roborazzi tests
+- `rules/testing-runtime-evidence.md` for instrumented UI, navigation, platform, or other runtime claims; visual claims use the Roborazzi contract
 - `skills/shared-json-scenarios/SKILL.md` only when an API endpoint or shared fixture is in scope
 - `rules/android-security.md` when the test covers a security boundary; use its
   required real-runtime boundary evidence and fail loudly when the runtime is unavailable
@@ -55,7 +55,7 @@ assert redacted receipts and decoded results, and fail if listener or endpoint s
 
 ### 4. Instrumented UI tests (`app/src/androidTest/`)
 Write instrumented tests only when Android runtime or real UI rendering is required.
-Follow `skills/android-instrumented-ui-test/SKILL.md` — use `testTag`, not static text; no `Thread.sleep`.
+Follow `rules/testing-runtime-evidence.md` — use stable test tags, not static text, and no `Thread.sleep`.
 
 ### 5. Import hygiene — applies to ALL test layers
 These rules apply to every test file regardless of layer:

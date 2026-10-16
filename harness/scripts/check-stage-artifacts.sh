@@ -140,6 +140,12 @@ require_rule_applicability_mapping() {
   require_required_rule_mappings "$artifact" "$specification" "$label"
 }
 
+sui_is_active() {
+  local specification="$1"
+  grep -E '^[[:space:]]*\|[[:space:]]*SUI[[:space:]]*\|' "$specification" |
+    grep -Eq '\|[[:space:]]*(Required|Exception — approved by)[^|]*\|'
+}
+
 require_bug_reproduction_evidence() {
   local spec="$1"
   local summary="$2"
@@ -282,6 +288,10 @@ case "$WORKFLOW/$STAGE" in
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "requirement/impact/design spec"
     require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "feature-delivery requirement analysis"
+    if sui_is_active "$(latest_versioned_file "spec_v*.md")"; then
+      require_file "UI_contract.md" "per-state UI design contract"
+      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$(latest_versioned_file "spec_v*.md")"
+    fi
     ;;
   feature-delivery/implementation-plan)
     require_file "spec_v*.md" "canonical requirement/impact/design spec"
@@ -290,6 +300,10 @@ case "$WORKFLOW/$STAGE" in
     specification=$(latest_versioned_file "spec_v*.md")
     require_rule_applicability_mapping "$(latest_versioned_file "implementation_plan_v*.md")" "$specification" "feature-delivery implementation plan"
     require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$specification" "feature-delivery test plan"
+    if sui_is_active "$specification"; then
+      require_file "UI_contract.md" "per-state UI design contract"
+      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" --plan "$(latest_versioned_file "implementation_plan_v*.md")"
+    fi
     ;;
   bug-fixing/requirement-analysis)
     require_file "summary_v*.md" "stage progress tracker"
@@ -456,12 +470,21 @@ $(jq -r '.features[] | "\(.id)|\(.requires_visual_verification)"' "$DOCS_DIR/fea
 EOF
     bash "$SCRIPT_DIR/check-visual-evidence-contract.sh" "$DOCS_DIR" --planning
     ;;
+  create-ui-and-verify/reference-design)
+    require_file "UI_contract.md" "per-state UI design contract"
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md"
+    ;;
+  create-ui-and-verify/implementation-plan)
+    require_file "UI_contract.md" "per-state UI design contract"
+    require_file "implementation_plan_v*.md" "approved UI implementation plan"
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")"
+    ;;
   create-ui-and-verify/ui-verification)
+    require_file "UI_contract.md" "per-state UI design contract"
+    require_file "implementation_plan_v*.md" "approved UI implementation plan"
     require_file "ui_verification.json" "UI verification report"
     bash "$SCRIPT_DIR/check-ui-verification-artifact.sh" "$DOCS_DIR"
-    ;;
-  create-ui-and-verify/*)
-    echo "SKIP: create-ui-and-verify has no doc-artifact gate for '$STAGE'."
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --report "$DOCS_DIR/ui_verification.json"
     ;;
   *)
     echo "FAIL: unknown workflow/stage '$WORKFLOW/$STAGE'." >&2
@@ -478,7 +501,8 @@ EOF
     echo "  harness-planning/feature-specification" >&2
     echo "  harness-planning/slice-planning" >&2
     echo "  create-ui-and-verify/ui-verification" >&2
-    echo "  create-ui-and-verify/* (no artifact gate for other stages)" >&2
+    echo "  create-ui-and-verify/reference-design" >&2
+    echo "  create-ui-and-verify/implementation-plan" >&2
     exit 2
     ;;
 esac

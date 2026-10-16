@@ -11,7 +11,7 @@ TEMPLATE="$PROJECT_ROOT/harness/templates/rule-applicability-template.md"
 IMPLEMENTATION_PLAN_TEMPLATE="$PROJECT_ROOT/harness/templates/implementation-plan-template.md"
 TEST_PLAN_TEMPLATE="$PROJECT_ROOT/harness/templates/test-plan-template.md"
 STAGE_CHECKER="$PROJECT_ROOT/harness/scripts/check-stage-artifacts.sh"
-HARNESS_AGENTS="$PROJECT_ROOT/.harness/AGENTS.md"
+HARNESS_AGENTS="$PROJECT_ROOT/android-agent-harness/AGENTS.md"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -94,12 +94,10 @@ assert_contains "$PROJECT_ROOT/.agents/workflows/harness-fix.md" "Reconcile all 
 assert_contains "$PROJECT_ROOT/.agents/gates/ci-checks.md" "Rule Applicability Harness Contract"
 assert_contains "$PROJECT_ROOT/harness/templates/code-review-template.md" "Rule Applicability Reconciliation"
 assert_contains "$PROJECT_ROOT/harness/templates/test-review-template.md" "Rule Applicability Test Reconciliation"
-assert_contains "$PROJECT_ROOT/AGENTS.md" "rule-applicability-template.md"
-assert_contains "$PROJECT_ROOT/AGENTS.md" "approved specification is canonical"
-assert_contains "$PROJECT_ROOT/AGENTS.md" "print-context-index.sh"
-
-cmp -s "$PROJECT_ROOT/AGENTS.md" "$HARNESS_AGENTS" || \
-  fail "harness AGENTS.md does not match the repository AGENTS.md"
+assert_contains "$HARNESS_AGENTS" "rule-applicability-template.md"
+assert_contains "$HARNESS_AGENTS" "approved specification is canonical"
+assert_contains "$HARNESS_AGENTS" "print-context-index.sh"
+assert_contains "$HARNESS_AGENTS" "available skill mechanism"
 
 TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/rule-applicability-contract.XXXXXX")"
 trap 'rm -rf "$TEMP_ROOT"' EXIT
@@ -114,7 +112,11 @@ create_spec() {
     '|---|---|---|---|---|---|' > "$output"
   for rule_id in ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC; do
     if [ "$rule_id" != "$omit_rule_id" ]; then
-      printf '| %s | rule.md | Always | Required | contract test | shell evidence |\n' "$rule_id" >> "$output"
+      if [ "$rule_id" = "SUI" ]; then
+        printf '| SUI | rule.md | Conditional | Not applicable — no UI change | contract test | shell evidence |\n' >> "$output"
+      else
+        printf '| %s | rule.md | Always | Required | contract test | shell evidence |\n' "$rule_id" >> "$output"
+      fi
     fi
   done
 }

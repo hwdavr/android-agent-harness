@@ -37,7 +37,7 @@ RENDERED_VALID_DOCS="$TEMP_ROOT/rendered-valid"
 mkdir -p "$VALID_DOCS/app/src/androidTest/java/example" \
   "$MISSING_SECTION_DOCS" "$PASSING_RESULT_DOCS" "$MISSING_FILE_DOCS" \
   "$RENDERED_FALSE_PASS_DOCS/app/src/androidTest/java/example" \
-  "$RENDERED_VALID_DOCS/app/src/androidTest/java/example"
+  "$RENDERED_VALID_DOCS/app/src/test/java/example"
 
 create_summary() {
   local output="$1"
@@ -107,26 +107,23 @@ printf '%s\n' \
   '}' \
   > "$RENDERED_FALSE_PASS_DOCS/app/src/androidTest/java/example/ReproductionTest.kt"
 assert_rejected "$RENDERED_FALSE_PASS_DOCS" \
-  "must capture a Compose node with captureToImage()"
+  "must call captureRoboImage() in a Roborazzi JVM test"
 
 create_summary "$RENDERED_VALID_DOCS/summary_v1.md"
 create_rendered_spec "$RENDERED_VALID_DOCS/spec_v1.md" \
-  'app/src/androidTest/java/example/ReproductionTest.kt'
+  'app/src/test/java/example/ReproductionRoborazziTest.kt'
 printf '%s\n' \
   'package example' \
   '' \
-  'import org.junit.Assert.assertTrue' \
   'import org.junit.Test' \
   '' \
-  'class ReproductionTest {' \
+  'class ReproductionRoborazziTest {' \
   '  @Test' \
   '  fun markedTextIsRendered() {' \
-  '    val plain = onNodeWithTag("plain").captureToImage().asAndroidBitmap()' \
-  '    val marked = onNodeWithTag("marked").captureToImage().asAndroidBitmap()' \
-  '    assertTrue(plain.differingPixelCount(marked) > 0)' \
+  '    captureRoboImage("design/mockup_formatted_text.png")' \
   '  }' \
   '}' \
-  > "$RENDERED_VALID_DOCS/app/src/androidTest/java/example/ReproductionTest.kt"
+  > "$RENDERED_VALID_DOCS/app/src/test/java/example/ReproductionRoborazziTest.kt"
 HARNESS_PROJECT_ROOT="$RENDERED_VALID_DOCS" bash "$STAGE_CHECKER" \
   bug-fixing bug-reproduction "$RENDERED_VALID_DOCS" >/dev/null ||
   fail_test "valid rendered RED reproduction evidence did not pass"

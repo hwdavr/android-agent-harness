@@ -63,7 +63,7 @@ Do not use instrumented tests for behavior that a deterministic JVM test proves 
 | Overall project | 80% |
 | New ViewModel classes | 90% |
 | New domain use case classes | 90% |
-| Compose screens/components | Excluded; verify with instrumented semantic/visual evidence when triggered |
+| Compose screens/components | Excluded; verify runtime semantics and interaction with instrumented tests when triggered; use Roborazzi for approved visual comparison |
 
 Machine-readable verification:
 

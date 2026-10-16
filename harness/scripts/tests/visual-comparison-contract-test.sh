@@ -31,6 +31,12 @@ grep -Fq 'pen_source' "$RULE" \
   || fail_test "runtime evidence rules must declare the canonical Pen source"
 grep -Fq 'approved-pen-export' "$TEMPLATE" \
   || fail_test "visual target template must declare the approved Pen export policy"
+grep -Fq '"content_alignment": "exact"' "$TEMPLATE" \
+  || fail_test "visual target template must require exact content within its scope"
+grep -Fq '"scope": "screen"' "$TEMPLATE" \
+  || fail_test "visual target template must declare the Roborazzi comparison scope"
+grep -Fq '../UI_design/fun_photo_editor.pen' "$TEMPLATE" \
+  || fail_test "visual target template must point to the canonical sibling Pen design"
 grep -Fq 'verifyRoborazziDebug' "$CONTRACT" \
   || fail_test "visual evidence contract must validate Roborazzi verification"
 if grep -Fq 'compare-visual-evidence.sh' "$CONTRACT"; then
@@ -80,4 +86,4 @@ printf '%s\n' \
   > "$fixture_root/design.md"
 bash "$STAGE_GATE" harness-planning feature-specification "$fixture_root" >/dev/null
 
-echo "PASS: Pen-export Roborazzi verification is configured without an implementation screenshot baseline."
+echo "PASS: Pen-export verification requires deterministic Roborazzi comparisons."

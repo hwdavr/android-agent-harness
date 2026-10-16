@@ -95,8 +95,8 @@ approval checklist.
 Run UI verification when the slice says `affects_ui`, or when the diff changes a Composable despite
 that flag. Record a planning defect for the mismatch and continue verification. When visual
 verification is required, run every declared visual command and validator; require target-state
-proof, non-empty in-test capture, reference-anchor evidence, applicable Pen-export Roborazzi verification, and
-rendered-node pixels for rich-text appearance claims.
+proof, a passing `verifyRoborazziDebug` receipt, reference-anchor evidence, an exact Pen-export
+screen or component scope, and Roborazzi proof for rich-text appearance claims.
 
 For UI changes without a visual owner, run the mapped automated acceptance tests and name the
 slice that owns final visual verification. Do not capture an unrelated screen.
