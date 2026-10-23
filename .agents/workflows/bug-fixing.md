@@ -58,6 +58,12 @@ Gate: root cause is specific enough that a reproduction test can be written. Run
 Write a failing test that mechanically proves the root cause before any fix is written.
 This is the only workflow stage that requires pre-implementation RED/TDD evidence.
 
+For an IME/keyboard defect, the Reproduction Test section must name `Production activity` and a
+`Test name` that opens the real keyboard and asserts controls against its inset boundary. Launch
+the shipped Activity without replacing its content; direct `*Content` fixtures, generic test
+Activities, window-mode-only assertions, and static keyboard previews are supplemental. The
+reproduction gate checks the named method and its reachable helpers against this boundary.
+
 When Stage 1 used `agent-device`, translate the observed journey into the lowest
 sufficient deterministic test layer. Keep external services such as Auth0 deterministic
 in test code while preserving the app-owned transition and visible result that failed on
@@ -78,6 +84,12 @@ Adapt — the plan must include:
 - Root cause (reference the reproduction test as evidence)
 - Proposed fix (minimal)
 - Which `@Ignore` annotation to remove once the fix is applied
+
+For UI fixes, validate `UI_contract.md` against the spec and plan at this gate. Editable inputs
+require complete, same-window keyboard-closed/open designs and the template's IME state inventory.
+Reuse an approved state only when it covers the entire window relationship. A component crop or
+static keyboard preview does not prove that the production Activity moves content above the IME.
+The test plan must declare `## IME Production Boundary` even when `NAV` is Not applicable.
 
 Output: `docs/current/implementation_plan_v<N>.md` created; `docs/current/summary_v<N>.md` updated.
 Gate: Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing implementation-plan` — must exit 0. **STOP — present fix plan to user. Do not proceed until user explicitly approves.**
@@ -109,6 +121,11 @@ Gate: the RED reproduction test and every related test selected by `android-test
 must exit 0. For a rich-text or visual rendering fix, also require the named
 `*RoborazziTest` to pass `bash harness/scripts/check-rendered-output-contract.sh`;
 model marks, toolbar state, or device screenshot existence alone do not prove the fix.
+
+Run that Testing gate for UI and IME fixes as well. For every inventoried editable input it checks
+production Activity open/dismiss methods and non-skipped, passing JUnit cases. Open tests must
+wait for real IME visibility/insets and assert window-coordinate bounds; dismissal must restore
+geometry. A passing isolated-content test is insufficient grounds to skip a production replay.
 
 ---
 
