@@ -178,7 +178,7 @@ workflow stages.
 
 **Design-system conformance:** for UI work, `design.md` must link `docs/product/design_system.md` and list every explicit user-approved exception (or state that none exist).
 
-**Keyboard-visible state (conditional — mechanics in Step 6):** if a bottom sheet contains text input, or screen content has text input with a bottom toolbar, `design.md` must define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup. For a bottom sheet, the keyboard-visible mockup must show the sheet **still open** with the keyboard — tapping the text input must not dismiss the sheet; only a scrim tap, swipe-down, or close action does. When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must show the bottom toolbar **dismissed** while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `rules/compose-rules.md`.
+**Keyboard-visible state (conditional — mechanics in Step 6):** if any screen or bottom sheet contains editable text input, including screens without a bottom toolbar, `design.md` must define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup. For a bottom sheet, the keyboard-visible mockup must show the sheet **still open** with the keyboard — tapping the text input must not dismiss the sheet; only a scrim tap, swipe-down, or close action does. When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must show the bottom toolbar **dismissed** while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `rules/compose-rules.md`.
 
 ---
 

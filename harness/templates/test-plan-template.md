@@ -52,6 +52,25 @@ callback, and Content-only tests remain supplemental and do not satisfy this sec
 
 ---
 
+## IME Production Boundary
+
+Mandatory for every input in `UI_contract.md`'s IME State Coverage, even when `NAV` is Not
+applicable. Predeclare targets during planning; the source and result XML must exist by Testing.
+Use `createAndroidComposeRule<ProductionActivity>()` with the shipped content and manifest.
+Replacing Activity content via `setContent` makes the fixture supplemental. Follow the observed
+entry route, focus the real input, wait for settled IME visibility/non-zero insets, and assert
+window-coordinate control bounds against the keyboard edge. Dismiss and assert restoration.
+Open and dismissal may share a method when that method proves the complete transition.
+
+| Screen | Input tag | Production activity | Open test | Dismiss test | Command | Result XML |
+|---|---|---|---|---|---|---|
+| <screen> | <input testTag> | <shipped Activity> | app/src/androidTest/java/<package>/<ImeTest>.kt#<openMethod> | app/src/androidTest/java/<package>/<ImeTest>.kt#<dismissMethod> | ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<package>.<ImeTest> | evidence/<runner-results>.xml |
+
+The XML is the copied raw Android runner result, with the selected class/methods executed and
+not failed, errored, or skipped. Validate source and results with the active Testing/UI verification
+stage gate. Static keyboard previews, configuration-only tests, and Content fixtures are
+supplemental evidence and cannot justify declaring the production bug fixed.
+
 ## Test Cases
 
 List every test case grouped by the class under test. Assign a short ID (e.g. `T1`) so cases can be referenced in reviews and PRs.

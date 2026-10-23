@@ -25,11 +25,6 @@ DESIGN="$FEATURE_DIR/design.md"
 HAS_SHEET=$(grep -Eiq 'bottom[[:space:]-]*sheet|modal[[:space:]-]*bottom[[:space:]-]*sheet|modalbottomsheet' "$DESIGN" && echo 1 || echo 0)
 HAS_TOOLBAR=$(grep -Eiq 'bottom[[:space:]-]*(tool)?bar|bottom[[:space:]-]*toolbar' "$DESIGN" && echo 1 || echo 0)
 
-if [ "$HAS_SHEET" -eq 0 ] && [ "$HAS_TOOLBAR" -eq 0 ]; then
-  echo "PASS: design has no bottom-sheet surface or bottom toolbar."
-  exit 0
-fi
-
 TEXT_INPUT_LINES=$(
   grep -Ei 'text[[:space:]-]*(box|field|input)|textfield|input[[:space:]-]*field|search[[:space:]-]*field' "$DESIGN" |
     grep -Eiv '(^|[[:space:][:punct:]])(no|without|does[[:space:]]+not|do[[:space:]]+not|not[[:space:]]+applicable|none|has[[:space:]]+no|contains[[:space:]]+no|includes[[:space:]]+no|presents[[:space:]]+no|uses[[:space:]]+no|provides[[:space:]]+no|read[[:space:]-]*only|readonly)([[:space:][:punct:]]|$)' ||

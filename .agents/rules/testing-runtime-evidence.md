@@ -32,6 +32,25 @@ Fake adapters, fake callbacks, JVM-only intent assertions, and seam instantiatio
 If a required runtime, device, model, locale, permission, hardware feature, SDK, or service is
 unavailable, the command must fail or record `Blocked`/`Revise`; it cannot pass by skip or warning.
 
+## IME Window Boundary
+
+Editable inputs require full-window closed/open designs and an explicit layout policy in the
+UI contract's `IME State Coverage` inventory. Keep the focused input and required actions visible;
+record the dismissed state, which may reuse the closed design when identical.
+
+IME geometry is a production Activity claim even when navigation is unchanged. Primary evidence
+launches `createAndroidComposeRule<ProductionActivity>()` with its shipped manifest configuration
+and content. Do not call `setContent` to replace it. Follow the observed app route, tap the real
+input, wait for settled non-zero IME insets/visibility, and assert input/panel/result/action bounds
+in window coordinates against the real keyboard top. Dismiss the keyboard, wait for zero/hidden
+insets, and assert restoration. Record the selected open/dismiss methods and runner XML in the
+test plan's `IME Production Boundary` table. A configuration assertion alone is supplemental.
+
+Static Gboard images and component Roborazzi tests prove deterministic appearance only. Clearing
+focus before capture, a prefilled query, or a generic Activity fixture cannot establish the
+shipped IME boundary or justify skipping a production replay. The gate checks source structure
+and selected executed JUnit cases; it does not infer correctness from method names alone.
+
 ## Production Journey Boundary
 
 For navigation, saved-state, back-stack, destination recreation, or post-return persistence:

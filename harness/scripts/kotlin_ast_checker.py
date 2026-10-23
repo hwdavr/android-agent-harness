@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Iterator, Optional, Sequence
@@ -1358,6 +1359,12 @@ def build_parser() -> argparse.ArgumentParser:
     keyboard_visual.add_argument("--project-root", type=Path, default=None)
     keyboard_visual.add_argument("--test-file", required=True, type=Path)
     keyboard_visual.add_argument("--test-method", required=True)
+    ime_boundary = subparsers.add_parser("ime-boundary")
+    ime_boundary.add_argument("--project-root", type=Path, default=None)
+    ime_boundary.add_argument("--test-file", required=True, type=Path)
+    ime_boundary.add_argument("--test-method", required=True)
+    ime_boundary.add_argument("--production-entry", required=True)
+    ime_boundary.add_argument("--transition", choices=("open", "dismiss"), default="open")
     return parser
 
 
@@ -1379,6 +1386,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return run_rendered_output(args)
     if args.checker == "keyboard-visual":
         return run_keyboard_visual(args)
+    if args.checker == "ime-boundary":
+        return run_ime_boundary(args)
     raise AssertionError(f"Unknown checker: {args.checker}")
 
 
@@ -2090,6 +2099,84 @@ def run_rendered_output(args: argparse.Namespace) -> int:
 
     print_rule("Rendered rich-text appearance evidence", result.violations)
     return finish(result, "rendered rich-text appearance contract")
+
+
+def run_ime_boundary(args: argparse.Namespace) -> int:
+    """Reject Content fixtures as proof of the production Activity's IME geometry."""
+    root = (args.project_root or repository_root()).resolve()
+    path = (root / args.test_file).resolve()
+    result = Result(root)
+    if not path_is_under(path, root / "app/src/androidTest") or not path.is_file():
+        result.add_path(path, 1, "IME boundary requires an existing app/src/androidTest source")
+        return finish(result, "IME production boundary")
+    source = KotlinFile(path)
+    target = next((function for function in source.functions if function.name == args.test_method), None)
+    if target is None or "Test" not in target.annotations:
+        result.add_path(path, 1, "IME boundary requires the named @Test method")
+        return finish(result, "IME production boundary")
+
+    def reject(message: str) -> None:
+        result.add(source, target.name_index, message)
+
+    tokens = [token.text for token in source.tokens]
+    if "setContent" in tokens:
+        reject("IME boundary must not replace production Activity content with setContent; isolated fixtures are supplemental")
+    activity = args.production_entry.split(".")[-1]
+    production_rule = False
+    for index, token in enumerate(tokens):
+        if token == "createAndroidComposeRule" and tokens[index + 1:index + 2] == ["<"]:
+            end = next((cursor for cursor in range(index + 2, len(tokens)) if tokens[cursor] == ">"), index)
+            production_rule |= "".join(tokens[index + 2:end]).split(".")[-1] == activity
+    if not production_rule:
+        reject("IME boundary must launch createAndroidComposeRule with the declared production Activity")
+    manifest = root / "app/src/main/AndroidManifest.xml"
+    try:
+        document = ET.parse(manifest)
+        declared = [node.get("{http://schemas.android.com/apk/res/android}name", "").split(".")[-1]
+                    for node in document.iter("activity")]
+        if activity not in declared:
+            reject("IME production Activity must be declared in the shipped manifest")
+    except (OSError, ET.ParseError):
+        reject("IME boundary requires the shipped AndroidManifest.xml")
+    if any(node.name == activity for node in source.classes):
+        reject("IME boundary cannot declare a substitute production Activity in test source")
+
+    reachable = {}
+    pending = [target]
+    helpers = {function.name: function for function in source.functions
+               if function.parent_class == target.parent_class}
+    while pending:
+        function = pending.pop()
+        if function.name in reachable:
+            continue
+        reachable[function.name] = function
+        pending.extend(helpers[call.name] for call in function_calls(source, function)
+                       if call.name in helpers and call.name not in reachable)
+    proof_tokens = {token.text for function in reachable.values()
+                    for token in source.tokens[function.body_start:function.body_end + 1]}
+    class_annotations = target.parent_class.annotations if target.parent_class else set()
+    if "Ignore" in (target.annotations | class_annotations) or "Assume" in proof_tokens or "assumeTrue" in proof_tokens:
+        reject("IME boundary cannot skip the declared runtime")
+    if not {"ime", "isVisible", "getInsets", "waitUntil"}.issubset(proof_tokens):
+        reject("IME boundary must poll real IME visibility and insets with an explicit wait")
+    if not ({"WindowInsetsCompat", "WindowInsets"} & proof_tokens):
+        reject("IME boundary must inspect Android window insets")
+    if not ({"getRootWindowInsets", "rootWindowInsets"} & proof_tokens):
+        reject("IME boundary must read the production view's real root window insets")
+    if not ({"boundsInWindow", "getBoundsInWindow", "getLocationOnScreen"} & proof_tokens):
+        reject("IME boundary must measure production controls in window coordinates")
+    if args.transition == "open":
+        if "performClick" not in proof_tokens:
+            reject("IME open boundary must focus the real input with a UI gesture")
+        if not ({"assertTrue", "assertThat"} & proof_tokens) or not ({"<=", ">=", "<", ">"} & proof_tokens):
+            reject("IME open boundary must assert control bounds against the real keyboard edge")
+    else:
+        if not ({"pressBack", "sendKeyDownUpSync", "hide", "closeSoftKeyboard"} & proof_tokens):
+            reject("IME dismissal boundary must dismiss the real keyboard")
+        if not ({"assertEquals", "assertThat"} & proof_tokens):
+            reject("IME dismissal boundary must assert restored geometry")
+    print_rule("IME production Activity and geometry", result.violations)
+    return finish(result, "IME production boundary")
 
 
 def run_keyboard_visual(args: argparse.Namespace) -> int:

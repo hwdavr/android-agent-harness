@@ -52,7 +52,14 @@ design reference.
 
 Create `docs/current/UI_contract.md` from `harness/templates/UI_contract-template.md`. Enumerate
 each visible screen/state from requirements and the current runtime, including selected subtools,
-overlays, empty/error states, and keyboard states when applicable. Give each state one distinct
+overlays, empty/error states, and keyboard states for every editable input. Inventory each input's
+stable tag in `## IME State Coverage` and bind it to keyboard-closed, keyboard-open, and dismissed
+states. Dismissal may reuse the closed design when identical. Closed/open designs use the same
+full window viewport; the open state's Required regions includes `system-ime`. Show the focused
+input, required actions, content, persistent controls, and keyboard together. A panel crop or a
+prefilled query with focus cleared does not cover the keyboard-open screen. Component Roborazzi
+comparisons supplement the full screen design and production IME boundary. An unchanged input
+still requires these states when its containing screen is in scope. Give each state one distinct
 top-level screen frame and full-viewport export, or identify the supplied approved image as an
 external-screen reference. Each export must visibly include primary content, all state-specific
 controls, and persistent interactive surfaces; a control-only or component crop is invalid.
@@ -90,7 +97,10 @@ Plan stage ID in `UI_contract.md` its own implementation and verification steps.
 declare one unique future JVM `*RoborazziTest.kt#method`, cite its approved design image, and name
 the method-scoped `./gradlew app:verifyRoborazziDebug --tests "<package>.<Class>.<method>"`
 command. The test source may be created during implementation, but the plan gate rejects a state
-without this binding. Run:
+without this binding. For editable inputs, also create the test plan's `## IME Production Boundary`
+table with the shipped Activity, open/dismiss instrumented methods, class-scoped command, and
+planned JUnit XML path. The verification gate rejects Content-only tests and unavailable/skipped
+results. Run:
 
 ```bash
 bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify implementation-plan docs/current

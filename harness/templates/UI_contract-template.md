@@ -24,6 +24,25 @@ Every row must name the full logical viewport, declare that the primary content,
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | <screen> | <screen-state> | `../UI_design/<file>.pen` | <Pen node ID> | screen-frame | `design/mockup_<screen_state>.png` | 430x932 | primary-content; state-controls; persistent-controls | <named state-specific buttons, dials, menus, or controls> | <fixture ID> | roborazzi | None / component scope excludes <unrelated full-screen content> | UI-01 |
 
+## IME State Coverage
+
+Required for every editable text/search input, including existing inputs on the changed screen.
+Inventory stable input tags from the production Composables. Omit this section only when the
+screen contains no editable inputs and record that finding in Research Decisions. Read-only text
+and a Search button alone are not editable inputs.
+
+Map each input to complete screen designs at the same **Window viewport**, including content,
+persistent controls, and the real keyboard area. Add `system-ime` to the keyboard-open state's
+Required regions. A panel-only export or prefilled query with cleared focus is insufficient.
+Dismissed state may reuse Keyboard closed state when identical; distinct focus-dependent layouts
+need distinct designs. The layout policy is the approved behavior, not a prescribed padding API.
+Required visible tags names the focused input and every action/content boundary that must remain
+reachable above the IME. The test plan binds this inventory to production-window boundary tests.
+
+| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Required visible tags |
+|---|---|---|---|---|---|---|---|
+| <screen> | <editable input testTag> | 430x932 | <closed state ID> | <open state ID> | <closed or distinct dismissed state ID> | resize / pan / overlay | <input tag; submit tag; results tag> |
+
 ## State Details
 
 ### UI-01 — <screen-state>

@@ -146,6 +146,10 @@ sui_is_active() {
     grep -Eq '\|[[:space:]]*(Required|Exception — approved by)[^|]*\|'
 }
 
+ime_is_active() {
+  grep -Eiq '(^|[^[:alnum:]_])IME([^[:alnum:]_]|$)|software[[:space:]-]+keyboard|WindowInsets' "$1"
+}
+
 require_bug_reproduction_evidence() {
   local spec="$1"
   local summary="$2"
@@ -214,6 +218,19 @@ require_bug_reproduction_evidence() {
     reproduction_test_method=$(printf '%s\n' "$reproduction_section" |
       sed -n -E 's/.*(test|method)[[:space:]]+`([A-Za-z_][A-Za-z0-9_]*)`.*/\2/p' |
       head -n 1)
+  fi
+  if ime_is_active "$spec"; then
+    local production_activity
+    production_activity=$(printf '%s\n' "$reproduction_section" |
+      sed -n -E 's/^[[:space:]]*-[[:space:]]*\*{0,2}Production activity\*{0,2}:[[:space:]]*`([^`]+)`.*/\1/p' |
+      head -n 1)
+    if [ -z "$production_activity" ] || [ -z "$reproduction_test_method" ]; then
+      echo "FAIL: IME reproduction must declare Test name and Production activity in Reproduction Test." >&2
+      exit 1
+    fi
+    python3 "$SCRIPT_DIR/kotlin_ast_checker.py" ime-boundary \
+      --project-root "$PROJECT_ROOT" --test-file "$test_path" \
+      --test-method "$reproduction_test_method" --production-entry "$production_activity"
   fi
   bash "$SCRIPT_DIR/check-rendered-output-contract.sh" \
     --project-root "$PROJECT_ROOT" \
@@ -307,7 +324,7 @@ case "$WORKFLOW/$STAGE" in
     require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$specification" "feature-delivery test plan"
     if sui_is_active "$specification"; then
       require_file "UI_contract.md" "per-state UI design contract"
-      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" --plan "$(latest_versioned_file "implementation_plan_v*.md")"
+      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --test-plan "$(latest_versioned_file "test_plan_v*.md")"
     fi
     ;;
   bug-fixing/requirement-analysis)
@@ -331,6 +348,13 @@ case "$WORKFLOW/$STAGE" in
     if [ -n "$(latest_versioned_file "test_plan_v*.md")" ]; then
       require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$specification" "bug-fixing test plan"
     fi
+    if sui_is_active "$specification" || ime_is_active "$specification"; then
+      require_file "UI_contract.md" "per-state UI and IME design contract"
+      test_plan_artifact=$(latest_versioned_file "test_plan_v*.md")
+      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" \
+        --plan "$(latest_versioned_file "implementation_plan_v*.md")" \
+        --test-plan "${test_plan_artifact:-$DOCS_DIR/test_plan_v1.md}"
+    fi
     ;;
   bug-fixing/testing)
     require_file "summary_v*.md" "stage progress tracker"
@@ -338,6 +362,12 @@ case "$WORKFLOW/$STAGE" in
     require_file "test_plan_v*.md" "test plan"
     require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$(latest_versioned_file "spec_v*.md")" "bug-fixing testing"
     test_plan_artifact="$(latest_versioned_file "test_plan_v*.md")"
+    specification="$(latest_versioned_file "spec_v*.md")"
+    if sui_is_active "$specification" || ime_is_active "$specification"; then
+      require_file "UI_contract.md" "per-state UI and IME design contract"
+      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" \
+        --test-plan "$test_plan_artifact" --runtime --project-root "$PROJECT_ROOT"
+    fi
     nav_row="$(grep -E "^[[:space:]]*\|[[:space:]]*NAV[[:space:]]*\|" "$test_plan_artifact" | head -n 1 || true)"
     case "$nav_row" in
       *"| Required |"*)
@@ -482,14 +512,18 @@ EOF
   create-ui-and-verify/implementation-plan)
     require_file "UI_contract.md" "per-state UI design contract"
     require_file "implementation_plan_v*.md" "approved UI implementation plan"
-    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")"
+    test_plan_artifact=$(latest_versioned_file "test_plan_v*.md")
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")" \
+      --test-plan "${test_plan_artifact:-$DOCS_DIR/test_plan_v1.md}"
     ;;
   create-ui-and-verify/ui-verification)
     require_file "UI_contract.md" "per-state UI design contract"
     require_file "implementation_plan_v*.md" "approved UI implementation plan"
     require_file "ui_verification.json" "UI verification report"
     bash "$SCRIPT_DIR/check-ui-verification-artifact.sh" "$DOCS_DIR"
-    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --report "$DOCS_DIR/ui_verification.json"
+    test_plan_artifact=$(latest_versioned_file "test_plan_v*.md")
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --report "$DOCS_DIR/ui_verification.json" \
+      --test-plan "${test_plan_artifact:-$DOCS_DIR/test_plan_v1.md}" --runtime --project-root "$PROJECT_ROOT"
     ;;
   *)
     echo "FAIL: unknown workflow/stage '$WORKFLOW/$STAGE'." >&2

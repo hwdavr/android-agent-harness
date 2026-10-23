@@ -223,7 +223,19 @@ bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"
 ```bash
 bash harness/scripts/check-keyboard-mockup-contract.sh "$FEATURE_DIR"
 ```
-**Must pass during harness planning.** A design with a bottom-sheet textbox, text field, search field, or other text input — or screen content with text input and a bottom toolbar — must describe the keyboard-visible state and reference distinct non-empty base and keyboard-visible mockup assets. For a bottom sheet, the keyboard-visible state must state that the sheet stays open (tapping the text input must not dismiss it). When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must state that the bottom toolbar is dismissed while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `.agents/rules/compose-rules.md`.
+**Must pass during harness planning.** Every screen or bottom sheet containing editable text input, including a screen without a bottom toolbar, must describe the keyboard-visible state and reference distinct non-empty base and keyboard-visible mockup assets. For a bottom sheet, the keyboard-visible state must state that the sheet stays open (tapping the text input must not dismiss it). When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must state that the bottom toolbar is dismissed while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `.agents/rules/compose-rules.md`.
+
+### 13a. Ad-hoc IME State and Production Boundary Contract
+
+```bash
+bash harness/scripts/tests/ime-state-boundary-contract-test.sh
+```
+
+**Must pass for harness changes.** The UI/bug-fixing gates require an editable-input inventory,
+same-window closed/open design frames with `system-ime` visible, and production Activity
+open/dismiss tests even when `NAV` is Not applicable. Content replacement, generic test Activities,
+missing/skipped/failed JUnit cases, and a command selecting the wrong class are rejected. Component
+Roborazzi comparisons remain appearance evidence; they do not establish real IME window geometry.
 
 ## Conditional Checks
 

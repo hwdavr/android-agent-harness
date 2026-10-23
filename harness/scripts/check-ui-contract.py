@@ -5,8 +5,12 @@ import argparse
 import json
 import re
 import struct
+import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
+
+from kotlin_ast_checker import KotlinFile
 
 
 STATE_COLUMNS = [
@@ -16,6 +20,18 @@ STATE_COLUMNS = [
 ]
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
 PLAN_COLUMNS = ["Stage ID", "Implementation", "Roborazzi target", "Verification"]
+IME_COLUMNS = [
+    "Screen", "Input tag", "Window viewport", "Keyboard closed state", "Keyboard open state",
+    "Dismissed state", "Layout policy", "Required visible tags",
+]
+IME_BOUNDARY_COLUMNS = [
+    "Screen", "Input tag", "Production activity", "Open test", "Dismiss test", "Command", "Result XML",
+]
+EDITABLE_INPUT = re.compile(
+    r"\b(?:search(?![ -]*(?:results|history|button|icon)\b)|(?:basic)?textfield|"
+    r"text[ -]*(?:box|field|input)|input[ -]*field|editable)\b", re.I,
+)
+INSTRUMENTED_TARGET = re.compile(r"app/src/androidTest/[A-Za-z0-9_./]+Test\.kt#[A-Za-z_][A-Za-z0-9_]*$")
 ROBORAZZI_TARGET = re.compile(
     r"app/src/test/java/[A-Za-z0-9_./]+/roborazzi/[A-Za-z0-9_./]+RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
 )
@@ -92,7 +108,109 @@ def complete_regions(value, state_id):
         fail(f"state {state_id} is missing required visible regions: {', '.join(missing)}")
 
 
-def validate(contract, spec, plan, report):
+def ime_states(contract, rows):
+    input_screens = {
+        row["Screen"] for row in rows
+        if EDITABLE_INPUT.search(row["State controls"])
+        and not re.search(r"\bread[ -]*only\b|\bno text input\b", row["State controls"], re.I)
+    }
+    has_inventory = "## IME State Coverage" in contract.read_text(encoding="utf-8").splitlines()
+    if not has_inventory:
+        if input_screens:
+            fail("editable text input requires ## IME State Coverage with closed, open, and dismissed designs")
+        return []
+    inventory = table(contract, "IME State Coverage", IME_COLUMNS)
+    by_state = {(row["Screen"], row["State ID"]): row for row in rows}
+    seen = set()
+    for item in inventory:
+        key = (item["Screen"], item["Input tag"])
+        if key in seen:
+            fail(f"duplicate IME input: {key}")
+        seen.add(key)
+        dimensions = viewport(item["Window viewport"], item["Input tag"])
+        for label, column in (("keyboard-closed", "Keyboard closed state"),
+                              ("keyboard-open", "Keyboard open state"), ("dismissed", "Dismissed state")):
+            state = by_state.get((item["Screen"], item[column]))
+            if state is None:
+                fail(f"unknown {label} state: {item[column]}")
+            if viewport(state["Viewport"], state["State ID"]) != dimensions:
+                fail(f"IME {label} design must use the full window viewport {item['Window viewport']}")
+            has_ime = "system-ime" in {region.strip() for region in state["Required regions"].split(";")}
+            if label == "keyboard-open" and not has_ime:
+                fail(f"keyboard-open design {item[column]} must include system-ime")
+            if label != "keyboard-open" and has_ime:
+                fail(f"IME {label} design must not include system-ime")
+        if item["Keyboard open state"] in (item["Keyboard closed state"], item["Dismissed state"]):
+            fail("keyboard-open design must be distinct from the closed and dismissed states")
+        if item["Layout policy"] not in {"resize", "pan", "overlay"}:
+            fail("IME Layout policy must be resize, pan, or overlay")
+        visible = {tag.strip() for tag in item["Required visible tags"].split(";")}
+        if item["Input tag"] not in visible:
+            fail("IME Required visible tags must include the focused Input tag")
+    missing = input_screens - {item["Screen"] for item in inventory}
+    if missing:
+        fail(f"editable screens missing IME coverage: {sorted(missing)}")
+    return inventory
+
+
+def ime_runtime(inventory, test_plan, runtime, project_root):
+    if not inventory or test_plan is None:
+        if runtime and inventory:
+            fail("IME runtime validation requires --test-plan")
+        return
+    boundary = table(test_plan, "IME Production Boundary", IME_BOUNDARY_COLUMNS)
+    expected = {(item["Screen"], item["Input tag"]) for item in inventory}
+    actual = {(item["Screen"], item["Input tag"]) for item in boundary}
+    if len(actual) != len(boundary) or expected != actual:
+        fail("IME Production Boundary must cover every declared input exactly once")
+    for item in boundary:
+        for column in ("Open test", "Dismiss test"):
+            target = item[column]
+            if not INSTRUMENTED_TARGET.fullmatch(target) or ".." in Path(target.split("#")[0]).parts:
+                fail(f"IME {column} requires an instrumented Test.kt#method target")
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", item["Production activity"]):
+            fail("IME Production activity must name the shipped Activity")
+        command = item["Command"]
+        if "connected" not in command or "AndroidTest" not in command or "android.testInstrumentationRunnerArguments.class=" not in command:
+            fail("IME Command must select the instrumented boundary class")
+        result_ref = Path(item["Result XML"])
+        if result_ref.is_absolute() or ".." in result_ref.parts:
+            fail("IME Result XML must stay under the project or artifact directory")
+        if not runtime:
+            continue
+        for transition, column in (("open", "Open test"), ("dismiss", "Dismiss test")):
+            file, method = item[column].split("#")
+            check = subprocess.run([
+                sys.executable, str(Path(__file__).with_name("kotlin_ast_checker.py")), "ime-boundary",
+                "--project-root", str(project_root), "--test-file", file, "--test-method", method,
+                "--production-entry", item["Production activity"], "--transition", transition,
+            ], capture_output=True, text=True)
+            if check.returncode:
+                fail(check.stdout + check.stderr)
+        result_path = next((path for path in (test_plan.parent / result_ref, project_root / result_ref) if path.is_file()), None)
+        if result_path is None:
+            fail(f"missing IME result XML: {result_ref}; runtime is Blocked")
+        try:
+            result = ET.parse(result_path).getroot()
+        except ET.ParseError as error:
+            fail(f"invalid IME result XML: {error}")
+        for column in ("Open test", "Dismiss test"):
+            file, method = item[column].split("#")
+            class_name = Path(file).stem
+            package = KotlinFile(project_root / file).package_name
+            qualified_class = f"{package}.{class_name}" if package else class_name
+            selector = re.search(r"android\.testInstrumentationRunnerArguments\.class=([^\s]+)", command)
+            selections = selector.group(1).strip("\"'").split(",") if selector else []
+            if qualified_class not in selections and f"{qualified_class}#{method}" not in selections:
+                fail(f"IME Command does not select {qualified_class}#{method}")
+            cases = [case for case in result.iter("testcase")
+                     if case.get("name", "").split("[")[0] == method
+                     and case.get("classname", "") == qualified_class]
+            if not cases or any(any(case.find(tag) is not None for tag in ("failure", "error", "skipped")) for case in cases):
+                fail(f"IME runtime {class_name}#{method} did not pass with a non-zero executed count")
+
+
+def validate(contract, spec, plan, report, test_plan=None, runtime=False, project_root=None):
     rows = table(contract, "Screen States", STATE_COLUMNS)
     states = set()
     nodes = set()
@@ -154,6 +272,8 @@ def validate(contract, spec, plan, report):
             fail(f"invalid or duplicate plan stage: {stage}")
         stages.add(stage)
 
+    inventory = ime_states(contract, rows)
+    ime_runtime(inventory, test_plan, runtime, (project_root or Path.cwd()).resolve())
     if spec:
         spec_rows = table(spec, "Screen States", SPEC_COLUMNS)
         spec_states = {(row["Screen"], row["State ID"]) for row in spec_rows}
@@ -231,9 +351,12 @@ if __name__ == "__main__":
     parser.add_argument("--spec", type=Path)
     parser.add_argument("--plan", type=Path)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--test-plan", type=Path)
+    parser.add_argument("--runtime", action="store_true")
+    parser.add_argument("--project-root", type=Path)
     args = parser.parse_args()
     try:
-        validate(args.contract, args.spec, args.plan, args.report)
+        validate(args.contract, args.spec, args.plan, args.report, args.test_plan, args.runtime, args.project_root)
     except (ValueError, json.JSONDecodeError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
         sys.exit(1)

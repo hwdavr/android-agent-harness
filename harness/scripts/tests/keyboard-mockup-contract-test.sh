@@ -234,7 +234,7 @@ printf '%s\n' \
 printf 'code mockup' > "$readonly_field/design/mockup_code.png"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$readonly_field")
 
-# Screen text input with no bottom toolbar is not required to dismiss anything.
+# Screen text input with no bottom toolbar still requires a keyboard state and asset.
 screen_no_toolbar="$fixture_root/screen-no-toolbar"
 mkdir -p "$screen_no_toolbar/design"
 printf '%s\n' \
@@ -244,9 +244,13 @@ printf '%s\n' \
   '' \
   'The screen content includes a search field.' \
   '' \
+  'Keyboard-visible state: the focused search remains above the keyboard while typing.' \
+  '' \
   '- Mockup image: `design/mockup_search.png`' \
+  '- Keyboard-visible mockup: `design/mockup_search_keyboard.png`' \
   > "$screen_no_toolbar/design.md"
 printf 'search mockup' > "$screen_no_toolbar/design/mockup_search.png"
+printf 'keyboard mockup' > "$screen_no_toolbar/design/mockup_search_keyboard.png"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$screen_no_toolbar")
 
 # A modal bottom sheet hides the screen toolbar behind it, so a sheet with text
@@ -273,4 +277,4 @@ printf 'base mockup' > "$sheet_with_toolbar_no_dismissal/design/mockup_picker.pn
 printf 'keyboard mockup' > "$sheet_with_toolbar_no_dismissal/design/mockup_picker_keyboard.png"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$sheet_with_toolbar_no_dismissal")
 
-echo "PASS: keyboard mockup validator accepts the required pairs, rejects missing state/asset/file, missing toolbar-dismissal, and missing sheet-stays-open cases, and skips toolbar-less screens and read-only text."
+echo "PASS: keyboard mockup validator requires state/asset pairs for every editable surface, checks toolbar/sheet behavior, and excludes read-only text."
