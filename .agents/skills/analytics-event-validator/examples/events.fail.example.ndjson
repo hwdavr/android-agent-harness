@@ -1,0 +1,4 @@
+{"type":"capture_ready","version":1,"timestamp_ms":1000}
+{"type":"event","name":"sample_started","params":{"entry":"toolbar"},"timestamp_ms":1001}
+{"type":"event","name":"sample_completed","params":{"duration_ms":true},"timestamp_ms":1002}
+{"type":"capture_complete","version":1,"timestamp_ms":1003,"event_count":2}

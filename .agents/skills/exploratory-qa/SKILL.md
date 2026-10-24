@@ -13,6 +13,10 @@ Accept a prebuilt APK or installed package; source code is optional. Record pack
 
 Generate `.qa-artifacts/<run-id>/scenario.json` for the selected feature. Read [scenario sources](references/scenario-sources.md) to derive checks from the matching workflow, discover code-only targets, and retain source hashes. The example illustrates the format, not the default journey for every run. Keep observations unset until runtime exploration.
 
+## Analytics checks
+
+When analytics validation is requested, use the sibling [analytics-event-validator](../analytics-event-validator/SKILL.md). Reuse this run scenario, UI exploration, logs/video and cleanup; keep analytics contracts, receipts and reports in the run's `analytics/` directory. An analytics outcome does not override the UI/network outcome.
+
 ## Network mode
 
 - UI/log-only: use dogfood; no proxy is required.

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "scenario_id": "synthetic_editor_flow",
+  "approval": {
+    "status": "example",
+    "reference": "Synthetic host-tool fixture; not product tracking requirements"
+  },
+  "sources": [],
+  "allow_unexpected": true,
+  "expected_events": [
+    {
+      "name": "sample_started",
+      "count": {
+        "exact": 1
+      },
+      "params": {
+        "entry": {
+          "type": "string",
+          "one_of": [
+            "toolbar",
+            "home"
+          ]
+        }
+      }
+    },
+    {
+      "name": "sample_completed",
+      "count": {
+        "exact": 1
+      },
+      "params": {
+        "duration_ms": {
+          "type": "integer"
+        }
+      }
+    }
+  ],
+  "forbidden_events": [
+    "sample_failed"
+  ],
+  "order": [
+    "sample_started",
+    "sample_completed"
+  ]
+}

@@ -55,6 +55,7 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | Independent code review before merge | `.agents/workflows/feature-review.md` |
 | UI-only mobile exploration | `.agents/skills/dogfood/SKILL.md` |
 | APK QA with scenario reports or network capture/mocks | `.agents/skills/exploratory-qa/SKILL.md` (reuses `dogfood`) |
+| App-side analytics event contracts | `.agents/skills/analytics-event-validator/SKILL.md` (extends `exploratory-qa`) |
 
 ### Project-Based Development (Complex Features)
 
@@ -65,13 +66,12 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | Resolving evaluator findings when a feature scored below 5.0/5 (`To be fixed`) | `.agents/workflows/harness-fix.md` |
 | Code and test review of an implemented change | `.agents/workflows/harness-evaluation.md` |
 
----
 ## Skills Index
 Key skills under `.agents/skills/`:
 - **Planning & Requirements**: `spec-driven-development`, `feature-specification`, `slice-planning`, `implementation-plan`
 - **UX & Design**: `ux-design`
 - **Implementation**: `android-implementation`, `android-ui-layer`, `api-contract-update`
-- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`, `dogfood`, `exploratory-qa`
+- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`, `dogfood`, `exploratory-qa`, `analytics-event-validator`
 - **Review & Quality**: `code-quality-fix`, `android-code-review`, `code-review-and-quality`, `android-test-review`, `android-code-quality-checks`
 - **Session & Knowledge**: `context-management`, `knowledge-capture`, `documentation-and-adrs`, `karpathy-guidelines`
 
