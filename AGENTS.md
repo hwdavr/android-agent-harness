@@ -18,10 +18,8 @@ Load context in layers; more is not better.
 | **L2 — Phase-triggered** | Per stage | The current stage's skill(s) plus `harness/templates/rule-applicability-template.md` for requirements/planning/review. Load `implementation-rules.md` only during Implementation. Load a conditional rule only if Required, excepted, or diff-triggered. Load `android-security.md` for `SEC` or a security/AI/WebView/network/manifest boundary; load `testing-practices.md` during test authoring/review, `testing-runtime-evidence.md` for UI/navigation/visual/platform/runtime claims, and `docs/product/design_system.md` for UI work. |
 | **L3 — On-demand** | When needed | `docs/knowledge/` docs, `sharedContracts/openapi.yaml`, and feature-specific evidence or rule detail newly triggered by the approved Rule Applicability matrix |
 
-Do not preload unrelated skills or conditional rules. Requirements, planning, and review use the
-trigger catalog and load only Required, excepted, or diff-triggered rules. For a complex slice, run
-`bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`
-after selection. Its output is disposable and must be regenerated when either source hash changes.
+Do not preload unrelated skills or conditional rules. Requirements, planning, and review use the trigger catalog and load only Required, excepted, or diff-triggered rules. For a complex slice, run
+`bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` after selection. Its output is disposable and must be regenerated when either source hash changes.
 ---
 ## Harness Structure
 | Folder | Purpose |
@@ -55,6 +53,8 @@ after selection. Its output is disposable and must be regenerated when either so
 | New feature or simple enhancement | `.agents/workflows/feature-delivery.md` |
 | Any user-visible UI implementation or update, including a single component or state | `.agents/workflows/create-ui-and-verify.md` |
 | Independent code review before merge | `.agents/workflows/feature-review.md` |
+| UI-only mobile exploration | `.agents/skills/dogfood/SKILL.md` |
+| APK QA with scenario reports or network capture/mocks | `.agents/skills/exploratory-qa/SKILL.md` (reuses `dogfood`) |
 
 ### Project-Based Development (Complex Features)
 
@@ -71,7 +71,7 @@ Key skills under `.agents/skills/`:
 - **Planning & Requirements**: `spec-driven-development`, `feature-specification`, `slice-planning`, `implementation-plan`
 - **UX & Design**: `ux-design`
 - **Implementation**: `android-implementation`, `android-ui-layer`, `api-contract-update`
-- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`
+- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`, `dogfood`, `exploratory-qa`
 - **Review & Quality**: `code-quality-fix`, `android-code-review`, `code-review-and-quality`, `android-test-review`, `android-code-quality-checks`
 - **Session & Knowledge**: `context-management`, `knowledge-capture`, `documentation-and-adrs`, `karpathy-guidelines`
 

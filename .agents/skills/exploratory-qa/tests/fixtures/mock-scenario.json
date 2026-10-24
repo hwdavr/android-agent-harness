@@ -1,0 +1,7 @@
+{
+  "scenario_id": "proxy-helper-smoke",
+  "apiMocks": [{
+    "id": "service-error", "host": "qa.example.test", "method": "GET", "path": "/items",
+    "status": 503, "response": {"error": "synthetic_unavailable"}, "delay_ms": 50
+  }]
+}

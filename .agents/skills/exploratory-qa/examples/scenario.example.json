@@ -1,0 +1,99 @@
+{
+  "scenario_id": "sticker-picker-keyboard-workflow-preview",
+  "feature": "Sticker picker keyboard visibility and restoration",
+  "platforms": [
+    "android"
+  ],
+  "app_id": "com.example.funphotoeditor",
+  "environment": "authorized-debug-device",
+  "generation": {
+    "status": "draft-from-workflow",
+    "runtime_verified": false,
+    "scope": "Example selected from the Sticker keyboard v24 workflow; not an automatic selection of whichever UI_contract.md happens to exist.",
+    "sources": [
+      {
+        "path": "docs/current/UI_contract.md",
+        "sha256": "20d5b14c3b0863fb5be73e882494c4fe109d4fb393965ca1f82edaa4dff6cf41"
+      },
+      {
+        "path": "docs/current/spec_v24.md",
+        "sha256": "a3e5889d81fa28f8f8e3bf5d65c98eb227c9bc74cce17e4d338ab8f3cc0825ae"
+      },
+      {
+        "path": "app/src/androidTest/java/com/example/funphotoeditor/ui/editor/StickerSearchKeyboardInsetInstrumentedTest.kt",
+        "sha256": "1378f19c3b1cb1d4a0e76b3de221b3d3769efcd369592929539c534a626fa901"
+      },
+      {
+        "path": "app/src/main/java/com/example/funphotoeditor/ui/editor/components/StickerPickerSheet.kt",
+        "sha256": "1c4a6b612ff5f8422f4760c107b737a3086a229733eb21c5b89468994b884a95"
+      }
+    ],
+    "expected_behavior_source": "docs/current/UI_contract.md#state-details and #verification-contract",
+    "code_role": "Candidate selectors, prerequisites and route hints only; code is not the correctness oracle."
+  },
+  "initial_state": "Home/Edit screen, with a disposable image available through the Android system picker.",
+  "preconditions": [
+    "Select the device according to project rules and record installed build and OS.",
+    "Use a real Android keyboard for this IME scenario; confirm the agent-device open options rather than accepting a headless test IME.",
+    "Enter the editor by the real Home -> media picker -> system photo import path.",
+    "Verify runtime selectors in fresh agent-device snapshots; Compose testTags are hints until externally visible."
+  ],
+  "max_steps": 25,
+  "states": [
+    {
+      "id": "sticker-picker-keyboard-closed-v24",
+      "plan_stage": "UI-01",
+      "entry_action": "Open Sticker mode and leave search unfocused.",
+      "check_id": "picker_closed_controls_reachable",
+      "expected": "Search, emoji groups, category tabs and result grid are reachable above the navigation inset.",
+      "source": "docs/current/UI_contract.md#ui-01--sticker-picker-with-keyboard-closed"
+    },
+    {
+      "id": "sticker-picker-keyboard-open-v24",
+      "plan_stage": "UI-02",
+      "entry_action": "Tap the real Sticker search input and wait for the Android keyboard to settle.",
+      "check_id": "picker_open_controls_above_keyboard",
+      "expected": "The picker and its first result remain above the real keyboard; search and category controls remain usable.",
+      "source": "docs/current/UI_contract.md#ui-02--sticker-picker-with-keyboard-open"
+    },
+    {
+      "id": "sticker-picker-keyboard-dismissed",
+      "reuses_state": "sticker-picker-keyboard-closed-v24",
+      "entry_action": "Dismiss the real keyboard.",
+      "check_id": "picker_restores_after_keyboard_dismissal",
+      "expected": "The panel returns to its normal bottom placement.",
+      "source": "docs/current/UI_contract.md#verification-contract"
+    }
+  ],
+  "code_discovery_notes": [
+    {
+      "selector_hint": "sticker_search_input",
+      "source": "app/src/main/java/com/example/funphotoeditor/ui/editor/components/StickerPickerSheet.kt",
+      "runtime_confirmed": false
+    },
+    {
+      "source": "app/src/androidTest/java/com/example/funphotoeditor/ui/editor/StickerSearchKeyboardInsetInstrumentedTest.kt",
+      "limitation": "The existing test injects a cached image through onImageImported; that fixture callback is not a device action and must not be copied into dogfood steps."
+    }
+  ],
+  "expectations": {
+    "ui_checks": [
+      "picker_closed_controls_reachable",
+      "picker_open_controls_above_keyboard",
+      "picker_restores_after_keyboard_dismissal"
+    ],
+    "no_unexpected_crash": true,
+    "requests": []
+  },
+  "evidence_limits": [
+    "This draft has no runtime observations and is not a passing result.",
+    "Exploratory screenshots supplement the existing instrumented and Roborazzi acceptance evidence.",
+    "No network request expectation is inferred from UI states or source code."
+  ],
+  "target": {
+    "package": "com.example.funphotoeditor",
+    "apk_sha256": null,
+    "version": null,
+    "device": null
+  }
+}
