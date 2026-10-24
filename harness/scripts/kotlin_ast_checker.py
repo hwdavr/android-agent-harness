@@ -1880,11 +1880,33 @@ def run_journey(args: argparse.Namespace) -> int:
     )
 
     activity_rule_calls = [call for call in calls if call.name == "createAndroidComposeRule"]
-    has_declared_activity_entry = bool(activity_rule_calls) and any(
+    has_method_activity_entry = bool(activity_rule_calls) and any(
         token.text == args.production_entry
         for token in body_tokens
         if token.is_identifier
     )
+    owner_class = target.parent_class
+    class_activity_rule_properties = [
+        prop
+        for prop in test_ast.properties
+        if prop.enclosing_class is owner_class
+        and prop.enclosing_function is None
+        and prop.initializer_start is not None
+        and prop.initializer_end is not None
+        and any(
+            token.text == "createAndroidComposeRule"
+            for token in test_ast.tokens[prop.initializer_start : prop.initializer_end]
+        )
+    ]
+    has_class_activity_entry = any(
+        any(
+            token.text == args.production_entry
+            for token in test_ast.tokens[prop.initializer_start : prop.initializer_end]
+            if token.is_identifier
+        )
+        for prop in class_activity_rule_properties
+    )
+    has_declared_activity_entry = has_method_activity_entry or has_class_activity_entry
     if not has_production_graph and not has_declared_activity_entry:
         add_contract_violation("journey test must render a production graph through setContent", target.name_index)
 
@@ -1902,7 +1924,7 @@ def run_journey(args: argparse.Namespace) -> int:
     if not action_calls:
         add_contract_violation("journey test must perform a real UI gesture", target.name_index)
 
-    return_names = {"navigateUp", "onBackPressed", "popBackStack", "pressBack"}
+    return_names = {"navigateUp", "onBackPressed", "performGlobalAction", "popBackStack", "pressBack"}
     boundary_index: Optional[int] = None
     if action_calls:
         explicit_returns = [

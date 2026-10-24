@@ -65,6 +65,36 @@ bash "$VALIDATOR" \
 printf '%s\n' \
   'package example' \
   '' \
+  'import androidx.compose.ui.test.assertIsDisplayed' \
+  'import androidx.compose.ui.test.junit4.createAndroidComposeRule' \
+  'import androidx.compose.ui.test.onNodeWithTag' \
+  'import androidx.compose.ui.test.performClick' \
+  'import android.accessibilityservice.AccessibilityService' \
+  'import androidx.test.platform.app.InstrumentationRegistry' \
+  'import org.junit.Rule' \
+  'import org.junit.Test' \
+  '' \
+  'class ProductionActivityRuleJourneyTest {' \
+  '    @get:Rule val composeRule = createAndroidComposeRule<MainActivity>()' \
+  '' \
+  '    @Test' \
+  '    fun pickerCancellationKeepsPlacementVisible() {' \
+  '        composeRule.onNodeWithTag("replace_background").performClick()' \
+  '        InstrumentationRegistry.getInstrumentation().uiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)' \
+  '        composeRule.onNodeWithTag("placement_controls").assertIsDisplayed()' \
+  '    }' \
+  '}' \
+  > "$fixture_root/app/src/androidTest/java/example/ProductionActivityRuleJourneyTest.kt"
+
+bash "$VALIDATOR" \
+  --project-root "$fixture_root" \
+  --test-file "$fixture_root/app/src/androidTest/java/example/ProductionActivityRuleJourneyTest.kt" \
+  --test-method pickerCancellationKeepsPlacementVisible \
+  --production-entry MainActivity
+
+printf '%s\n' \
+  'package example' \
+  '' \
   'import org.junit.Test' \
   '' \
   'class MisleadingEditorTest {' \
@@ -89,7 +119,18 @@ expect_failure "must render a production graph through setContent" \
 mkdir -p "$fixture_root/docs/current"
 printf '%s\n' '# Summary' > "$fixture_root/docs/current/summary_v1.md"
 printf '%s\n' \
+  '# Specification' \
+  '' \
+  '## Rule Applicability' \
+  '' \
+  '| Rule ID | Rule document | Decision | Evidence |' \
+  '|---|---|---|---|' \
+  '| NAV | navigation-rules.md | Required | production journey |' \
+  > "$fixture_root/docs/current/spec_v1.md"
+printf '%s\n' \
   '# Test Plan' \
+  '' \
+  'Canonical decisions: [`spec_v1.md#rule-applicability`](spec_v1.md#rule-applicability).' \
   '' \
   '## Rule Applicability Test Reconciliation' \
   '' \
