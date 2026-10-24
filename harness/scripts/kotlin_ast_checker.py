@@ -1179,7 +1179,20 @@ def run_compose(args: argparse.Namespace) -> int:
 
     def check_interactive_tags() -> None:
         for source_file in files:
-            interactive_calls = [call for call in source_file.calls if compose_is_interactive(call)]
+            composable_functions = [
+                function
+                for function in source_file.functions
+                if "Composable" in function.annotations
+            ]
+            interactive_calls = [
+                call
+                for call in source_file.calls
+                if compose_is_interactive(call)
+                and any(
+                    function.body_start <= call.open_index <= function.body_end
+                    for function in composable_functions
+                )
+            ]
             if interactive_calls and not any(call.name == "testTag" for call in source_file.calls):
                 result.add(
                     source_file,

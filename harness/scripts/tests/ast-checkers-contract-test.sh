@@ -142,6 +142,20 @@ KOTLIN
 expect_failure "interactive Composables but no Modifier.testTag" \
   bash "$COMPOSE_CHECKER" --all "$fixture_root/actual-compose/com/example/notesapp"
 
+catalog_source="$fixture_root/non-composable-catalog/com/example/notesapp/domain"
+mkdir -p "$catalog_source"
+cat > "$catalog_source/AnalyticsActionCatalog.kt" <<'KOTLIN'
+package com.example.notesapp.domain
+
+enum class AnalyticsElementType(val value: String) {
+    Button("button"),
+}
+
+data class AnalyticsAction(val elementType: AnalyticsElementType)
+KOTLIN
+expect_pass "domain button type names are not interactive Compose elements" \
+  bash "$COMPOSE_CHECKER" --all "$fixture_root/non-composable-catalog/com/example/notesapp"
+
 actual_localization="$fixture_root/actual-localization/com/example/notesapp/ui"
 mkdir -p "$actual_localization"
 cat > "$actual_localization/Bad.kt" <<'KOTLIN'

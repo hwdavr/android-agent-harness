@@ -50,6 +50,7 @@ expect_failure() {
 # Setup dummy project fixture
 mkdir -p "$FIXTURE_ROOT/docs/product"
 mkdir -p "$FIXTURE_ROOT/app/src/androidTest/java/com/example/test"
+mkdir -p "$FIXTURE_ROOT/app/src/test/java/com/example/test"
 mkdir -p "$FIXTURE_ROOT/app/src/main/java/com/example/notesapp/navigation"
 
 cat << 'EOF' > "$FIXTURE_ROOT/app/src/androidTest/java/com/example/test/DummyJourneyTest.kt"
@@ -60,6 +61,15 @@ import org.junit.Test
 class DummyJourneyTest {
     @Test
     fun validJourneyMethod() {
+    }
+}
+EOF
+
+cat << 'EOF' > "$FIXTURE_ROOT/app/src/test/java/com/example/test/DummyRoborazziJourneyTest.kt"
+package com.example.test
+
+class DummyRoborazziJourneyTest {
+    fun robolectricJourneyMethod() {
     }
 }
 EOF
@@ -274,18 +284,34 @@ expect_failure 2 "Journey ID 'J-UNKNOWN' not found in registry" bash "$VALIDATOR
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-UNKNOWN
 
-# Case 10: --run-one and --run-all with --dry-run succeed with code 0
-expect_success bash "$VALIDATOR" \
+# Case 10: --run-one and --run-all with --dry-run select each test's source-set runner.
+one_output=$(bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-DUMMY-JOURNEY \
-  --dry-run
+  --dry-run)
+printf '%s\n' "$one_output" | grep -Fq 'connectedDebugAndroidTest' || fail_test "Android journey did not select the instrumented runner"
 
-expect_success bash "$VALIDATOR" \
+cat << 'EOF' >> "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
+  - id: J-DUMMY-ROBORAZZI
+    description: "Home route updates through a Robolectric Compose journey"
+    introduced_by: test-feature/US-2
+    destinations:
+      - Home
+    test_file: app/src/test/java/com/example/test/DummyRoborazziJourneyTest.kt
+    test_method: robolectricJourneyMethod
+    gradle_selector: "com.example.test.DummyRoborazziJourneyTest#robolectricJourneyMethod"
+    boundary: "Home navigation state changes"
+    post_return_assertion: "The destination is visible"
+EOF
+
+all_dry_run_output=$(bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-all \
-  --dry-run
+  --dry-run)
+printf '%s\n' "$all_dry_run_output" | grep -Fq 'connectedDebugAndroidTest' || fail_test "Mixed run-all omitted the instrumented runner"
+printf '%s\n' "$all_dry_run_output" | grep -Fq 'roborazziJourneyTest -ProborazziJourneyFilter=com.example.test.DummyRoborazziJourneyTest.robolectricJourneyMethod' || fail_test "Mixed run-all omitted the Roborazzi runner and filter"
 
 # Case 11: A Gradle runner that exits 0 without executing the selected test is rejected.
 cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
@@ -325,4 +351,31 @@ expect_failure 1 "did not execute registered journey method(s)" bash "$VALIDATOR
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-DUMMY-JOURNEY
 
-echo "PASS: All 12 journey-registry contract test cases passed."
+# Case 12: A Roborazzi journey uses the JVM runner and must fail if no method ran.
+cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
+journeys:
+  - id: J-DUMMY-ROBORAZZI
+    description: "Home route updates through a Robolectric Compose journey"
+    introduced_by: test-feature/US-2
+    destinations:
+      - Home
+    test_file: app/src/test/java/com/example/test/DummyRoborazziJourneyTest.kt
+    test_method: robolectricJourneyMethod
+    gradle_selector: "com.example.test.DummyRoborazziJourneyTest#robolectricJourneyMethod"
+    boundary: "Home navigation state changes"
+    post_return_assertion: "The destination is visible"
+EOF
+
+cat << 'EOF' > "$FIXTURE_ROOT/gradlew"
+#!/usr/bin/env bash
+printf '%s\n' "$@"
+EOF
+chmod +x "$FIXTURE_ROOT/gradlew"
+
+robo_output=$(bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
+  --run-one J-DUMMY-ROBORAZZI)
+printf '%s\n' "$robo_output" | grep -Fq 'roborazziJourneyTest -ProborazziJourneyFilter=com.example.test.DummyRoborazziJourneyTest.robolectricJourneyMethod' || fail_test "Roborazzi journey did not select the JVM runner"
+
+echo "PASS: All 13 journey-registry contract test cases passed."

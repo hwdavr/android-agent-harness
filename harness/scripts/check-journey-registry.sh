@@ -27,7 +27,7 @@ Options:
 Modes (must specify exactly one):
   --validate                  Validate registry schema, file paths, methods, and selectors
   --check-coverage            Report destination coverage against Destinations.kt
-  --run-all                   Run all registered journey tests via connectedDebugAndroidTest
+  --run-all                   Run registered journeys using each test file's source-set runner
   --run-one <journey-id>      Run a specific journey test by ID
 
 Exit codes:
@@ -321,24 +321,63 @@ def check_coverage(journeys):
     print("======================================================")
 
 def _fresh_result_methods(start_ns):
-    result_root = project_root / "app" / "build" / "outputs" / "androidTest-results" / "connected"
-    if not result_root.is_dir():
-        return set()
-
+    result_roots = [
+        project_root / "app" / "build" / "outputs" / "androidTest-results" / "connected",
+        project_root / "app" / "build" / "test-results" / "testDebugUnitTest",
+    ]
     methods = set()
-    for result_file in result_root.rglob("TEST-*.xml"):
-        try:
-            if result_file.stat().st_mtime_ns < start_ns:
-                continue
-            import xml.etree.ElementTree as ElementTree
-            root = ElementTree.parse(result_file).getroot()
-        except (OSError, ElementTree.ParseError):
+    for result_root in result_roots:
+        if not result_root.is_dir():
             continue
-        for testcase in root.iter("testcase"):
-            method = testcase.attrib.get("name")
-            if method:
-                methods.add(method)
+        for result_file in result_root.rglob("TEST-*.xml"):
+            try:
+                if result_file.stat().st_mtime_ns < start_ns:
+                    continue
+                import xml.etree.ElementTree as ElementTree
+                root = ElementTree.parse(result_file).getroot()
+            except (OSError, ElementTree.ParseError):
+                continue
+            for testcase in root.iter("testcase"):
+                method = testcase.attrib.get("name")
+                if method:
+                    methods.add(method)
     return methods
+
+def _runner_for_entry(entry):
+    test_file = entry["test_file"]
+    selector = entry["gradle_selector"]
+    if test_file.startswith("app/src/androidTest/"):
+        return "connectedDebugAndroidTest", "instrumented", selector
+    if test_file.startswith("app/src/test/"):
+        class_method = selector.replace("#", ".", 1)
+        if "RoborazziJourneyTest.kt" in Path(test_file).name:
+            return "roborazziJourneyTest", "roborazzi", class_method
+        return "testDebugUnitTest", "jvm", class_method
+    raise ValueError(
+        f"Unsupported journey test source set for '{entry.get('id')}': {test_file}"
+    )
+
+def _commands_for_entries(entries):
+    grouped = {}
+    for entry in entries:
+        task, runner_kind, selector = _runner_for_entry(entry)
+        grouped.setdefault((task, runner_kind), []).append((entry, selector))
+
+    commands = []
+    for (task, runner_kind), group in grouped.items():
+        cmd = ["./gradlew", task]
+        selectors = [selector for _, selector in group]
+        if runner_kind == "instrumented":
+            cmd.append(
+                f"-Pandroid.testInstrumentationRunnerArguments.class={','.join(selectors)}"
+            )
+        elif runner_kind == "roborazzi":
+            cmd.append(f"-ProborazziJourneyFilter={','.join(selectors)}")
+        else:
+            for selector in selectors:
+                cmd.extend(["--tests", selector])
+        commands.append((cmd, [entry["test_method"] for entry, _ in group]))
+    return commands
 
 def run_journey_command(cmd, expected_methods):
     import time
@@ -365,7 +404,7 @@ def run_journey_command(cmd, expected_methods):
         ]
     if missing_methods:
         print(
-            "FAIL: connectedDebugAndroidTest exited 0 but did not execute registered journey "
+            f"FAIL: {cmd[1]} exited 0 but did not execute registered journey "
             f"method(s): {', '.join(missing_methods)}",
             file=sys.stderr,
         )
@@ -393,19 +432,18 @@ elif mode == "run-one":
         print(f"FAIL: Journey ID '{target_id}' not found in registry.", file=sys.stderr)
         sys.exit(2)
 
-    selector = entry["gradle_selector"]
-    cmd = [
-        "./gradlew",
-        "connectedDebugAndroidTest",
-        f"-Pandroid.testInstrumentationRunnerArguments.class={selector}",
-    ]
+    commands = _commands_for_entries([entry])
+    if len(commands) != 1:
+        print(f"FAIL: Journey '{target_id}' maps to an ambiguous Gradle runner.", file=sys.stderr)
+        sys.exit(2)
+    cmd, expected_methods = commands[0]
 
     print("======================================================")
     print(f"  Executing Critical Journey: {target_id}")
     print("======================================================")
     print(f"  Description: {entry.get('description')}")
     print(f"  Boundary:    {entry.get('boundary')}")
-    print(f"  Selector:    {selector}")
+    print(f"  Selector:    {entry['gradle_selector']}")
     print(f"  Command:     {' '.join(cmd)}")
     print("======================================================")
 
@@ -413,35 +451,33 @@ elif mode == "run-one":
         print("[DRY-RUN] Command would be executed successfully.")
         sys.exit(0)
 
-    sys.exit(0 if run_journey_command(cmd, [entry["test_method"]]) == 0 else 1)
+    sys.exit(0 if run_journey_command(cmd, expected_methods) == 0 else 1)
 
 elif mode == "run-all":
     valid, journeys = validate_registry()
     if not valid:
         sys.exit(2)
 
-    selectors = [j["gradle_selector"] for j in journeys]
-    joined_selectors = ",".join(selectors)
-
-    cmd = [
-        "./gradlew",
-        "connectedDebugAndroidTest",
-        f"-Pandroid.testInstrumentationRunnerArguments.class={joined_selectors}",
-    ]
+    commands = _commands_for_entries(journeys)
 
     print("======================================================")
     print(f"  Executing ALL Critical Journeys ({len(journeys)} registered)")
     print("======================================================")
     for j in journeys:
         print(f"    - {j['id']}: {j['gradle_selector']}")
-    print(f"  Command: {' '.join(cmd)}")
+    for cmd, _ in commands:
+        print(f"  Command: {' '.join(cmd)}")
     print("======================================================")
 
     if dry_run:
         print("[DRY-RUN] Command would be executed successfully.")
         sys.exit(0)
 
-    sys.exit(0 if run_journey_command(cmd, [j["test_method"] for j in journeys]) == 0 else 1)
+    for cmd, expected_methods in commands:
+        result = run_journey_command(cmd, expected_methods)
+        if result != 0:
+            sys.exit(1)
+    sys.exit(0)
 
 else:
     print(f"FAIL: Unknown mode '{mode}'", file=sys.stderr)
