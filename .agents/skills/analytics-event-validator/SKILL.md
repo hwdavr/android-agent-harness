@@ -19,7 +19,7 @@ Create a fresh `.qa-artifacts/<run-id>/scenario.json` with the contract's `scena
 {"scenario_id":"<contract-scenario-id>","app_id":"com.example.funphotoeditor"}
 ```
 
-FunPhotoEditor currently has no discovered analytics tracker/provider or approved tracking spec. Firebase App Distribution is unrelated. No recorder was found in the installed API 33 debug app during adaptation. Recheck the selected build; adding instrumentation or rebuilding an APK requires a separate implementation scope.
+At the original FunPhotoEditor adaptation, no analytics tracker/provider or approved tracking spec had been discovered. The app now has a `FirebaseAnalyticsTracker`, a source event catalog, and living requirements in `docs/product/requirements/analytics-tracking.md`; the planned click-tracking scope there is not implementation authorization. Firebase App Distribution is unrelated. A compatible recorder was not found in the installed API 33 debug app during that adaptation. Recheck the selected build; adding instrumentation or rebuilding an APK requires a separate implementation scope.
 
 ## Capture and validate
 
