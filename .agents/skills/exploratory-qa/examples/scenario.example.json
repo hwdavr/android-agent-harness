@@ -65,6 +65,21 @@
       "source": "docs/current/UI_contract.md#verification-contract"
     }
   ],
+  "entry_points": [
+    {
+      "id": "editor-sticker-tool",
+      "surface": "Photo editor tool rail",
+      "action": "Tap Sticker from the editor tool rail",
+      "expected": "The sticker picker opens with the canvas visible",
+      "check_id": "picker_closed_controls_reachable"
+    }
+  ],
+  "excluded_entry_points": [
+    {
+      "id": "home-stickers-shortcut",
+      "reason": "This scenario begins in the editor and is limited to keyboard visibility; cover the Home shortcut in a separate route scenario."
+    }
+  ],
   "code_discovery_notes": [
     {
       "selector_hint": "sticker_search_input",

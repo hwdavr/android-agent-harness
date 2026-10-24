@@ -22,6 +22,6 @@ Read current CLI guidance:
 agent-device help dogfood
 ```
 
-Loop: open app -> snapshot -i + screenshot -> explore flows -> capture evidence per issue -> close.
+Loop: open app -> snapshot -i + screenshot -> inventory relevant feature entry points (including Home shortcuts/cards and in-context tools) -> exercise every in-scope route -> capture evidence per issue -> close. Record out-of-scope routes with reasons in the scenario; do not let an untested route disappear from coverage.
 
 Target app is required; infer platform or ask. Findings must come from runtime behavior, not source reads. Let `help dogfood` provide exact report shape, evidence commands, and current workflow guidance.

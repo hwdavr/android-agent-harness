@@ -13,6 +13,8 @@ Accept a prebuilt APK or installed package; source code is optional. Record pack
 
 Generate `.qa-artifacts/<run-id>/scenario.json` for the selected feature. Read [scenario sources](references/scenario-sources.md) to derive checks from the matching workflow, discover code-only targets, and retain source hashes. The example illustrates the format, not the default journey for every run. Keep observations unset until runtime exploration.
 
+Before choosing a journey, inventory the feature's relevant entry points, including Home shortcuts/cards and in-context tool entries. Map each in-scope route to an `expectations.ui_checks` ID in `entry_points`; list future or otherwise out-of-scope routes in `excluded_entry_points` with a reason. The report validator returns `INCONCLUSIVE` when the inventory is absent, a route is unmapped, or route evidence is missing.
+
 ## Analytics checks
 
 When analytics checks are requested or declared in the selected tracking requirements, invoke the standalone [analytics-event-validator](../analytics-event-validator/SKILL.md). Share this run's scenario ID, selected APK/device and existing UI actions; coordinate analytics reset before those actions and flush/collect afterward. Keep analytics evidence in `analytics/`; no additional logs or video are required by the validator. This exploratory-QA workflow owns shared sessions and cleanup. Include the analytics verdict and report link in the overall QA writeup alongside UI/network results. Required analytics failures or inconclusive results prevent claiming overall QA completion.

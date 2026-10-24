@@ -49,6 +49,66 @@ def evaluate(scenario, observations, requests, scenario_hash=None, fixture_hashe
     def add(cid, result, detail, kind='app', evidence=None):
         checks.append({'id': cid, 'result': result, 'kind': kind, 'detail': detail, 'evidence': evidence or []})
 
+    entry_points = scenario.get('entry_points')
+    excluded_entry_points = scenario.get('excluded_entry_points', [])
+    if entry_points is not None and not isinstance(entry_points, list):
+        raise ValueError('entry_points must be a list')
+    if not isinstance(excluded_entry_points, list):
+        raise ValueError('excluded_entry_points must be a list')
+    if entry_points is None:
+        add('entry-point-inventory', 'INCONCLUSIVE',
+            'Scenario has no entry_points inventory; identify and cover each relevant user-visible route',
+            'evidence', ['scenario.json'])
+        entry_points = []
+    elif not isinstance(entry_points, list) or not entry_points:
+        add('entry-point-inventory', 'INCONCLUSIVE',
+            'Scenario entry_points must list at least one in-scope user-visible route',
+            'evidence', ['scenario.json'])
+        entry_points = []
+    else:
+        add('entry-point-inventory', 'PASS',
+            'Scenario lists %s in-scope entry point(s)' % len(entry_points),
+            'evidence', ['scenario.json'])
+
+    entry_point_ids = set()
+    entry_point_check_ids = set()
+    for item in entry_points:
+        if not isinstance(item, dict):
+            raise ValueError('Each entry_point must be an object')
+        required_fields = ('id', 'surface', 'action', 'expected', 'check_id')
+        if any(not isinstance(item.get(field), str) or not item[field].strip() for field in required_fields):
+            raise ValueError('Each entry_point requires non-empty id, surface, action, expected and check_id')
+        entry_id = item['id']
+        if entry_id in entry_point_ids:
+            raise ValueError('Entry-point IDs must be unique')
+        entry_point_ids.add(entry_id)
+        check_id = item['check_id']
+        if check_id in entry_point_check_ids:
+            raise ValueError('Each entry_point must have a route-specific check_id')
+        entry_point_check_ids.add(check_id)
+        if check_id not in ui_checks:
+            add('entry-point:' + entry_id, 'INCONCLUSIVE',
+                'Entry point is not linked to expectations.ui_checks', 'evidence', ['scenario.json'])
+            continue
+        value = observed.get('ui_checks', {}).get(check_id)
+        if value is True or value is False:
+            add('entry-point:' + entry_id, 'PASS' if value else 'FAIL',
+                'Observed entry-point outcome for ' + check_id,
+                evidence=['observations.json'])
+        else:
+            add('entry-point:' + entry_id, 'INCONCLUSIVE',
+                'No true/false runtime observation for ' + check_id,
+                'evidence', ['observations.json'])
+
+    for item in excluded_entry_points:
+        if not isinstance(item, dict) or any(
+                not isinstance(item.get(field), str) or not item[field].strip()
+                for field in ('id', 'reason')):
+            raise ValueError('Each excluded_entry_point requires non-empty id and reason')
+        if item['id'] in entry_point_ids:
+            raise ValueError('An entry point cannot be both in scope and excluded')
+        entry_point_ids.add(item['id'])
+
     sid = scenario.get('scenario_id')
     scoped = [r for r in requests if sid and r.get('scenario_id') == sid]
     if len(scoped) != len(requests):
@@ -135,6 +195,15 @@ def render_markdown(report):
     for check in report['checks']:
         cells = [str(check[key]).replace('|', '\\|').replace('\n', ' ') for key in ('id', 'result', 'kind', 'detail')]
         lines.append('| ' + ' | '.join(cells) + ' |')
+    lines += ['', '## Entry-point coverage', '']
+    route_results = {check['id']: check['result'] for check in report['checks']}
+    for route in report.get('entry_points', []):
+        lines.append('- **%s — %s** (%s): %s; expected: %s; check: `%s`' % (
+            route.get('id', '?'), route_results.get('entry-point:' + str(route.get('id')), 'INCONCLUSIVE'),
+            route.get('surface', 'unknown surface'), route.get('action', 'action not recorded'),
+            route.get('expected', 'expected outcome not recorded'), route.get('check_id', 'unmapped')))
+    for route in report.get('excluded_entry_points', []):
+        lines.append('- **%s — EXCLUDED**: %s' % (route.get('id', '?'), route.get('reason', 'reason not recorded')))
     lines += ['', '## Target and provenance', '', 'See `report.json` and the retained run `scenario.json` for binary/source/fixture hashes.',
               '', '## Exploration notes', '', 'Visited states: ' + ', '.join(map(str, report['states_visited']))]
     for finding in report['findings']:
@@ -168,6 +237,8 @@ def main(argv=None):
             'scenario': scenario.get('scenario_id', 'unspecified'), 'scenario_sha256': digest,
             'status': status, 'proxy_verified': observations.get('proxy_verified') is True,
             'target': scenario.get('target', {}), 'generation': scenario.get('generation', {}),
+            'entry_points': scenario.get('entry_points', []),
+            'excluded_entry_points': scenario.get('excluded_entry_points', []),
             'network_request_count': len(requests), 'mocked_request_count': sum(r.get('mocked') is True for r in requests),
             'network_summary': dict(Counter('%s %s%s -> %s' % (r.get('method'), r.get('host'), r.get('path'), r.get('status')) for r in requests)),
             'fixture_receipts': [{k: r[k] for k in ('mock_rule_id', 'fixture_sha256', 'mock_scenario_sha256') if k in r}

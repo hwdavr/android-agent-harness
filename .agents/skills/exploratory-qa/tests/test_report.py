@@ -12,6 +12,9 @@ import report
 
 SCENARIO = {
     'scenario_id': 'report-test',
+    'entry_points': [{'id': 'editor-sticker', 'surface': 'Photo editor tool rail',
+                      'action': 'Tap Sticker', 'expected': 'Sticker picker opens',
+                      'check_id': 'success_screen'}],
     'expectations': {'ui_checks': ['success_screen'], 'no_unexpected_crash': True,
                      'requests': [{'method': 'POST', 'host': 'qa.example.test', 'path_glob': '/pay',
                                    'min_count': 1, 'max_count': 1, 'allowed_statuses': [200]}]},
@@ -38,6 +41,32 @@ class ReportTest(unittest.TestCase):
     def test_ui_failure_is_failure(self):
         self.assertEqual(report.evaluate(SCENARIO, {**OK, 'ui_checks': {'success_screen': False}}, NETWORK)[0], 'FAIL')
 
+    def test_missing_entry_point_inventory_cannot_pass(self):
+        scenario = copy.deepcopy(SCENARIO)
+        scenario.pop('entry_points')
+        result, checks = report.evaluate(scenario, OK, NETWORK)
+        self.assertEqual(result, 'INCONCLUSIVE')
+        self.assertTrue(any(c['id'] == 'entry-point-inventory' and c['result'] == 'INCONCLUSIVE' for c in checks))
+
+    def test_false_entry_point_observation_fails(self):
+        result, checks = report.evaluate(SCENARIO, {**OK, 'ui_checks': {'success_screen': False}}, NETWORK)
+        self.assertEqual(result, 'FAIL')
+        self.assertTrue(any(c['id'] == 'entry-point:editor-sticker' and c['result'] == 'FAIL' for c in checks))
+
+    def test_unmapped_entry_point_is_inconclusive(self):
+        scenario = copy.deepcopy(SCENARIO)
+        scenario['entry_points'][0]['check_id'] = 'missing_check'
+        result, checks = report.evaluate(scenario, OK, NETWORK)
+        self.assertEqual(result, 'INCONCLUSIVE')
+        self.assertTrue(any(c['id'] == 'entry-point:editor-sticker' and c['result'] == 'INCONCLUSIVE' for c in checks))
+
+    def test_entry_points_cannot_share_a_check_id(self):
+        scenario = copy.deepcopy(SCENARIO)
+        scenario['entry_points'].append({'id': 'home-sticker', 'surface': 'Home', 'action': 'Tap Stickers',
+                                         'expected': 'Sticker mode opens', 'check_id': 'success_screen'})
+        with self.assertRaisesRegex(ValueError, 'route-specific check_id'):
+            report.evaluate(scenario, OK, NETWORK)
+
     def test_no_checks_is_inconclusive(self):
         self.assertEqual(report.evaluate({}, {}, [])[0], 'INCONCLUSIVE')
 
@@ -52,7 +81,9 @@ class ReportTest(unittest.TestCase):
             code = report.main(['--run-dir', directory, '--scenario', str(ROOT / 'examples/scenario.example.json')])
             result = json.loads((Path(directory) / 'report.json').read_text())
             self.assertEqual((code, result['status']), (2, 'INCONCLUSIVE'))
-            self.assertTrue(all(c['result'] == 'INCONCLUSIVE' for c in result['checks']))
+            self.assertEqual(next(c['result'] for c in result['checks'] if c['id'] == 'entry-point-inventory'), 'PASS')
+            self.assertEqual(next(c['result'] for c in result['checks'] if c['id'] == 'entry-point:editor-sticker-tool'), 'INCONCLUSIVE')
+            self.assertTrue(all(c['result'] == 'INCONCLUSIVE' for c in result['checks'] if c['id'] != 'entry-point-inventory'))
             self.assertTrue(result['generation']['sources'])
 
     def test_different_run_receipt_cannot_pass(self):
