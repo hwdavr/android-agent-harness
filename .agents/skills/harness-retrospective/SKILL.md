@@ -133,6 +133,8 @@ Create `docs/changes/harness-retro-<YYYY-MM-DD>-<short-slug>/retrospective.md` w
 - Routed items that are intentionally outside harness scope.
 - Remaining risk.
 
+Resolve this path from the consuming application's project root. If the harness is a nested shared submodule, the consumer's project-specific retrospective belongs in the consumer's `docs/changes/`; do not create or edit it under the submodule's `docs/`.
+
 Quote exact artifact paths and one-line excerpts so a reviewer can verify the change. If the incident is a model-capability, platform-capability, or application defect, route it clearly and leave the harness unchanged except for an independently justified fail-loud diagnostic or handoff improvement.
 
 ## Completion Criteria

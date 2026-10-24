@@ -25,9 +25,31 @@ if [ -z "$WORKFLOW" ] || [ -z "$STAGE" ]; then
   exit 2
 fi
 
+if ! PROJECT_ROOT="$(cd "$PROJECT_ROOT" 2>/dev/null && pwd -P)"; then
+  echo "FAIL: project root does not exist: $PROJECT_ROOT" >&2
+  exit 2
+fi
+
+case "$DOCS_DIR" in
+  /*) ;;
+  *) DOCS_DIR="$PROJECT_ROOT/$DOCS_DIR" ;;
+esac
+
 if [ ! -d "$DOCS_DIR" ]; then
   echo "FAIL: $DOCS_DIR does not exist — run the stage's skill to produce artifacts first." >&2
   exit 1
+fi
+
+DOCS_DIR="$(cd "$DOCS_DIR" && pwd -P)"
+NESTED_HARNESS_DOCS="$PROJECT_ROOT/android-agent-harness/docs"
+if [ -d "$NESTED_HARNESS_DOCS" ]; then
+  NESTED_HARNESS_DOCS="$(cd "$NESTED_HARNESS_DOCS" && pwd -P)"
+  case "$DOCS_DIR" in
+    "$NESTED_HARNESS_DOCS"|"$NESTED_HARNESS_DOCS"/*)
+      echo "FAIL: stage artifacts for the consuming project must be under its root-level docs/; $DOCS_DIR is owned by the shared android-agent-harness submodule." >&2
+      exit 1
+      ;;
+  esac
 fi
 
 if [ "$WORKFLOW" = "harness-planning" ]; then

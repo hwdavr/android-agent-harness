@@ -2,7 +2,7 @@
 
 set -e
 
-REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+REPO_ROOT="${HARNESS_PROJECT_ROOT:-$(git rev-parse --show-toplevel)}"
 VALIDATOR="$REPO_ROOT/harness/scripts/check-keyboard-mockup-contract.sh"
 STAGE_GATE="$REPO_ROOT/harness/scripts/check-stage-artifacts.sh"
 fixture_root=$(mktemp -d "${TMPDIR:-/tmp}/keyboard-mockup-test.XXXXXX")

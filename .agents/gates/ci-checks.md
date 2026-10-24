@@ -185,7 +185,15 @@ bash harness/scripts/tests/gate-failure-stop-contract-test.sh
 **Must pass.** Ensures generator and fix workflows stop immediately when a required gate
 fails or its prerequisite is unavailable.
 
-### 10c. Production Journey Contract
+### 10c. Project Documentation Root Contract
+```bash
+bash harness/scripts/tests/project-doc-location-contract-test.sh
+```
+**Must pass** when stage artifact location handling changes. Consumer project artifacts are
+accepted under the consumer repository's root `docs/` and rejected under the nested shared
+`android-agent-harness/docs/` tree.
+
+### 10d. Production Journey Contract
 ```bash
 bash harness/scripts/tests/journey-test-contract-test.sh
 ```
@@ -195,7 +203,7 @@ when they are declared as production journey evidence and verifies that the stag
 requires a named production-entry test, real UI gesture, return boundary, and visible
 post-return assertion.
 
-### 10d. Role-Profile Alignment Contract
+### 10e. Role-Profile Alignment Contract
 ```bash
 bash harness/scripts/tests/role-profile-contract-test.sh
 ```
