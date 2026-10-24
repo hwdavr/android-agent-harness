@@ -8,7 +8,7 @@ The example contract and two NDJSON fixtures are synthetic host-tool demonstrati
 
 See [contract.example.json](../examples/contract.example.json). Only the declared fields are accepted.
 
-- `schema_version`: integer 1; `scenario_id`: same ID as the parent QA scenario.
+- `schema_version`: integer 1; `scenario_id`: same ID as this run's scenario.json; a minimal standalone run or an existing exploratory-QA run both work.
 - `approval`: `status` is draft, example, or approved; `reference` records the actual human decision or synthetic purpose. Setting a string is not human approval.
 - `sources`: each has local `path`, SHA-256 `sha256`, and `section`. Approved contracts require at least one source. Live runs verify the files relative to `--source-root` (default project root); absolute supplied paths also work.
 - `expected_events`: a nonempty bounded list of unique event names, `count` and optional `params`.
@@ -23,7 +23,7 @@ Names use ASCII letters followed by letters/digits/underscores, up to 64 charact
 
 ## Offline demonstration
 
-Create a fresh ignored QA run with this minimal synthetic `scenario.json`:
+Create a fresh ignored standalone run with this minimal synthetic `scenario.json`:
 
 ```json
 {"scenario_id":"synthetic_editor_flow","app_id":"com.example.funphotoeditor"}

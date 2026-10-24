@@ -210,7 +210,7 @@ def context(run_dir):
     data = bounded(Path(run_dir) / "scenario.json", 256_000)
     scenario = decode(data)
     if not isinstance(scenario, dict):
-        raise ValueError("Invalid exploratory-QA scenario")
+        raise ValueError("Invalid analytics run scenario")
     sid, package = scenario.get("scenario_id"), scenario.get("app_id")
     if not isinstance(sid, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", sid):
         raise ValueError("Invalid QA scenario identity")
@@ -301,7 +301,7 @@ def evaluate(contract, checked, mode, issue=None):
               "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(), "checks": [],
               "event_count": 0, "timeline": [],
               "limitations": ["App-side calls do not prove provider ingestion.",
-                              "UI and network outcomes are in the separate exploratory-QA report."]}
+                              "Scope is app-side analytics contract validation."]}
     if mode == "offline":
         report["limitations"].append("Offline/synthetic validation is not a live app result.")
     if issue:

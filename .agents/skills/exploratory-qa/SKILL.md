@@ -15,7 +15,7 @@ Generate `.qa-artifacts/<run-id>/scenario.json` for the selected feature. Read [
 
 ## Analytics checks
 
-When analytics validation is requested, use the sibling [analytics-event-validator](../analytics-event-validator/SKILL.md). Reuse this run scenario, UI exploration, logs/video and cleanup; keep analytics contracts, receipts and reports in the run's `analytics/` directory. An analytics outcome does not override the UI/network outcome.
+When analytics checks are requested or declared in the selected tracking requirements, invoke the standalone [analytics-event-validator](../analytics-event-validator/SKILL.md). Share this run's scenario ID, selected APK/device and existing UI actions; coordinate analytics reset before those actions and flush/collect afterward. Keep analytics evidence in `analytics/`; no additional logs or video are required by the validator. This exploratory-QA workflow owns shared sessions and cleanup. Include the analytics verdict and report link in the overall QA writeup alongside UI/network results. Required analytics failures or inconclusive results prevent claiming overall QA completion.
 
 ## Network mode
 

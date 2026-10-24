@@ -30,11 +30,11 @@ The supplied package's starter recorder emits only capture_ready and events. It 
 
 ## Sequence and receipts
 
-1. Reuse the exploratory-QA scenario and selected binary/device. Run inspect. It checks installed APK hashes, package version, Android API, debug sandbox access and the initial marker without modifying app state.
+1. Create a standalone analytics scenario and select its binary/device, or reuse an existing exploratory-QA run when that workflow invokes this skill. Run inspect. It checks installed APK hashes, package version, Android API, debug sandbox access and the initial marker without modifying app state.
 2. For approved sources and a compatible recorder, run reset before launch. It pins the serial, stops only that app and deletes only the fixed NDJSON capture file. It creates `reset.json` after deletion; no app-data clear or settings/proxy changes occur.
-3. Use exploratory-QA/dogfood for the real scenario, including requested recordings. Reach the terminal state and use the existing flush barrier.
+3. Perform only the declared analytics-trigger actions through an existing workflow/replay or the installed agent-device CLI. Standalone runs need no general logs, screenshots or video. When invoked by exploratory-QA, reuse its existing actions. Reach the terminal state and use the existing flush barrier.
 4. Collect in the same run. It verifies unchanged target/build/scenario/contract, bounds stdout/time, requires fresh ready/completed markers, and writes checked boolean evidence plus `collection.json`. Raw NDJSON and device stderr never enter host artifacts.
 5. Run the validator. Missing completion, changed build/source/receipt, failed collection, reused files, unsupported target or unavailable recorder cannot produce live PASS. A failed attempt requires a fresh run and reset/replay.
-6. Preserve receipts and analytics reports alongside the parent QA report. Use exploratory-QA teardown; no helper here changes device proxy/CA settings or Firebase debug properties.
+6. Return the analytics report and retain checked events/receipts as supporting evidence. Close only sessions opened by the standalone analytics run. When called by exploratory-QA, that parent owns shared session cleanup and includes the analytics result in its broader writeup. No helper here changes device proxy/CA settings or Firebase debug properties.
 
 All commands require an explicit serial. List devices with adb and ask the user when selection is ambiguous, following project rules. Do not silently target another device. Command timeouts are 20 seconds; outputs are bounded in memory, input is capped at 3 MB. SDK/device capability failures remain visible as INCONCLUSIVE.

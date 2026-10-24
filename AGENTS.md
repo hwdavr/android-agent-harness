@@ -55,7 +55,7 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | Independent code review before merge | `.agents/workflows/feature-review.md` |
 | UI-only mobile exploration | `.agents/skills/dogfood/SKILL.md` |
 | APK QA with scenario reports or network capture/mocks | `.agents/skills/exploratory-qa/SKILL.md` (reuses `dogfood`) |
-| App-side analytics event contracts | `.agents/skills/analytics-event-validator/SKILL.md` (extends `exploratory-qa`) |
+| App-side analytics event contracts | `.agents/skills/analytics-event-validator/SKILL.md` (standalone; optional in `exploratory-qa`) |
 
 ### Project-Based Development (Complex Features)
 

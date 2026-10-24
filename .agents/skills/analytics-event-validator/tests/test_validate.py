@@ -185,6 +185,20 @@ class ValidatorTests(unittest.TestCase):
         self.assertEqual(0o600, (self.run_dir / "analytics/report.json").stat().st_mode & 0o777)
         self.assertEqual(3, self.cli("--offline", "--capture", str(self.capture)).returncode)
 
+    def test_standalone_run_needs_no_broader_qa_artifacts(self):
+        self.save()
+        result = self.cli("--offline", "--capture", str(self.capture))
+        self.assertEqual(0, result.returncode, result.stderr)
+        report = json.loads((self.run_dir / "analytics/report.json").read_text())
+        self.assertEqual("PASS", report["status"])
+        self.assertEqual(2, report["event_count"])
+        self.assertEqual({"report.json", "report.md"},
+                         {path.name for path in (self.run_dir / "analytics").iterdir()})
+        for leaf in ("report.md", "observations.json", "dogfood-report.md"):
+            self.assertFalse((self.run_dir / leaf).exists())
+        self.assertFalse(any(path.suffix in {".mp4", ".png", ".log"}
+                             for path in self.run_dir.rglob("*")))
+
     def test_cli_fail_fixture(self):
         self.save()
         result = self.cli("--offline", "--capture", str(ROOT / "examples/events.fail.example.ndjson"))
