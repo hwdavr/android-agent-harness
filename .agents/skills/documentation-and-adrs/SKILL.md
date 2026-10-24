@@ -5,6 +5,8 @@ description: Record architecture decisions, delivery documentation, and reusable
 
 # Documentation and ADRs
 
+Follow `.agents/rules/product-documentation.md`. Read affected `docs/product/requirements/<capability>.md` files and update those same files for behavior changes. Keep dated change contracts/evidence in `.scratch/`. New specs include `## Product Requirements` with capability links, changed requirements, and approval-time SHA-256 hashes. Completion reconciles verified behavior or records `Confirmed unchanged` for an already-correct bug contract.
+
 ## Overview
 
 Document decisions, not just code. The most valuable documentation captures the *why* — the context, constraints, and trade-offs that led to a decision. Code shows *what* was built; documentation explains *why it was built this way* and *what alternatives were considered*. This context is essential for future humans and agents working in the codebase.

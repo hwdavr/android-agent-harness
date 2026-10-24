@@ -25,17 +25,17 @@ expect_failure() {
   }
 }
 
-FEATURE_DIR="$FIXTURE_ROOT/docs/product/2026-08-29-fixture"
+FEATURE_DIR="$FIXTURE_ROOT/.scratch/2026-08-29-fixture"
 
 write_tracker() {
   local status="$1"
-  mkdir -p "$FEATURE_DIR"
+  mkdir -p "$FEATURE_DIR" "$FIXTURE_ROOT/docs/product"
   printf '%s\n' \
     '# Fixture' \
     '<!-- HARNESS_TRACKER_START -->' \
     '| ID | Feature | Workspace | Status | Updated | Notes |' \
     '|---|---|---|---|---|---|' \
-    "| fixture | Fixture | [docs/product/2026-08-29-fixture/](2026-08-29-fixture/) | $status | 2026-08-30 | Contract fixture |" \
+    "| fixture | Fixture | [.scratch/2026-08-29-fixture/](../../.scratch/2026-08-29-fixture/) | $status | 2026-08-30 | Contract fixture |" \
     '<!-- HARNESS_TRACKER_END -->' \
     > "$FIXTURE_ROOT/docs/product/product.md"
 }
@@ -157,18 +157,18 @@ write_tracker "To be human reviewed"
 write_feature
 write_valid_evaluator_rubric
 write_valid_fix_reports
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-08-29-fixture --evaluation
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-08-29-fixture --evaluation
 
 sed 's/### Overall: 5.0/### Overall: 4.9/' \
   "$FEATURE_DIR/evaluator-rubric.md" > "$FEATURE_DIR/evaluator-rubric.tmp"
 mv "$FEATURE_DIR/evaluator-rubric.tmp" "$FEATURE_DIR/evaluator-rubric.md"
 expect_failure "does not match arithmetic mean 5.0" \
-  bash "$VALIDATOR" docs/product/2026-08-29-fixture --evaluation
+  bash "$VALIDATOR" .scratch/2026-08-29-fixture --evaluation
 
 write_valid_evaluator_rubric
 write_feature "coverage attempt stalled and terminated" "passing"
 expect_failure "contradicts success" \
-  bash "$VALIDATOR" docs/product/2026-08-29-fixture --evaluation
+  bash "$VALIDATOR" .scratch/2026-08-29-fixture --evaluation
 
 write_feature
 write_valid_evaluator_rubric
@@ -178,7 +178,7 @@ sed 's/| Fix-Stage 2 — Setup | ✅ Complete |/| Fix-Stage 2 — Setup | ⚠️
   "$FEATURE_DIR/summary_fixture.md" > "$FEATURE_DIR/summary_fixture.tmp"
 mv "$FEATURE_DIR/summary_fixture.tmp" "$FEATURE_DIR/summary_fixture.md"
 expect_failure "contains a blocked or incomplete fix stage" \
-  bash "$VALIDATOR" docs/product/2026-08-29-fixture --fix
+  bash "$VALIDATOR" .scratch/2026-08-29-fixture --fix
 
 write_feature
 write_valid_evaluator_rubric
@@ -188,12 +188,12 @@ sed 's/\*\*APPROVED\*\*/**REVISION REQUIRED**/' \
   "$FEATURE_DIR/code_review_fixture.md" > "$FEATURE_DIR/code_review_fixture.tmp"
 mv "$FEATURE_DIR/code_review_fixture.tmp" "$FEATURE_DIR/code_review_fixture.md"
 expect_failure "Verdict still reports a non-passing outcome" \
-  bash "$VALIDATOR" docs/product/2026-08-29-fixture --fix
+  bash "$VALIDATOR" .scratch/2026-08-29-fixture --fix
 
 write_feature
 write_valid_evaluator_rubric
 write_valid_fix_reports
 write_tracker "To be human reviewed"
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-08-29-fixture --fix
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-08-29-fixture --fix
 
 echo "PASS: review lifecycle rejects inconsistent scores, contradictory evidence, and blocked fix-stage advancement."

@@ -11,9 +11,9 @@ bash "$VALIDATOR" "$PRODUCT_FILE"
 fixture_dir=$(mktemp -d "${TMPDIR:-/tmp}/feature-lifecycle-test.XXXXXX")
 trap 'rm -rf "$fixture_dir"' EXIT
 
-mkdir -p "$fixture_dir/docs/product/valid-feature" "$fixture_dir/docs/product/incomplete-feature" "$fixture_dir/docs/knowledge"
-printf '%s\n' '{"features":[{"status":"passing"}]}' > "$fixture_dir/docs/product/valid-feature/feature_list.json"
-printf '%s\n' '{"features":[{"status":"in_progress"}]}' > "$fixture_dir/docs/product/incomplete-feature/feature_list.json"
+mkdir -p "$fixture_dir/.scratch/valid-feature" "$fixture_dir/.scratch/incomplete-feature" "$fixture_dir/docs/knowledge"
+printf '%s\n' '{"features":[{"status":"passing"}]}' > "$fixture_dir/.scratch/valid-feature/feature_list.json"
+printf '%s\n' '{"features":[{"status":"in_progress"}]}' > "$fixture_dir/.scratch/incomplete-feature/feature_list.json"
 
 write_tracker() {
   local target="$1"
@@ -43,8 +43,12 @@ expect_failure() {
   }
 }
 
-active_path="[docs/product/valid-feature/](valid-feature/)"
-incomplete_feature_path="[docs/product/incomplete-feature/](incomplete-feature/)"
+active_path="[.scratch/valid-feature/](../../.scratch/valid-feature/)"
+incomplete_feature_path="[.scratch/incomplete-feature/](../../.scratch/incomplete-feature/)"
+
+write_tracker "$fixture_dir/valid.md" \
+  "| feature-a | Feature A | $active_path | Planning | 2026-08-04 | Fixture |"
+(cd "$fixture_dir" && bash "$VALIDATOR" "$fixture_dir/valid.md")
 
 write_tracker "$fixture_dir/unknown-status.md" \
   "| feature-a | Feature A | $active_path | Unknown | 2026-08-04 | Fixture |"
@@ -61,19 +65,29 @@ write_tracker "$fixture_dir/two-active.md" \
 expect_failure "$fixture_dir/two-active.md" "at most one In Progress"
 
 write_tracker "$fixture_dir/missing-path.md" \
-  "| feature-a | Feature A | [docs/product/does-not-exist/](does-not-exist/) | Planning | 2026-08-04 | Fixture |"
+  "| feature-a | Feature A | [.scratch/does-not-exist/](../../.scratch/does-not-exist/) | Planning | 2026-08-04 | Fixture |"
 expect_failure "$fixture_dir/missing-path.md" "points to missing directory"
 
 write_tracker "$fixture_dir/broken-link.md" \
-  "| feature-a | Feature A | [docs/product/valid-feature/](wrong-target/) | Planning | 2026-08-04 | Fixture |"
+  "| feature-a | Feature A | [.scratch/valid-feature/](wrong-target/) | Planning | 2026-08-04 | Fixture |"
 expect_failure "$fixture_dir/broken-link.md" "link target must be"
 
 write_tracker "$fixture_dir/outside-product.md" \
   "| feature-a | Feature A | [docs/knowledge/](../knowledge/) | Planning | 2026-08-04 | Fixture |"
-expect_failure "$fixture_dir/outside-product.md" "must point under docs/product"
+expect_failure "$fixture_dir/outside-product.md" "must point under .scratch"
 
 write_tracker "$fixture_dir/complete-with-incomplete-slices.md" \
   "| feature-a | Feature A | $incomplete_feature_path | Complete | 2026-08-04 | Fixture |"
 expect_failure "$fixture_dir/complete-with-incomplete-slices.md" "contains non-passing feature slices"
+
+mkdir -p "$fixture_dir/docs/product/legacy-feature"
+write_tracker "$fixture_dir/legacy-path.md" \
+  "| feature-a | Feature A | [docs/product/legacy-feature/](legacy-feature/) | Planning | 2026-08-04 | Fixture |"
+expect_failure "$fixture_dir/legacy-path.md" "must point under .scratch"
+
+ln -s "$fixture_dir/docs/knowledge" "$fixture_dir/.scratch/escape"
+write_tracker "$fixture_dir/symlink-escape.md" \
+  "| feature-a | Feature A | [.scratch/escape/](../../.scratch/escape/) | Planning | 2026-08-04 | Fixture |"
+expect_failure "$fixture_dir/symlink-escape.md" "must resolve under .scratch"
 
 echo "PASS: feature lifecycle validator rejects invalid tracker states."

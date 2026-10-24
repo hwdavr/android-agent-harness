@@ -25,13 +25,13 @@ forbid_text() {
   fi
 }
 
-# Complex-feature planning is rooted in one dated docs/product workspace and
+# Complex-feature planning is rooted in one dated .scratch workspace and
 # hands off the approved feature list and sprint contract, never docs/current.
 forbid_text planner.md "docs/current/"
 forbid_text planner.md "task-list.md"
 forbid_text planner.md "docs/templates/"
 forbid_text planner.md "only relies on stateless Composable logic"
-require_text planner.md "docs/product/<YYYY-MM-DD>-<feature-short-name>/"
+require_text planner.md ".scratch/<YYYY-MM-DD>-<feature-short-name>/"
 require_text planner.md '`feature-specification`'
 require_text planner.md '`slice-planning`'
 require_text planner.md "Awaiting specification approval"

@@ -6,7 +6,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 VALIDATOR="$REPO_ROOT/harness/scripts/check-journey-planning-contract.sh"
 FIXTURE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/journey-planning-contract.XXXXXX")"
-FEATURE_DIR="$FIXTURE_ROOT/docs/product/2026-09-01-fixture"
+FEATURE_DIR="$FIXTURE_ROOT/.scratch/2026-09-01-fixture"
 trap 'rm -rf "$FIXTURE_ROOT"' EXIT
 
 fail_test() {
@@ -98,14 +98,14 @@ write_fixture() {
 }
 
 write_fixture
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture
 
 sed '/^## Production Journey Planning Contract/,$d' \
   "$FEATURE_DIR/sprint-contract.md" \
   > "$FEATURE_DIR/sprint-contract.tmp"
 mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
 expect_failure "is missing the '## Production Journey Planning Contract' section" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture
 
 write_fixture
 sed 's/| US-1 | Yes |/| US-1 | No |/' \
@@ -113,7 +113,7 @@ sed 's/| US-1 | Yes |/| US-1 | No |/' \
   > "$FEATURE_DIR/sprint-contract.tmp"
 mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
 expect_failure "does not match planning row 'No'" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture
 
 write_fixture
 sed 's/| TC-US-1-01 | AC-US-1-01 | Instrumented UI |/| TC-US-1-01 | AC-US-1-01 | JVM unit |/' \
@@ -121,6 +121,6 @@ sed 's/| TC-US-1-01 | AC-US-1-01 | Instrumented UI |/| TC-US-1-01 | AC-US-1-01 |
   > "$FEATURE_DIR/sprint-contract.tmp"
 mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
 expect_failure "must be planned as an Instrumented UI acceptance test" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture
 
 echo "PASS: planning contract requires journey classification, mirrored ownership, and an instrumented owner for navigation signals."

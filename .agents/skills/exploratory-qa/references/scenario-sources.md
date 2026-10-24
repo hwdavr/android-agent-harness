@@ -2,7 +2,7 @@
 
 The agent writes run-specific JSON; the reporter evaluates it and never scans source or invents observations.
 
-1. Resolve the requested feature, bug, APK, or diff. Prefer its approved spec/UI contract, then its test plan or sprint contract in `docs/current/` or its stable `docs/product/<feature>/` workspace. Check `Related spec`; the latest shared UI contract may belong to another feature.
+1. Resolve the requested feature, bug, APK, or diff. Prefer its approved spec/UI contract, then its test plan or sprint contract in `docs/current/` or its stable `.scratch/<feature>/` workspace. Check `Related spec`; the latest shared UI contract may belong to another feature.
 2. Map selected Screen States, IME State Coverage, entry actions, controls, fixtures, and verification expectations to `states` and `expectations.ui_checks`. Retain state IDs/plan stages and bound the exploration budget.
 3. Use `docs/product/journey-registry.yaml`, relevant tests, UiState, navigation, handlers, and testTags for additional route/state hints. Code-only states belong in candidate `exploration_targets`, not approved expectations. Disclose missing intent.
 4. Record `{path, sha256, section}` in `generation.sources` and binary identity in `target`. If source is absent or mismatched, use supplied acceptance criteria plus dogfood's runtime map.

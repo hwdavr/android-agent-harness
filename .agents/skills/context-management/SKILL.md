@@ -5,6 +5,8 @@ description: Set up focused session context and project rules for the active tas
 
 # Context Management
 
+Follow `.agents/rules/product-documentation.md`. Read affected `docs/product/requirements/<capability>.md` files and update those same files for behavior changes. Keep dated change contracts/evidence in `.scratch/`. New specs include `## Product Requirements` with capability links, changed requirements, and approval-time SHA-256 hashes. Completion reconciles verified behavior or records `Confirmed unchanged` for an already-correct bug contract.
+
 ## Session Start — Load in Order
 
 1. `AGENTS.md`

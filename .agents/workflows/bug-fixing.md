@@ -4,6 +4,8 @@ description: Diagnose and fix an Android bug with RED reproduction, approved pla
 
 # Workflow: Bug Fixing
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 - A defect, crash, ANR, or production issue
 - A regression or test failure
@@ -175,3 +177,7 @@ feature-specific N/A rationale completes the stage.
 1. **After Bug Context, Localization & Root Cause** — if root cause is uncertain, ask user
 2. **After Bug Reproduction** — if the bug cannot be reproduced by a test, surface to user *(mandatory stop)*
 3. **After Fix Plan** — user approves fix plan *(mandatory always)*
+
+## Product Requirements Reconciliation
+
+Before closing this change, reconcile affected living capability requirements with verified behavior and link evidence. For an already-correct bug contract, record `Confirmed unchanged` with a reason. Preserve undelivered scope and pending review. Run `python3 harness/scripts/check-product-docs.py` and the lifecycle validator; for new change specs also use `--change-dir <active-workspace>`. Relocation never renews approvals or runtime evidence.

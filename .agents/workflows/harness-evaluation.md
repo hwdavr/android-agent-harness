@@ -4,6 +4,8 @@ description: Evaluate complex-feature code and test evidence in a post-implement
 
 # Workflow: Harness Evaluation
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 - Use this workflow when you are acting as the **Evaluator** agent.
 - A change has been implemented and tested and is ready for review by the Generator agent.

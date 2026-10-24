@@ -58,15 +58,25 @@ while IFS='|' read -r _ raw_id raw_feature raw_workspace raw_status raw_updated 
   printf '%s' "$updated" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' ||
     fail "Tracker row '$feature_id' has invalid Updated date '$updated'."
 
-  workspace=$(printf '%s\n' "$workspace_cell" | sed -n 's/^\[\(docs\/[^]]*\)\](.*)$/\1/p' | sed 's:/*$::')
-  workspace_target=$(printf '%s\n' "$workspace_cell" | sed -n 's/^\[docs\/[^]]*\](\([^)]*\))$/\1/p')
+  workspace=$(printf '%s\n' "$workspace_cell" | sed -n 's/^\[\([^]]*\)\](.*)$/\1/p' | sed 's:/*$::')
+  workspace_target=$(printf '%s\n' "$workspace_cell" | sed -n 's/^\[[^]]*\](\([^)]*\))$/\1/p')
   [ -n "$workspace" ] ||
-    fail "Tracker row '$feature_id' must contain one Markdown link labelled with its docs path."
+    fail "Tracker row '$feature_id' must contain one Markdown link labelled with its repository-relative path."
   [ -d "$workspace" ] || fail "Tracker row '$feature_id' points to missing directory '$workspace'."
 
   case "$workspace" in
-    docs/product/*) expected_target="${workspace#docs/product/}/" ;;
-    *) fail "Tracker row '$feature_id' must point under docs/product/." ;;
+    .scratch/*) expected_target="../../$workspace/" ;;
+    *) fail "Tracker row '$feature_id' must point under .scratch/." ;;
+  esac
+
+  case "/$workspace/" in
+    *"/../"*|*"/./"*) fail "Tracker row '$feature_id' workspace must not contain traversal segments." ;;
+  esac
+  scratch_root=$(cd .scratch && pwd -P)
+  resolved_workspace=$(cd "$workspace" && pwd -P)
+  case "$resolved_workspace" in
+    "$scratch_root"/*) ;;
+    *) fail "Tracker row '$feature_id' workspace must resolve under .scratch/." ;;
   esac
 
   case "$status" in

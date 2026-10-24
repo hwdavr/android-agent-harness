@@ -88,7 +88,7 @@ Use `apply_patch` for file edits. Do not add suppressions, exclusions, warning-o
 
 ### 5. Repair specification artifacts (SPEC_GAP only)
 
-When the classification is `SPEC_GAP`, repair the feature workspace artifacts in `docs/product/<dated-feature-dir>/`:
+When the classification is `SPEC_GAP`, repair the feature workspace artifacts in `.scratch/<dated-feature-dir>/`:
 
 1. **`spec.md`** — Clarify the ambiguous, conflicting, or absent acceptance criteria. Add or rewrite the affected requirement with unambiguous language. Preserve all unrelated requirements.
 2. **`design.md`** — Update the design to reflect the corrected specification. Adjust affected UI states, flows, or component descriptions. Preserve unrelated design decisions.

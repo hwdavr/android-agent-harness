@@ -5,7 +5,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 VALIDATOR="$REPO_ROOT/harness/scripts/check-acceptance-test-traceability.sh"
 FIXTURE_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/acceptance-traceability-test.XXXXXX")
-FEATURE_DIR="$FIXTURE_ROOT/docs/product/2026-09-01-fixture"
+FEATURE_DIR="$FIXTURE_ROOT/.scratch/2026-09-01-fixture"
 trap 'rm -rf "$FIXTURE_ROOT"' EXIT
 
 fail_test() {
@@ -73,9 +73,9 @@ write_fixture() {
 }
 
 write_fixture
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture --planning
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture --test US-1
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture --evaluate
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --test US-1
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --evaluate
 
 sed 's/fun loadsSharedScenario()/fun missingSharedScenario()/' \
   "$FIXTURE_ROOT/app/src/test/java/example/FixtureIntegrationTest.kt" \
@@ -83,7 +83,7 @@ sed 's/fun loadsSharedScenario()/fun missingSharedScenario()/' \
 mv "$FIXTURE_ROOT/app/src/test/java/example/FixtureIntegrationTest.tmp" \
   "$FIXTURE_ROOT/app/src/test/java/example/FixtureIntegrationTest.kt"
 expect_failure "declared test method is missing" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture --test US-1
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture --test US-1
 
 write_fixture
 sed 's/fixture_001.json/other_fixture.json/' \
@@ -92,14 +92,14 @@ sed 's/fixture_001.json/other_fixture.json/' \
 mv "$FIXTURE_ROOT/app/src/test/java/example/FixtureIntegrationTest.tmp" \
   "$FIXTURE_ROOT/app/src/test/java/example/FixtureIntegrationTest.kt"
 expect_failure "does not reference declared shared scenario fixture_001.json" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture --test US-1
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture --test US-1
 
 write_fixture
 sed 's/--tests example.FixtureIntegrationTest//' "$FEATURE_DIR/feature_list.json" \
   > "$FEATURE_DIR/feature_list.tmp"
 mv "$FEATURE_DIR/feature_list.tmp" "$FEATURE_DIR/feature_list.json"
 expect_failure "has no successful evidence command scoped to FixtureIntegrationTest" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture --evaluate
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture --evaluate
 
 # Rendered rich-text evidence regression: a state-only mark assertion must not
 # satisfy an acceptance row that claims visible text styling.
@@ -150,7 +150,7 @@ printf '%s\n' \
   '}' \
   > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"
 expect_failure "must call captureRoboImage() in a Roborazzi JVM test" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture --test US-1
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture --test US-1
 
 write_rendered_fixture
 printf '%s\n' \
@@ -166,9 +166,9 @@ printf '%s\n' \
   '}' \
   > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \
-  docs/product/2026-09-01-fixture --test US-1 >/dev/null
+  .scratch/2026-09-01-fixture --test US-1 >/dev/null
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \
-  docs/product/2026-09-01-fixture --evaluate >/dev/null
+  .scratch/2026-09-01-fixture --evaluate >/dev/null
 
 # Route-open ownership regression: an acceptance row that claims opening or
 # navigating to a route must be the named production-journey owner.
@@ -216,7 +216,7 @@ sed "s/The linked label is visible after return./The linked label is visible aft
   "$FEATURE_DIR/sprint-contract.md" \
   > "$FEATURE_DIR/sprint-contract.tmp"
 mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture --planning
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
 
 # A non-owner row claiming the same outcome must be rejected.
 write_journey_fixture
@@ -225,10 +225,10 @@ sed "s/Label is tappable and styled./Label is tappable $ROUTE_OPEN_CLAIM./" \
   > "$FEATURE_DIR/sprint-contract.tmp"
 mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
 expect_failure "TC-US-1-02 claims an open/navigate-to-route outcome but is not the named production-journey owner" \
-  bash "$VALIDATOR" docs/product/2026-09-01-fixture --planning
+  bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
 
 # Control: the identical row without route-open language stays accepted.
 write_journey_fixture
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" docs/product/2026-09-01-fixture --planning
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
 
 echo "PASS: acceptance traceability validator rejects missing methods, scenario drift, and unscoped evidence."

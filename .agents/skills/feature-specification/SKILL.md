@@ -5,6 +5,8 @@ description: Clarify a feature and write approved spec.md and design.md before p
 
 # Skill — Feature Specification
 
+Follow `.agents/rules/product-documentation.md`. Read affected `docs/product/requirements/<capability>.md` files and update those same files for behavior changes. Keep dated change contracts/evidence in `.scratch/`. New specs include `## Product Requirements` with capability links, changed requirements, and approval-time SHA-256 hashes. Completion reconciles verified behavior or records `Confirmed unchanged` for an already-correct bug contract.
+
 ## Purpose
 
 Turn a general feature request into approved source artifacts:

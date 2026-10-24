@@ -5,6 +5,8 @@ description: Analyze requirements, API impact, UI states, and navigation flow.
 
 # Skill — Requirement, Impact & Design Analysis
 
+Follow `.agents/rules/product-documentation.md`. Read affected `docs/product/requirements/<capability>.md` files and update those same files for behavior changes. Keep dated change contracts/evidence in `.scratch/`. New specs include `## Product Requirements` with capability links, changed requirements, and approval-time SHA-256 hashes. Completion reconciles verified behavior or records `Confirmed unchanged` for an already-correct bug contract.
+
 ## Purpose
 Understand what is being built, identify affected files, and design the core UI state and navigation before implementation.
 Do not write any code in this stage.

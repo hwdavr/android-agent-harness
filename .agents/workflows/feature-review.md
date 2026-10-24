@@ -4,6 +4,8 @@ description: Run an independent ad-hoc review of a completed Android change befo
 
 # Workflow: Feature Review
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 
 - Use this workflow when you are acting as the **Evaluator** agent.

@@ -1,0 +1,11 @@
+# Product documentation flow
+
+Keep consumer documentation under the consumer repository root. Product capability requirements live in `docs/product/requirements/<capability>.md`; dated complex-change workspaces live in `.scratch/<YYYY-MM-DD>-<change>/`. Keep `.scratch/` version controlled and retain records throughout their lifecycle. Ad-hoc artifacts remain in `docs/current/`. Never write consumer records into a nested shared harness checkout.
+
+Before requirements analysis or orientation, read the affected living capability file(s). Update the same file for later changes to that capability; use links for cross-cutting requirements instead of copying them. `docs/product/product.md` is a navigation overview and the sole work-package lifecycle tracker. Detailed product behavior belongs in capability files. Keep implementation decisions and reusable pitfalls in `docs/knowledge/`.
+
+Add `## Product Requirements` to each new change specification. Link the repository-relative capability file(s), identify the affected requirements, and record their SHA-256 hashes when approved. The living files own product intent; the approved change spec owns the delta and Rule Applicability, and the sprint contract/feature list own execution. An edit to a living file does not authorize a scope change; reapprove any changed delta through the selected workflow.
+
+During planning keep proposed/approved-but-undelivered behavior distinct under `## Planned changes`. Preserve delivered requirements until replacement is verified. At completion reconcile the same capability file against actual verified behavior and link the evidence. A bug restoring an already-correct contract may record `Confirmed unchanged` with a reason. Preserve blocked runtime and pending-review qualifications. Reviewers reconcile product requirements, change scope, implementation, and evidence.
+
+Run `python3 harness/scripts/check-product-docs.py` before closing feature, bug, UI, or harness work that affects product behavior. Add `--change-dir <workspace>` for new change specs to validate their requirements links. Also run the lifecycle validator after every tracker edit. These scripts validate structure and paths; semantic agreement requires review. Requirements consolidation or workspace relocation never changes lifecycle statuses or supplies new runtime evidence.

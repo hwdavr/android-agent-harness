@@ -4,6 +4,8 @@ description: Plan a complex Android feature into approved vertical slices and sp
 
 # Workflow: Harness Planning
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 - A feature is complex enough to touch multiple areas of the codebase.
 - The requirement is large and needs to be scoped and broken down into smaller, independently deliverable features before implementation begins.
@@ -23,12 +25,12 @@ Each planned feature in the list must represent a clean, end-to-end user-visible
 At the start of planning, create one dated feature workspace:
 
 ```text
-docs/product/<YYYY-MM-DD>-<feature-short-name>/
+.scratch/<YYYY-MM-DD>-<feature-short-name>/
 ```
 
-Use lowercase kebab case for `<feature-short-name>` and the local planning date for the prefix. This stable directory is the source of truth for every complex-feature artifact throughout planning, implementation, and completion. Do not use `docs/current/` for harness artifacts; it remains reserved for ad-hoc workflows.
+Use lowercase kebab case for `<feature-short-name>` and the local planning date for the prefix. This stable directory retains the approved change contract and delivery evidence throughout planning, implementation, and completion. Product behavior is maintained in the linked living capability requirements. Do not use `docs/current/` for harness artifacts; it remains reserved for ad-hoc workflows.
 
-Immediately add a row to the **Harness Feature Tracker** in `docs/product/product.md` using a stable lowercase-kebab-case ID, status `Planning`, and a link labelled with the exact `docs/product/` workspace. Run `bash harness/scripts/check-feature-lifecycle.sh` after creating or changing the row. The controlled lifecycle is `Planning` → `Awaiting specification approval` → `Awaiting implementation approval` → `In Progress` / `Blocked` → `Complete`.
+Immediately add a row to the **Harness Feature Tracker** in `docs/product/product.md` using a stable lowercase-kebab-case ID, status `Planning`, and a link labelled with the exact `.scratch/` workspace. Run `bash harness/scripts/check-feature-lifecycle.sh` after creating or changing the row. The controlled lifecycle is `Planning` → `Awaiting specification approval` → `Awaiting implementation approval` → `In Progress` / `Blocked` → `Complete`.
 
 Workspace location never represents lifecycle status. Planning must never create a second lifecycle file or infer active work by scanning directories.
 
@@ -44,7 +46,7 @@ Record the complete Rule Applicability matrix in the feature specification; ever
 needs a supported decision, trigger or rationale, and planned evidence before slicing.
 - Classify the task type (new screen, enhancement, or logic-only change).
 - Ask targeted clarifying questions in chat until every material ambiguity is resolved.
-- Create `FEATURE_DIR=docs/product/<YYYY-MM-DD>-<feature-short-name>` before writing artifacts.
+- Create `FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-short-name>` before writing artifacts.
 - Write `$FEATURE_DIR/spec.md` (always) and `$FEATURE_DIR/design.md` (for new screens or UI enhancements/flows).
 - For UI work, read `docs/product/design_system.md` before design decisions, link it from `$FEATURE_DIR/design.md`, and record every explicit user-approved exception. Create `$FEATURE_DIR/visual_evidence/visual-target.json` as the canonical target manifest before generating mockups; it owns appearance, concrete device, logical size, locale, and named content states. Generate each mockup prompt with `bash harness/scripts/visual-target-prompt.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" --state <content_state_id>` so the mockup generator and later emulator capture consume identical target values. Generated mockups must use the manifest's exact target plus the design system's applicable tokens and component patterns.
 - When an existing screen is modified, inspect its current Compose source and describe only the approved delta in the canonical Pen design. Record the Pen source and node ID in `$FEATURE_DIR/visual_evidence/visual-target.json`; its exported frame is the approved design reference. Plan a Roborazzi comparison for every visual target: use the `screen` scope when the reference and runtime fixture have identical visible content, or the `component` scope when the approved design isolates the changed surface. Do not create or require an implementation screenshot baseline during planning.

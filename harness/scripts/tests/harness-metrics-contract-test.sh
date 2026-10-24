@@ -47,11 +47,11 @@ expect_failure() {
   }
 }
 
-mkdir -p "$FIXTURE_ROOT/docs/product/2026-09-01-feature"
+mkdir -p "$FIXTURE_ROOT/.scratch/2026-09-01-feature"
 mkdir -p "$FIXTURE_ROOT/docs/current"
 
 # Case 1: Valid summary file passes validation
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_US-1.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_US-1.md"
 # Change Summary — Feature 1
 
 ## Stage Progress
@@ -91,7 +91,7 @@ EOF
 
 expect_success bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --validate "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_US-1.md"
+  --validate "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_US-1.md"
 
 # Case 2: Missing file fails validation
 expect_failure 2 "Summary file not found" bash "$VALIDATOR" \
@@ -99,7 +99,7 @@ expect_failure 2 "Summary file not found" bash "$VALIDATOR" \
   --validate "$FIXTURE_ROOT/docs/non-existent.md"
 
 # Case 3: Missing section header fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_bad_header.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_bad_header.md"
 # Change Summary
 ```json:metrics
 {"model": "Claude 3.7 Sonnet"}
@@ -108,10 +108,10 @@ EOF
 
 expect_failure 2 "Missing section header: '## Observability & Execution Metrics'" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --validate "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_bad_header.md"
+  --validate "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_bad_header.md"
 
 # Case 4: Missing json:metrics codeblock fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_no_json.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_no_json.md"
 # Change Summary
 ## Observability & Execution Metrics
 No code block here
@@ -119,10 +119,10 @@ EOF
 
 expect_failure 2 "No json:metrics block found in summary" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --validate "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_no_json.md"
+  --validate "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_no_json.md"
 
 # Case 5: Malformed JSON in metrics block fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_malformed_json.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_malformed_json.md"
 # Change Summary
 ## Observability & Execution Metrics
 ```json:metrics
@@ -135,10 +135,10 @@ EOF
 
 expect_failure 2 "Failed to parse json:metrics" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --validate "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_malformed_json.md"
+  --validate "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_malformed_json.md"
 
 # Case 6: Missing required keys fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_missing_keys.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_missing_keys.md"
 # Change Summary
 ## Observability & Execution Metrics
 ```json:metrics
@@ -150,10 +150,10 @@ EOF
 
 expect_failure 2 "json:metrics missing required key 'total_duration_sec'" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --validate "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_missing_keys.md"
+  --validate "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_missing_keys.md"
 
 # Case 7: Invalid first_pass_command_rate out of range [0, 100] fails validation
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_bad_rate.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_bad_rate.md"
 # Change Summary
 ## Observability & Execution Metrics
 ```json:metrics
@@ -173,10 +173,10 @@ EOF
 
 expect_failure 2 "first_pass_command_rate must be between 0 and 100" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --validate "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_bad_rate.md"
+  --validate "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_bad_rate.md"
 
 # Case 8: Strict mode rejects placeholder string values
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_placeholder.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_placeholder.md"
 # Change Summary
 ## Observability & Execution Metrics
 ```json:metrics
@@ -197,10 +197,10 @@ EOF
 expect_failure 2 "contains placeholder value '{model_name}'" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --strict \
-  --validate "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_placeholder.md"
+  --validate "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_placeholder.md"
 
 # Case 9: --report aggregates multiple summaries accurately
-cat << 'EOF' > "$FIXTURE_ROOT/docs/product/2026-09-01-feature/summary_US-2.md"
+cat << 'EOF' > "$FIXTURE_ROOT/.scratch/2026-09-01-feature/summary_US-2.md"
 # Change Summary — Feature 2
 ## Observability & Execution Metrics
 ```json:metrics
@@ -225,12 +225,16 @@ EOF
 
 report_output=$(bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
-  --summary-dir "$FIXTURE_ROOT/docs/product" \
+  --summary-dir "$FIXTURE_ROOT/.scratch" \
   --report)
 
 printf '%s\n' "$report_output" | grep -Fq "Total Delivered Slices:    2" || fail_test "Report missing 2 total delivered slices"
 printf '%s\n' "$report_output" | grep -Fq "Claude 3.7 Sonnet" || fail_test "Report missing Claude 3.7 Sonnet model"
 printf '%s\n' "$report_output" | grep -Fq "Gemini 2.5 Flash" || fail_test "Report missing Gemini 2.5 Flash model"
 printf '%s\n' "$report_output" | grep -Fq "ktlintCheck" || fail_test "Report missing ktlintCheck retry cause"
+
+default_report=$(bash "$VALIDATOR" --project-root "$FIXTURE_ROOT" --report)
+printf '%s\n' "$default_report" | grep -Fq "Total Delivered Slices:    2" ||
+  fail_test "Default report did not discover .scratch summaries"
 
 echo "PASS: All 9 harness-metrics contract test cases passed."

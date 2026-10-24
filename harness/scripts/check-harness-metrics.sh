@@ -197,7 +197,7 @@ def run_report():
     if summary_dir_str:
         scan_roots.append(Path(summary_dir_str))
     else:
-        for sub in ["docs/product", "docs/changes", "docs/current"]:
+        for sub in [".scratch", "docs/changes", "docs/current"]:
             d = project_root / sub
             if d.is_dir():
                 scan_roots.append(d)

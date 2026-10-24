@@ -47,8 +47,8 @@ Run when the user has a feature idea — whether a new screen, an enhancement to
 
 | Stage | Process Description | Outputs Produced |
 | :--- | :--- | :--- |
-| **Stage 1 — Clarify & Specify** | Classify task type (new screen / enhancement / logic-only). Ask targeted questions until every material ambiguity is resolved. Write specification artifacts. | `docs/product/<YYYY-MM-DD>-<feature-short-name>/spec.md` (always), `design.md` and `design/mockup_*.png` when UI is affected |
-| **Stage 2 — Slice Planning** | Decompose the approved requirements into a prioritized list of independent features. | `docs/product/<YYYY-MM-DD>-<feature-short-name>/feature_list.json`, `progress.md`, and `sprint-contract.md` |
+| **Stage 1 — Clarify & Specify** | Classify task type (new screen / enhancement / logic-only). Ask targeted questions until every material ambiguity is resolved. Write specification artifacts. | `.scratch/<YYYY-MM-DD>-<feature-short-name>/spec.md` (always), `design.md` and `design/mockup_*.png` when UI is affected |
+| **Stage 2 — Slice Planning** | Decompose the approved requirements into a prioritized list of independent features. | `.scratch/<YYYY-MM-DD>-<feature-short-name>/feature_list.json`, `progress.md`, and `sprint-contract.md` |
 
 ⛔ **STOP after Stage 1** — transition the tracker to `Awaiting specification approval`, present `spec.md` (and `design.md` if produced) to the user, and wait for approval before proceeding to Slice Planning.
 ⛔ **STOP after Stage 2** — transition the tracker to `Awaiting implementation approval`, present `feature_list.json` and `sprint-contract.md` to the user, and wait for approval before handing off.
@@ -58,7 +58,7 @@ Run when the user has a feature idea — whether a new screen, an enhancement to
 ## 📋 Deliverables & Outputs
 
 All complex-feature artifacts live in one stable dated
-`docs/product/<YYYY-MM-DD>-<feature-short-name>/` workspace:
+`.scratch/<YYYY-MM-DD>-<feature-short-name>/` workspace:
 
 1. **`spec.md`**: Objective, users, functional requirements, acceptance criteria, non-goals, edge cases, explicit assumptions, and verification expectations, including the complete Rule Applicability matrix.
 2. **`design.md`** *(when UI is affected)*: Screen purpose, layout, components, visual/interaction states, accessibility, copy, design constraints, and mockup assets.

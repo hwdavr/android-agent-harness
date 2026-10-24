@@ -1,5 +1,14 @@
 # Sprint Contract Template
 
+## Product Requirements
+
+- Capability: `[<capability>](docs/product/requirements/<capability>.md)` (repository-relative path).
+- Affected requirement IDs or sections: `<changed behavior>`.
+- Approved requirements SHA-256: `<hash at approval>`.
+- Delta: `<proposed/approved behavior, or Confirmed unchanged with reason>`.
+
+Capability files own product intent; this contract owns the approved change and verification. A later requirements edit does not expand implementation authorization.
+
 Use this template when producing the sprint contract in the **Requirement Analysis & Scoping** stage of the Planner agent.
 
 ---

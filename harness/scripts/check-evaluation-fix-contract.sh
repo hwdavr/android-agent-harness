@@ -26,16 +26,16 @@ case "$FEATURE_INPUT" in
   /*)
     DOCS_DIR="$FEATURE_INPUT"
     case "$DOCS_DIR" in
-      "$PROJECT_ROOT"/docs/product/*) ;;
-      *) fail "feature directory must stay under docs/product/" ;;
+      "$PROJECT_ROOT"/.scratch/*) ;;
+      *) fail "feature directory must stay under .scratch/" ;;
     esac
     FEATURE_DIR="${DOCS_DIR#"$PROJECT_ROOT"/}"
     ;;
   *)
     FEATURE_DIR="${FEATURE_INPUT#./}"
     case "$FEATURE_DIR" in
-      docs/product/*) ;;
-      *) fail "feature directory must be under docs/product/" ;;
+      .scratch/*) ;;
+      *) fail "feature directory must be under .scratch/" ;;
     esac
     DOCS_DIR="$PROJECT_ROOT/$FEATURE_DIR"
     ;;

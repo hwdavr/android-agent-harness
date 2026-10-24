@@ -130,7 +130,8 @@ create_fixture() {
   local name="$1"
   ACTIVE_FIXTURE="$TEST_ROOT/$name"
   mkdir -p "$ACTIVE_FIXTURE/harness/scripts" \
-    "$ACTIVE_FIXTURE/docs/product/test-feature" \
+    "$ACTIVE_FIXTURE/.scratch/test-feature" \
+    "$ACTIVE_FIXTURE/docs/product" \
     "$ACTIVE_FIXTURE/home/.local/bin" \
     "$ACTIVE_FIXTURE/.agents"
 
@@ -145,11 +146,11 @@ create_fixture() {
     '<!-- HARNESS_TRACKER_START -->' \
     '| ID | Feature | Workspace | Status | Updated | Notes |' \
     '|---|---|---|---|---|---|' \
-    '| test-feature | Test Feature | [docs/product/test-feature/](test-feature/) | In Progress | 2026-08-09 | Contract fixture |' \
+    '| test-feature | Test Feature | [.scratch/test-feature/](../../.scratch/test-feature/) | In Progress | 2026-08-09 | Contract fixture |' \
     '<!-- HARNESS_TRACKER_END -->' \
     > "$ACTIVE_FIXTURE/docs/product/product.md"
 
-  cat > "$ACTIVE_FIXTURE/docs/product/test-feature/feature_list.json" <<'JSON'
+  cat > "$ACTIVE_FIXTURE/.scratch/test-feature/feature_list.json" <<'JSON'
 {
   "last_updated": "2026-08-09",
   "features": [
@@ -190,7 +191,7 @@ printf '%s\n' "$$" > "$launcher_dir/pid"
 : > "$launcher_dir/agent-ready"
 FAKE_OSASCRIPT
   chmod +x "$ACTIVE_FIXTURE/home/.local/bin/osascript"
-  export FAKE_FEATURE_LIST="$ACTIVE_FIXTURE/docs/product/test-feature/feature_list.json"
+  export FAKE_FEATURE_LIST="$ACTIVE_FIXTURE/.scratch/test-feature/feature_list.json"
   export FAKE_COUNT_FILE="$ACTIVE_FIXTURE/codex.count"
   export FAKE_ARGS_FILE="$ACTIVE_FIXTURE/codex.args"
   export FAKE_FALLBACK_COUNT_FILE="$ACTIVE_FIXTURE/agy.count"
@@ -287,7 +288,7 @@ test_lock_contention() {
 
 test_completed_task_lock_handoff() {
   create_fixture "completed-task-handoff"
-  python3 - "$ACTIVE_FIXTURE/docs/product/test-feature/feature_list.json" <<'PY'
+  python3 - "$ACTIVE_FIXTURE/.scratch/test-feature/feature_list.json" <<'PY'
 import json
 import sys
 
@@ -307,7 +308,7 @@ PY
   cat > "$lock_dir/task" <<EOF
 feature_id=test-feature
 feature_status=In Progress
-feature_list=$ACTIVE_FIXTURE/docs/product/test-feature/feature_list.json
+feature_list=$ACTIVE_FIXTURE/.scratch/test-feature/feature_list.json
 eval_mode=0
 fix_mode=0
 slice_id=US-1

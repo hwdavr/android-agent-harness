@@ -41,12 +41,12 @@ if [ ! -d "$DOCS_DIR" ]; then
 fi
 
 DOCS_DIR="$(cd "$DOCS_DIR" && pwd -P)"
-NESTED_HARNESS_DOCS="$PROJECT_ROOT/android-agent-harness/docs"
-if [ -d "$NESTED_HARNESS_DOCS" ]; then
-  NESTED_HARNESS_DOCS="$(cd "$NESTED_HARNESS_DOCS" && pwd -P)"
+NESTED_HARNESS_ROOT="$PROJECT_ROOT/android-agent-harness"
+if [ -d "$NESTED_HARNESS_ROOT" ]; then
+  NESTED_HARNESS_ROOT="$(cd "$NESTED_HARNESS_ROOT" && pwd -P)"
   case "$DOCS_DIR" in
-    "$NESTED_HARNESS_DOCS"|"$NESTED_HARNESS_DOCS"/*)
-      echo "FAIL: stage artifacts for the consuming project must be under its root-level docs/; $DOCS_DIR is owned by the shared android-agent-harness submodule." >&2
+    "$NESTED_HARNESS_ROOT"|"$NESTED_HARNESS_ROOT"/*)
+      echo "FAIL: stage artifacts must be under the consuming project's root docs/ or .scratch/; $DOCS_DIR is owned by the shared android-agent-harness submodule." >&2
       exit 1
       ;;
   esac

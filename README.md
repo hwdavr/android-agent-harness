@@ -90,6 +90,21 @@ To prevent LLM performance degradation and context dilution, context is loaded i
 
 ## 🔄 Workflows & Execution Pipelines
 
+### Product requirements and change records
+
+Keep one living Markdown file per product capability in the consuming project's
+`docs/product/requirements/`. Read and update the same file for every later behavior
+change. Keep the product overview and single Harness Feature Tracker in
+`docs/product/product.md`.
+
+Store dated complex-change specs, approvals, slices, evidence, and reviews together
+in `.scratch/<YYYY-MM-DD>-<change>/`. Retain these workspaces in version control;
+location does not define lifecycle status. Ad-hoc artifacts remain in `docs/current/`.
+New specs link capability requirements and record their approval-time hashes. Later
+living-document edits do not expand an approved change's scope. Follow
+[Product documentation flow](.agents/rules/product-documentation.md), and run
+`python3 harness/scripts/check-product-docs.py` before closing a behavior change.
+
 ### Project-Based Development (Complex Features)
 Used for multi-slice, significant features requiring systematic requirement analysis and evaluation:
 
@@ -122,6 +137,7 @@ The harness includes validation scripts located in `harness/scripts/`:
 | `check-compose-rules.sh` | Checks Compose best practices, `testTag` presence, and statelessness |
 | `check-localization-rules.sh` | Detects hardcoded strings in UI composables |
 | `check-feature-lifecycle.sh` | Validates feature tracking state and artifact integrity |
+| `check-product-docs.py` | Validates living capability documents, index coverage, scratch workspace placement, and local references |
 | `check-visual-evidence-contract.sh` | Enforces visual screenshot verification artifacts |
 | `check-acceptance-test-traceability.sh` | Verifies acceptance IDs map to real Kotlin methods, scenarios, scoped commands, and evidence |
 | `check-evaluation-fix-contract.sh` | Enforces deterministic evaluator scoring, evidence, and fix-stage routing |

@@ -4,6 +4,8 @@ description: Resolve evaluator findings for a complex feature below the acceptan
 
 # Workflow: Harness Fix
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 - Use this workflow when you are acting as the **Generator** (Implementer) agent in **Fix Mode**.
 - The active feature's tracker status is `To be fixed`. This status is set by the Evaluator ([`harness-evaluation.md`](harness-evaluation.md)) when the overall score is below `5.0 / 5`.
@@ -156,3 +158,7 @@ or the user explicitly requests installation. Otherwise record an explicit non-r
 
 1. **After Fix-Stage 5 (Finalize & Exit)** — user sees the updated review reports (per-finding fix statuses), re-verification evidence, and the tracker transition to `To be human reviewed` *(mandatory)*.
 2. **Unresolved findings** — any `Unresolved ⚠️` finding must be surfaced to the user; the user decides whether to accept the residual risk or require another fix pass *(mandatory if any exist)*.
+
+## Product Requirements Reconciliation
+
+Before closing this change, reconcile affected living capability requirements with verified behavior and link evidence. For an already-correct bug contract, record `Confirmed unchanged` with a reason. Preserve undelivered scope and pending review. Run `python3 harness/scripts/check-product-docs.py` and the lifecycle validator; for new change specs also use `--change-dir <active-workspace>`. Relocation never renews approvals or runtime evidence.

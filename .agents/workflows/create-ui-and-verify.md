@@ -4,6 +4,8 @@ description: Implement or update Android UI from a provided screenshot or approv
 
 # Workflow: Create UI and Verify
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 Use this workflow when:
 - Implementing a new screen from a design screenshot or generated mockup
@@ -180,3 +182,7 @@ Gate:
 - **Handling Long Content**: For scrollable screens or bottom sheets, ensure the UI handles scrolling properly. In tests, use `performScrollToNode()` to find off-screen elements.
 - **Bottom Sheets**: Use `skipPartiallyExpanded = true` for bottom sheets with significant content to improve immediate visibility and test reliability.
 - **Duplicate Text**: When multiple nodes share the same text, use `onAllNodesWithText()[index]` to avoid ambiguity in assertions.
+
+## Product Requirements Reconciliation
+
+Before closing this change, reconcile affected living capability requirements with verified behavior and link evidence. For an already-correct bug contract, record `Confirmed unchanged` with a reason. Preserve undelivered scope and pending review. Run `python3 harness/scripts/check-product-docs.py` and the lifecycle validator; for new change specs also use `--change-dir <active-workspace>`. Relocation never renews approvals or runtime evidence.

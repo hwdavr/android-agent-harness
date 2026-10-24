@@ -51,7 +51,7 @@ The workflow—not this profile—is authoritative for task selection and lifecy
 transitions:
 
 1. **Select the approved slice**: Invoke `feature-orient`, run the lifecycle
-   check, and select only the dated `docs/product/<YYYY-MM-DD>-<feature-short-name>/`
+   check, and select only the dated `.scratch/<YYYY-MM-DD>-<feature-short-name>/`
    workspace identified by the Harness Feature Tracker.
 2. **Run the nine stages in order**: Orient → Setup → Verify Baseline →
    Implement → Test → Code Quality Fix → Update State → Clean Exit → **Install App To Device**.

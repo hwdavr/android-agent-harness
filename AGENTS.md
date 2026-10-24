@@ -1,6 +1,5 @@
 # AGENTS.md
 This is the root context file. Read this first, then navigate to the relevant workflow. This file is an Index & Map — not an encyclopedia. Keep it under 120 lines.
----
 ## Project
 Kotlin + Jetpack Compose + Room Android notes app. Treat it as a production product, not a demo.
 
@@ -9,7 +8,6 @@ Kotlin + Jetpack Compose + Room Android notes app. Treat it as a production prod
 - `app/` — Android application module
 - `UX/` — design assets
 - `sharedContracts/` — OpenAPI contract + shared test scenarios
----
 ## Context Loading — L1 / L2 / L3
 Load context in layers; more is not better.
 | Layer | When | What to load |
@@ -30,7 +28,8 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | `.agents/gates/` | CI checks and review/release checklists. |
 | `harness/templates/` | Standard output formats for plans, reviews, tests. |
 | `harness/scripts/` | Validation scripts and contract test runners. |
-| `docs/product/<YYYY-MM-DD>-<feature-short-name>/` | Stable complex-feature workspace for planning, implementation, evidence, and completed records. |
+| `.scratch/<YYYY-MM-DD>-<feature-short-name>/` | Stable complex-feature workspace for planning, implementation, evidence, and completed records. |
+| `docs/product/requirements/` | One living Markdown file per product capability; update it in place for every behavior change. |
 | `docs/knowledge/` | Past bugs, pitfalls, architecture decisions (L3). |
 | `docs/changes/` | Audit trail — one directory per delivered change. |
 | `docs/product/product.md` | Product capabilities, roadmap, and the authoritative Harness Feature Tracker. |
@@ -55,6 +54,7 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | Independent code review before merge | `.agents/workflows/feature-review.md` |
 | UI-only mobile exploration | `.agents/skills/dogfood/SKILL.md` |
 | APK QA with scenario reports or network capture/mocks | `.agents/skills/exploratory-qa/SKILL.md` (reuses `dogfood`) |
+| Harness documentation, rule, gate, or evidence repairs | `.agents/skills/harness-retrospective/SKILL.md` |
 | App-side analytics event contracts | `.agents/skills/analytics-event-validator/SKILL.md` (standalone; optional in `exploratory-qa`) |
 
 ### Project-Based Development (Complex Features)
@@ -91,12 +91,13 @@ Key skills under `.agents/skills/`:
 - **Every stage gate must pass before advancing** — do not skip gates
 - **Every stage skill must be invoked through the available skill mechanism** — use the Skill tool when it is exposed. If this environment does not expose it, read the repository's matching `SKILL.md`, follow its workflow, and record the unavailable invocation interface in the stage evidence. An unavailable interface never permits skipping an executable stage gate or verification command named by the skill.
 - **Every specification artifact must contain the complete Rule Applicability matrix** — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all ten rules. The approved specification is canonical: implementation and test plans link its `#rule-applicability` anchor and map only `Required` rows to work/evidence; reviews independently reconcile all ten decisions rather than copy them.
-- **Memory of prior approval does not bypass workflow stages** — source of truth is on disk. Ad-hoc workflows use `docs/current/`; every complex harness feature uses one stable dated workspace under `docs/product/`. If a required artifact is missing, re-run the stage via its skill. Require the approved `spec.md`, `design.md` when UI is affected, `feature_list.json`, and `sprint-contract.md` in that workspace.
+- **Memory of prior approval does not bypass workflow stages** — source of truth is on disk. Ad-hoc workflows use `docs/current/`; every complex harness feature uses one stable dated workspace under `.scratch/`. If a required artifact is missing, re-run the stage via its skill. Require the approved `spec.md`, `design.md` when UI is affected, `feature_list.json`, and `sprint-contract.md` in that workspace.
 - **Validate harness lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting a complex feature and after every tracker transition. Folder location never represents status; the tracker and per-slice evidence do.
 - **Stage completion requires evidence** — when marking a stage complete in `summary_v<N>.md`, cite the artifact path and paste a one-line excerpt. A stage is not complete until the artifact exists on disk and is referenced from the summary. Summaries reference canonical scope and Rule Applicability artifacts; they do not duplicate their matrices, acceptance criteria, or slice metadata.
 - **Do not suppress rule violations** — agents must fix root causes, not add `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disable comments, baselines, or broader excludes unless the user explicitly approves a documented false positive
 - **Fix rule/workflow/skill mismatches through a PR** — if an agent finds conflicting, stale, or mismatched instructions across rules, workflows, skills, gates, or templates, it must state the issue and why the fix is needed, then raise a PR that corrects the source instruction instead of silently working around it
-- **Keep `docs/product/product.md` current** — update the Harness Feature Tracker, Current Product Capabilities, Product Portfolio Summary, and roadmap as delivery state changes. It is the product and complex-feature lifecycle source of truth for agents and humans.
+- **Product documentation flow** — follow `.agents/rules/product-documentation.md`; read/update affected `docs/product/requirements/<capability>.md` files and retain approved change contracts in `.scratch/`.
+- **Keep `docs/product/product.md` current** — maintain the capability index and the sole complex-change lifecycle tracker. Detailed current and planned behavior lives in the existing capability requirement files, not repeated overview sections.
 
 ---
 ## Build Commands — run from project root

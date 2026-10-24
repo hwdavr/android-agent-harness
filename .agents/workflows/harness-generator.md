@@ -4,12 +4,14 @@ description: Implement an approved complex Android feature slice through harness
 
 # Workflow: Harness Generator
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 Use this workflow when you are acting as the **Generator** (Implementer) agent. This workflow ensures that you are properly oriented, verify safety baselines, implement features surgical-by-surgical, test continuously on runtime, and commit clean states back to the repository.
 
 ## Planning Authorization
 
-This workflow starts only after the user approves `feature_list.json` and `sprint-contract.md` in one dated `docs/product/<YYYY-MM-DD>-<feature-short-name>/` workspace created by `harness-planning`. That approval authorizes implementation of the selected slice. Do not generate or request approval for a duplicate implementation plan in this workflow; the active feature description, sprint acceptance criteria, design, and verification commands are the implementation plan of record.
+This workflow starts only after the user approves `feature_list.json` and `sprint-contract.md` in one dated `.scratch/<YYYY-MM-DD>-<feature-short-name>/` workspace created by `harness-planning`. That approval authorizes implementation of the selected slice. Do not generate or request approval for a duplicate implementation plan in this workflow; the active feature description, sprint acceptance criteria, design, and verification commands are the implementation plan of record.
 
 Before implementation begins, preserve the approved Rule Applicability decisions from
 the feature specification in the slice evidence and carry each Required row into its
@@ -33,7 +35,7 @@ be recorded as `⚠️ Blocked` or non-passing, and the workflow must stop befor
 Before making any changes or planning code, gather complete session and git context. Select the next task to implement.
 *   **Action**: **INVOKE** the `feature-orient` skill via the Skill tool (name: `feature-orient`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 *   **Action**: Run `bash harness/scripts/check-stage-artifacts.sh harness-generator orient "$FEATURE_DIR" "$FEATURE_ID"` after the orientation skill completes. If it fails, record Stage 1 as `⚠️ Blocked` and stop.
-*   **Objective**: Run `bash harness/scripts/check-feature-lifecycle.sh`, select the approved `docs/product/` workspace from the Harness Feature Tracker by status, run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`, and establish the sprint contract plus `feature_list.json` as the only requirement/execution authorities. The slice summary must exist at `$FEATURE_DIR/summary_{feature_id}.md` and records their paths and hashes as Context Provenance; it does not duplicate scope, acceptance criteria, or the Rule Applicability matrix. Read and validate `$FEATURE_DIR/platform-capability-matrix.md` when the feature is platform-bound (`platform_validation.required: true`). If the index reports `affects_ui: true`, read `docs/product/design_system.md`, the approved feature `design.md`, and its mockups before implementation.
+*   **Objective**: Run `bash harness/scripts/check-feature-lifecycle.sh`, select the approved `.scratch/` workspace from the Harness Feature Tracker by status, run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`, and establish the sprint contract plus `feature_list.json` as the approved change-scope and execution authorities; read linked capability requirements for product intent. The slice summary must exist at `$FEATURE_DIR/summary_{feature_id}.md` and records their paths and hashes as Context Provenance; it does not duplicate scope, acceptance criteria, or the Rule Applicability matrix. Read and validate `$FEATURE_DIR/platform-capability-matrix.md` when the feature is platform-bound (`platform_validation.required: true`). If the index reports `affects_ui: true`, read `docs/product/design_system.md`, the approved feature `design.md`, and its mockups before implementation.
 *   **Gate**: `check-stage-artifacts.sh harness-generator orient` must exit `0` and find the exact `$FEATURE_DIR/summary_{feature_id}.md` file. A missing summary or missing feature id is `⚠️ Blocked`; do not advance to Setup.
 
 ### Stage 2 — Setup
@@ -100,9 +102,9 @@ Update repository history, project task logs, and product documentation to refle
 *   **Action**:
     1. Once verification passes and evidence is attached, update `$FEATURE_DIR/feature_list.json` and `$FEATURE_DIR/progress.md`.
     2. Update `docs/product/product.md` directly:
-        *   Update the **Product Portfolio Summary** to reflect the delivered slice.
-        *   Add the feature to **Current Product Capabilities** with its delivered behavior and notable implementation notes.
-        *   Remove the feature from the **Roadmap — Planned Features** section if it is fully delivered, or update its priority column to reflect remaining sub-features.
+        *   Reconcile affected living capability requirement files with verified behavior and link evidence.
+        *   Update capability links in the overview only where navigation changes. Detailed behavior belongs in the existing capability files.
+        *   Update Planned changes inside each affected capability file; preserve undelivered scope and pending review explicitly.
         *   Update the `*Document last updated*` date at the bottom of the file.
         *   If every feature in `$FEATURE_DIR/feature_list.json` is now `passing`, update the Harness Feature Tracker status to `To be reviewed` in place and update its date/notes (do not move or rename the workspace). **NEVER transition directly to `To be human reviewed`** — only the Evaluator agent (via `harness-evaluation`) is authorized to make that transition after scoring. Otherwise, keep the Harness Feature Tracker `In Progress` while slices remain.
         *   Run `bash harness/scripts/check-feature-lifecycle.sh` after the tracker update. Do not claim completion or commit if it fails.
@@ -142,3 +144,7 @@ verification, or the user explicitly requests installation. Otherwise record
 *   **Gate**: When required, the install command must exit 0; failure or no connected device is
     `⚠️ Blocked`. When not required, the explicit N/A rationale completes the stage without an
     install command.
+
+## Product Requirements Reconciliation
+
+Before closing this change, reconcile affected living capability requirements with verified behavior and link evidence. For an already-correct bug contract, record `Confirmed unchanged` with a reason. Preserve undelivered scope and pending review. Run `python3 harness/scripts/check-product-docs.py` and the lifecycle validator; for new change specs also use `--change-dir <active-workspace>`. Relocation never renews approvals or runtime evidence.

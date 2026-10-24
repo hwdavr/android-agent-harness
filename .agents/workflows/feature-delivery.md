@@ -4,6 +4,8 @@ description: Deliver an Android feature end-to-end through approved implementati
 
 # Workflow: Feature Delivery
 
+Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+
 ## When to use
 - Use this workflow when you are acting as the **Generator** (Implementer) agent.
 - Implementing a new feature
@@ -88,17 +90,18 @@ Gate: `ktlintCheck`, `detekt`, `lintDebug`, and all custom check scripts exit wi
 ---
 
 ### Stage 6 — Product Document Update
-Update `docs/product/product.md` to reflect the newly shipped feature.
+Reconcile the affected existing `docs/product/requirements/<capability>.md` files with verified behavior. Move only delivered scope out of Planned changes, preserve blocked/pending-review qualifications, and link change evidence. Detailed requirements belong in capability files; update the product index/tracker only where navigation or lifecycle changes.
 
-**Actions**:
-1. Move the feature row(s) in the **Product Portfolio Summary** from `🔜 Next` / `📋 Planned` to `✅ Complete`.
-2. Add the feature to **Current Product Capabilities** with its delivered capabilities and any notable implementation notes.
-3. Remove the feature from the **Roadmap — Planned Features** section if it is fully delivered, or update its priority column to reflect remaining sub-features.
-4. Record execution metrics in the `## Observability & Execution Metrics` section of `docs/current/summary_v<N>.md` and verify with `bash harness/scripts/check-harness-metrics.sh --validate docs/current/summary_v<N>.md`.
+Record execution metrics in the summary and run:
 
-Output: `docs/product/product.md` updated with current shipped state; `docs/current/summary_v<N>.md` updated with observability metrics following [`harness/templates/summary-template.md`](../../harness/templates/summary-template.md).
-Gate: the file is saved, the feature no longer appears as Planned or Next for all delivered capabilities, and `check-harness-metrics.sh --validate` exits 0.
+```bash
+python3 harness/scripts/check-product-docs.py --change-dir docs/current
+bash harness/scripts/check-feature-lifecycle.sh
+bash harness/scripts/check-harness-metrics.sh --validate docs/current/summary_v<N>.md
+```
 
+Output: the same capability files contain current product intent and evidence references; the summary cites reconciliation and metrics evidence.
+Gate: all commands exit 0 and review confirms the requirements match verified behavior.
 
 ---
 
