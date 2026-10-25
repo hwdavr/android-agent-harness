@@ -9,7 +9,9 @@
 
 Capability files own product intent; this contract owns the approved change and verification. A later requirements edit does not expand implementation authorization.
 
-Use this template when producing `spec_v<N>.md` in the **Requirement, Impact & Design Analysis** stage for adhoc workflows.
+Use this template when producing `spec_v<N>.md` in the **Requirement & Impact Analysis** stage for ad-hoc workflows.
+The spec owns behavior and the required state inventory. The later UX Design stage owns visual
+layout and references; visual-only feedback does not version this spec.
 
 **Date**: YYYY-MM-DD
 **Status**: Draft / Final

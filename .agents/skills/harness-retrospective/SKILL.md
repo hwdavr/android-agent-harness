@@ -35,7 +35,7 @@ Classify before editing. Use exactly one primary classification:
 | `HARNESS_ENVIRONMENT` | A workflow, gate, validator, fixture, environment probe, or evidence rule allowed a false pass or misleading result. | Repair and regression-test the harness. |
 | `WORKFLOW_GAP` | The correct rule exists nowhere or is not attached to the required stage. | Add it to the authoritative workflow/template/gate and test enforcement. |
 | `TEST_EVIDENCE_GAP` | The test runner or evidence schema cannot prove the required boundary. | Add a mechanical evidence requirement; do not implement the product behavior. |
-| `SPEC_GAP` | The expected product behavior or acceptance criteria are ambiguous, conflicting, or absent. | Repair `spec.md`, `design.md`, and `sprint-contract.md` in the feature workspace; then re-validate downstream artifacts. |
+| `SPEC_GAP` | The expected product behavior or acceptance criteria are ambiguous, conflicting, or absent. | Repair `spec.md`, `UI_contract.md`/Pen references, and `sprint-contract.md` in the feature workspace; then re-validate downstream artifacts. |
 | `MODEL_OR_PLATFORM_CAPABILITY` | The runtime, model, OEM, SDK, or service cannot provide the requested capability. | Stop; route to product/architecture decision. Add only fail-loud diagnostics if needed. |
 | `APPLICATION_DEFECT` | The harness correctly exposed a defect in shipped application behavior. | Stop; route to the application bug-fixing workflow. |
 
@@ -91,10 +91,10 @@ Use `apply_patch` for file edits. Do not add suppressions, exclusions, warning-o
 When the classification is `SPEC_GAP`, repair the feature workspace artifacts in `.scratch/<dated-feature-dir>/`:
 
 1. **`spec.md`** — Clarify the ambiguous, conflicting, or absent acceptance criteria. Add or rewrite the affected requirement with unambiguous language. Preserve all unrelated requirements.
-2. **`design.md`** — Update the design to reflect the corrected specification. Adjust affected UI states, flows, or component descriptions. Preserve unrelated design decisions.
+2. **`UI_contract.md` and Pen references** — Correct the affected state inventory and behavior first, then update its Pen design and mapped exports. Preserve unrelated states and design decisions.
 3. **`sprint-contract.md`** — Update affected slices, acceptance criteria, and scope to align with the repaired spec and design. Preserve unrelated slices and their status.
 
-After repairing, verify internal consistency: every acceptance criterion in `spec.md` must trace to a design element in `design.md` and to at least one slice or task in `sprint-contract.md`. Flag any remaining gaps that require user confirmation before proceeding.
+After repairing, verify internal consistency: every acceptance criterion in `spec.md` must trace to a state/Pen reference in `UI_contract.md` and to at least one slice or task in `sprint-contract.md`. Flag any remaining gaps that require user confirmation before proceeding.
 
 ### 6. Enforce fail-loud environment behavior
 
@@ -145,7 +145,7 @@ The retrospective is complete only when:
 - The authoritative workflow, rule, gate, template, or validator is minimally repaired.
 - A regression fixture proves the old false pass is rejected.
 - Required unavailable environments cannot pass silently.
-- `SPEC_GAP` repairs are reflected consistently across `spec.md`, `design.md`, and `sprint-contract.md`.
+- `SPEC_GAP` repairs are reflected consistently across `spec.md`, `UI_contract.md`/Pen references, and `sprint-contract.md`.
 - Out-of-scope model, platform, and application concerns are routed rather than "fixed" here.
 - Relevant validators and contract tests pass, including the expected negative cases.
 - The retrospective artifact records commands, results, paths, excerpts, and remaining risk.

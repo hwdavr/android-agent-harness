@@ -203,13 +203,13 @@ Avoid `remember` in tests by keeping stateless content Composables as the primar
 - A bottom toolbar / bottom bar must never sit behind the keyboard, overlap the focused field, or shrink the visible typing area.
 - Dismiss the bottom toolbar while `WindowInsets.isImeVisible` is `true` and restore it when the IME hides.
 - Apply `imePadding()` to the content (or an equivalent insets strategy) so the focused field and remaining controls stay visible and reachable above the keyboard.
-- This rule applies to full screens and bottom sheets alike, including screens without a bottom toolbar. The design (`design.md` or the ad-hoc `UI_contract.md`) must depict the keyboard-visible state for every screen or sheet whose content has editable text input. Use the full window viewport with the focused field, required controls, and system IME together; a component crop or unfocused search query is insufficient. Inventory closed/open/dismissed states in `UI_contract.md` and prove real IME geometry through the production Activity boundary defined in `testing-runtime-evidence.md`. When the screen has a bottom toolbar, the keyboard-visible state must show that toolbar dismissed. (A modal bottom sheet already hides the screen's toolbar behind it, so no dismissal is needed there.)
+- This rule applies to full screens and bottom sheets alike, including screens without a bottom toolbar. The UI contract and its mapped Pen design must depict the keyboard-visible state for every screen or sheet whose content has editable text input. Use the full window viewport with the focused field, required controls, and system IME together; a component crop or unfocused search query is insufficient. Inventory closed/open/dismissed states in `UI_contract.md` and prove real IME geometry through the production Activity boundary defined in `testing-runtime-evidence.md`. When the screen has a bottom toolbar, the keyboard-visible state must show that toolbar dismissed. (A modal bottom sheet already hides the screen's toolbar behind it, so no dismissal is needed there.)
 
 ### Bottom Sheets with Text Input
 
 - Tapping a text box, text field, or search field inside a bottom sheet must **not** dismiss the sheet. The sheet stays open and expands above the keyboard while the IME is visible; only a scrim tap, swipe-down, or an explicit close action dismisses it.
 - Apply `imePadding()` to the sheet content so the focused field and remaining controls stay visible above the keyboard, and keep the sheet's results region scrollable.
-- The design (`design.md`) must include a distinct keyboard-visible mockup showing the sheet **still open** with the keyboard, alongside the base mockup — never a dismissed sheet.
+- `UI_contract.md` must declare `sheet-stays-open` keyboard behavior and map a distinct keyboard-visible Pen screen/export showing the sheet **still open**, alongside the base state.
 
 ### Bottom-Sheet Composition
 

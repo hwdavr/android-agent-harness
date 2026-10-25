@@ -47,6 +47,7 @@ write_png_header "$FIXTURE/design/mockup_crop.png" 860 1864
 write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
 cat > "$FIXTURE/UI_contract.md" <<'EOF'
 # UI Contract
+Project design system: `docs/product/design_system.md`
 
 ## Screen States
 
@@ -95,6 +96,7 @@ touch "$FIXTURE/summary_v1.md"
 bash "$GATE" create-ui-and-verify reference-design "$FIXTURE" >/dev/null
 bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE" >/dev/null
 bash "$GATE" feature-delivery requirement-analysis "$FIXTURE" >/dev/null
+bash "$GATE" feature-delivery ux-design "$FIXTURE" >/dev/null
 
 cp "$FIXTURE/UI_contract.md" "$FIXTURE/original-contract"
 write_png_header "$FIXTURE/design/mockup_crop_rail.png" 860 177
@@ -117,7 +119,7 @@ write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
 cp "$FIXTURE/spec_v1.md" "$FIXTURE/original-spec"
 sed '/| Transform | rotate | FR-02 | AC-02 |/d' "$FIXTURE/original-spec" > "$FIXTURE/spec_v1.md"
 expect_failure "UI contract states differ from spec" \
-  bash "$GATE" feature-delivery requirement-analysis "$FIXTURE"
+  bash "$GATE" feature-delivery ux-design "$FIXTURE"
 cp "$FIXTURE/original-spec" "$FIXTURE/spec_v1.md"
 
 cp "$FIXTURE/implementation_plan_v1.md" "$FIXTURE/original-plan"

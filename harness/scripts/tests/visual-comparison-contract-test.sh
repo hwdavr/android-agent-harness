@@ -13,7 +13,7 @@ SKILL="$REPO_ROOT/.agents/skills/ui-verification/SKILL.md"
 RULE="$REPO_ROOT/.agents/rules/testing-runtime-evidence.md"
 CONTRACT="$REPO_ROOT/harness/scripts/check-visual-evidence-contract.sh"
 TEMPLATE="$REPO_ROOT/harness/templates/visual-target-template.json"
-DESIGN_TEMPLATE="$REPO_ROOT/harness/templates/feature-design-template.md"
+DESIGN_TEMPLATE="$REPO_ROOT/harness/templates/UI_contract-template.md"
 PLANNING_WORKFLOW="$REPO_ROOT/.agents/workflows/harness-planning.md"
 UX_SKILL="$REPO_ROOT/.agents/skills/ux-design/SKILL.md"
 STAGE_GATE="$REPO_ROOT/harness/scripts/check-stage-artifacts.sh"
@@ -59,6 +59,10 @@ printf '%s\n' \
   '' \
   '## Screen States' \
   '' \
+  '| Screen | State ID | Requirement | Acceptance Criteria |' \
+  '|---|---|---|---|' \
+  '| Editor | ready | FR-001 | AC-001 |' \
+  '' \
   '## Rule Applicability' \
   '' \
   '| Rule ID | Rule document | Decision | Evidence |' \
@@ -74,16 +78,16 @@ printf '%s\n' \
   '| ANL | rule.md | Not applicable — analytics: none | fixture |' \
   '| SEC | rule.md | Not applicable — no security boundary | fixture |' \
   > "$fixture_root/spec.md"
-printf '%s\n' \
-  '# Design' \
-  'Project design system: `docs/product/design_system.md`' \
-  '' \
-  '## Screens Covered' \
-  '' \
-  '| # | Screen / Surface | Status |' \
-  '|---|---|---|' \
-  '| 1 | Existing Editor | Updated |' \
-  > "$fixture_root/design.md"
-bash "$STAGE_GATE" harness-planning feature-specification "$fixture_root" >/dev/null
+cat > "$fixture_root/UI_contract.md" <<'EOF'
+# UI Contract
+Project design system: `docs/product/design_system.md`
+
+## Screen States
+
+| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Editor | ready | Pending | Pending | Pending | Pending | 430x932 | primary-content; state-controls; persistent-controls | Apply button; preview | editor-ready | roborazzi | None | UI-01 |
+EOF
+bash "$STAGE_GATE" harness-planning ui-contract "$fixture_root" >/dev/null
 
 echo "PASS: Pen-export verification requires deterministic Roborazzi comparisons."

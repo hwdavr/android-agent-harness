@@ -3,6 +3,7 @@
 | Stage | Status | Timestamp | Notes |
 |---|---|---|---|
 | Requirement Analysis | Pending | — | |
+| UX Design | Pending / N/A | — | Separate visual review after requirements; design approval required for UI scope. |
 | Implementation Plan | Pending | — | User approval required before implementation. |
 | Implementation | Pending | — | Runs before Testing. |
 | Testing | Pending | — | Post-implementation GREEN verification. |

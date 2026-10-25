@@ -34,6 +34,18 @@ Carry every decision into the implementation plan, verification evidence, and re
 the UI rules are required only when their triggers are present.
 
 ### Stage 0 — Reference Design Gate
+This is the separate UX design stage. Clarify behavior and the required state inventory first;
+reuse the active clarified spec when one exists. Apply `ux-design`'s artifact ownership contract:
+visual iterations update design artifacts, and summary evidence is recorded at stage boundaries,
+approval, or blockers. Do not regenerate a spec, summary, or implementation plan for each Pen edit.
+Behavior/scope changes return to requirements clarification before design resumes.
+
+Create `UI_contract.md` before generating Pen screens. Run
+`bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify ui-contract docs/current` to
+validate the complete state and IME inventory with only design-reference fields marked `Pending`.
+Then generate Pen frames from those rows and fill their node/export mappings. The actual design
+is in the Pen file; no separate design.md is required.
+
 Before implementation, classify every supplied image as either an approved design reference or
 defect evidence. A screenshot showing the current/wrong behavior is evidence only and is not a
 design reference.
@@ -52,7 +64,7 @@ design reference.
 - **Reference path unavailable:** Stop and ask the user to attach the missing screenshot again;
   do not substitute an inferred design.
 
-Create `docs/current/UI_contract.md` from `harness/templates/UI_contract-template.md`. Enumerate
+Complete the reference fields in the `UI_contract.md` prepared before Pen generation. Its inventory enumerates
 each visible screen/state from requirements and the current runtime, including selected subtools,
 overlays, empty/error states, and keyboard states for every editable input. Inventory each input's
 stable tag in `## IME State Coverage` and bind it to keyboard-closed, keyboard-open, and dismissed

@@ -10,6 +10,9 @@
 
 Insert exactly one table from `harness/templates/summary-profiles/<workflow>.md`. Do not load or
 copy inactive workflow profiles. A stage is complete only when its concise evidence appears below.
+Update this record at stage boundaries, approval, or a blocker. During UX visual iteration, keep
+the spec and summary stable and update only design artifacts; do not allocate a new delivery
+version for each design revision.
 
 ## Context Provenance
 

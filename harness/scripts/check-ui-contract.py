@@ -18,11 +18,12 @@ STATE_COLUMNS = [
     "Design image", "Viewport", "Required regions", "State controls", "Runtime fixture",
     "Comparison", "Content difference", "Plan stage",
 ]
+DESIGN_COLUMNS = ["Design source", "Design node ID", "Design node role", "Design image"]
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
 PLAN_COLUMNS = ["Stage ID", "Implementation", "Roborazzi target", "Verification"]
 IME_COLUMNS = [
     "Screen", "Input tag", "Window viewport", "Keyboard closed state", "Keyboard open state",
-    "Dismissed state", "Layout policy", "Required visible tags",
+    "Dismissed state", "Layout policy", "Keyboard behavior", "Required visible tags",
 ]
 IME_BOUNDARY_COLUMNS = [
     "Screen", "Input tag", "Production activity", "Open test", "Dismiss test", "Command", "Result XML",
@@ -144,6 +145,16 @@ def ime_states(contract, rows):
             fail("keyboard-open design must be distinct from the closed and dismissed states")
         if item["Layout policy"] not in {"resize", "pan", "overlay"}:
             fail("IME Layout policy must be resize, pan, or overlay")
+        behavior = item["Keyboard behavior"]
+        if behavior not in {"screen-no-toolbar", "screen-toolbar-dismissed", "sheet-stays-open"}:
+            fail("IME Keyboard behavior must be screen-no-toolbar, screen-toolbar-dismissed, or sheet-stays-open")
+        input_states = {item[column] for column in ("Keyboard closed state", "Keyboard open state", "Dismissed state")}
+        controls = " ".join(row["State controls"] for row in rows
+                            if row["Screen"] == item["Screen"] and row["State ID"] in input_states)
+        if re.search(r"bottom[ -]*sheet", controls, re.I) and behavior != "sheet-stays-open":
+            fail("bottom-sheet input must declare sheet-stays-open")
+        if not re.search(r"bottom[ -]*sheet", controls, re.I) and re.search(r"bottom[ -]*(?:tool)?bar", controls, re.I) and behavior != "screen-toolbar-dismissed":
+            fail("screen input with a bottom toolbar must declare screen-toolbar-dismissed")
         visible = {tag.strip() for tag in item["Required visible tags"].split(";")}
         if item["Input tag"] not in visible:
             fail("IME Required visible tags must include the focused Input tag")
@@ -210,7 +221,10 @@ def ime_runtime(inventory, test_plan, runtime, project_root):
                 fail(f"IME runtime {class_name}#{method} did not pass with a non-zero executed count")
 
 
-def validate(contract, spec, plan, report, test_plan=None, runtime=False, project_root=None):
+def validate(contract, spec, plan, report, test_plan=None, runtime=False, project_root=None,
+             inventory_only=False, target_manifest=None):
+    if inventory_only and (plan or report or test_plan or runtime or target_manifest):
+        fail("--inventory cannot validate planning or runtime evidence")
     rows = table(contract, "Screen States", STATE_COLUMNS)
     states = set()
     nodes = set()
@@ -222,40 +236,53 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
         if key in states:
             fail(f"duplicate screen/state: {key[0]} / {key[1]}")
         states.add(key)
+        unresolved = [column for column in STATE_COLUMNS
+                      if column not in DESIGN_COLUMNS + ["Screen", "State ID"]
+                      and row[column].lower() in {"pending", "tbd", "todo"}]
+        if unresolved:
+            fail(f"state {key[1]} has unresolved state inventory: {', '.join(unresolved)}")
+        viewport_width, viewport_height = viewport(row["Viewport"], key[1])
+        pending = [row[column] == "Pending" for column in DESIGN_COLUMNS]
+        if any(pending) and not all(pending):
+            fail(f"state {key[1]} must complete all design reference fields or mark all four Pending")
+        if all(pending) and not inventory_only:
+            fail(f"state {key[1]} has pending design references; complete Pen design before UX approval or planning")
         source = row["Design source"]
         node = row["Design node ID"]
         role = row["Design node role"]
-        if not existing_path(contract, source):
+        if not all(pending) and not existing_path(contract, source):
             fail(f"missing or empty design source: {source}")
-        if source.endswith(".pen"):
+        if not all(pending) and source.endswith(".pen"):
             if node.lower() == "external" or role != "screen-frame":
                 fail(f"Pen state {key[1]} needs a top-level screen-frame node")
-        elif node.lower() != "external" or role != "external-screen":
+        elif not all(pending) and (node.lower() != "external" or role != "external-screen"):
             fail(f"external design state {key[1]} must use node ID external and role external-screen")
         node_key = (source, node)
-        if node_key in nodes:
+        if not all(pending) and node_key in nodes:
             fail(f"design node reused across states: {source} / {node}")
-        nodes.add(node_key)
+        if not all(pending):
+            nodes.add(node_key)
         image = row["Design image"]
-        image_path = existing_path(contract, image)
-        if not image.startswith("design/") or not image.endswith(".png") or not image_path:
-            fail(f"missing or empty design PNG: {image}")
-        viewport_width, viewport_height = viewport(row["Viewport"], key[1])
-        image_width, image_height = png_dimensions(image_path)
-        expected_ratio = viewport_width / viewport_height
-        actual_ratio = image_width / image_height
-        if abs(actual_ratio - expected_ratio) / expected_ratio > 0.015:
-            fail(
-                f"state {key[1]} design PNG aspect ratio {image_width}x{image_height} "
-                f"does not match viewport {viewport_width}x{viewport_height}"
-            )
+        if not all(pending):
+            image_path = existing_path(contract, image)
+            if not image.startswith("design/") or not image.endswith(".png") or not image_path:
+                fail(f"missing or empty design PNG: {image}")
+            image_width, image_height = png_dimensions(image_path)
+            expected_ratio = viewport_width / viewport_height
+            actual_ratio = image_width / image_height
+            if abs(actual_ratio - expected_ratio) / expected_ratio > 0.015:
+                fail(
+                    f"state {key[1]} design PNG aspect ratio {image_width}x{image_height} "
+                    f"does not match viewport {viewport_width}x{viewport_height}"
+                )
         complete_regions(row["Required regions"], key[1])
         controls = row["State controls"].strip().lower()
         if controls in ("none", "n/a") or len(controls) < 8:
             fail(f"state {key[1]} needs named state-specific controls")
-        if image in images:
+        if not all(pending) and image in images:
             fail(f"design image reused across states: {image}")
-        images.add(image)
+        if not all(pending):
+            images.add(image)
         fixture = row["Runtime fixture"]
         if fixture in fixtures:
             fail(f"runtime fixture reused across states: {fixture}")
@@ -279,6 +306,25 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
         spec_states = {(row["Screen"], row["State ID"]) for row in spec_rows}
         if len(spec_states) != len(spec_rows) or states != spec_states:
             fail(f"UI contract states differ from spec: missing {sorted(spec_states - states)}, extra {sorted(states - spec_states)}")
+    if target_manifest:
+        if not target_manifest.is_file():
+            fail(f"missing visual target manifest: {target_manifest}")
+        target = json.loads(target_manifest.read_text(encoding="utf-8"))
+        if not isinstance(target, dict):
+            fail("visual target manifest must be an object")
+        target_states = target.get("states", {})
+        state_ids = {row["State ID"] for row in rows}
+        if not isinstance(target_states, dict) or len(state_ids) != len(rows) or state_ids != set(target_states):
+            fail("visual target states differ from UI contract; use unique state IDs across screens")
+        size = target.get("logical_size_dp") or target.get("logical_size_pt") or {}
+        if not isinstance(size, dict):
+            fail("visual target viewport must contain width and height")
+        for row in rows:
+            target_state = target_states[row["State ID"]]
+            if not isinstance(target_state, dict) or target_state.get("reference") != row["Design image"]:
+                fail(f"visual target reference differs from UI contract: {row['State ID']}")
+            if (size.get("width"), size.get("height")) != viewport(row["Viewport"], row["State ID"]):
+                fail(f"visual target viewport differs from UI contract: {row['State ID']}")
     if plan:
         plan_rows = table(plan, "UI State Stages", PLAN_COLUMNS)
         plan_stages = {row["Stage ID"] for row in plan_rows}
@@ -342,7 +388,10 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
             parity = "verified" if is_roborazzi or row["Comparison"] == "exact" else "not-claimed"
             if item.get("pixel_parity") != parity:
                 fail(f"UI state {key[1]} needs pixel_parity: {parity}")
-    print(f"PASS: {len(states)} complete UI state(s) have unique screen-frame, viewport, coverage, fixture, comparison, and plan mappings.")
+    if inventory_only:
+        print(f"PASS: {len(states)} UI state(s) defined before Pen design; only design references may be Pending.")
+    else:
+        print(f"PASS: {len(states)} complete UI state(s) have unique screen-frame, viewport, coverage, fixture, comparison, and plan mappings.")
 
 
 if __name__ == "__main__":
@@ -354,9 +403,12 @@ if __name__ == "__main__":
     parser.add_argument("--test-plan", type=Path)
     parser.add_argument("--runtime", action="store_true")
     parser.add_argument("--project-root", type=Path)
+    parser.add_argument("--inventory", action="store_true", help="Validate complete state behavior before Pen assets exist")
+    parser.add_argument("--target-manifest", type=Path, help="Require the runtime target to mirror the UI contract")
     args = parser.parse_args()
     try:
-        validate(args.contract, args.spec, args.plan, args.report, args.test_plan, args.runtime, args.project_root)
+        validate(args.contract, args.spec, args.plan, args.report, args.test_plan, args.runtime,
+                 args.project_root, args.inventory, args.target_manifest)
     except (ValueError, json.JSONDecodeError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
         sys.exit(1)
