@@ -449,6 +449,25 @@ case "$WORKFLOW/$STAGE" in
         ;;
     esac
     ;;
+  feature-delivery/testing)
+    require_file "summary_v*.md" "stage progress tracker"
+    require_file "spec_v*.md" "canonical requirement/impact specification"
+    require_file "test_plan_v*.md" "approved feature test plan"
+    test_plan_artifact="$(latest_versioned_file "test_plan_v*.md")"
+    specification="$(latest_versioned_file "spec_v*.md")"
+    require_rule_applicability_mapping "$test_plan_artifact" "$specification" "feature-delivery testing"
+    if sui_is_active "$specification" || ime_is_active "$specification"; then
+      require_file "UI_contract.md" "per-state UI and IME design contract"
+      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" \
+        --test-plan "$test_plan_artifact" --runtime --project-root "$PROJECT_ROOT"
+    fi
+    nav_row="$(grep -E "^[[:space:]]*\|[[:space:]]*NAV[[:space:]]*\|" "$specification" | head -n 1 || true)"
+    case "$nav_row" in
+      *"| Required |"*)
+        require_production_journey "$test_plan_artifact"
+        ;;
+    esac
+    ;;
   api-contract-update/requirement-analysis)
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "requirement/impact/design spec"
@@ -612,6 +631,7 @@ EOF
     echo "  feature-delivery/ui-contract" >&2
     echo "  feature-delivery/ux-design" >&2
     echo "  feature-delivery/implementation-plan" >&2
+    echo "  feature-delivery/testing" >&2
     echo "  bug-fixing/requirement-analysis" >&2
     echo "  bug-fixing/bug-reproduction" >&2
     echo "  bug-fixing/implementation-plan" >&2
