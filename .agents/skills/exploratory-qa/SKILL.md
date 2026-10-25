@@ -44,3 +44,13 @@ python3 .agents/skills/exploratory-qa/scripts/report.py \
 ```
 
 Exit codes: 0 `PASS`, 1 `FAIL`, 2 `INCONCLUSIVE`/invalid input. PASS covers declared checks with submitted evidence. Missing observations or unexercised required mocks cannot pass; setup mismatches are labeled separately from app findings. Keep artifacts local and review/redact screenshots, logs, and URL paths before sharing. Helpers do not persist live bodies, headers, credentials, or raw proxy flows.
+
+## Handoff to bug fixing
+
+For each confirmed application finding, retain `id`, `title`, `severity`, `category`, `repro_steps`, `expected`,
+`actual`, and non-empty local `evidence` paths in `observations.json`; the report generator carries them into
+`report.json`. Keep package/version/device in the scenario target and record the APK hash when available.
+Give the bug-fixing workflow the existing `report.json` path and selected finding ID. It can read and validate
+that finding as its runtime reproduction without another QA session or another handoff document. Complete
+only missing evidence before handing off. A QA finding does not establish a source-level root cause or a
+post-fix pass; deterministic regression and later verification remain owned by bug fixing.
