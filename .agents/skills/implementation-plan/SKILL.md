@@ -18,7 +18,7 @@ This is the final gate before implementation begins.
 - `harness/templates/implementation-plan-template.md`
 - `harness/templates/test-plan-template.md`
 - `docs/current/spec_v<N>.md` (Requirement & Impact Analysis output)
-- Approved `docs/current/design.md` and `docs/current/UI_contract.md` for UI scope.
+- Approved `docs/current/UI_contract.md` and its canonical Pen/reference mappings for UI scope.
 
 When the approved `SEC` decision is `Required` or excepted, load
 `rules/android-security.md` and carry its required boundary, failure-mode, and test

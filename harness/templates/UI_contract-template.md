@@ -1,66 +1,85 @@
 # UI Contract — <feature>
 
 **Project design system**: `docs/product/design_system.md`
-**Related spec**: `spec_v<N>.md`
+**Related spec**: `spec_v<N>.md` / `spec.md` (use the active workflow's path)
+**Reference status**: Inventory / Pen design in progress / Awaiting approval / Approved
 
-## Phase 0 — Research Decisions
+## Research Decisions
 
-- Existing runtime screens, controls, and state transitions inspected: <paths and observations>
-- Open design questions resolved: <decision and evidence>
-- Roborazzi scope decision: <screen or approved component for each state>
-
-## Phase 1 — Design & Contracts
-
-The inventory below is the UI contract. Each row is a separately reviewable design and later a
-separate implementation comparison. It replaces a broad `design.md` for ad-hoc UI workflows.
+- Existing runtime screens, controls, and transitions inspected: <paths and observations>
+- Product questions resolved before design: <decisions or linked requirements>
+- Editable input inventory: <stable tags and IME coverage, or confirmed no editable inputs>
+- Design-system exceptions: None / <explicit user approval>
+- Roborazzi scope: <screen or approved component; exact content within that scope>
 
 ## Screen States
 
-List every visually distinct screen and interaction state from the spec and the current runtime. Give each state its own **top-level, complete screen frame** and full-viewport export. A supplied approved image may use `external` as its node ID and `external-screen` as its node role. Use one deterministic runtime fixture and one plan stage per row. The visual target declares whether Roborazzi compares the complete frame or a static component exported from it; both scopes must have identical deterministic content.
+Create and validate this inventory after requirements clarification and before Pen generation.
+UI_contract.md is the UI state contract for both ad-hoc and complex workflows. The actual visual
+design lives in the Pen file; no separate design.md is produced.
 
-Every row must name the full logical viewport, declare that the primary content, state controls, and persistent interactive surfaces are visible, and inventory the controls that distinguish the state. The implementation plan and runtime capture must use the same complete-state boundary.
+Define every screen/state, viewport, visible regions, named controls, deterministic fixture,
+comparison, and plan stage. Loading, empty, error, selected, disabled, overlays, and keyboard
+variants must be settled before generating visuals. Use globally unique State IDs for complex
+runtime targets.
+
+Set all four design-reference fields to `Pending` for a state whose Pen reference is not yet
+created. The inventory gate allows only those fields to be deferred. As each Pen screen is
+rendered and inspected, replace them with the canonical source, unique top-level node ID,
+`screen-frame` role, and full-viewport PNG. A supplied approved image can use `external` and
+`external-screen`. A control-only crop is not a full-screen reference.
 
 | Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| <screen> | <screen-state> | `../UI_design/<file>.pen` | <Pen node ID> | screen-frame | `design/mockup_<screen_state>.png` | 430x932 | primary-content; state-controls; persistent-controls | <named state-specific buttons, dials, menus, or controls> | <fixture ID> | roborazzi | None / component scope excludes <unrelated full-screen content> | UI-01 |
+| <screen> | <screen-state> | Pending | Pending | Pending | Pending | 430x932 | primary-content; state-controls; persistent-controls | <named controls, selection/disabled status, toolbar or sheet when present> | <fixture ID> | roborazzi | None / <approved content scope> | UI-01 |
 
 ## IME State Coverage
 
-Required for every editable text/search input, including existing inputs on the changed screen.
-Inventory stable input tags from the production Composables. Omit this section only when the
-screen contains no editable inputs and record that finding in Research Decisions. Read-only text
-and a Search button alone are not editable inputs.
+Required for each editable input on an in-scope screen, including unchanged inputs. Omit this
+section only after recording that no editable input exists. A Search button or read-only text
+alone is not editable input.
 
-Map each input to complete screen designs at the same **Window viewport**, including content,
-persistent controls, and the real keyboard area. Add `system-ime` to the keyboard-open state's
-Required regions. A panel-only export or prefilled query with cleared focus is insufficient.
-Dismissed state may reuse Keyboard closed state when identical; distinct focus-dependent layouts
-need distinct designs. The layout policy is the approved behavior, not a prescribed padding API.
-Required visible tags names the focused input and every action/content boundary that must remain
-reachable above the IME. The test plan binds this inventory to production-window boundary tests.
+Closed, open, and dismissed states use the same full-window viewport. Add `system-ime` to the
+open state's Required regions. Dismissed may reuse closed when identical. Required visible tags
+includes the focused input and all content/actions that must remain reachable above the IME.
 
-| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Required visible tags |
-|---|---|---|---|---|---|---|---|
-| <screen> | <editable input testTag> | 430x932 | <closed state ID> | <open state ID> | <closed or distinct dismissed state ID> | resize / pan / overlay | <input tag; submit tag; results tag> |
+Keyboard behavior is exactly one of:
+- `screen-no-toolbar`: screen input with no bottom toolbar.
+- `screen-toolbar-dismissed`: screen bottom toolbar is dismissed while the keyboard is visible.
+- `sheet-stays-open`: the modal bottom sheet remains open while typing; it covers the screen toolbar.
+
+| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Keyboard behavior | Required visible tags |
+|---|---|---|---|---|---|---|---|---|
+| <screen> | <input testTag> | 430x932 | <closed ID> | <open ID> | <closed or dismissed ID> | resize / pan / overlay | screen-no-toolbar / screen-toolbar-dismissed / sheet-stays-open | <input tag; submit tag; results tag> |
 
 ## State Details
 
 ### UI-01 — <screen-state>
 
-- Entry action and selected controls: <how to reach this state>
-- Primary content: <the image, canvas, list, document, or other fixed primary content and fixture values>
-- State controls: <all visible state-specific buttons, dials, menus, selection states, and labels>
-- Persistent controls: <all visible navigation, command, action, or toolbar controls and their states>
-- Visual anchors and icon identities: <named static elements and relationships>
-- Design-system exception: None / <explicit user approval>
-- Pen export check: <render viewed, icon identities checked, no question-mark placeholders>
+- Requirements: <FR/AC references in the clarified spec>
+- Entry/exit and selected controls: <actions and navigation boundaries>
+- Primary content and deterministic values: <image, canvas, list, document, or other content>
+- State controls: <buttons, menus, labels, selection, disabled/validation/error behavior>
+- Persistent controls: <navigation, actions, or toolbars and their states>
+- Exact copy and interactions: <labels and observable effects>
+- Accessibility/responsive behavior: <focus order, descriptions, touch targets, text size, constraints>
+- Visual anchors and icon identities: <relationships to verify against the Pen design>
+- Design-system exception: None / <explicit approval>
+- Pen export check: Pending / <render viewed, icon identities checked, no missing glyphs>
 
 ## Planning Handoff
 
-Copy every Plan stage ID into the implementation plan's `## UI State Stages` table. Implementation and verification are separate steps for each state. Before approval, bind each row to a unique planned `app/src/test/java/<package>/roborazzi/*RoborazziTest.kt#method`, the exact design image in this contract, and a method-scoped `verifyRoborazziDebug` command. Generate missing Pen frames before asking for design approval. Compare each deterministic JVM state only to its approved Pen screen or component export with Roborazzi.
+For ad-hoc delivery, copy every Plan stage ID into `## UI State Stages` in the implementation plan,
+with one unique planned Roborazzi method and its method-scoped verify command per state.
+
+For complex planning, derive `visual_evidence/visual-target.json` from this contract. Mirror its
+State IDs, viewports, and design-image paths exactly. Bind each runtime content state and approved
+reference to the sprint contract's visual rows. The manifest adds device/locale/dynamic-region
+metadata; it does not define another state inventory.
 
 ## Verification Quickstart
 
-1. Run `bash harness/scripts/check-stage-artifacts.sh create-ui-and-verify reference-design docs/current` or the active feature-delivery requirement-analysis gate.
-2. After plan approval, render each deterministic fixture in a JVM `RoborazziTest` and record a state result for each row.
-3. Run the active UI verification stage gate and review each state result against its design image.
+1. Before Pen: run the active workflow's `ui-contract` stage gate (`--inventory` checks the state contract).
+2. Generate/edit Pen frames from those rows, render and inspect them, then complete the reference fields.
+3. Run the full `ux-design` or UI-update `reference-design` gate and obtain design approval.
+4. After implementation approval, verify deterministic runtime states against the approved Pen exports.

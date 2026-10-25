@@ -110,7 +110,7 @@ Used for multi-slice, significant features requiring systematic requirement anal
 
 1. **Planning (`.agents/workflows/harness-planning.md`)**
    - Clarifies requirements and approves `spec.md`, then runs a separate UX Design stage for UI scope.
-   - UX owns `design.md`, Pen/reference assets, and visual review; visual revisions preserve the spec and summary.
+   - UX defines `UI_contract.md` before generating Pen/reference assets and conducting visual review; visual revisions preserve the spec and summary.
    - Decomposes requirements into vertical slices in `feature_list.json` and schedules a `sprint-contract.md`.
 2. **Generation (`.agents/workflows/harness-generator.md`)**
    - Implements each vertical slice incrementally (Data → Domain → UI), with test-first authoring, verification, and quality gates.

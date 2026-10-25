@@ -25,7 +25,7 @@ Do not jump directly into coding.
 
 Pipeline: Clarify Requirements & Impact → UX Design → [Design Approval] → Plan → [Implementation Approval] → Implementation → Testing → Code Quality Fix → Product Document Update → Install App To Device
 
-Use one active `v<N>` for the delivery. UX iterations update `design.md`, `UI_contract.md`, the
+Use one active `v<N>` for the delivery. UX iterations update `UI_contract.md`, the
 Pen candidate, and review exports. Keep the clarified spec stable unless behavior, scope, data,
 navigation, or the required state inventory changes. Update the summary only at stage boundaries,
 approval, or a blocker; do not create a spec/summary version for each visual revision.
@@ -57,11 +57,15 @@ unavailable, read its repository `SKILL.md` and record that once in stage eviden
 Input: the clarified `spec_v<N>.md`, supplied visual inputs, and the project design system.
 Logic-only scope records this stage N/A and proceeds to Stage 3.
 
-The UX skill owns `docs/current/design.md`, `UI_contract.md`, and review assets. It invokes
-`pen-design-editor` for missing references, maps every required state to a complete screen export,
-and validates icons, fonts, keyboard states, fixtures, and comparison targets. Supplied approved
-references remain unchanged. The editable Pen source and exported PNGs follow the Pen skill's
-validation and finalization contract.
+First create `docs/current/UI_contract.md` from the clarified requirements. Define every UI state,
+viewport, content/control inventory, fixture, and IME behavior before generating any Pen design.
+Only the four design-reference fields may be `Pending`. Run
+`bash harness/scripts/check-stage-artifacts.sh feature-delivery ui-contract` and resolve all
+inventory gaps before invoking `pen-design-editor` with this contract as its input.
+
+The actual visual design lives in the Pen file. Populate each contract row with its verified Pen
+node and PNG as the design is rendered and inspected. No separate design.md is produced.
+The editable Pen source and exports follow the Pen skill's validation/finalization contract.
 
 Gate: `bash harness/scripts/check-stage-artifacts.sh feature-delivery ux-design` must exit 0.
 Present the design and verified references and wait for explicit design approval. Iterate within

@@ -3,7 +3,7 @@
 #
 # Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> [artifact-directory] [feature-id]
 #   workflow: feature-delivery | bug-fixing | api-contract-update | harness-generator | harness-planning | create-ui-and-verify
-#   stage:    orient | requirement-analysis | ux-design | bug-reproduction | implementation-plan | testing | feature-specification | slice-planning | ui-verification
+#   stage:    orient | requirement-analysis | ui-contract | ux-design | bug-reproduction | implementation-plan | testing | feature-specification | slice-planning | ui-verification
 #
 # Exits 0 if required artifacts are present, 1 otherwise.
 # Designed to run on macOS /bin/bash (Bash 3.2) — no mapfile, no arrays with set -u.
@@ -21,7 +21,7 @@ FEATURE_ID="${4:-}"
 if [ -z "$WORKFLOW" ] || [ -z "$STAGE" ]; then
   echo "Usage: $0 <workflow> <stage> [artifact-directory] [feature-id]" >&2
   echo "Workflows: feature-delivery, bug-fixing, api-contract-update, harness-generator, harness-planning, create-ui-and-verify" >&2
-  echo "Stages: orient, requirement-analysis, ux-design, bug-reproduction, implementation-plan, testing, feature-specification, slice-planning, ui-verification" >&2
+  echo "Stages: orient, requirement-analysis, ui-contract, ux-design, bug-reproduction, implementation-plan, testing, feature-specification, slice-planning, ui-verification" >&2
   exit 2
 fi
 
@@ -172,43 +172,33 @@ spec_has_ui() {
   sui_is_active "$1" || grep -q '^## Screen States' "$1"
 }
 
-require_design_document() {
-  require_file "design.md" "UX design specification"
+require_ui_contract() {
+  local specification="$1"
+  shift
+  require_file "UI_contract.md" "UI state contract"
   if [ ! -f "$PROJECT_ROOT/docs/product/design_system.md" ]; then
     echo "FAIL: docs/product/design_system.md is required for UX design." >&2
     exit 1
   fi
-  if ! grep -Fq "docs/product/design_system.md" "$DOCS_DIR/design.md"; then
-    echo "FAIL: $DOCS_DIR/design.md must reference docs/product/design_system.md." >&2
+  if ! grep -Fq "docs/product/design_system.md" "$DOCS_DIR/UI_contract.md"; then
+    echo "FAIL: $DOCS_DIR/UI_contract.md must reference docs/product/design_system.md." >&2
     exit 1
   fi
-  bash "$SCRIPT_DIR/check-keyboard-mockup-contract.sh" "$DOCS_DIR"
+  if [ -n "$specification" ]; then
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" "$@"
+  else
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" "$@"
+  fi
 }
 
 require_harness_ux_design() {
-  require_design_document
+  require_ui_contract "$DOCS_DIR/spec.md"
   require_file "visual_evidence/visual-target.json" "UX visual target manifest"
   local manifest="$DOCS_DIR/visual_evidence/visual-target.json"
   local state
-  local reference
-  if ! jq -e '.states | type == "object" and length > 0' "$manifest" >/dev/null; then
-    echo "FAIL: UX visual target must declare non-empty states." >&2
-    exit 1
-  fi
+  python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --target-manifest "$manifest"
   while IFS= read -r state; do
     bash "$SCRIPT_DIR/visual-target-prompt.sh" --target "$manifest" --state "$state" >/dev/null
-    reference=$(jq -r --arg state "$state" '.states[$state].reference' "$manifest")
-    case "$reference" in
-      design/*) ;;
-      *) echo "FAIL: UX reference must be under design/: $reference" >&2; exit 1 ;;
-    esac
-    case "/$reference/" in
-      *"/../"*|*"/./"*) echo "FAIL: unsafe UX reference: $reference" >&2; exit 1 ;;
-    esac
-    if [ ! -s "$DOCS_DIR/$reference" ]; then
-      echo "FAIL: missing or empty UX reference: $reference" >&2
-      exit 1
-    fi
   done <<EOF
 $(jq -r '.states | keys[]' "$manifest")
 EOF
@@ -384,14 +374,16 @@ case "$WORKFLOW/$STAGE" in
     require_file "spec_v*.md" "requirement and impact specification"
     require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "feature-delivery requirement analysis"
     ;;
-  feature-delivery/ux-design)
+  feature-delivery/ui-contract|feature-delivery/ux-design)
     require_file "spec_v*.md" "clarified requirement specification"
     specification=$(latest_versioned_file "spec_v*.md")
     require_rule_applicability "$specification" "feature-delivery UX input"
     if spec_has_ui "$specification"; then
-      require_design_document
-      require_file "UI_contract.md" "per-state UI design contract"
-      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification"
+      if [ "$STAGE" = "ui-contract" ]; then
+        require_ui_contract "$specification" --inventory
+      else
+        require_ui_contract "$specification"
+      fi
     else
       echo "N/A: the clarified specification has no UI scope."
     fi
@@ -404,9 +396,7 @@ case "$WORKFLOW/$STAGE" in
     require_rule_applicability_mapping "$(latest_versioned_file "implementation_plan_v*.md")" "$specification" "feature-delivery implementation plan"
     require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$specification" "feature-delivery test plan"
     if spec_has_ui "$specification"; then
-      require_design_document
-      require_file "UI_contract.md" "per-state UI design contract"
-      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --test-plan "$(latest_versioned_file "test_plan_v*.md")"
+      require_ui_contract "$specification" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --test-plan "$(latest_versioned_file "test_plan_v*.md")"
     fi
     ;;
   bug-fixing/requirement-analysis)
@@ -476,11 +466,15 @@ case "$WORKFLOW/$STAGE" in
     require_file "spec.md" "feature specification"
     require_rule_applicability "$DOCS_DIR/spec.md" "harness-planning feature specification"
     ;;
-  harness-planning/ux-design)
+  harness-planning/ui-contract|harness-planning/ux-design)
     require_file "spec.md" "clarified feature specification"
     require_rule_applicability "$DOCS_DIR/spec.md" "harness-planning UX input"
     if spec_has_ui "$DOCS_DIR/spec.md"; then
-      require_harness_ux_design
+      if [ "$STAGE" = "ui-contract" ]; then
+        require_ui_contract "$DOCS_DIR/spec.md" --inventory
+      else
+        require_harness_ux_design
+      fi
     else
       echo "N/A: the clarified specification has no UI scope."
     fi
@@ -587,6 +581,9 @@ $(jq -r '.features[] | "\(.id)|\(.requires_visual_verification)"' "$DOCS_DIR/fea
 EOF
     bash "$SCRIPT_DIR/check-visual-evidence-contract.sh" "$DOCS_DIR" --planning
     ;;
+  create-ui-and-verify/ui-contract)
+    require_ui_contract "" --inventory
+    ;;
   create-ui-and-verify/reference-design)
     require_file "UI_contract.md" "per-state UI design contract"
     python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md"
@@ -612,6 +609,7 @@ EOF
     echo "Known workflow/stage pairs:" >&2
     echo "  harness-generator/orient <artifact-directory> <feature-id>" >&2
     echo "  feature-delivery/requirement-analysis" >&2
+    echo "  feature-delivery/ui-contract" >&2
     echo "  feature-delivery/ux-design" >&2
     echo "  feature-delivery/implementation-plan" >&2
     echo "  bug-fixing/requirement-analysis" >&2
@@ -621,10 +619,12 @@ EOF
     echo "  api-contract-update/requirement-analysis" >&2
     echo "  api-contract-update/implementation-plan" >&2
     echo "  harness-planning/feature-specification" >&2
+    echo "  harness-planning/ui-contract" >&2
     echo "  harness-planning/ux-design" >&2
     echo "  harness-planning/slice-planning" >&2
     echo "  create-ui-and-verify/ui-verification" >&2
     echo "  create-ui-and-verify/reference-design" >&2
+    echo "  create-ui-and-verify/ui-contract" >&2
     echo "  create-ui-and-verify/implementation-plan" >&2
     exit 2
     ;;

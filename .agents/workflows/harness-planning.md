@@ -50,7 +50,7 @@ needs a supported decision, trigger or rationale, and planned evidence before sl
 - Create `FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-short-name>` before writing artifacts.
 - Write `$FEATURE_DIR/spec.md` with behavior, scope, data, navigation, acceptance criteria, and
   the required screen/state inventory. Preserve supplied visual inputs for Stage 2. Do not
-  generate layouts, `design.md`, or mockups inside feature specification.
+  generate visual layouts or mockups inside feature specification.
 
 Output: `$FEATURE_DIR/spec.md` only, plus preserved user inputs when supplied.
 Gate: Update the tracker status to `Awaiting specification approval`, then run
@@ -64,10 +64,14 @@ If the Skill tool is unavailable, read its repository `SKILL.md` and record that
 Input: the approved `$FEATURE_DIR/spec.md`, supplied visual inputs, and `docs/product/design_system.md`.
 Logic-only scope records UX Design N/A and proceeds to Stage 3.
 
-Output: `$FEATURE_DIR/design.md`, `$FEATURE_DIR/visual_evidence/visual-target.json`, the canonical
-Pen reference when generated, and verified `$FEATURE_DIR/design/mockup_*.png` review exports.
-The UX skill owns the state designs, design-system decisions, keyboard states, and deterministic
-Roborazzi comparison scopes. It invokes `pen-design-editor` for missing visual references.
+First create `$FEATURE_DIR/UI_contract.md`. Define every state, viewport, content/control inventory,
+fixture, and IME behavior; only its four design-reference fields may be `Pending`. Run
+`bash harness/scripts/check-stage-artifacts.sh harness-planning ui-contract "$FEATURE_DIR"`.
+Resolve inventory gaps before invoking `pen-design-editor` with that contract as its input.
+
+Output: the completed `UI_contract.md`, canonical Pen design and verified review exports, plus
+`visual_evidence/visual-target.json` derived from the same state IDs, viewports, and image paths.
+The Pen file contains the actual visual design. No separate design.md is produced.
 Do not create or require an implementation screenshot baseline during planning.
 
 Gate: run `bash harness/scripts/check-stage-artifacts.sh harness-planning ux-design "$FEATURE_DIR"`.
@@ -82,7 +86,7 @@ once in the existing progress/summary record; do not rewrite it for every design
 
 ### Stage 3 — Slice Planning ⛔ STOP FOR APPROVAL
 **INVOKE** the `slice-planning` skill via the Skill tool (name: `slice-planning`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-Input: approved `$FEATURE_DIR/spec.md` and approved `$FEATURE_DIR/design.md` for UI scope.
+Input: approved `$FEATURE_DIR/spec.md` and approved `$FEATURE_DIR/UI_contract.md` with canonical Pen references for UI scope.
 Output: `$FEATURE_DIR/feature_list.json`, `$FEATURE_DIR/progress.md`, and `$FEATURE_DIR/sprint-contract.md` — plus `$FEATURE_DIR/platform-capability-matrix.md` only when the feature is platform-bound (`platform_validation.required: true`). Each feature entry must also contain a `production_journey` classification mirrored by the sprint contract's Production Journey Planning Contract. Artifact requirements — including the root `platform_validation` contract, production-journey ownership, and the platform capability matrix — are defined in the `slice-planning` skill's Output section.
 Gate: Update the tracker status to `Awaiting implementation approval`, then run `bash harness/scripts/check-stage-artifacts.sh harness-planning slice-planning "$FEATURE_DIR"` and `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --planning` — both validate the artifacts and must exit 0. The slice-planning gate runs `bash harness/scripts/check-journey-planning-contract.sh "$FEATURE_DIR"`; it fails when navigation/lifecycle signals are only covered by a JVM or Content-only row, when `NAV` is required without a journey owner, or when a required journey lacks a production entry point, real actions, return boundary, or visible post-return assertion. **STOP — present `feature_list.json` and `sprint-contract.md` to user (plus `platform-capability-matrix.md` when platform-bound). Do not proceed until user explicitly approves the task breakdown, platform contract, journey ownership, and sprint contract.**
 
@@ -91,5 +95,5 @@ Gate: Update the tracker status to `Awaiting implementation approval`, then run 
 ## Human-in-the-Loop Confirmation Points
 
 1. **After Clarify & Specify** — User approves `spec.md`; all material product questions are answered.
-2. **After UX Design** — User approves `design.md` and the references for UI scope.
+2. **After UX Design** — User approves `UI_contract.md` and its Pen references for UI scope.
 3. **After Slice Planning** — User approves the sliced features list, priorities, and `sprint-contract.md` before any implementation work begins.

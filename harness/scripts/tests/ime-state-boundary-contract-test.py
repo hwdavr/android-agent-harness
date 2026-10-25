@@ -14,7 +14,7 @@ CHECK = ROOT / "harness/scripts/check-ui-contract.py"
 GATE = ROOT / "harness/scripts/check-stage-artifacts.sh"
 
 STATE_HEADER = "| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |"
-IME_HEADER = "| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Required visible tags |"
+IME_HEADER = "| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Keyboard behavior | Required visible tags |"
 BOUNDARY_HEADER = "| Screen | Input tag | Production activity | Open test | Dismiss test | Command | Result XML |"
 
 
@@ -53,8 +53,8 @@ class ImeContractTest(unittest.TestCase):
         text = "# UI contract\n\n## Screen States\n\n" + "\n".join(rows) + "\n"
         if inventory:
             text += (
-                "\n## IME State Coverage\n\n" + IME_HEADER + "\n|" + "---|" * 8 + "\n"
-                f"| Search | search_input | {window} | closed | open | closed | resize | search_input; results |\n"
+                "\n## IME State Coverage\n\n" + IME_HEADER + "\n|" + "---|" * 9 + "\n"
+                f"| Search | search_input | {window} | closed | open | closed | resize | screen-no-toolbar | search_input; results |\n"
             )
         self.contract.write_text(text)
 
@@ -145,7 +145,7 @@ class SearchImeTest {
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_focused_input_must_remain_visible(self):
-        self.contract.write_text(self.contract.read_text().replace("resize | search_input; results", "resize | results"))
+        self.contract.write_text(self.contract.read_text().replace("screen-no-toolbar | search_input; results", "screen-no-toolbar | results"))
         self.rejected(self.check(), "must include the focused Input tag")
 
     def test_keyboard_must_be_in_open_design(self):
@@ -258,12 +258,44 @@ class SearchImeTest {
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_toolbarless_text_screen_requires_keyboard_mockup(self):
-        (self.root / "design.md").write_text(
-            '# Design\nThe screen contains a search text field.\n- Mockup: `design/mockup_closed.png`\n'
-        )
+        self.write_contract(inventory=False, open_state=False)
         result = subprocess.run(["bash", str(ROOT / "harness/scripts/check-keyboard-mockup-contract.sh"), str(self.root)],
                                 text=True, capture_output=True)
-        self.rejected(result, "must describe a keyboard-visible state")
+        self.rejected(result, "requires ## IME State Coverage")
+
+    def test_inventory_accepts_pending_visuals_with_complete_ime_behavior(self):
+        text = self.contract.read_text()
+        for name in ("closed", "open"):
+            text = text.replace(f"design/source.pen | {name}-node | screen-frame | design/mockup_{name}.png",
+                                "Pending | Pending | Pending | Pending")
+        self.contract.write_text(text)
+        for asset in (self.root / "design").iterdir():
+            asset.unlink()
+        result = self.check("--inventory")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.rejected(self.check(), "pending design references")
+
+    def test_inventory_rejects_missing_ime_states_before_pen(self):
+        self.write_contract(inventory=False)
+        self.rejected(self.check("--inventory"), "requires ## IME State Coverage")
+
+    def test_sheet_requires_stays_open_policy(self):
+        self.contract.write_text(self.contract.read_text().replace("Search field", "Bottom sheet search field"))
+        self.rejected(self.check(), "bottom-sheet input must declare sheet-stays-open")
+        self.contract.write_text(self.contract.read_text().replace("screen-no-toolbar", "sheet-stays-open"))
+        result = self.check()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_screen_toolbar_requires_dismissal_policy(self):
+        self.contract.write_text(self.contract.read_text().replace("Search field", "Search field; bottom toolbar"))
+        self.rejected(self.check(), "must declare screen-toolbar-dismissed")
+        self.contract.write_text(self.contract.read_text().replace("screen-no-toolbar", "screen-toolbar-dismissed"))
+        result = self.check()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_unknown_keyboard_behavior_rejected(self):
+        self.contract.write_text(self.contract.read_text().replace("screen-no-toolbar", "Pending"))
+        self.rejected(self.check(), "IME Keyboard behavior must be")
 
 
 if __name__ == "__main__":

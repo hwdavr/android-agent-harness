@@ -23,7 +23,7 @@ After selecting the slice, run `bash harness/scripts/print-context-index.sh
 `rule_context.files`; do not translate rule IDs into a second hand-maintained list. During the
 Test stage load `stage_context.testing`. The index includes `android-security.md` when
 the approved `SEC` decision is Required or excepted. Load
-`docs/product/design_system.md`, `design.md`, and mockups only when `affects_ui` is
+`docs/product/design_system.md`, `UI_contract.md`, and its Pen/reference mappings only when `affects_ui` is
 true. The index is derived from the approved contract; it does not replace it.
 
 ---

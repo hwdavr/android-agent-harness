@@ -2,7 +2,7 @@
 
 **Date**: YYYY-MM-DD
 **Status**: Draft / Final
-**Related design**: `design.md` *(produced by the later UX Design stage for UI scope)*
+**Related UI contract**: `UI_contract.md` *(defines states after clarification, before Pen design)*
 
 ---
 

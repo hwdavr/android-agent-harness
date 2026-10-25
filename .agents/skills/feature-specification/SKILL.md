@@ -14,7 +14,7 @@ Turn a general feature request into approved source artifacts:
 - `docs/current/spec.md` — **always produced by ad-hoc workflows**
 - `$FEATURE_DIR/spec.md` — the requirements output when invoked by `harness-planning`
 
-The later UX Design stage owns `design.md`, Pen sources, visual-target manifests, and review
+The later UX Design stage defines `UI_contract.md` before creating Pen sources, visual-target manifests, and review
 exports. This skill captures behavior and the required screen/state inventory without generating
 visual designs or invoking `ux-design`/`pen-design-editor` inside requirements clarification.
 
@@ -139,7 +139,7 @@ The spec file must always describe:
 **Conditional sections** (include only for new screen or enhancement with UI changes):
 - Screen States table
 - Navigation section
-- Traceability to `design.md`
+- Traceability to the later `UI_contract.md`
 
 Do not include an "Open Questions" section with unresolved items. If there are unresolved items, return to Step 3 instead.
 

@@ -13,7 +13,7 @@ defines the required stage invocations. Do not substitute similarly named skills
 add an implementation stage to this role:
 
 * **`feature-specification`** — Stage 1; clarifies requirements and creates approved `spec.md`.
-* **`ux-design`** — Stage 2 for UI scope; creates and reviews `design.md` and visual assets.
+* **`ux-design`** — Stage 2 for UI scope; defines `UI_contract.md` before generating and reviewing Pen references.
 * **`slice-planning`** — Stage 3; creates `feature_list.json`, `progress.md`,
   and `sprint-contract.md` for independently verifiable vertical slices.
 
@@ -48,7 +48,7 @@ Run when the user has a feature idea — whether a new screen, an enhancement to
 | Stage | Process Description | Outputs Produced |
 | :--- | :--- | :--- |
 | **Stage 1 — Clarify & Specify** | Resolve product questions and approve the behavioral specification. | `.scratch/<YYYY-MM-DD>-<feature-short-name>/spec.md` |
-| **Stage 2 — UX Design** | Design and approve UI states using the clarified spec; visual iteration changes design artifacts. | `design.md`, `visual_evidence/visual-target.json`, Pen reference and review exports |
+| **Stage 2 — UX Design** | Design and approve UI states using the clarified spec; visual iteration changes design artifacts. | `UI_contract.md` first, then Pen references/review exports and derived runtime target metadata |
 | **Stage 3 — Slice Planning** | Decompose approved requirements and UX into independent features. | `feature_list.json`, `progress.md`, and `sprint-contract.md` |
 
 ⛔ **STOP after Stage 1** — transition the tracker to `Awaiting specification approval` and obtain spec approval before UX.
@@ -63,7 +63,7 @@ All complex-feature artifacts live in one stable dated
 `.scratch/<YYYY-MM-DD>-<feature-short-name>/` workspace:
 
 1. **`spec.md`**: Objective, users, functional requirements, acceptance criteria, non-goals, edge cases, explicit assumptions, and verification expectations, including the complete Rule Applicability matrix.
-2. **`design.md`** *(when UI is affected)*: Screen purpose, layout, components, visual/interaction states, accessibility, copy, design constraints, and mockup assets.
+2. **`UI_contract.md`** *(when UI is affected)*: Complete state/behavior inventory before Pen generation, then canonical Pen node and export mappings. The Pen file contains the actual visual design.
 3. **`feature_list.json`** & **`progress.md`**: Prioritized feature slices with verification steps and lifecycle evidence.
 4. **`sprint-contract.md`**: Compiled by strictly following the structure defined in the **[`sprint-contract-template.md`](../../harness/templates/sprint-contract-template.md)**.
 

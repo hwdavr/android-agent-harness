@@ -47,6 +47,7 @@ write_png_header "$FIXTURE/design/mockup_crop.png" 860 1864
 write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
 cat > "$FIXTURE/UI_contract.md" <<'EOF'
 # UI Contract
+Project design system: `docs/product/design_system.md`
 
 ## Screen States
 
@@ -91,7 +92,6 @@ cat > "$FIXTURE/implementation_plan_v1.md" <<'EOF'
 | UI-02 | Implement rotate selected controls | `app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign` | Compare `design/mockup_rotate.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"`. |
 EOF
 touch "$FIXTURE/summary_v1.md"
-printf '%s\n' '# Design' 'Project design system: `docs/product/design_system.md`' > "$FIXTURE/design.md"
 
 bash "$GATE" create-ui-and-verify reference-design "$FIXTURE" >/dev/null
 bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE" >/dev/null

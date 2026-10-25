@@ -23,14 +23,14 @@ Do not load or execute a Data, Domain, or UI section merely because another laye
 
 **Then load only triggered context:**
 - `rules/api-contract-rules.md` when API is `Required` or excepted
-- `rules/compose-rules.md`, `rules/localization-rules.md`, `docs/product/design_system.md`, `design.md`, and mockups when the slice affects UI
+- `rules/compose-rules.md`, `rules/localization-rules.md`, `docs/product/design_system.md`, `UI_contract.md`, and its Pen/reference mappings when the slice affects UI
 - `rules/navigation-rules.md`, `rules/analytics-rules.md`, and `rules/observability.md` only when their Rule Applicability decision is `Required` or excepted
 - `rules/android-security.md` when `SEC` is Required or excepted, or the slice newly triggers authentication, sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model, SDK, or release-security scope
 
 **Adhoc workflows** (`feature-delivery`, `bug-fixing`):
 - `docs/current/implementation_plan_v<N>.md` — implementation plan approved by user
 - `docs/current/spec_v<N>.md` — requirement summary, impact analysis, UiState & navigation design
-- `docs/current/design.md` — screen purpose, layout, visual/interaction states, copy, components inventory (if UI changes involved)
+- `docs/current/UI_contract.md` — state behavior, controls, copy, fixtures, and canonical Pen/reference mappings (if UI changes involved)
 - `docs/current/design/` — user-provided screenshots or AI-generated `mockup_*.png` images (view these for visual layout reference before implementing UI)
 
 **Harness workflow** (`harness-generator`):
@@ -81,4 +81,4 @@ Update `summary_{feature_id}.md` (or `summary_v<N>.md` depending on the active w
 - [ ] Rule Applicability decisions are implemented or retained with their approved rationale
 - [ ] Build compiles without errors (full `./gradlew assembleDebug` gate runs at Code Quality Fix)
 
-**APPROVED →** Return to the active workflow file. 
+**APPROVED →** Return to the active workflow file.

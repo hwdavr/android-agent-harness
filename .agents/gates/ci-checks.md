@@ -136,9 +136,9 @@ stage gate rejects incomplete matrices.
 ```bash
 python3 harness/scripts/tests/ux-design-stage-contract-test.py
 ```
-**Must pass.** Requirements gates accept clarified UI behavior without visual artifacts; the
-separate UX gates reject missing or incomplete design references. Workflow/skill ownership keeps
-visual revisions out of the spec and summary.
+**Must pass.** Requirements lead to a complete UI_contract inventory before Pen generation.
+Inventory gates allow only design-reference fields to be Pending; full UX/planning gates require
+completed references and matching runtime target metadata. No design.md is required.
 
 ### 10. Acceptance-Test Traceability Contract
 bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
@@ -235,13 +235,17 @@ bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"
 ```
 **Must pass.** Every visual verification method in the final owner's `feature_list.json` must have a matching `TC-*-VIS-*` row in `sprint-contract.md`, an acceptance-test ID, successful `verifyRoborazziDebug` evidence, and one matching reference-anchor row in `visual_evidence/reference-anchor-verification.md`. Each row names the approved Pen export, visual bounds `testTag`, JVM test, and concrete bounds relationship. Rows that claim rich-text or inline-formatting appearance additionally require the named `RoborazziTest` method to pass the source-fed rendered-output contract.
 
-### 13. Keyboard-Visible Planning Mockup (when a planned screen or bottom sheet has text input)
+### 13. Keyboard State Contract (when a planned screen or bottom sheet has text input)
 ```bash
 bash harness/scripts/check-keyboard-mockup-contract.sh "$FEATURE_DIR"
 ```
-**Must pass during harness planning.** Every screen or bottom sheet containing editable text input, including a screen without a bottom toolbar, must describe the keyboard-visible state and reference distinct non-empty base and keyboard-visible mockup assets. For a bottom sheet, the keyboard-visible state must state that the sheet stays open (tapping the text input must not dismiss it). When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must state that the bottom toolbar is dismissed while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `.agents/rules/compose-rules.md`.
+**Must pass during harness planning.** This compatibility command validates UI_contract.md through
+the shared UI checker. Before Pen, pass `--inventory`: closed/open/dismissed state mappings and
+explicit `screen-no-toolbar`, `screen-toolbar-dismissed`, or `sheet-stays-open` behavior are required.
+After Pen, run without that flag to require distinct, full-window reference exports. The contract
+also checks the focused input/required tags and the IME visible region. No design.md is read.
 
-### 13a. Ad-hoc IME State and Production Boundary Contract
+### 13a. IME State and Production Boundary Contract
 
 ```bash
 bash harness/scripts/tests/ime-state-boundary-contract-test.sh
