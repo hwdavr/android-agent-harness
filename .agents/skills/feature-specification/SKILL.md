@@ -1,6 +1,6 @@
 ---
 name: feature-specification
-description: Clarify a feature and write approved spec.md and design.md before planning.
+description: Clarify product requirements and write an approved spec before the separate UX design stage.
 ---
 
 # Skill — Feature Specification
@@ -12,16 +12,19 @@ Follow `.agents/rules/product-documentation.md`. Read affected `docs/product/req
 Turn a general feature request into approved source artifacts:
 
 - `docs/current/spec.md` — **always produced by ad-hoc workflows**
-- `docs/current/design.md` — **produced only for new screens or major UI flows in ad-hoc workflows**
-- `$FEATURE_DIR/spec.md` and `$FEATURE_DIR/design.md` — the corresponding outputs when invoked by `harness-planning`
+- `$FEATURE_DIR/spec.md` — the requirements output when invoked by `harness-planning`
+
+The later UX Design stage owns `design.md`, Pen sources, visual-target manifests, and review
+exports. This skill captures behavior and the required screen/state inventory without generating
+visual designs or invoking `ux-design`/`pen-design-editor` inside requirements clarification.
 
 This skill replaces both `screen-specification` and `requirement-capture`. It adapts its depth based on the task type:
 
-| Task Type | `spec.md` | `design.md` | Screen-specific spec sections |
-|-----------|-----------|-------------|-------------------------------|
-| New screen or major UI flow | ✅ Full | ✅ Full | ✅ Include |
-| Enhancement to existing screen | ✅ Full | ✅ Full (if UI changed) / ❌ Skip (if logic-only) | ⚠️ Only changed parts |
-| Pure logic/behavior change | ✅ Full | ❌ Skip | ❌ Skip |
+| Task Type | `spec.md` | Later UX Design | Screen-specific spec sections |
+|-----------|-----------|-----------------|-------------------------------|
+| New screen or major UI flow | Full | Required | Include |
+| Enhancement to existing screen | Full | Required if UI changes | Changed behavior/states only |
+| Pure logic/behavior change | Full | N/A | Skip |
 
 Do not plan implementation slices. Do not write code. Do not invent missing product decisions.
 This skill ends only when every material question has been answered by the user and all artifacts contain no unresolved assumptions or open questions.
@@ -38,7 +41,6 @@ This skill ends only when every material question has been answered by the user 
   `docs/product/design_system.md`, `rules/compose-rules.md`, and
   `rules/localization-rules.md`; the Compose keyboard/IME section applies to text input.
 - `harness/templates/feature-spec-template.md`
-- `harness/templates/feature-design-template.md`
 
 ---
 
@@ -54,13 +56,15 @@ Read the user's request exactly as stated. Preserve concrete inputs as source-of
 - Required copy, labels, or product terminology
 - Explicit non-goals
 
-If the user provides a screenshot, mockup, or visual reference, save it unchanged under the active artifact directory's `design/` folder and reference it from `design.md` (if produced) or `spec.md`. In `harness-planning`, the active artifact directory is `$FEATURE_DIR`.
+If the user provides a screenshot, mockup, or visual reference, save it unchanged under the active
+artifact directory's `design/` folder and reference it from `spec.md` as an input for UX Design.
+In `harness-planning`, the active artifact directory is `$FEATURE_DIR`.
 
 ### 2. Classify The Task Type
 
 Before asking questions, determine the task type:
 
-- **New screen**: No existing screen serves this purpose. Requires `design.md` + full `spec.md`.
+- **New screen**: No existing screen serves this purpose. Requires full `spec.md` and later UX Design.
 - **Enhancement**: Adds or modifies behavior on an existing screen. Requires `spec.md` only (screen-specific sections only for changed parts).
 - **Logic-only**: No UI changes. Requires `spec.md` only (skip all screen-specific sections).
 
@@ -93,7 +97,8 @@ Questions must be concrete and answerable, not broad prompts like "anything else
 6. **Core content**: exact data, sections, controls, copy, and required empty/loading/error states.
 7. **Interactions**: taps, selection, editing, gestures, validation, confirmation, destructive actions, and disabled states.
 8. **State and persistence**: local-only state, saved state, backend/API expectations, offline behavior, and configuration-change behavior.
-9. **Design direction**: visual hierarchy, density, references, tone, layout constraints, and responsive behavior.
+9. **Visual inputs and constraints**: capture supplied references and product constraints for the
+   later UX Design stage; settle layout, density, and styling during that separate stage.
 10. **Accessibility and testing**: content descriptions, focus order, dynamic text, test tags, and verifiable acceptance criteria.
 
 If an answer creates a new ambiguity, ask a follow-up. Continue until the requirement can be written without assumptions.
@@ -138,64 +143,24 @@ The spec file must always describe:
 
 Do not include an "Open Questions" section with unresolved items. If there are unresolved items, return to Step 3 instead.
 
-The spec is a living document — if a clarified answer changes a decision, update `spec.md` (and `design.md`, if produced) before proceeding.
-
-### 6. Generate Design with `pen-design-editor` (New Screen or UI Enhancement)
-
-**Skip this step** for logic-only changes.
-
-Before handling either design-input path, read `docs/product/design_system.md`. The active `design.md` must link it and list every explicit user-approved exception, or state that there are none.
-
-For generated UI designs, `pen-design-editor` is the canonical design workflow. It replaces the
-former AI-image mockup path: do not invoke `ux-design`, `generate_image`, or any other mockup
-generator from this skill. The editable `.pen` file is the source of truth; exported PNGs are
-review artifacts derived from that file.
-
-**If the user provided a screenshot or mockup image:**
-1. Save the user-provided image(s) unchanged to the active `design/` folder (`$FEATURE_DIR/design/` or `docs/current/design/`).
-2. Write `design.md` using `harness/templates/feature-design-template.md`, referencing the user-provided mockup(s) in the Design Assets section.
-3. Record any explicit user-approved differences between the supplied mockup and `docs/product/design_system.md`.
-4. **Do NOT invoke the `pen-design-editor` skill** — the user-provided mockup is the feature-specific source of truth, with the global design system supplying all unspecified decisions.
-
-**If NO screenshot or mockup was provided:**
-**INVOKE** the `pen-design-editor` skill via the Skill tool (name: `pen-design-editor`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-
-Input: The clarified requirements from Steps 1–5, the active artifact directory, and the task type classification.
-Output: canonical `.pen` design source plus `design.md` and verified `design/mockup_*.png` exports in the active artifact directory. `design.md` must link both the `.pen` source and each exported PNG.
-
-Do not promote or clean up the design source before approval. After the user approves the design,
-follow `pen-design-editor`'s finalization contract: replace the original `.pen` file with the
-validated final, retain the approved review PNG, and delete only the run-owned intermediate
-outputs. This approval transition must not change the remaining specification or implementation
-workflow stages.
-
-**Keyboard-visible state (any screen or bottom sheet with text input):** If the screen content or a bottom sheet contains a text box, text field, search field, or other text input, `design.md` must define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup. For a bottom sheet, that mockup must show the sheet **still open** with the keyboard — tapping the text input must not dismiss the sheet; only a scrim tap, swipe-down, or close action does (per the Keyboard / IME Behavior rule in `rules/compose-rules.md`). When the screen has a bottom toolbar, the keyboard-visible state must show the bottom toolbar **dismissed** while the keyboard is visible, per the same rule. The bottom toolbar must never be depicted behind the keyboard.
-
----
+Update `spec.md` when a clarified answer changes behavior, scope, data, navigation, or the required
+state inventory. Visual revisions stay in the later UX Design stage and do not rewrite the spec.
 
 ## Output
 
-- Ad-hoc workflows: `docs/current/spec.md`, `docs/current/design.md`, the canonical `.pen` source, and `docs/current/design/` review assets (user-provided or exported by `pen-design-editor`)
-- Harness planning: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/design.md`, the canonical `.pen` source, and `$FEATURE_DIR/design/` review assets (user-provided or exported by `pen-design-editor`)
+- Ad-hoc callers: `docs/current/spec.md` (use the active workflow's versioned name when required).
+- Harness planning: `$FEATURE_DIR/spec.md`.
+- Preserved user-supplied inputs, when present, referenced from the spec.
 
-**Design-system conformance:** for UI work, `design.md` must link `docs/product/design_system.md` and list every explicit user-approved exception (or state that none exist).
-
-**Keyboard-visible state (conditional — mechanics in Step 6):** if any screen or bottom sheet contains editable text input, including screens without a bottom toolbar, `design.md` must define the keyboard-visible state and reference a distinct keyboard-visible mockup asset alongside the base mockup. For a bottom sheet, the keyboard-visible mockup must show the sheet **still open** with the keyboard — tapping the text input must not dismiss the sheet; only a scrim tap, swipe-down, or close action does. When the text input is on screen content with a bottom toolbar (no modal sheet), the keyboard-visible state must show the bottom toolbar **dismissed** while the keyboard is visible. Both follow the Keyboard / IME Behavior rule in `rules/compose-rules.md`.
-
----
+The spec owns product behavior, acceptance criteria, the complete Rule Applicability matrix,
+and the required state inventory. The next UX Design stage owns visual artifacts.
 
 ## Done When — ⛔ MANDATORY STOP
 
-Present the produced artifacts to the user and confirm:
+- [ ] The spec contains every required section and no unresolved material product questions.
+- [ ] Every rule has an explicit applicability decision, rationale, and planned evidence.
+- [ ] UI scope has a behavioral screen/state inventory ready for UX Design.
+- [ ] Supplied inputs are preserved and referenced.
+- [ ] The user has approved the clarified specification.
 
-- [ ] `spec.md` exists with all required sections filled and no open questions.
-- [ ] `design.md` exists (if task type is new screen or UI enhancement) with all sections filled according to template.
-- [ ] `design.md` links to `docs/product/design_system.md` and records approved exceptions (or states that none exist).
-- [ ] For generated UI, `design.md` links the canonical `.pen` source produced by `pen-design-editor`; PNGs are derived review artifacts, not the editable source.
-- [ ] Visual mockup images exist in `design/` for every screen in `design.md` (user-provided screenshot or generated `mockup_*.png`).
-- [ ] After user approval, the validated `.pen` replaces the original source and only run-owned intermediate design outputs are deleted; approved review assets remain.
-- [ ] No assumptions or open questions remain.
-- [ ] The user has approved the specification (and design/mockups, if produced).
-- [ ] The artifacts are ready for slice planning.
-
-**APPROVED by user →** Return to the active workflow file and proceed to the Slice Planning stage.
+**APPROVED by user →** Return to the active workflow: UX Design for UI scope, otherwise Slice Planning.

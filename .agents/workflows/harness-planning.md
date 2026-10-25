@@ -16,7 +16,8 @@ Read and follow [Product documentation flow](../rules/product-documentation.md).
 
 ## Core Principle
 
-Do not guess at scope. Clarify requirements first, decompose into structured features second, and implement later.
+Do not guess at scope. Clarify and approve requirements, complete and approve UX design for UI
+scope, then decompose into structured features and implement later.
 Every open question must be answered and approved by the user before slice planning begins.
 Each planned feature in the list must represent a clean, end-to-end user-visible behavior with specific verification steps.
 
@@ -47,20 +48,41 @@ needs a supported decision, trigger or rationale, and planned evidence before sl
 - Classify the task type (new screen, enhancement, or logic-only change).
 - Ask targeted clarifying questions in chat until every material ambiguity is resolved.
 - Create `FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-short-name>` before writing artifacts.
-- Write `$FEATURE_DIR/spec.md` (always) and `$FEATURE_DIR/design.md` (for new screens or UI enhancements/flows).
-- For UI work, read `docs/product/design_system.md` before design decisions, link it from `$FEATURE_DIR/design.md`, and record every explicit user-approved exception. Create `$FEATURE_DIR/visual_evidence/visual-target.json` as the canonical target manifest before generating mockups; it owns appearance, concrete device, logical size, locale, and named content states. Generate each mockup prompt with `bash harness/scripts/visual-target-prompt.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" --state <content_state_id>` so the mockup generator and later emulator capture consume identical target values. Generated mockups must use the manifest's exact target plus the design system's applicable tokens and component patterns.
-- When an existing screen is modified, inspect its current Compose source and describe only the approved delta in the canonical Pen design. Record the Pen source and node ID in `$FEATURE_DIR/visual_evidence/visual-target.json`; its exported frame is the approved design reference. Plan a Roborazzi comparison for every visual target: use the `screen` scope when the reference and runtime fixture have identical visible content, or the `component` scope when the approved design isolates the changed surface. Do not create or require an implementation screenshot baseline during planning.
+- Write `$FEATURE_DIR/spec.md` with behavior, scope, data, navigation, acceptance criteria, and
+  the required screen/state inventory. Preserve supplied visual inputs for Stage 2. Do not
+  generate layouts, `design.md`, or mockups inside feature specification.
 
-Output: `$FEATURE_DIR/spec.md` + `$FEATURE_DIR/design.md` + `$FEATURE_DIR/visual_evidence/visual-target.json` + `$FEATURE_DIR/design/mockup_*.png` visual mockup images (user-provided or AI-generated, if the change includes UI modifications). Conditional requirements — design-system conformance, the complete Rule Applicability contract, and the keyboard-visible state/mockups for text-input surfaces — are defined in the `feature-specification` skill's Output section.
-Gate: Update the tracker status to `Awaiting specification approval`, then run `bash harness/scripts/check-stage-artifacts.sh harness-planning feature-specification "$FEATURE_DIR"` — it validates stage artifacts, lifecycle state, and the keyboard-visible mockup contract and must exit 0. For UI work, also verify `design.md` cites `docs/product/design_system.md`. **STOP — present specification, design document, canonical Pen reference, and visual mockup images to user for review. Do not proceed until user explicitly approves.**
-After explicit design approval, apply the `pen-design-editor` finalization contract: promote the
-validated `.pen` over the original source, retain the approved review PNGs, and delete only the
-run-owned intermediate design outputs. This does not alter the slice-planning gate or any later
-harness-planning behavior.
+Output: `$FEATURE_DIR/spec.md` only, plus preserved user inputs when supplied.
+Gate: Update the tracker status to `Awaiting specification approval`, then run
+`bash harness/scripts/check-stage-artifacts.sh harness-planning feature-specification "$FEATURE_DIR"`.
+The gate validates the requirements and lifecycle; it requires no visual artifacts.
+**STOP — present the clarified specification for explicit user approval before UX begins.**
 
-### Stage 2 — Slice Planning ⛔ STOP FOR APPROVAL
+### Stage 2 — UX Design ⛔ STOP FOR DESIGN APPROVAL
+For new screens or UI enhancements, **INVOKE** `ux-design` through the available skill mechanism.
+If the Skill tool is unavailable, read its repository `SKILL.md` and record that once in evidence.
+Input: the approved `$FEATURE_DIR/spec.md`, supplied visual inputs, and `docs/product/design_system.md`.
+Logic-only scope records UX Design N/A and proceeds to Stage 3.
+
+Output: `$FEATURE_DIR/design.md`, `$FEATURE_DIR/visual_evidence/visual-target.json`, the canonical
+Pen reference when generated, and verified `$FEATURE_DIR/design/mockup_*.png` review exports.
+The UX skill owns the state designs, design-system decisions, keyboard states, and deterministic
+Roborazzi comparison scopes. It invokes `pen-design-editor` for missing visual references.
+Do not create or require an implementation screenshot baseline during planning.
+
+Gate: run `bash harness/scripts/check-stage-artifacts.sh harness-planning ux-design "$FEATURE_DIR"`.
+**STOP — present the design and verified references for explicit user approval before slicing.**
+Retain the existing `Awaiting specification approval` tracker status through this separate UX
+review; no lifecycle status is added. After approval, apply the Pen skill's finalization contract.
+
+During visual iteration, update only design artifacts. Keep `spec.md` stable unless behavior,
+scope, data, navigation, or the required state inventory changes. Such changes return to Stage 1
+for clarification and approval before UX resumes. Record stage completion, approval, or a blocker
+once in the existing progress/summary record; do not rewrite it for every design edit.
+
+### Stage 3 — Slice Planning ⛔ STOP FOR APPROVAL
 **INVOKE** the `slice-planning` skill via the Skill tool (name: `slice-planning`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-Input: `$FEATURE_DIR/spec.md` (+ `$FEATURE_DIR/design.md` if present)
+Input: approved `$FEATURE_DIR/spec.md` and approved `$FEATURE_DIR/design.md` for UI scope.
 Output: `$FEATURE_DIR/feature_list.json`, `$FEATURE_DIR/progress.md`, and `$FEATURE_DIR/sprint-contract.md` — plus `$FEATURE_DIR/platform-capability-matrix.md` only when the feature is platform-bound (`platform_validation.required: true`). Each feature entry must also contain a `production_journey` classification mirrored by the sprint contract's Production Journey Planning Contract. Artifact requirements — including the root `platform_validation` contract, production-journey ownership, and the platform capability matrix — are defined in the `slice-planning` skill's Output section.
 Gate: Update the tracker status to `Awaiting implementation approval`, then run `bash harness/scripts/check-stage-artifacts.sh harness-planning slice-planning "$FEATURE_DIR"` and `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --planning` — both validate the artifacts and must exit 0. The slice-planning gate runs `bash harness/scripts/check-journey-planning-contract.sh "$FEATURE_DIR"`; it fails when navigation/lifecycle signals are only covered by a JVM or Content-only row, when `NAV` is required without a journey owner, or when a required journey lacks a production entry point, real actions, return boundary, or visible post-return assertion. **STOP — present `feature_list.json` and `sprint-contract.md` to user (plus `platform-capability-matrix.md` when platform-bound). Do not proceed until user explicitly approves the task breakdown, platform contract, journey ownership, and sprint contract.**
 
@@ -68,5 +90,6 @@ Gate: Update the tracker status to `Awaiting implementation approval`, then run 
 
 ## Human-in-the-Loop Confirmation Points
 
-1. **After Clarify & Specify** — User approves `spec.md` (and `design.md` if produced). All questions are answered, no open assumptions remain.
-2. **After Slice Planning** — User approves the sliced features list, priorities, and `sprint-contract.md` before any implementation work begins.
+1. **After Clarify & Specify** — User approves `spec.md`; all material product questions are answered.
+2. **After UX Design** — User approves `design.md` and the references for UI scope.
+3. **After Slice Planning** — User approves the sliced features list, priorities, and `sprint-contract.md` before any implementation work begins.

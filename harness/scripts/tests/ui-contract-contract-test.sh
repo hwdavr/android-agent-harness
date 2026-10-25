@@ -91,10 +91,12 @@ cat > "$FIXTURE/implementation_plan_v1.md" <<'EOF'
 | UI-02 | Implement rotate selected controls | `app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign` | Compare `design/mockup_rotate.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"`. |
 EOF
 touch "$FIXTURE/summary_v1.md"
+printf '%s\n' '# Design' 'Project design system: `docs/product/design_system.md`' > "$FIXTURE/design.md"
 
 bash "$GATE" create-ui-and-verify reference-design "$FIXTURE" >/dev/null
 bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE" >/dev/null
 bash "$GATE" feature-delivery requirement-analysis "$FIXTURE" >/dev/null
+bash "$GATE" feature-delivery ux-design "$FIXTURE" >/dev/null
 
 cp "$FIXTURE/UI_contract.md" "$FIXTURE/original-contract"
 write_png_header "$FIXTURE/design/mockup_crop_rail.png" 860 177
@@ -117,7 +119,7 @@ write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
 cp "$FIXTURE/spec_v1.md" "$FIXTURE/original-spec"
 sed '/| Transform | rotate | FR-02 | AC-02 |/d' "$FIXTURE/original-spec" > "$FIXTURE/spec_v1.md"
 expect_failure "UI contract states differ from spec" \
-  bash "$GATE" feature-delivery requirement-analysis "$FIXTURE"
+  bash "$GATE" feature-delivery ux-design "$FIXTURE"
 cp "$FIXTURE/original-spec" "$FIXTURE/spec_v1.md"
 
 cp "$FIXTURE/implementation_plan_v1.md" "$FIXTURE/original-plan"

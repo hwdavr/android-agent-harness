@@ -1,109 +1,123 @@
 ---
 name: ux-design
-description: Design Android Compose UI and produce design.md plus mockups when none are supplied.
+description: Run the separate UX stage after requirements clarification, owning design artifacts and visual review.
 ---
 
-# Skill — UX Design (Android / Jetpack Compose / Material 3)
+# Skill — UX Design
 
-## Purpose
+## Purpose and entry
 
-Turn user requirements and feature specifications into a complete, state-of-the-art UI/UX design document (`design.md`) and high-fidelity visual mockup images (`design/mockup_<screen_name>.png`) tailored for Android applications using Jetpack Compose and Material Design 3 (M3).
+Turn clarified product requirements into an approved visual design before implementation planning
+or slice planning. This is an individual workflow stage after Requirement & Impact Analysis
+(`feature-delivery`) or Clarify & Specify (`harness-planning`).
 
-> **Conditional Usage Rule**:
-> - **If user-provided screenshot/mockup exists**: Save the image(s) to `design/`, populate `design.md` referencing those images, and **do NOT generate AI mockup images**.
-> - **If NO user-provided screenshot/mockup exists**: Follow this skill to apply the project design system, write `design.md`, and generate visual mockup images using `generate_image` for each screen.
+Read the active spec and its required screen/state inventory. Resolve missing behavior, scope,
+data, navigation, or state requirements through the requirements stage before designing them.
+Reuse an existing clarified spec for design follow-ups; do not restart requirements analysis or
+implementation planning for a visual edit within that contract.
 
----
+## Artifact ownership
+
+Do not create, version, or edit the spec or summary during visual iteration.
+UX owns `design.md`, `UI_contract.md` when required by the caller, the visual-target manifest,
+Pen candidates, and review exports. Reuse the same active artifact directory and delivery version.
+Examples of visual iteration include spacing, layout, color, typography, icon choice, and copy
+that preserves the approved meaning.
+
+When feedback changes behavior, scope, data, navigation, or the required state inventory, return
+to the requirements stage and update only the affected spec sections. Reconcile the design with
+that changed contract and obtain the required approval again.
+
+Update only the existing summary/progress stage row when the stage completes, approval is
+received, or a blocker occurs. Link the design evidence there once; do not repeat the design
+content, create a new summary version, or rewrite requirements after every Pen operation.
+Design-only requests finish after approved design finalization; design approval does not authorize
+application source changes.
 
 ## Load
 
-- `docs/product/design_system.md` — mandatory project-wide visual source of truth; load before making any visual decision
-- `docs/product/reference_components/` — authentic emulator-captured reference components (e.g. software keyboards) organized by device name
-- `skills/ux-design/references/quick-reference.md` — 10 priority categories for Android/Compose UX rules
-- `skills/ux-design/references/pro-rules.md` — Pre-delivery polish checklist & app interface standards
-- `harness/templates/feature-design-template.md` — Standard structure for `design.md`
-- `harness/templates/visual-target-template.json` — Canonical target/state manifest shape shared by mockup generation and runtime capture
-
----
+- The active clarified spec and supplied visual inputs
+- `docs/product/design_system.md`
+- `harness/templates/feature-design-template.md`
+- `harness/templates/UI_contract-template.md` for ad-hoc UI state mapping
+- `harness/templates/visual-target-template.json` for complex-feature planning
+- `skills/ux-design/references/quick-reference.md` and `references/pro-rules.md` as needed
+- `pen-design-editor` and its current CLI guidance when a state needs a generated/edited Pen reference
 
 ## Execute
 
-### 1. Analyze Feature & Apply The Project Design System
+### 1. Establish the visual inputs
 
-> **Update vs. New Screen Rule**:
-> - **If the screen is an update of an existing feature**: Read the existing Compose source for that screen and its components first. Extract the current layout, component inventory, semantic tokens, typography, `testTag` IDs, and visual states directly from the code. Preserve those constraints while describing the approved delta in the canonical Pen design. Record the Pen source and node ID in `visual_evidence/visual-target.json`; the exported Pen frame is the approved design reference. Define a Roborazzi comparison scope for every visual target. Use `screen` when the fixture matches the approved frame and `component` when the approved design isolates the changed surface. Do not create or require an implementation screenshot baseline.
-> - **If the screen is net-new**: Proceed to design from the project design system as described below.
+Classify supplied images as approved references or defect/current-state evidence. Preserve approved
+images unchanged under the active `design/` directory; keep defect evidence separate. Reuse
+approved references when they cover the required states. Invoke `pen-design-editor` only for
+missing or changed visual references. The editable Pen source is canonical for generated designs;
+PNG exports are review assets. Do not use a separate AI-image generator for UI mockups.
 
-Read `docs/product/design_system.md`, inspect the relevant existing Compose screen/components, and extract from the user request and `spec.md`:
-- **Product Domain**: Target Application Domain / Productivity / Utility
-- **Visual Style**: Use the applicable app-shell or editor mode defined by the project design system. Do not select a new style from generic trends.
-- **Color Palette (Existing Semantic Tokens)**:
-  - Primary / OnPrimary
-  - Secondary / OnSecondary
-  - Surface / OnSurface / SurfaceContainer
-  - Accent / Highlights (Tailored HSL / Harmonious hex)
-- **Typography Hierarchy**: Reuse the typography and component-specific sizes in the project design system; use M3 roles only where it leaves the mapping open.
-- **Component Inventory**: Reuse established top bars, bottom toolbars, buttons, sliders, rails, overlays, sheets, and picker patterns before defining a new component.
+For an existing screen, inspect the relevant Compose screen/components and extract its controls,
+semantic tokens, typography, stable tags, and states. Define the requested delta using the project
+design system and existing component patterns. Record explicit user-approved exceptions or state
+that there are none. Do not create or require an implementation screenshot baseline.
 
-If the user request or supplied mockup conflicts with `docs/product/design_system.md`, record the exact user-approved exception in `design.md`. If no explicit exception exists, the project design system wins. Never invent an exception silently.
+### 2. Write the design contract
 
-### 2. Formulate `design.md`
+Use `harness/templates/feature-design-template.md` for the active `design.md`. Link the spec
+and `docs/product/design_system.md`. Cover each screen's purpose, entry/exit, hierarchy, components
+and stable tags, state-specific content/actions, copy, accessibility, and responsive behavior.
 
-Write `design.md` using `harness/templates/feature-design-template.md` in the active feature directory (`$FEATURE_DIR/design.md` for harness, `docs/current/design.md` for ad-hoc).
+For ad-hoc delivery, create/update `UI_contract.md` from its template. Match the spec's screen/state
+inventory exactly. Map each state to a unique complete screen reference, viewport, required regions,
+deterministic runtime fixture, comparison mode, and implementation plan stage ID. A control-only
+crop cannot substitute for a complete screen.
 
-At the top of `design.md`, link `docs/product/design_system.md`. For each screen, identify the semantic tokens and existing component patterns it uses, plus any explicit approved exceptions.
+For harness planning, create/update `visual_evidence/visual-target.json` before producing references.
+It owns appearance, device, logical size, locale, content states, and dynamic-region handling.
+For each state, run:
 
-Ensure each screen block includes:
-- Purpose & UX Principles
-- Entry and Exit points
-- Information Architecture & Region layout
-- Component Inventory (with required states and `testTag` IDs)
-- Visual States (Loading, Empty, Content, Error)
-- Interaction Rules & Gestures
-- Copy Requirements
-- Accessibility (dynamic text, min touch targets 48x48dp, contentDescription)
-- Responsive & Configuration Behavior
+```bash
+bash harness/scripts/visual-target-prompt.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" --state <content_state_id>
+```
 
-### 3. Visual Mockup Generation (When No User Mockup Provided)
+Use that exact target context in the Pen design, and record the generated reference's Pen source
+and node ID. Define a deterministic Roborazzi comparison scope for each visual target: `screen`
+when visible content matches, or `component` when the approved design isolates the changed surface.
+The emulator preflight later consumes this same manifest.
 
-Before generating any mockup, create or load the feature's canonical
-`visual_evidence/visual-target.json`. It is the single source of truth for the
-appearance, concrete device, logical size, locale, and named content states.
-For each state, run
-`bash harness/scripts/visual-target-prompt.sh --target "$FEATURE_DIR/visual_evidence/visual-target.json" --state <content_state_id>` and use its output as the target context for `generate_image`. Do not restate those values from memory or create a second mockup-only configuration; the emulator preflight must consume this same manifest with `prepare-visual-runtime.sh --target`.
+### 3. Design, render, and review
 
-For **each screen** defined in `design.md`:
-1. Formulate a rich prompt for `generate_image` describing an Android app screen running Jetpack Compose Material 3. Begin with the mandatory mockup prompt baseline from `docs/product/design_system.md` and include the exact relevant hex/alpha values, typography, component sizes, shapes, and visual-state rules:
-   - High-fidelity Android mobile app UI mockup of `<Screen Name>`
-   - Use the project-defined app-shell or editor mode and its existing semantic accent; do not invent vibrant/purple/glassmorphism treatments
-   - Include only the top bars, content regions, toolbars, controls, and component families required by the approved feature design
-   - Crisp rendering, UI component detail, no device frame
-2. **Keyboard-Visible Mockup Protocol**: When generating a keyboard-visible state (`mockup_<screen_name>_keyboard.png`):
-   - Retrieve the authentic emulator keyboard component from `docs/product/reference_components/<device>/keyboard_<appearance>.png` matching the declared target `device` and `appearance`.
-   - Do NOT allow generative models to hallucinate synthetic keyboard keys. Composite or align the real emulator keyboard component at its exact native bounds.
-3. Call `generate_image` tool with `ImageName: mockup_<screen_name>`
-4. Move/save the generated image artifact to `<active_design_dir>/mockup_<screen_name>.png`
-5. Reference the image in the **Design Assets** section of `design.md`:
-   ```markdown
-   ### Design Assets
-   - **Generated mockup**: `design/mockup_<screen_name>.png` — AI-generated visual mockup reflecting this screen's layout, components, and visual states.
-   - **Keyboard-visible mockup**: `design/mockup_<screen_name>_keyboard.png` — Visual mockup incorporating the emulator keyboard reference component from `docs/product/reference_components/<device>/keyboard_<appearance>.png`.
-   ```
+Invoke `pen-design-editor` through the available skill mechanism and follow its headless candidate,
+structural preservation, fresh-reopen, and visual inspection requirements. If the Skill tool is
+unavailable, read the repository skill and record the interface note once at the stage boundary.
+Keep every required screen/state covered, including loading, empty, error, disabled, and overlays.
 
----
+Every editable surface requires distinct keyboard-closed and keyboard-visible designs at the same
+full-window viewport. Show the focused field and required controls with the keyboard. A bottom
+sheet stays open while typing; a screen bottom toolbar is dismissed while the keyboard is visible.
+Use the authentic keyboard component for the declared device/appearance rather than inventing keys.
 
-## Output
+Capture complete Pen export logs and run `bash harness/scripts/check-pen-export-log.sh <log>`.
+Font/asset failures or missing glyphs fail the design gate. Inspect every export for alignment,
+clipping, icon identity, contrast, and readable content before presenting it.
 
-- Active `design.md` file
-- Visual mockup images under `<active_design_dir>/` (either user-provided or generated `mockup_*.png`)
+### 4. Gate, approve, and finalize
 
----
+Run the caller's independent UX gate:
 
-## Done When
+- Ad-hoc feature delivery: `bash harness/scripts/check-stage-artifacts.sh feature-delivery ux-design docs/current`
+- Complex planning: `bash harness/scripts/check-stage-artifacts.sh harness-planning ux-design "$FEATURE_DIR"`
+- UI-update workflow: its `create-ui-and-verify reference-design` gate
 
-- [ ] `design.md` exists with all sections filled according to `feature-design-template.md`.
-- [ ] `design.md` links to `docs/product/design_system.md` and lists any explicit approved exceptions (or states that there are none).
-- [ ] Every generated mockup prompt uses exact applicable design-system tokens and introduces no unexplained colors or component families.
-- [ ] Visual mockup images exist under `design/` for every screen described in `design.md`.
-- [ ] Design Assets section in `design.md` correctly references all mockup files.
-- [ ] All interactive elements have defined stable `testTag` identifiers in the component inventory.
+Present the design and verified references, then wait for explicit design approval. Visual feedback
+loops within this stage and changes only the owned design artifacts. After approval, follow the
+Pen skill's finalization contract, honor the requested preservation/add-screen scope, and retain
+the approved review images. Return to the calling workflow's planning stage when implementation
+is requested.
+
+## Output and completion
+
+- `design.md` links the clarified spec, design system, decisions, references, and approved exceptions.
+- Ad-hoc UI delivery has a complete `UI_contract.md` and one verified full-screen reference per state.
+- Harness planning has a valid visual-target manifest and non-empty references for all named states.
+- Keyboard states, stable tags, and comparison scopes are defined where applicable.
+- The UX artifact gate passes and the user approves the design before downstream planning.
+- Summary/progress evidence is recorded once at the stage boundary; visual revisions preserve the spec.

@@ -7,6 +7,10 @@
 **Project design system**: `docs/product/design_system.md`
 **Approved design-system exceptions**: None / <explicit user-approved exception and rationale>
 
+This document belongs to the separate UX Design stage after requirements clarification. Iterate
+here and in the Pen/UI contract/reference assets. Update the linked spec only for a product
+requirement change; update summary evidence at stage boundaries, approval, or blockers.
+
 ---
 
 ## Canonical Pen Reference

@@ -34,6 +34,12 @@ Carry every decision into the implementation plan, verification evidence, and re
 the UI rules are required only when their triggers are present.
 
 ### Stage 0 — Reference Design Gate
+This is the separate UX design stage. Clarify behavior and the required state inventory first;
+reuse the active clarified spec when one exists. Apply `ux-design`'s artifact ownership contract:
+visual iterations update design artifacts, and summary evidence is recorded at stage boundaries,
+approval, or blockers. Do not regenerate a spec, summary, or implementation plan for each Pen edit.
+Behavior/scope changes return to requirements clarification before design resumes.
+
 Before implementation, classify every supplied image as either an approved design reference or
 defect evidence. A screenshot showing the current/wrong behavior is evidence only and is not a
 design reference.

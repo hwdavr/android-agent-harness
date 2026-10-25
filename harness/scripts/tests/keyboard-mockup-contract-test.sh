@@ -58,6 +58,10 @@ write_spec() {
     '| ANL | rule.md | Conditional | Not applicable — analytics: none | contract fixture | shell evidence |' \
     '| SEC | rule.md | Conditional | Not applicable — no Android security boundary is changed | contract fixture | shell evidence |' \
     > "$feature_dir/spec.md"
+  mkdir -p "$feature_dir/visual_evidence"
+  cat > "$feature_dir/visual_evidence/visual-target.json" <<'EOF'
+{"version":1,"target_id":"picker","appearance":"light","device":"Pixel_6","locale":"en-US","logical_size_dp":{"width":430,"height":932},"states":{"ready":{"reference":"design/mockup_picker.png","content_state":"Picker ready","dynamic_regions":[]}}}
+EOF
 }
 
 expect_failure() {
@@ -79,7 +83,7 @@ expect_stage_failure() {
   local expected="$1"
   local feature_dir="$2"
   local output
-  if output=$(cd "$REPO_ROOT" && bash "$STAGE_GATE" harness-planning feature-specification "$feature_dir" 2>&1); then
+  if output=$(cd "$REPO_ROOT" && bash "$STAGE_GATE" harness-planning ux-design "$feature_dir" 2>&1); then
     echo "FAIL: planning stage gate unexpectedly accepted fixture: $feature_dir" >&2
     exit 1
   fi
@@ -98,7 +102,7 @@ stage_valid="$fixture_root/stage-valid"
 write_design "$stage_valid" '- Keyboard-visible mockup: `design/mockup_picker_keyboard.png`' 'Keyboard-visible state: the sheet stays open and the search results remain visible while typing.'
 write_spec "$stage_valid"
 printf '%s\n' 'Project design system: `docs/product/design_system.md`' >> "$stage_valid/design.md"
-(cd "$REPO_ROOT" && bash "$STAGE_GATE" harness-planning feature-specification "$stage_valid")
+(cd "$REPO_ROOT" && bash "$STAGE_GATE" harness-planning ux-design "$stage_valid")
 
 not_applicable="$fixture_root/not-applicable"
 mkdir -p "$not_applicable/design"

@@ -84,6 +84,11 @@ printf '%s\n' \
   '|---|---|---|' \
   '| 1 | Existing Editor | Updated |' \
   > "$fixture_root/design.md"
-bash "$STAGE_GATE" harness-planning feature-specification "$fixture_root" >/dev/null
+mkdir -p "$fixture_root/design" "$fixture_root/visual_evidence"
+printf 'Pen export fixture' > "$fixture_root/design/mockup_editor.png"
+cat > "$fixture_root/visual_evidence/visual-target.json" <<'EOF'
+{"version":1,"target_id":"editor","appearance":"light","device":"Pixel_6","locale":"en-US","logical_size_dp":{"width":430,"height":932},"states":{"ready":{"reference":"design/mockup_editor.png","content_state":"Editor ready","dynamic_regions":[]}}}
+EOF
+bash "$STAGE_GATE" harness-planning ux-design "$fixture_root" >/dev/null
 
 echo "PASS: Pen-export verification requires deterministic Roborazzi comparisons."

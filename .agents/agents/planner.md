@@ -12,9 +12,9 @@ The canonical [`harness-planning` workflow](../workflows/harness-planning.md)
 defines the required stage invocations. Do not substitute similarly named skills or
 add an implementation stage to this role:
 
-* **`feature-specification`** — Stage 1; creates the approved `spec.md` and,
-  when UI is affected, `design.md` plus design assets.
-* **`slice-planning`** — Stage 2; creates `feature_list.json`, `progress.md`,
+* **`feature-specification`** — Stage 1; clarifies requirements and creates approved `spec.md`.
+* **`ux-design`** — Stage 2 for UI scope; creates and reviews `design.md` and visual assets.
+* **`slice-planning`** — Stage 3; creates `feature_list.json`, `progress.md`,
   and `sprint-contract.md` for independently verifiable vertical slices.
 
 ---
@@ -29,8 +29,8 @@ The Planner must strictly adhere to and enforce these non-negotiable guidelines 
     Domain, and UI layers and includes its own comprehensive tests. No
     "horizontal-only" tasks (e.g., "Implement Data Layer first").
 3.  **Strict Plan Approval**: Do not begin implementation until the user has
-    approved Stage 1's `spec.md` (and `design.md` when applicable), then Stage
-    2's `feature_list.json` and `sprint-contract.md`.
+    approved Stage 1's `spec.md`, Stage 2's design when UI is affected, then Stage
+    3's `feature_list.json` and `sprint-contract.md`.
 4.  **API Verification**: Always cross-reference proposed API endpoint changes with `sharedContracts/openapi.yaml`. Ensure defensive parsing logic is explicitly planned for all external boundaries.
 5.  **State Separation**: Model state flows and ViewModel structures before writing
     code. UI screens may use stateful screen wrappers that delegate `UiState` and
@@ -47,11 +47,13 @@ Run when the user has a feature idea — whether a new screen, an enhancement to
 
 | Stage | Process Description | Outputs Produced |
 | :--- | :--- | :--- |
-| **Stage 1 — Clarify & Specify** | Classify task type (new screen / enhancement / logic-only). Ask targeted questions until every material ambiguity is resolved. Write specification artifacts. | `.scratch/<YYYY-MM-DD>-<feature-short-name>/spec.md` (always), `design.md` and `design/mockup_*.png` when UI is affected |
-| **Stage 2 — Slice Planning** | Decompose the approved requirements into a prioritized list of independent features. | `.scratch/<YYYY-MM-DD>-<feature-short-name>/feature_list.json`, `progress.md`, and `sprint-contract.md` |
+| **Stage 1 — Clarify & Specify** | Resolve product questions and approve the behavioral specification. | `.scratch/<YYYY-MM-DD>-<feature-short-name>/spec.md` |
+| **Stage 2 — UX Design** | Design and approve UI states using the clarified spec; visual iteration changes design artifacts. | `design.md`, `visual_evidence/visual-target.json`, Pen reference and review exports |
+| **Stage 3 — Slice Planning** | Decompose approved requirements and UX into independent features. | `feature_list.json`, `progress.md`, and `sprint-contract.md` |
 
-⛔ **STOP after Stage 1** — transition the tracker to `Awaiting specification approval`, present `spec.md` (and `design.md` if produced) to the user, and wait for approval before proceeding to Slice Planning.
-⛔ **STOP after Stage 2** — transition the tracker to `Awaiting implementation approval`, present `feature_list.json` and `sprint-contract.md` to the user, and wait for approval before handing off.
+⛔ **STOP after Stage 1** — transition the tracker to `Awaiting specification approval` and obtain spec approval before UX.
+⛔ **STOP after Stage 2 for UI scope** — obtain design approval before slicing; retain the existing tracker status through UX review.
+⛔ **STOP after Stage 3** — transition the tracker to `Awaiting implementation approval`, present `feature_list.json` and `sprint-contract.md`, and obtain approval before handoff.
 
 ---
 

@@ -132,6 +132,14 @@ bash harness/scripts/tests/rule-applicability-contract-test.sh
 **Must pass.** Ensures requirement artifacts carry all ten rule decisions and that the
 stage gate rejects incomplete matrices.
 
+### 9a. Separate UX Design Stage Contract
+```bash
+python3 harness/scripts/tests/ux-design-stage-contract-test.py
+```
+**Must pass.** Requirements gates accept clarified UI behavior without visual artifacts; the
+separate UX gates reject missing or incomplete design references. Workflow/skill ownership keeps
+visual revisions out of the spec and summary.
+
 ### 10. Acceptance-Test Traceability Contract
 bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
 bash harness/scripts/tests/acceptance-test-traceability-contract-test.sh

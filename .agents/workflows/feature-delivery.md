@@ -23,30 +23,55 @@ Do not jump directly into coding.
 **Every stage's skill must be invoked via the Skill tool — reading the SKILL.md manually is not a substitute.**
 **Memory of prior approval does not bypass stages. Source of truth is on-disk artifacts in `docs/current/`. If an artifact is missing, re-run the stage via its skill.**
 
-Pipeline: Requirement, Impact & Design → Plan → [User Approval] → Implementation → Testing → Code Quality Fix → Product Document Update → Install App To Device
+Pipeline: Clarify Requirements & Impact → UX Design → [Design Approval] → Plan → [Implementation Approval] → Implementation → Testing → Code Quality Fix → Product Document Update → Install App To Device
+
+Use one active `v<N>` for the delivery. UX iterations update `design.md`, `UI_contract.md`, the
+Pen candidate, and review exports. Keep the clarified spec stable unless behavior, scope, data,
+navigation, or the required state inventory changes. Update the summary only at stage boundaries,
+approval, or a blocker; do not create a spec/summary version for each visual revision.
 
 ---
 
 ## Stage Execution
 
-### Stage 1 — Requirement, Impact & Design Analysis
+### Stage 1 — Requirement & Impact Analysis
 The specification must include the complete ten-row Rule Applicability matrix, and the
 stage gate must reject missing or unsupported decisions.
 **INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
-Output: `docs/current/spec_v<N>.md` created; `docs/current/summary_v<N>.md` updated with Context Provenance and stage evidence. For UI changes, also create `docs/current/UI_contract.md` from `harness/templates/UI_contract-template.md`. The summary references the approved Rule Applicability matrix in the spec rather than copying it.
-Gate: requirements clear, impacted files identified, API classified, UiState/Navigation designed. Complete the UI branch below when applicable, then run `bash harness/scripts/check-stage-artifacts.sh feature-delivery requirement-analysis` — must exit 0.
+Clarify behavior, scope, data, navigation, edge cases, and the required screen/state inventory.
+Resolve material product questions before UX begins. Preserve supplied images as inputs; visual
+layout and exported references belong to Stage 2.
 
-**If the feature involves new screens or UI changes:**
-- Read `docs/product/design_system.md` before writing requirements or design artifacts. Treat it as the project-wide visual source of truth; record any explicit user-approved exception in `docs/current/UI_contract.md`.
-- Declare every visually distinct screen/state in the spec's `## Screen States` table. Inspect existing runtime states and controls, then copy the complete inventory to `UI_contract.md`, giving each state a unique top-level screen-frame reference, full-viewport export, deterministic runtime fixture, comparison mode, and plan stage ID. Each state reference must visibly include its primary content, all state-specific controls, and persistent interactive surfaces; a component or control-only crop is invalid. The requirement-analysis gate checks set equality and complete-state coverage.
-- **If user provided a screenshot or mockup image**: Save image(s) unchanged to `docs/current/design/` and map each approved state image in `docs/current/UI_contract.md`. Invoke `pen-design-editor` only for states the supplied images do not cover.
-- **If NO screenshot/mockup was provided**: **INVOKE** the `pen-design-editor` skill via the Skill tool (name: `pen-design-editor`). Reading SKILL.md manually is not a substitute. Use the canonical `.pen` design source (or create one), create missing screen/state frames, then output `docs/current/UI_contract.md` plus a verified `docs/current/design/mockup_*.png` export for each state. Render and inspect every export for correct icons and missing glyphs. The `.pen` file is the editable source; the PNGs are review artifacts.
-- After the user approves a generated design, follow `pen-design-editor`'s finalization contract: promote the validated `.pen` over the original source, retain the approved PNG review asset, and delete only run-owned intermediate outputs. All later feature-delivery stages and approval gates remain unchanged.
+Output: `docs/current/spec_v<N>.md` and one `docs/current/summary_v<N>.md` with Context Provenance
+and requirement-stage evidence. The summary links the spec's canonical Rule Applicability matrix.
+Gate: requirements clear, impacted files identified, API classified, UiState/navigation behavior
+defined. Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery requirement-analysis`.
+This gate requires no design document, Pen export, or UI contract.
 
 ---
 
-### Stage 2 — Implementation Plan ⛔ STOP
+### Stage 2 — UX Design ⛔ STOP FOR DESIGN APPROVAL
+For UI scope, **INVOKE** `ux-design` through the available skill mechanism. If the Skill tool is
+unavailable, read its repository `SKILL.md` and record that once in stage evidence.
+Input: the clarified `spec_v<N>.md`, supplied visual inputs, and the project design system.
+Logic-only scope records this stage N/A and proceeds to Stage 3.
+
+The UX skill owns `docs/current/design.md`, `UI_contract.md`, and review assets. It invokes
+`pen-design-editor` for missing references, maps every required state to a complete screen export,
+and validates icons, fonts, keyboard states, fixtures, and comparison targets. Supplied approved
+references remain unchanged. The editable Pen source and exported PNGs follow the Pen skill's
+validation and finalization contract.
+
+Gate: `bash harness/scripts/check-stage-artifacts.sh feature-delivery ux-design` must exit 0.
+Present the design and verified references and wait for explicit design approval. Iterate within
+this stage for visual feedback. Return to Stage 1 only for a product requirement change; then
+update the affected spec sections and revalidate the design. Record the summary row at stage
+completion/approval, not on every edit. Design approval does not authorize implementation.
+
+---
+
+### Stage 3 — Implementation Plan ⛔ STOP
 The implementation and test plans must link the canonical Rule Applicability record
 and identify evidence for each `Required` row.
 **INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
@@ -57,7 +82,7 @@ Gate: Run `bash harness/scripts/check-stage-artifacts.sh feature-delivery implem
 
 ---
 
-### Stage 3 — Implementation (Data + Domain + UI)
+### Stage 4 — Implementation (Data + Domain + UI)
 **INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Feature delivery is implementation-first: implement the approved plan before the Testing stage.
@@ -69,7 +94,7 @@ Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI ch
 
 ---
 
-### Stage 4 — Testing
+### Stage 5 — Testing
 **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Create or complete the approved tests against the implementation and verify them GREEN. Do not
@@ -81,7 +106,7 @@ Gate: every related test selected by `android-testing` passes with a non-zero ex
 
 ---
 
-### Stage 5 — Code Quality Fix
+### Stage 6 — Code Quality Fix
 **INVOKE** the `code-quality-fix` skill via the Skill tool (name: `code-quality-fix`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Output: All violations resolved; `docs/current/summary_v<N>.md` updated with code quality results.
@@ -89,7 +114,7 @@ Gate: `ktlintCheck`, `detekt`, `lintDebug`, and all custom check scripts exit wi
 
 ---
 
-### Stage 6 — Product Document Update
+### Stage 7 — Product Document Update
 Reconcile the affected existing `docs/product/requirements/<capability>.md` files with verified behavior. Move only delivered scope out of Planned changes, preserve blocked/pending-review qualifications, and link change evidence. Detailed requirements belong in capability files; update the product index/tracker only where navigation or lifecycle changes.
 
 Record execution metrics in the summary and run:
@@ -105,7 +130,7 @@ Gate: all commands exit 0 and review confirms the requirements match verified be
 
 ---
 
-### Stage 7 — Install App To Device
+### Stage 8 — Install App To Device
 Install the completed debug build when the feature affects UI, requires instrumented/platform
 verification, or the user explicitly requests installation. Otherwise record an explicit
 non-runtime N/A.
@@ -127,7 +152,9 @@ the feature-specific N/A rationale completes the stage.
 
 | Failure | Return to |
 |---------|-----------|
-| Requirement ambiguity or Plan rejection | Requirement, Impact & Design Analysis |
+| Requirement or behavior change | Requirement & Impact Analysis |
+| Visual design feedback | UX Design |
+| Plan-only feedback | Implementation Plan |
 | Compilation error | Implementation (Data + Domain + UI) |
 | Selected test failure | Testing (fix implementation if needed, then re-test) |
 | CI suite failure or coverage gap | Testing (fix implementation or add related tests, then rerun the failed gate) |
@@ -138,5 +165,6 @@ the feature-specific N/A rationale completes the stage.
 
 ## Human-in-the-Loop Confirmation Points
 
-1. **After Requirement, Impact & Design Analysis** — ask only when assumptions, scope, or a design choice remains unresolved
-2. **After Implementation Plan** — user approves implementation plan *(mandatory always)*
+1. **After Requirement & Impact Analysis** — resolve material product questions before UX begins.
+2. **After UX Design** — user approves the design and references for UI scope.
+3. **After Implementation Plan** — user approves implementation plan *(mandatory always)*.
