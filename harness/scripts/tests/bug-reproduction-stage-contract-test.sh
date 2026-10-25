@@ -34,10 +34,14 @@ PASSING_RESULT_DOCS="$TEMP_ROOT/passing-result"
 MISSING_FILE_DOCS="$TEMP_ROOT/missing-file"
 RENDERED_FALSE_PASS_DOCS="$TEMP_ROOT/rendered-false-pass"
 RENDERED_VALID_DOCS="$TEMP_ROOT/rendered-valid"
+IME_ACCEPTANCE_ONLY_DOCS="$TEMP_ROOT/ime-acceptance-only"
+IME_REPRODUCTION_DOCS="$TEMP_ROOT/ime-reproduction"
 mkdir -p "$VALID_DOCS/app/src/androidTest/java/example" \
   "$MISSING_SECTION_DOCS" "$PASSING_RESULT_DOCS" "$MISSING_FILE_DOCS" \
   "$RENDERED_FALSE_PASS_DOCS/app/src/androidTest/java/example" \
-  "$RENDERED_VALID_DOCS/app/src/test/java/example"
+  "$RENDERED_VALID_DOCS/app/src/test/java/example" \
+  "$IME_ACCEPTANCE_ONLY_DOCS/app/src/androidTest/java/example" \
+  "$IME_REPRODUCTION_DOCS/app/src/androidTest/java/example"
 
 create_summary() {
   local output="$1"
@@ -129,6 +133,31 @@ HARNESS_PROJECT_ROOT="$RENDERED_VALID_DOCS" bash "$STAGE_CHECKER" \
   bug-fixing bug-reproduction "$RENDERED_VALID_DOCS" >/dev/null ||
   fail_test "valid rendered RED reproduction evidence did not pass"
 
+create_summary "$IME_ACCEPTANCE_ONLY_DOCS/summary_v1.md"
+create_spec "$IME_ACCEPTANCE_ONLY_DOCS/spec_v1.md" 'FAILED (expected)' \
+  'app/src/androidTest/java/example/ReproductionTest.kt'
+printf '%s\n' \
+  '' \
+  '## Acceptance Criteria' \
+  '' \
+  '- The control remains visible while the software keyboard is open.' \
+  >> "$IME_ACCEPTANCE_ONLY_DOCS/spec_v1.md"
+printf '%s\n' 'fun reproducesSelectionBug() = Unit' \
+  > "$IME_ACCEPTANCE_ONLY_DOCS/app/src/androidTest/java/example/ReproductionTest.kt"
+HARNESS_PROJECT_ROOT="$IME_ACCEPTANCE_ONLY_DOCS" bash "$STAGE_CHECKER" \
+  bug-fixing bug-reproduction "$IME_ACCEPTANCE_ONLY_DOCS" >/dev/null ||
+  fail_test "non-IME reproduction was incorrectly classified from an IME acceptance criterion"
+
+create_summary "$IME_REPRODUCTION_DOCS/summary_v1.md"
+create_spec "$IME_REPRODUCTION_DOCS/spec_v1.md" 'FAILED (expected)' \
+  'app/src/androidTest/java/example/ImeReproductionTest.kt'
+printf '%s\n' '- Defect type: IME keyboard occlusion' \
+  >> "$IME_REPRODUCTION_DOCS/spec_v1.md"
+printf '%s\n' 'fun reproducesSelectionBug() = Unit' \
+  > "$IME_REPRODUCTION_DOCS/app/src/androidTest/java/example/ImeReproductionTest.kt"
+assert_rejected "$IME_REPRODUCTION_DOCS" \
+  'IME reproduction must declare Test name and Production activity'
+
 create_summary "$MISSING_SECTION_DOCS/summary_v1.md"
 printf '%s\n' '# Spec' > "$MISSING_SECTION_DOCS/spec_v1.md"
 assert_rejected "$MISSING_SECTION_DOCS" "missing a '## Reproduction Test' section"
@@ -143,4 +172,4 @@ create_spec "$MISSING_FILE_DOCS/spec_v1.md" 'RED (expected)' \
   'app/src/androidTest/java/example/MissingTest.kt'
 assert_rejected "$MISSING_FILE_DOCS" "reproduction test file does not exist"
 
-echo "PASS: bug-reproduction stage gate accepts RED evidence and rejects missing, passing, or absent test artifacts."
+echo "PASS: bug-reproduction stage gate scopes IME boundaries to the reproduction defect and rejects missing, passing, or absent test artifacts."

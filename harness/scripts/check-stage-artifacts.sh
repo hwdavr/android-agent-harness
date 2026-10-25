@@ -150,6 +150,11 @@ ime_is_active() {
   grep -Eiq '(^|[^[:alnum:]_])IME([^[:alnum:]_]|$)|software[[:space:]-]+keyboard|WindowInsets' "$1"
 }
 
+ime_text_is_active() {
+  printf '%s\n' "$1" |
+    grep -Eiq '(^|[^[:alnum:]_])IME([^[:alnum:]_]|$)|software[[:space:]-]+keyboard|WindowInsets'
+}
+
 require_bug_reproduction_evidence() {
   local spec="$1"
   local summary="$2"
@@ -219,7 +224,7 @@ require_bug_reproduction_evidence() {
       sed -n -E 's/.*(test|method)[[:space:]]+`([A-Za-z_][A-Za-z0-9_]*)`.*/\2/p' |
       head -n 1)
   fi
-  if ime_is_active "$spec"; then
+  if ime_text_is_active "$reproduction_section"; then
     local production_activity
     production_activity=$(printf '%s\n' "$reproduction_section" |
       sed -n -E 's/^[[:space:]]*-[[:space:]]*\*{0,2}Production activity\*{0,2}:[[:space:]]*`([^`]+)`.*/\1/p' |
