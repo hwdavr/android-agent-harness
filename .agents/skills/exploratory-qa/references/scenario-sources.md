@@ -9,6 +9,7 @@ The agent writes run-specific JSON; the reporter evaluates it and never scans so
 5. Use `docs/product/journey-registry.yaml`, relevant tests, UiState, navigation, handlers, and testTags for additional route/state hints. Code-only states belong in candidate `exploration_targets`, not approved expectations. Disclose missing intent.
 6. Record `{path, sha256, section}` in `generation.sources` and binary identity in `target`. If source is absent or mismatched, use supplied acceptance criteria plus dogfood's runtime map.
 7. Dogfood must verify real entry actions and runtime selectors. Test callbacks such as `onImageImported` are not device actions: use the real picker route. Compose tags may not be externally exposed. IME scenarios need a real keyboard; check current agent-device open options.
+8. Derive internal state checkpoint contracts and analytics expectations from the same approved requirements using [HarnessLens](harnesslens.md). Discover exported scopes/fields from the installed build or source, but do not treat implementation values as expected behavior. Link each checkpoint to a real action and UI check; include all relevant initial/success/error/restoration states. Missing expected behavior or hooks is an evidence gap and prevents PASS.
 
 The generated scenario stays beside its report. Source inventory is not a runtime observation: start with empty observed checks, null crash count, and `proxy_verified: false`. Screenshots supplement existing instrumented/Roborazzi acceptance evidence.
 
@@ -22,6 +23,8 @@ The generated scenario stays beside its report. Source inventory is not a runtim
 - `excluded_entry_points`: optional objects with unique `id` and a specific `reason`; excluded routes are disclosed but do not count as passing observations.
 - `exploration_targets`: uncertain code-derived states without invented correctness claims.
 - `expectations.ui_checks`: chosen check IDs; `no_unexpected_crash`: requires a recorded count.
+- `expectations.harnesslens`: required full-run capture, non-empty `state_checkpoints` and an analytics contract; see [the schema and capture procedure](harnesslens.md). Generated contract snapshots belong in the run directory and are hashed before actions.
+- `target.device_id`, `target.platform`, and `app_id`: explicit capture target, checked against `harnesslens/run.json`.
 - `expectations.requests`: optional method, host, path_glob, min_count, max_count, allowed_statuses, no_transport_errors. Paths are compared to sanitized metadata.
 - `apiMocks`: optional feature/shared fixture data; see proxy reference. Do not invent endpoints to fill it.
 

@@ -22,7 +22,8 @@ class ProxyTest(unittest.TestCase):
         self.assertIsNotNone(shutil.which('mitmdump'), 'mitmdump is required; no skipped proxy evidence')
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
-        self.base = Path(self.temporary.name)
+        self.base = Path(self.temporary.name) / '.qa-artifacts'
+        self.base.mkdir()
         self.scenario = json.loads((ROOT / 'tests/fixtures/mock-scenario.json').read_text())
         self.scenario_file = self.base / 'scenario.json'
         with socket.socket() as port:
@@ -204,16 +205,23 @@ class ProxyTest(unittest.TestCase):
         self.receipts()
         run = self.base / 'runs/case'
         (run / 'observations.json').write_text(json.dumps({'proxy_verified': True, 'ui_checks': {}}))
-        command = [sys.executable, str(ROOT / 'scripts/report.py'), '--run-dir', str(run), '--scenario', str(self.scenario_file)]
+        run_scenario = run / 'scenario.json'
+        run_scenario.write_bytes(self.scenario_file.read_bytes())
+        command = [sys.executable, str(ROOT / 'scripts/report.py'), '--run-dir', str(run), '--scenario', str(run_scenario)]
         result = subprocess.run(command, env=self.env, text=True, capture_output=True, timeout=5)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, 2, result.stderr)
         output = json.loads((run / 'report.json').read_text())
-        self.assertEqual((output['status'], output['mocked_request_count']), ('PASS', 1))
+        self.assertEqual((output['status'], output['mocked_request_count']), ('INCONCLUSIVE', 1))
+        self.assertEqual(next(c['result'] for c in output['checks'] if c['id'] == 'mock:service-error'), 'PASS')
+        self.assertEqual(next(c['result'] for c in output['checks'] if c['id'] == 'harnesslens:required-evidence'), 'INCONCLUSIVE')
         self.scenario['apiMocks'][0]['response'] = {'changed': True}
         self.scenario_file.write_text(json.dumps(self.scenario))
+        run_scenario.write_bytes(self.scenario_file.read_bytes())
         changed = subprocess.run(command, env=self.env, text=True, capture_output=True, timeout=5)
         self.assertEqual(changed.returncode, 2, changed.stderr)
-        self.assertEqual(json.loads((run / 'report.json').read_text())['status'], 'INCONCLUSIVE')
+        changed_output = json.loads((run / 'report.json').read_text())
+        self.assertEqual(changed_output['status'], 'INCONCLUSIVE')
+        self.assertEqual(next(c['result'] for c in changed_output['checks'] if c['id'] == 'mock:service-error'), 'INCONCLUSIVE')
 
 
 if __name__ == '__main__':

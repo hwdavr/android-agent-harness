@@ -92,6 +92,11 @@
     }
   ],
   "expectations": {
+    "harnesslens": {
+      "capture": "harnesslens/capture.ndjson",
+      "state_checkpoints": [],
+      "analytics": null
+    },
     "ui_checks": [
       "picker_closed_controls_reachable",
       "picker_open_controls_above_keyboard",
@@ -101,11 +106,14 @@
     "requests": []
   },
   "evidence_limits": [
+    "HarnessLens state checkpoints and analytics contracts must be filled from approved requirements and actual exported fields; this incomplete example cannot PASS.",
     "This draft has no runtime observations and is not a passing result.",
     "Exploratory screenshots supplement the existing instrumented and Roborazzi acceptance evidence.",
     "No network request expectation is inferred from UI states or source code."
   ],
   "target": {
+    "platform": "android",
+    "device_id": null,
     "package": "com.example.funphotoeditor",
     "apk_sha256": null,
     "version": null,

@@ -9,6 +9,7 @@ from collections import Counter
 from pathlib import Path
 
 from mitm_mock import load_rules
+from harnesslens_evidence import evaluate_harnesslens, local_path, outcome, qa_run_dir
 
 
 def read_json(path):
@@ -195,6 +196,12 @@ def render_markdown(report):
     for check in report['checks']:
         cells = [str(check[key]).replace('|', '\\|').replace('\n', ' ') for key in ('id', 'result', 'kind', 'detail')]
         lines.append('| ' + ' | '.join(cells) + ' |')
+    lines += ['', '## HarnessLens evidence', '']
+    for check in report['checks']:
+        if check['id'].startswith('harnesslens:'):
+            links = ', '.join('[%s](%s)' % (path, path) for path in check['evidence'])
+            lines.append('- **%s — %s**: %s%s' % (check['id'], check['result'], check['detail'],
+                                                '; ' + links if links else ''))
     lines += ['', '## Entry-point coverage', '']
     route_results = {check['id']: check['result'] for check in report['checks']}
     for route in report.get('entry_points', []):
@@ -210,7 +217,7 @@ def render_markdown(report):
         lines.append('- %s: %s; evidence: %s' % (finding.get('id', '?'), finding.get('title', ''), ', '.join(finding.get('evidence', []))))
     lines += ['', '## Request summary', '']
     lines += ['- `%s`: %s' % pair for pair in report['network_summary'].items()] or ['No allowlisted requests captured; absence requires verified capture.']
-    lines += ['', 'PASS covers declared checks with submitted evidence. Exploration is not exhaustive. Setup failures are not automatically app defects.', '']
+    lines += ['', 'PASS requires all declared UI/network and required HarnessLens evidence checks to pass. Exploration is not exhaustive. Setup failures are not automatically app defects.', '']
     return '\n'.join(lines)
 
 
@@ -218,8 +225,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--scenario', type=Path, required=True)
+    parser.add_argument('--harnesslens-root', type=Path,
+                        help='Pinned HarnessLens checkout; otherwise use the current Python environment')
     args = parser.parse_args(argv)
     try:
+        args.run_dir = qa_run_dir(args.run_dir)
+        if not args.scenario.resolve().is_relative_to(args.run_dir):
+            raise ValueError('Run scenario must be stored inside the selected .qa-artifacts run directory')
         scenario = read_json(args.scenario)
         if not isinstance(scenario, dict):
             raise ValueError('Missing/invalid scenario object')
@@ -229,9 +241,12 @@ def main(argv=None):
             hosts = {m['host'] for m in scenario['apiMocks']}
             _, _, rules = load_rules(args.scenario, hosts)
             hashes = {r['id']: r['fixture_sha256'] for r in rules}
-        observations = read_json(args.run_dir / 'observations.json')
-        requests = read_jsonl(args.run_dir / 'network.jsonl')
+        observations = read_json(local_path(args.run_dir, 'observations.json'))
+        requests = read_jsonl(local_path(args.run_dir, 'network.jsonl'))
         status, checks = evaluate(scenario, observations, requests, digest, hashes)
+        lens_checks, lens_receipts = evaluate_harnesslens(scenario, args.run_dir, digest, args.harnesslens_root)
+        checks.extend(lens_checks)
+        status = outcome([check['result'] for check in checks])
         observations = observations or {}
         report = {
             'scenario': scenario.get('scenario_id', 'unspecified'), 'scenario_sha256': digest,
@@ -244,10 +259,11 @@ def main(argv=None):
             'fixture_receipts': [{k: r[k] for k in ('mock_rule_id', 'fixture_sha256', 'mock_scenario_sha256') if k in r}
                                  for r in requests if r.get('mocked') is True],
             'checks': checks, 'states_visited': observations.get('states_visited', []), 'findings': observations.get('findings', []),
+            'harnesslens_verifications': lens_receipts,
         }
         args.run_dir.mkdir(parents=True, exist_ok=True)
-        (args.run_dir / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
-        (args.run_dir / 'report.md').write_text(render_markdown(report))
+        local_path(args.run_dir, 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+        local_path(args.run_dir, 'report.md').write_text(render_markdown(report))
         print('%s: %s' % (status, args.run_dir / 'report.md'))
         return {'PASS': 0, 'FAIL': 1, 'INCONCLUSIVE': 2}[status]
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
