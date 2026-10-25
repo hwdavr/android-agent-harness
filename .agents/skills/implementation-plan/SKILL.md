@@ -17,8 +17,8 @@ This is the final gate before implementation begins.
 - `harness/templates/rule-applicability-template.md`
 - `harness/templates/implementation-plan-template.md`
 - `harness/templates/test-plan-template.md`
-- `docs/current/spec_v<N>.md` (Requirement, Impact & Design Analysis stage output)
-- `docs/current/UI_contract.md` when the feature affects UI.
+- `docs/current/spec_v<N>.md` (Requirement & Impact Analysis output)
+- Approved `docs/current/UI_contract.md` and its canonical Pen/reference mappings for UI scope.
 
 When the approved `SEC` decision is `Required` or excepted, load
 `rules/android-security.md` and carry its required boundary, failure-mode, and test
@@ -31,7 +31,8 @@ platform, instrumented runtime, end-to-end journey, or visual claim.
 ## Execute
 
 ### Step 1: Generate Implementation Plan
-Using all outputs from the **Requirement, Impact & Design Analysis** stage, compile a complete implementation plan.
+Using the clarified requirements and the approved outputs of the separate **UX Design** stage
+for UI scope, compile a complete implementation plan.
 
 Start by reading the approved **Rule Applicability** matrix in the active specification.
 Link that exact `spec_v<N>.md#rule-applicability` record from both plans instead of
@@ -87,7 +88,10 @@ Update `summary_v<N>.md`: mark the Implementation Plan stage complete.
 
 ### Feedback Loop
 1. **Feedback**: The user provides feedback via chat, file comments, or direct edits to the plan.
-2. **Iteration**: If feedback requires changes to requirements or design, the agent **MUST return to the Requirement, Impact & Design Analysis stage** to update the analysis/spec first. Then, update `implementation_plan_v<N>.md` and request approval again.
+2. **Iteration**: Route visual feedback to the separate UX Design stage and update only its design
+   artifacts. Return to requirements analysis only when behavior, scope, data, navigation, or the
+   required state inventory changes. Plan-only feedback stays in this stage. Reconcile the affected
+   plan/test bindings after an approved design or requirements change and request plan approval again.
 3. **Approval**: The agent returns to the active workflow file and proceeds to the next stage defined there.
 
 Do not write any code, create any source files, or call any file-editing tools until the user explicitly approves.

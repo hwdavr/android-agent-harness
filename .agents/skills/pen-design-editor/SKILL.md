@@ -24,6 +24,12 @@ repository designs with `rg --files -g '*.pen'`. If several candidates remain or
 screen/element has more than one plausible node, show the candidates with their node IDs and ask
 the user to disambiguate. Never mutate based only on an ambiguous name.
 
+When invoked by feature delivery, harness planning, or the UI-update workflow, first read the
+active `UI_contract.md` and require its `ui-contract` inventory gate to pass before generating
+Pen screens. Use those rows as the state-by-state design input. Complete their Pen node and PNG
+mappings after inspection; do not generate a separate design.md. Direct standalone design-file
+inspection does not require creating delivery artifacts.
+
 ## Required session setup
 
 1. Confirm the installed CLI with `pen interactive --help`. If `pen` is missing, cannot
@@ -123,7 +129,7 @@ explicitly requests one. Do not change any later workflow stage or approval gate
 When invoked from an ad-hoc Android UI workflow, place a distinct verified PNG for each designed
 state at the active `design/mockup_<screen_state>.png` location and update `UI_contract.md` with its
 canonical `.pen` source, node ID, exported review image, design-system decisions, and any approved
-exceptions. Complex-feature planning retains its `design.md` and visual-target manifest. After
+exceptions. Complex-feature planning retains the same `UI_contract.md` and derived visual-target manifest. After
 approval, the canonical `.pen` source is the promoted original path and the PNGs remain as review
 artifacts.
 

@@ -2,7 +2,7 @@
 
 **Date**: YYYY-MM-DD
 **Status**: Draft / Final
-**Related design**: `design.md` *(if applicable)*
+**Related UI contract**: `UI_contract.md` *(defines states after clarification, before Pen design)*
 
 ---
 
@@ -136,5 +136,6 @@ All questions must be ✅ Answered before this document is approved.
 - [ ] All requirements are specific and testable.
 - [ ] All non-goals are explicit.
 - [ ] No unresolved assumptions remain.
-- [ ] All visual states are defined in `design.md` *(if new screen)*.
+- [ ] Required screen/state behavior is defined for the later UX Design stage; visual assets are
+      checked by that separate stage and are not prerequisites for specification approval.
 - [ ] All navigation outcomes are defined *(if new screen)*.

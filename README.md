@@ -109,7 +109,8 @@ living-document edits do not expand an approved change's scope. Follow
 Used for multi-slice, significant features requiring systematic requirement analysis and evaluation:
 
 1. **Planning (`.agents/workflows/harness-planning.md`)**
-   - Clarifies ambiguities and generates `spec.md` and `design.md`.
+   - Clarifies requirements and approves `spec.md`, then runs a separate UX Design stage for UI scope.
+   - UX defines `UI_contract.md` before generating Pen/reference assets and conducting visual review; visual revisions preserve the spec and summary.
    - Decomposes requirements into vertical slices in `feature_list.json` and schedules a `sprint-contract.md`.
 2. **Generation (`.agents/workflows/harness-generator.md`)**
    - Implements each vertical slice incrementally (Data → Domain → UI), with test-first authoring, verification, and quality gates.
@@ -120,7 +121,7 @@ Used for multi-slice, significant features requiring systematic requirement anal
    - Resolves any findings if evaluation score is below 5.0/5.
 
 ### Ad-Hoc Development (Simple Tasks & Bug Fixes)
-- **`feature-delivery.md`**: Direct end-to-end implementation for simple features.
+- **`feature-delivery.md`**: Requirements → UX Design for UI scope → approved implementation plan → delivery.
 - **`bug-fixing.md`**: Reproduction test first → surgical fix → regression verification.
 - **`create-ui-and-verify.md`**: Focused on pixel-perfect Composable styling against design mockups.
 - **`feature-review.md`**: Pre-merge independent review checklist.

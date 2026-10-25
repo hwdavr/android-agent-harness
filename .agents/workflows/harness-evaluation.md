@@ -40,7 +40,7 @@ decisions, and unapproved exceptions are review failures.
 - Read `$FEATURE_DIR/feature_list.json` to verify the target feature definition and its current status.
 - Validate the platform contract with `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate`. The platform capability matrix exists only for platform-bound features (`platform_validation.required: true`); for those, a missing matrix, missing required API row, pending/unavailable/skipped environment, or non-zero real-boundary test is a review failure. Non-platform features must declare `required: false` with an explicit `reason` in `feature_list.json`. Do not convert any failure into a pass because the environment is inconvenient.
 - When `feature_list.json` declares a visual-verification owner, validate visual traceability with `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"`; a visual method without a sprint-contract row, successful `verifyRoborazziDebug` evidence, or reference-anchor proof is a review failure. Each Pen target must be an exact screen or component scope. Rich-text or inline-formatting appearance rows must also pass the source-fed rendered-output contract through their named `RoborazziTest`. Do not promote a screenshot recorded from the implementation as a golden baseline.
-- If the change affects UI, read `docs/product/design_system.md`, `$FEATURE_DIR/design.md`, and its visual assets. Treat unexplained deviations from the global design system as review findings.
+- If the change affects UI, read `docs/product/design_system.md`, `$FEATURE_DIR/UI_contract.md`, its canonical Pen source, and mapped exports. Treat unexplained deviations from the global design system as review findings.
 
 ---
 

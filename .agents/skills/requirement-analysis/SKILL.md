@@ -3,12 +3,13 @@ name: requirement-analysis
 description: Analyze requirements, API impact, UI states, and navigation flow.
 ---
 
-# Skill — Requirement, Impact & Design Analysis
+# Skill — Requirement & Impact Analysis
 
 Follow `.agents/rules/product-documentation.md`. Read affected `docs/product/requirements/<capability>.md` files and update those same files for behavior changes. Keep dated change contracts/evidence in `.scratch/`. New specs include `## Product Requirements` with capability links, changed requirements, and approval-time SHA-256 hashes. Completion reconciles verified behavior or records `Confirmed unchanged` for an already-correct bug contract.
 
 ## Purpose
-Understand what is being built, identify affected files, and design the core UI state and navigation before implementation.
+Clarify what is being built, identify affected files, and define UI-state and navigation behavior
+before the separate UX Design stage. Visual layout, Pen edits, and mockup exports belong to UX.
 Do not write any code in this stage.
 
 ---
@@ -53,9 +54,9 @@ changes call for relevance review rather than an automatic full device replay.
    - Prefer a single immutable `data class`.
    - Inspect existing runtime controls and flows. Enumerate each visually distinct screen/state
      pair in the spec's `## Screen States` table; include selected subtools and overlays, not only
-     loading/content/error categories. Create `UI_contract.md` from the harness template and map
-     each pair to a unique approved image or Pen node, deterministic fixture, comparison mode,
-     and plan stage. Missing Pen states must be designed and exported before the stage gate.
+     loading/content/error categories. Record what the user sees and can do in each state.
+     Hand this inventory to UX Design; do not require images, Pen nodes, or `UI_contract.md`
+     to complete feature-delivery requirements analysis.
 2. **Design Navigation**: If navigation is affected, define routes, serializable arguments, and back-stack behavior.
 3. **DI Scope**: Identify the required Hilt scope for new components (`@Singleton`, `@ViewModelScoped`).
 
@@ -63,7 +64,9 @@ changes call for relevance review rather than an automatic full device replay.
 
 ## Output
 
-Create `docs/current/` if needed. Choose the next unused `v<N>` and preserve existing artifacts; never delete an earlier feature's evidence.
+Create `docs/current/` if needed. Choose the next unused `v<N>` once for a new delivery and
+preserve existing artifacts. Reuse that active version during the delivery; visual revisions
+do not allocate new spec or summary versions.
 
 If the user provides a design screenshot or mockup, save it to **`docs/current/design/`** so it can be referenced during UI Verification.
 
@@ -86,8 +89,11 @@ Use the template from `harness/templates/spec-template.md`.
 - Record every assumption the analysis required — never silently fill an ambiguous requirement.
 - Reframe vague requests into concrete, testable verification expectations the user can confirm.
 - Include the complete **Rule Applicability** matrix with a concrete decision, trigger or rationale, and planned evidence for all ten rules.
-- Keep the spec alive — when scope or decisions change, update `spec_v<N>.md` first.
-- For UI changes, produce `UI_contract.md` and a distinct verified design PNG per state.
+- Update the spec only when clarified behavior, scope, data, navigation, or the required state
+  inventory changes. Visual feedback within that contract stays in the UX Design stage.
+- For UI changes, hand the state inventory and preserved visual inputs to `ux-design`.
+  Workflows with their own bug/reference gates retain those gates; this skill does not generate designs.
+- Update the summary at this stage's completion, approval, or a blocker, not after each visual edit.
 
 ---
 
@@ -95,10 +101,10 @@ Use the template from `harness/templates/spec-template.md`.
 
 **This stage is complete when all of the following are true:**
 - [ ] `docs/current/summary_v<N>.md` exists with the Stage Progress table filled in.
-- [ ] `docs/current/spec_v<N>.md` exists with requirement, impact, and design sections filled.
+- [ ] `docs/current/spec_v<N>.md` exists with requirements, impact, and state/navigation behavior filled.
 - [ ] Every affected file is listed with a change type.
 - [ ] UiState design covers all visual states.
-- [ ] For UI changes, the spec and `UI_contract.md` have identical screen/state pairs and the UI contract gate passes.
+- [ ] For UI changes, the required screen/state inventory is ready for the separate UX Design stage.
 - [ ] API change is classified.
 - [ ] Rule Applicability contains all ten rows with no implicit or missing decision.
 

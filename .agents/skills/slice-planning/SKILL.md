@@ -22,7 +22,7 @@ For trivially small changes, skip this stage and go directly to the Implementati
 - `harness/templates/sprint-contract-template.md`
 - `harness/templates/platform-capability-matrix-template.md`
 - **Requirement input** — read the path from the active workflow's `Input:` line:
-  - harness-planning workflow → `$FEATURE_DIR/spec.md` (+ `$FEATURE_DIR/design.md` if present)
+  - harness-planning workflow → approved `$FEATURE_DIR/spec.md` plus approved `$FEATURE_DIR/UI_contract.md` and its Pen references for UI scope
   - Other workflows → `docs/current/spec_v<N>.md`
 
 ---
