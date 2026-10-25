@@ -1,6 +1,6 @@
 ---
 name: exploratory-qa
-description: Verify an Android APK or installed app with workflow-derived scenarios, correlated logs, optional mitmproxy fixtures, and evidence reports. Use for QA needing network control or structured scenario results; use dogfood directly for UI-only exploration.
+description: Verify an Android APK or installed app with workflow-derived scenarios, HarnessLens internal state and analytics contracts, optional mitmproxy fixtures, and evidence reports. Use dogfood directly for UI-only exploration.
 ---
 
 # Exploratory QA
@@ -13,15 +13,25 @@ Accept a prebuilt APK or installed package; source code is optional. Record pack
 
 Generate `.qa-artifacts/<run-id>/scenario.json` for the selected feature. Read [scenario sources](references/scenario-sources.md) to derive checks from the matching workflow, discover code-only targets, and retain source hashes. The example illustrates the format, not the default journey for every run. Keep observations unset until runtime exploration.
 
+Keep every generated scenario, manifest, contract snapshot, capture, verifier JSON, report, log and screenshot inside this run directory. Approved reusable contracts remain at their source-controlled paths; copy the selected contracts into the run and hash them before UI actions. Never put generated run JSON in `docs/`.
+
 Before choosing a journey, inventory the feature's relevant entry points, including Home shortcuts/cards and in-context tool entries. Map each in-scope route to an `expectations.ui_checks` ID in `entry_points`; list future or otherwise out-of-scope routes in `excluded_entry_points` with a reason. The report validator returns `INCONCLUSIVE` when the inventory is absent, a route is unmapped, or route evidence is missing.
 
-## Analytics checks
+## Internal state and analytics — HarnessLens required
 
-When analytics checks are requested or declared in the selected tracking requirements, invoke the standalone [analytics-event-validator](../analytics-event-validator/SKILL.md). Share this run's scenario ID, selected APK/device and existing UI actions; coordinate analytics reset before those actions and flush/collect afterward. Keep analytics evidence in `analytics/`; no additional logs or video are required by the validator. This exploratory-QA workflow owns shared sessions and cleanup. Include the analytics verdict and report link in the overall QA writeup alongside UI/network results. Required analytics failures or inconclusive results prevent claiming overall QA completion.
+Invoke the installed [HarnessLens skill](../harnesslens/SKILL.md) and follow [capture, checkpoints and contract verification](references/harnesslens.md). Use the same installed app, selected device and real dogfood actions for UI, internal state and analytics evidence. Confirm the selected state hooks and analytics decorator exist in the debug build; absent instrumentation, missing approved expectations or an unavailable CLI is `INCONCLUSIVE`, with the prerequisite recorded. Continue useful UI exploration while preserving that incomplete verdict.
+
+Before acting, declare `expectations.harnesslens`: a full-run capture, at least one state checkpoint linked to a UI check and action, and the approved analytics contract. Derive expected scope/field/value assertions from approved requirements; source code can reveal exported fields but cannot supply the correctness oracle. Cover the relevant initial, success, error and restored states declared by the scenario. Record unknown or unexported fields as evidence gaps.
+
+Arm capture before launching/navigating. At each checkpoint, record the pre-action sequence boundary, perform its actual action, wait for the expected state within a bounded timeout, and export a separate snapshot before the next action. The reporter requires fresh state after that boundary and verifies each snapshot against its own contract. A correct final screen cannot substitute for an earlier checkpoint. Keep the full capture for analytics counts, parameters, forbidden events and order.
+
+The reporter reruns the real HarnessLens verifiers against captured evidence; it ignores manually supplied PASS flags. A fresh observed mismatch is `FAIL`; absent/stale state, zero analytics events, changed contracts or mixed runs are `INCONCLUSIVE`. Analytics contract mismatches in a non-empty capture are `FAIL`. Both outcomes block overall PASS. Include expected and actual state values through the linked state reports. A sampled state history cannot establish every transient transition, and app-side analytics cannot prove Firebase ingestion.
+
+The standalone [analytics-event-validator](../analytics-event-validator/SKILL.md) remains available for legacy captures. Its recorder and analytics-only parser do not replace this workflow's HarnessLens capture or internal state checks.
 
 ## Network mode
 
-- UI/log-only: use dogfood; no proxy is required.
+- No proxy: dogfood UI evidence plus HarnessLens state and analytics; no network interception is required.
 - Capture: allowlisted HTTP metadata supplements dogfood evidence.
 - Mock: serve named synthetic fixtures from the scenario's `apiMocks`.
 
@@ -33,17 +43,18 @@ Fixtures are external to the APK. Once interception works, edit fixtures and res
 
 Use dogfood for the scoped journey. Start/mark logs when relevant, save their path while the session is active, and correlate findings with the proxy timeline. `agent-device network dump` parses app logs; empty output does not establish no traffic. Code testTags are selector hints until confirmed in fresh runtime snapshots.
 
-Populate `observations.json` from `examples/observations.example.json` with actual checks, crash count, visited states, findings, and evidence paths. Keep dogfood's detailed findings as `dogfood-report.md` so the structured report does not overwrite them. Record unreachable states and missing expectations/oracles. Exploration supplements the project's deterministic Android and Roborazzi gates.
+Populate `observations.json` from `examples/observations.example.json` with actual checks, crash count, visited states, findings, and evidence paths. Update `harnesslens/run.json` with checkpoint sequence boundaries from that same live session. Keep dogfood's detailed findings as `dogfood-report.md` so the structured report does not overwrite them. Record unreachable states and missing expectations/oracles. Exploration supplements the project's deterministic Android and Roborazzi gates.
 
-Stop proxy/logs and close dogfood's session; restore any device proxy/CA changes made. Then run:
+Stop and export HarnessLens capture before closing the app/session; retain failed commands and partial evidence. Stop proxy/logs and restore any device proxy/CA changes made. Then run with Python 3.10+ (omit `--harnesslens-root` only when this Python environment already has HarnessLens installed):
 
 ```bash
 python3 .agents/skills/exploratory-qa/scripts/report.py \
   --run-dir .qa-artifacts/<run-id> \
-  --scenario .qa-artifacts/<run-id>/scenario.json
+  --scenario .qa-artifacts/<run-id>/scenario.json \
+  --harnesslens-root /path/to/pinned/HarnessLens
 ```
 
-Exit codes: 0 `PASS`, 1 `FAIL`, 2 `INCONCLUSIVE`/invalid input. PASS covers declared checks with submitted evidence. Missing observations or unexercised required mocks cannot pass; setup mismatches are labeled separately from app findings. Keep artifacts local and review/redact screenshots, logs, and URL paths before sharing. Helpers do not persist live bodies, headers, credentials, or raw proxy flows.
+Exit codes: 0 `PASS`, 1 `FAIL`, 2 `INCONCLUSIVE`/invalid input. PASS requires UI/network checks and all required HarnessLens state/analytics checks. Missing observations, omitted HarnessLens expectations or unexercised required mocks cannot pass; setup mismatches are labeled separately from app findings. Keep artifacts local and review/redact screenshots, logs, state values and URL paths before sharing. Capture only approved low-sensitivity fields; never tokens, user content, credentials or live HTTP bodies.
 
 ## Handoff to bug fixing
 

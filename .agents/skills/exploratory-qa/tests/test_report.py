@@ -70,7 +70,7 @@ class ReportTest(unittest.TestCase):
     def test_no_checks_is_inconclusive(self):
         self.assertEqual(report.evaluate({}, {}, [])[0], 'INCONCLUSIVE')
 
-    def test_workflow_sample_passes_without_proxy_when_observed(self):
+    def test_sample_ui_network_checks_pass_when_observed(self):
         scenario = json.loads((ROOT / 'examples/scenario.example.json').read_text())
         obs = {'proxy_verified': False, 'unexpected_crashes': 0,
                'ui_checks': {key: True for key in scenario['expectations']['ui_checks']}}
@@ -78,8 +78,12 @@ class ReportTest(unittest.TestCase):
 
     def test_workflow_sample_does_not_preapprove_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
-            code = report.main(['--run-dir', directory, '--scenario', str(ROOT / 'examples/scenario.example.json')])
-            result = json.loads((Path(directory) / 'report.json').read_text())
+            run_dir = Path(directory) / '.qa-artifacts' / 'example'
+            run_dir.mkdir(parents=True)
+            scenario_path = run_dir / 'scenario.json'
+            scenario_path.write_bytes((ROOT / 'examples/scenario.example.json').read_bytes())
+            code = report.main(['--run-dir', str(run_dir), '--scenario', str(scenario_path)])
+            result = json.loads((run_dir / 'report.json').read_text())
             self.assertEqual((code, result['status']), (2, 'INCONCLUSIVE'))
             self.assertEqual(next(c['result'] for c in result['checks'] if c['id'] == 'entry-point-inventory'), 'PASS')
             self.assertEqual(next(c['result'] for c in result['checks'] if c['id'] == 'entry-point:editor-sticker-tool'), 'INCONCLUSIVE')
