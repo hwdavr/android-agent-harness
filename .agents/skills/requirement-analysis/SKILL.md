@@ -26,6 +26,15 @@ Do not write any code in this stage.
 
 ## Execute
 
+### Entry from an existing Exploratory QA finding
+
+When bug-fixing receives a QA report, use `harness/scripts/read-qa-bug-context.py --report <report.json> --finding <id>`.
+Reuse its target, steps, expected/actual result, and evidence as the runtime reproduction; record the report/finding
+references in the bug spec's `## Exploratory QA Handoff`. Inspect the relevant current source for the root cause
+and load only missing requirement/UI-contract context. Reuse existing approved states when they cover the defect.
+Do not repeat the QA session or copy its full report. Fill only a demonstrated evidence gap; source-fingerprint
+changes call for relevance review rather than an automatic full device replay.
+
 ### 1. Requirement & Impact Analysis
 1. Read the user's feature request in full. Do not assume anything that is not explicitly stated.
 2. Search the codebase for all affected files (Screens, ViewModels, UseCases, Repos, DTOs, Tests).

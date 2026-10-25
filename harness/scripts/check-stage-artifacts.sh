@@ -358,6 +358,8 @@ case "$WORKFLOW/$STAGE" in
     require_file "summary_v*.md" "stage progress tracker"
     require_file "spec_v*.md" "bug context/root cause spec"
     require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "bug-fixing requirement analysis"
+    python3 "$SCRIPT_DIR/read-qa-bug-context.py" --project-root "$PROJECT_ROOT" \
+      --spec "$(latest_versioned_file "spec_v*.md")" --check
     ;;
   bug-fixing/bug-reproduction)
     require_file "summary_v*.md" "stage progress tracker"

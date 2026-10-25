@@ -25,6 +25,53 @@ Do not fix symptoms first. Do not guess — prove it with a failing test.
 
 Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan → [User Approval] → Implementation → Testing → Code Quality Fix → Install App To Device
 
+## Entry after Exploratory QA
+
+Start with the existing report and selected finding. A complete QA finding already supplies
+the runtime reproduction: package/version/device, binary hash when available, actions,
+expected/actual behavior, and retained evidence. Read it once with:
+
+```bash
+python3 harness/scripts/read-qa-bug-context.py \
+  --report .qa-artifacts/<run-id>/report.json --finding <finding-id>
+```
+
+The reader validates the report against its retained scenario, observations, and evidence,
+then prints only the selected finding and source-fingerprint changes. A QA verdict of `FAIL`
+is expected when an app bug was found. An unrelated inconclusive QA check does not invalidate
+a complete selected finding. Setup/environment failures must be routed to their owner.
+The reader also accepts `report.md` or `dogfood-report.md` and uses the `report.json` beside it.
+If an older detailed report already contains missing structured finding fields, copy those
+recorded facts into its observations and regenerate the report from the retained evidence.
+Report normalization alone does not require another device run.
+
+Use that output for Stage 1; do not rerun Exploratory QA, regenerate its scenario, or capture
+the same device journey/logs again. Inspect the relevant current source to diagnose the cause
+and load only missing requirement or UI-contract context. Source changes require review of
+their relevance; a changed document or unrelated file alone does not require another device run.
+If the selected finding lacks evidence, targets another build/flow, or leaves a runtime fact
+needed for diagnosis unresolved, collect only that missing evidence.
+
+Record references in the existing bug spec instead of copying the report into another artifact:
+
+```markdown
+## Exploratory QA Handoff
+
+- Report: `.qa-artifacts/<run-id>/report.json`
+- Finding: `<finding-id>`
+```
+
+The Stage 1 gate validates these references. The report establishes the historical observation;
+source-level diagnosis, the RED regression, fix-plan approval, and post-fix verification still
+follow the stages below. Existing approved UI designs/contracts may be reused when they cover
+the affected state; QA findings do not authorize a new design.
+
+## Skill execution
+
+Apply each stage skill through the available Skill tool. If no Skill tool is exposed, read the
+matching repository `SKILL.md`, follow its workflow, and record that interface limitation in the
+stage evidence, as required by root `AGENTS.md`. All executable stage gates still apply.
+
 ---
 
 ## Stage Execution
@@ -32,7 +79,8 @@ Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan → [
 ### Stage 1 — Bug Context, Localization & Root Cause
 The specification must include the complete ten-row Rule Applicability matrix. Assess
 only the fix scope and preserve an explicit trigger or rationale for every decision.
-**INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+Apply `requirement-analysis` using the skill execution rule above. With an Exploratory QA handoff,
+reuse its recorded context and perform the missing source diagnosis.
 
 Adapt for bugs:
 - Bug description, expected vs. actual behavior
@@ -41,8 +89,9 @@ Adapt for bugs:
 - Design the fix (UiState changes if needed)
 
 For bugs that involve a user journey, Compose rendering, navigation, Android runtime,
-external authentication, permissions, lifecycle, or device-specific behavior, reproduce
-the report with `agent-device` before writing the test. Open the installed app with
+external authentication, permissions, lifecycle, or device-specific behavior, use the complete
+Exploratory QA handoff above when available. Otherwise reproduce the missing runtime evidence
+with `agent-device` before writing the test. Open the installed app with
 `agent-device open <application-id> --foreground`, use the returned semantic references
 to follow the reported path, inspect the resulting UI and logs, and close the session
 with `agent-device close`. Record the device, installed build, steps, expected result,
@@ -55,7 +104,7 @@ Gate: root cause is specific enough that a reproduction test can be written. Run
 ---
 
 ### Stage 2 — Bug Reproduction (TDD) ⛔ STOP
-**INVOKE** the `bug-reproduction` skill via the Skill tool (name: `bug-reproduction`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+Apply `bug-reproduction` using the skill execution rule above.
 
 Write a failing test that mechanically proves the root cause before any fix is written.
 This is the only workflow stage that requires pre-implementation RED/TDD evidence.
@@ -66,10 +115,10 @@ the shipped Activity without replacing its content; direct `*Content` fixtures, 
 Activities, window-mode-only assertions, and static keyboard previews are supplemental. The
 reproduction gate checks the named method and its reachable helpers against this boundary.
 
-When Stage 1 used `agent-device`, translate the observed journey into the lowest
-sufficient deterministic test layer. Keep external services such as Auth0 deterministic
-in test code while preserving the app-owned transition and visible result that failed on
-the device.
+Translate the selected QA finding or new `agent-device` observation into the lowest
+sufficient deterministic test layer. A report is not a RED test result. Keep external services
+such as Auth0 deterministic in test code while preserving the app-owned transition and visible
+result that failed on the device.
 
 Output: Failing reproduction test file created; `docs/current/spec_v<N>.md` updated with a Reproduction Test section; `docs/current/summary_v<N>.md` updated.
 Gate: test exits RED (non-zero), failure message matches root cause, no application code modified. For a visual or rich-text rendering reproduction, the named `*RoborazziTest` must call `captureRoboImage()` against the approved Pen export; the stage gate enforces this. Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing bug-reproduction docs/current` — it must exit 0.
@@ -80,7 +129,7 @@ Gate: test exits RED (non-zero), failure message matches root cause, no applicat
 ### Stage 3 — Fix Plan ⛔ STOP
 The plan must link the approved Rule Applicability record and map every `Required` rule,
 including changed triggers and verification evidence.
-**INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+Apply `implementation-plan` using the skill execution rule above.
 
 Adapt — the plan must include:
 - Root cause (reference the reproduction test as evidence)
@@ -99,7 +148,7 @@ Gate: Run `bash harness/scripts/check-stage-artifacts.sh bug-fixing implementati
 ---
 
 ### Stage 4 — Implementation (Data + Domain + UI as needed)
-**INVOKE** the `android-implementation` skill via the Skill tool (name: `android-implementation`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+Apply `android-implementation` using the skill execution rule above.
 
 Adapt — only implement the layers the bug fix touches. Skip layers that are unaffected.
 
@@ -109,7 +158,7 @@ Gate: `./gradlew assembleDebug` passes, all affected layer rules satisfied.
 ---
 
 ### Stage 5 — Testing
-**INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+Apply `android-testing` using the skill execution rule above.
 
 For navigation, saved-state, back-stack, destination-recreation, or post-return
 persistence defects, the test plan must include a `## Production Journey Boundary`
@@ -132,7 +181,7 @@ geometry. A passing isolated-content test is insufficient grounds to skip a prod
 ---
 
 ### Stage 6 — Code Quality Fix
-**INVOKE** the `code-quality-fix` skill via the Skill tool (name: `code-quality-fix`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+Apply `code-quality-fix` using the skill execution rule above.
 
 Run the code-quality-fix stage to verify complete baseline correctness.
 

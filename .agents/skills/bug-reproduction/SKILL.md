@@ -25,6 +25,10 @@ selecting the lowest sufficient reproduction layer, load only its guidance:
 - `rules/testing-runtime-evidence.md` for navigation or other Android runtime behavior
 - `skills/shared-json-scenarios/SKILL.md` only when an API response is part of the root cause
 
+When the spec declares an Exploratory QA handoff, use that selected finding's observed trigger and outcome to
+design the regression. Its existing runtime reproduction does not need another exploratory session. The QA
+report is historical evidence; this stage still requires an executed, failing deterministic test.
+
 ---
 
 ## Execute
