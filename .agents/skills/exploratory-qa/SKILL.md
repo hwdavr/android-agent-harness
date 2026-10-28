@@ -1,6 +1,6 @@
 ---
 name: exploratory-qa
-description: Verify an Android APK or installed app with workflow-derived scenarios, HarnessLens internal state and analytics contracts, optional mitmproxy fixtures, and evidence reports. Use dogfood directly for UI-only exploration.
+description: Verify an Android APK or installed app with workflow-derived scenarios, HarnessLens internal state and analytics contracts, optional mitmproxy or WireMock fixtures, and evidence reports. Use dogfood directly for UI-only exploration.
 ---
 
 # Exploratory QA
@@ -40,6 +40,14 @@ For capture or mocks, read [proxy setup and fixtures](references/proxy.md). Chec
 Fixtures are external to the APK. Once interception works, edit fixtures and restart the proxy under a new run ID; re-trigger the request with the same APK. Retain APK/fixture hashes. Intentional HTTP errors are assessed against expected recovery UI.
 
 ## Explore and report
+
+### Optional WireMock backend conditions
+
+Keep real backend mode as the default. For controlled REST/GraphQL responses, use [api-mocking](../api-mocking/SKILL.md) and its [usage guide](../api-mocking/references/usage.md). If direct skill invocation is unavailable, run `hlens mock --session <run-id> --exclusive <command>` against a dedicated server. The existing mitmproxy modes remain available; do not translate native WireMock fixtures into `apiMocks` or run two response owners on the same route.
+
+Declare required mapping names, fixture hashes and hit bounds under `expectations.wiremock` as shown in that guide. Apply before the existing dogfood actions, verify app routing with a real in-app receipt, and set `wiremock_routing_verified` in observations only after correlating that receipt with the action. Save sanitized request/verification JSON in this run's `wiremock/` directory. Keep screenshots, functional findings, HarnessLens state and analytics capture in their existing paths.
+
+Run the report **while mappings are still active**, adding `--wiremock-url <server> --wiremock-session <run-id>`. It queries the shared adapter itself; a missing/wrong-session fixture or unverified routing is INCONCLUSIVE, and insufficient hits fail. Then reset session-owned mocks and restore routing in a finally/trap path, including on report failure. WireMock evidence cannot replace HarnessLens or establish that analytics events were emitted.
 
 Use dogfood for the scoped journey. Start/mark logs when relevant, save their path while the session is active, and correlate findings with the proxy timeline. `agent-device network dump` parses app logs; empty output does not establish no traffic. Code testTags are selector hints until confirmed in fresh runtime snapshots.
 

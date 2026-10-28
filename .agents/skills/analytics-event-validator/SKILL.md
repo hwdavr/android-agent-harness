@@ -23,6 +23,10 @@ At the original FunPhotoEditor adaptation, no analytics tracker/provider or appr
 
 ## Capture and validate
 
+When an approved event contract requires a controlled backend condition, optionally use [api-mocking](../api-mocking/SKILL.md). Follow its [usage and cleanup guide](../api-mocking/references/usage.md); without skill-to-skill invocation call `hlens mock --session <run-id> --exclusive <command>` against a dedicated server. Reuse the selected run/device and existing user interaction; record the condition, reviewed fixture hash and required mapping names in this run's `wiremock/` evidence. Real backend mode remains the default.
+
+Apply the fixture before arming the existing capture and performing its trigger action. Collect and validate actual events through the existing recorder below; then verify each required mapping with the adapter before removing it. Keep the separate WireMock verification JSON alongside the analytics report. A WireMock hit establishes only the backend condition: it never counts as an analytics event. Required backend verification failure or unavailable routing blocks overall journey completion even if analytics alone passes. Always reset temporary session mappings and restore routing in a finally/trap path. When invoked by exploratory-QA, let that parent verify/report before its shared cleanup. Backend routing supports iOS, but this skill's live collector remains Android-specific; use a compatible supplied capture for other platforms and retain its evidence limitations.
+
 Read [Android capture](references/android-capture.md). Python 3.9+ and ADB are required for live collection; the helpers use only the standard library. Supplied captures can be validated offline without ADB or device interaction. Follow project device-selection rules and pin the chosen serial.
 
 For live collection, inspect the existing build:

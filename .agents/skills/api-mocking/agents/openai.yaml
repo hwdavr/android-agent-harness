@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Mocking"
+  short_description: "Session-owned WireMock fixtures for mobile QA"
+  default_prompt: "Use $api-mocking to control backend responses for this mobile test, verify requests, and restore the environment."

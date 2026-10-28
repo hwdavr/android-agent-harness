@@ -56,6 +56,7 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | APK QA with scenario reports or network capture/mocks | `.agents/skills/exploratory-qa/SKILL.md` (reuses `dogfood`) |
 | Harness documentation, rule, gate, or evidence repairs | `.agents/skills/harness-retrospective/SKILL.md` |
 | App-side analytics event contracts | `.agents/skills/analytics-event-validator/SKILL.md` (standalone; optional in `exploratory-qa`) |
+| Controlled REST/GraphQL backend responses during mobile QA | `.agents/skills/api-mocking/SKILL.md` (shared WireMock adapter; optional in QA and analytics) |
 
 ### Project-Based Development (Complex Features)
 
@@ -71,7 +72,7 @@ Key skills under `.agents/skills/`:
 - **Planning & Requirements**: `spec-driven-development`, `feature-specification`, `slice-planning`, `implementation-plan`
 - **UX & Design**: `ux-design`
 - **Implementation**: `android-implementation`, `android-ui-layer`, `api-contract-update`
-- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`, `dogfood`, `exploratory-qa`, `analytics-event-validator`
+- **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`, `dogfood`, `exploratory-qa`, `analytics-event-validator`, `api-mocking`
 - **Review & Quality**: `code-quality-fix`, `android-code-review`, `code-review-and-quality`, `android-test-review`, `android-code-quality-checks`
 - **Session & Knowledge**: `context-management`, `knowledge-capture`, `documentation-and-adrs`, `karpathy-guidelines`
 

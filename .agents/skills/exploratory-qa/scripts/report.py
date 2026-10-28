@@ -4,6 +4,7 @@ import argparse
 import fnmatch
 import hashlib
 import json
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -188,6 +189,47 @@ def evaluate(scenario, observations, requests, scenario_hash=None, fixture_hashe
     return status, checks
 
 
+def evaluate_wiremock(scenario, observations, run_dir, url=None, session=None, harnesslens_root=None):
+    rules = scenario.get('expectations', {}).get('wiremock')
+    if rules is None:
+        return [], []
+    if not isinstance(rules, list) or not rules:
+        raise ValueError('expectations.wiremock must be a nonempty mapping expectation list')
+    checks, receipts, names = [], [], set()
+    for rule in rules:
+        if not isinstance(rule, dict):
+            raise ValueError('WireMock expectation must be an object')
+        name, digest = rule.get('name'), rule.get('fixture_sha256')
+        minimum, maximum = rule.get('min_hits', 1), rule.get('max_hits')
+        if (not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9._-]{1,64}', name)
+                or name in names or not isinstance(digest, str) or not re.fullmatch(r'[a-f0-9]{64}', digest)
+                or isinstance(minimum, bool) or not isinstance(minimum, int) or minimum < 1
+                or (maximum is not None and (isinstance(maximum, bool) or not isinstance(maximum, int)
+                                            or maximum < minimum))):
+            raise ValueError('Invalid WireMock name, fixture hash or hit bounds')
+        names.add(name)
+        check = {'id': 'wiremock:' + name, 'kind': 'evidence', 'evidence': ['scenario.json']}
+        if not url or session != run_dir.name or (observations or {}).get('wiremock_routing_verified') is not True:
+            check.update(result='INCONCLUSIVE', detail='Missing app routing evidence or WireMock URL/current run session')
+        else:
+            try:
+                if harnesslens_root is not None:
+                    cli_package = harnesslens_root / 'cli'
+                    if not (cli_package / 'harnesslens/wiremock.py').is_file():
+                        raise ImportError
+                    sys.path.insert(0, str(cli_package))
+                from harnesslens.wiremock import Admin, WireMockError
+                receipt = Admin(url, session).verify(name, minimum, maximum, digest)
+                receipts.append(receipt)
+                check.update(result=receipt['status'], detail='Live WireMock verification: %s hit(s)' % receipt['hits'])
+            except ImportError:
+                check.update(result='INCONCLUSIVE', detail='HarnessLens CLI with WireMock support is unavailable')
+            except WireMockError as error:
+                check.update(result='INCONCLUSIVE', detail=str(error))
+        checks.append(check)
+    return checks, receipts
+
+
 def render_markdown(report):
     lines = ['# Exploratory QA — ' + str(report['scenario']), '', '**Outcome:** ' + report['status'],
              '**Proxy verified:** ' + str(report['proxy_verified']),
@@ -227,6 +269,8 @@ def main(argv=None):
     parser.add_argument('--scenario', type=Path, required=True)
     parser.add_argument('--harnesslens-root', type=Path,
                         help='Pinned HarnessLens checkout; otherwise use the current Python environment')
+    parser.add_argument('--wiremock-url', help='Explicit Admin API server; verify before mock cleanup')
+    parser.add_argument('--wiremock-session', help='Must equal the current run directory name')
     args = parser.parse_args(argv)
     try:
         args.run_dir = qa_run_dir(args.run_dir)
@@ -244,6 +288,10 @@ def main(argv=None):
         observations = read_json(local_path(args.run_dir, 'observations.json'))
         requests = read_jsonl(local_path(args.run_dir, 'network.jsonl'))
         status, checks = evaluate(scenario, observations, requests, digest, hashes)
+        mock_checks, mock_receipts = evaluate_wiremock(scenario, observations, args.run_dir,
+                                                      args.wiremock_url, args.wiremock_session,
+                                                      args.harnesslens_root)
+        checks.extend(mock_checks)
         lens_checks, lens_receipts = evaluate_harnesslens(scenario, args.run_dir, digest, args.harnesslens_root)
         checks.extend(lens_checks)
         status = outcome([check['result'] for check in checks])
@@ -260,6 +308,7 @@ def main(argv=None):
                                  for r in requests if r.get('mocked') is True],
             'checks': checks, 'states_visited': observations.get('states_visited', []), 'findings': observations.get('findings', []),
             'harnesslens_verifications': lens_receipts,
+            'wiremock_verifications': mock_receipts,
         }
         args.run_dir.mkdir(parents=True, exist_ok=True)
         local_path(args.run_dir, 'report.json').write_text(json.dumps(report, indent=2) + '\n')
