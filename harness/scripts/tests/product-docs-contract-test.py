@@ -31,6 +31,68 @@ class ProductDocsContractTest(unittest.TestCase):
         (workspace / "spec.md").write_text("# Change\n\n## Product Requirements\n[Stickers](docs/product/requirements/stickers.md)\n")
         self.assertEqual(module.check(self.root, workspace), 1)
 
+    def test_accepts_audited_requirement_reconciliation_summary(self):
+        summary = self.root / "docs/current/summary_v1.md"
+        summary.parent.mkdir(parents=True)
+        summary.write_text(
+            "# Change Summary\n\n"
+            "## Product Requirement Reconciliation\n\n"
+            "| Capability file | Existing claim reviewed | Disposition | Current requirement location or retired status | Evidence / qualification |\n"
+            "|---|---|---|---|---|\n"
+            "| `docs/product/requirements/stickers.md` | Existing sticker picker behavior | Replace | Requirements table now describes picker behavior | Focused picker test passed and summary records the command. |\n"
+        )
+        self.assertEqual(module.check(self.root, summary=summary), 1)
+
+    def test_reconciliation_requires_a_review_table(self):
+        summary = self.root / "summary.md"
+        summary.write_text("# Change Summary\n\n## Product Requirement Reconciliation\nNo claims reviewed.\n")
+        with self.assertRaisesRegex(ValueError, "reconciliation table must use the required five columns"):
+            module.check(self.root, summary=summary)
+
+    def test_reconciliation_rejects_unsupported_disposition(self):
+        summary = self.root / "summary.md"
+        summary.write_text(
+            "## Product Requirement Reconciliation\n\n"
+            "| Capability file | Existing claim reviewed | Disposition | Current requirement location or retired status | Evidence / qualification |\n"
+            "|---|---|---|---|---|\n"
+            "| `docs/product/requirements/stickers.md` | Existing sticker picker behavior | Add section | Requirements table updated | Focused test passed and summary records the command. |\n"
+        )
+        with self.assertRaisesRegex(ValueError, "unsupported reconciliation disposition"):
+            module.check(self.root, summary=summary)
+
+    def test_reconciliation_rejects_unknown_capability(self):
+        summary = self.root / "summary.md"
+        summary.write_text(
+            "## Product Requirement Reconciliation\n\n"
+            "| Capability file | Existing claim reviewed | Disposition | Current requirement location or retired status | Evidence / qualification |\n"
+            "|---|---|---|---|---|\n"
+            "| `docs/product/requirements/unknown.md` | Existing requirement behavior | Retire | Removed from capability file | Summary links a verified retirement rationale here. |\n"
+        )
+        with self.assertRaisesRegex(ValueError, "unknown capability"):
+            module.check(self.root, summary=summary)
+
+    def test_reconciliation_rejects_replaced_claim_left_in_capability(self):
+        summary = self.root / "summary.md"
+        summary.write_text(
+            "## Product Requirement Reconciliation\n\n"
+            "| Capability file | Existing claim reviewed | Disposition | Current requirement location or retired status | Evidence / qualification |\n"
+            "|---|---|---|---|---|\n"
+            "| `docs/product/requirements/stickers.md` | Place overlays. | Replace | Requirements table now describes picker behavior | Focused picker test passed and summary records the command. |\n"
+        )
+        with self.assertRaisesRegex(ValueError, "stale claim marked Replace still appears"):
+            module.check(self.root, summary=summary)
+
+    def test_reconciliation_requires_retained_claim_to_remain(self):
+        summary = self.root / "summary.md"
+        summary.write_text(
+            "## Product Requirement Reconciliation\n\n"
+            "| Capability file | Existing claim reviewed | Disposition | Current requirement location or retired status | Evidence / qualification |\n"
+            "|---|---|---|---|---|\n"
+            "| `docs/product/requirements/stickers.md` | Old category sorting remains. | Retain | Requirements continues to describe sorting | Passing regression test confirms order remains unchanged. |\n"
+        )
+        with self.assertRaisesRegex(ValueError, "claim marked Retain is absent"):
+            module.check(self.root, summary=summary)
+
     def test_rejects_dated_product_workspace(self):
         (self.root / "docs/product/2026-10-24-sticker-change").mkdir()
         with self.assertRaisesRegex(ValueError, "belong under .scratch"):

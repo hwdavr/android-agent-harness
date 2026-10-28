@@ -35,6 +35,17 @@ Do not copy Rule Applicability, acceptance criteria, user-story scope, or featur
 
 - <Unresolved item or `None — all acceptance criteria verified.`>
 
+## Product Requirement Reconciliation
+
+For behavior changes, add one row for each affected prior claim. Use `Replace`, `Retire`,
+`Retain`, or `Confirm unchanged`; cite the current requirement location and evidence or blocked
+qualification. Do not add this table as a substitute for editing stale claims in the capability
+file. Run `check-product-docs.py --summary <this-summary-path>`.
+
+| Capability file | Existing claim reviewed | Disposition | Current requirement location or retired status | Evidence / qualification |
+|---|---|---|---|---|
+| `<repo-relative docs/product/requirements/...md>` | `<prior statement or section>` | `<Replace / Retire / Retain / Confirm unchanged>` | `<updated section or why retired>` | `<verification path, result, or precise blocker>` |
+
 ## Stage Evidence
 
 For each completed stage, cite the artifact or evidence path and one concise result line. Keep

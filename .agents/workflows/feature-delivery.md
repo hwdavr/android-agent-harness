@@ -119,12 +119,14 @@ Gate: `ktlintCheck`, `detekt`, `lintDebug`, and all custom check scripts exit wi
 ---
 
 ### Stage 7 — Product Document Update
-Reconcile the affected existing `docs/product/requirements/<capability>.md` files with verified behavior. Move only delivered scope out of Planned changes, preserve blocked/pending-review qualifications, and link change evidence. Detailed requirements belong in capability files; update the product index/tracker only where navigation or lifecycle changes.
+Read the full affected capability files and compare their existing requirements and Planned changes with the approved delta, current implementation, and actual verification. Edit stale claims in place: replace obsolete current behavior and retire old IDs/counts/destinations; do not leave the old claim beside a new `Proposed v<N>` subsection. Keep only genuinely undelivered behavior or incomplete acceptance in Planned changes, and mark implemented-but-unverified behavior as blocked. Update the product index only where its navigation summary is stale; never change lifecycle status to imply acceptance.
+
+In `docs/current/summary_v<N>.md`, add a `## Product Requirement Reconciliation` table with one row for each affected prior claim and these columns: `Capability file`, `Existing claim reviewed`, `Disposition`, `Current requirement location or retired status`, and `Evidence / qualification`. Quote an exact, concise prior excerpt. Use only `Replace`, `Retire`, `Retain`, or `Confirm unchanged`; cite evidence or the exact blocked condition. The checker rejects replaced/retired excerpts still present in the capability file and retained/unchanged excerpts that are missing. This review table supplements the in-place capability edits; it is not a substitute for them.
 
 Record execution metrics in the summary and run:
 
 ```bash
-python3 harness/scripts/check-product-docs.py --change-dir docs/current
+python3 harness/scripts/check-product-docs.py --change-dir docs/current --summary docs/current/summary_v<N>.md
 bash harness/scripts/check-feature-lifecycle.sh
 bash harness/scripts/check-harness-metrics.sh --validate docs/current/summary_v<N>.md
 ```

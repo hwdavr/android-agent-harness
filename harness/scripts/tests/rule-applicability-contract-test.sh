@@ -51,6 +51,7 @@ for required_file in \
   "$PROJECT_ROOT/harness/scripts/print-context-index.sh" \
   "$PROJECT_ROOT/harness/scripts/tests/context-index-contract-test.sh" \
   "$PROJECT_ROOT/.agents/workflows/create-ui-and-verify.md" \
+  "$PROJECT_ROOT/.agents/workflows/feature-delivery.md" \
   "$PROJECT_ROOT/.agents/workflows/harness-generator.md" \
   "$PROJECT_ROOT/.agents/workflows/harness-fix.md" \
   "$PROJECT_ROOT/.agents/gates/ci-checks.md" \
@@ -89,6 +90,11 @@ assert_contains "$PROJECT_ROOT/harness/templates/summary-template.md" "Context P
 assert_contains "$PROJECT_ROOT/harness/templates/summary-profiles/feature-delivery.md" "Product Document Update"
 assert_contains "$PROJECT_ROOT/harness/templates/summary-profiles/bug-fixing.md" "Ad-hoc Bug Fix"
 assert_contains "$PROJECT_ROOT/.agents/workflows/create-ui-and-verify.md" "approved Rule Applicability matrix"
+assert_contains "$PROJECT_ROOT/.agents/rules/product-documentation.md" "edit existing requirement rows and paragraphs in place"
+assert_contains "$PROJECT_ROOT/.agents/rules/product-documentation.md" "instead of appending a new dated/versioned subsection"
+assert_contains "$PROJECT_ROOT/.agents/workflows/feature-delivery.md" "Existing claim reviewed"
+assert_contains "$PROJECT_ROOT/.agents/workflows/feature-delivery.md" "check-product-docs.py --change-dir docs/current --summary docs/current/summary_v<N>.md"
+assert_contains "$PROJECT_ROOT/harness/templates/summary-template.md" "## Product Requirement Reconciliation"
 assert_contains "$PROJECT_ROOT/.agents/workflows/harness-generator.md" "approved Rule Applicability decisions"
 assert_contains "$PROJECT_ROOT/.agents/workflows/harness-fix.md" "Reconcile all Rule Applicability rows again"
 assert_contains "$PROJECT_ROOT/.agents/gates/ci-checks.md" "Rule Applicability Harness Contract"

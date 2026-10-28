@@ -6,12 +6,91 @@ from pathlib import Path
 import re
 import sys
 
+RECONCILIATION_COLUMNS = [
+    "Capability file",
+    "Existing claim reviewed",
+    "Disposition",
+    "Current requirement location or retired status",
+    "Evidence / qualification",
+]
+RECONCILIATION_DISPOSITIONS = {"Replace", "Retire", "Retain", "Confirm unchanged"}
+
 
 def fail(message):
     raise ValueError(message)
 
 
-def check(root, change_dir=None):
+def table_cells(line):
+    return [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
+
+
+def normalize_claim(value):
+    return re.sub(r"\s+", " ", value).strip().casefold()
+
+
+def check_requirement_reconciliation(root, summary):
+    summary_path = summary if summary.is_absolute() else root / summary
+    summary_path = summary_path.resolve()
+    if not summary_path.is_relative_to(root):
+        fail("requirement reconciliation summary must belong to the consuming repository")
+    if not summary_path.is_file():
+        fail(f"missing requirement reconciliation summary: {summary_path}")
+
+    text = summary_path.read_text()
+    match = re.search(
+        r"^## Product Requirement Reconciliation\s*\n(.*?)(?=^## |\Z)",
+        text,
+        re.M | re.S,
+    )
+    if not match:
+        fail(f"{summary_path.name}: missing '## Product Requirement Reconciliation' section")
+
+    table = [line for line in match.group(1).splitlines() if line.strip().startswith("|")]
+    if len(table) < 3 or table_cells(table[0]) != RECONCILIATION_COLUMNS:
+        fail(f"{summary_path.name}: reconciliation table must use the required five columns")
+
+    requirements_dir = (root / "docs/product/requirements").resolve()
+    seen_claims = set()
+    valid_rows = 0
+    for line in table[2:]:
+        cells = table_cells(line)
+        if len(cells) != len(RECONCILIATION_COLUMNS):
+            fail(f"{summary_path.name}: malformed requirement reconciliation row")
+        capability_ref, existing_claim, disposition, current_location, evidence = cells
+        capability_path = (root / capability_ref).resolve()
+        if (
+            not capability_ref.startswith("docs/product/requirements/")
+            or not capability_path.is_relative_to(requirements_dir)
+            or not capability_path.is_file()
+            or capability_path.name == "README.md"
+        ):
+            fail(f"{summary_path.name}: unknown capability in reconciliation table: {capability_ref}")
+        if disposition not in RECONCILIATION_DISPOSITIONS:
+            fail(
+                f"{summary_path.name}: unsupported reconciliation disposition '{disposition}' "
+                f"for {capability_ref}"
+            )
+        if len(existing_claim) < 8 or len(current_location) < 8 or len(evidence) < 12:
+            fail(f"{summary_path.name}: each reconciliation row needs the prior claim, disposition, current location, and evidence/qualification")
+        if disposition == "Confirm unchanged" and not re.search(r"\b(reason|because|confirmed)\b", evidence, re.I):
+            fail(f"{summary_path.name}: Confirm unchanged requires its reason in Evidence / qualification")
+        claim_key = (capability_ref, existing_claim.lower())
+        if claim_key in seen_claims:
+            fail(f"{summary_path.name}: duplicate prior claim in reconciliation table: {capability_ref}")
+        seen_claims.add(claim_key)
+        capability_text = re.sub(r"\s+", " ", capability_path.read_text()).casefold()
+        prior_claim = normalize_claim(existing_claim)
+        if disposition in {"Replace", "Retire"} and prior_claim in capability_text:
+            fail(f"{summary_path.name}: stale claim marked {disposition} still appears in {capability_ref}: {existing_claim}")
+        if disposition in {"Retain", "Confirm unchanged"} and prior_claim not in capability_text:
+            fail(f"{summary_path.name}: claim marked {disposition} is absent from {capability_ref}: {existing_claim}")
+        valid_rows += 1
+
+    if valid_rows == 0:
+        fail(f"{summary_path.name}: reconciliation table must contain at least one claim row")
+
+
+def check(root, change_dir=None, summary=None):
     product = root / "docs/product"
     requirements = product / "requirements"
     index = product / "product.md"
@@ -46,6 +125,8 @@ def check(root, change_dir=None):
                 resolved = (path.parent / target).resolve()
             if not resolved.is_relative_to(root) or not resolved.exists():
                 fail(f"{path.relative_to(root)}: broken or external local link: {target}")
+    if summary:
+        check_requirement_reconciliation(root, summary)
     if change_dir:
         workspace = (root / change_dir).resolve()
         if not workspace.is_relative_to(root):
@@ -79,9 +160,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--change-dir", type=Path)
+    parser.add_argument("--summary", type=Path, help="Validate the affected-claim reconciliation table in a change summary")
     args = parser.parse_args()
     try:
-        count = check(args.root.resolve(), args.change_dir)
+        count = check(args.root.resolve(), args.change_dir, args.summary)
     except (ValueError, OSError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 1
