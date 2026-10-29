@@ -6,6 +6,11 @@ description: Implement planned Android unit, integration, and instrumented UI te
 # Skill — Android Testing
 
 ## Purpose
+This skill owns maintained regression tests for an approved app change. Standalone or
+temporary WireMock exploration belongs to `exploratory-qa` with `agent-device`, run-scoped
+fixtures/evidence, and cleanup. Do not author a permanent instrumented test or CI job merely
+because an ephemeral run exercises an API or Android networking.
+
 After implementation, write or complete all approved tests and run the tests related to the
 change. Decide whether a real Android runtime is required before selecting test commands.
 This stage **generates** — it does not evaluate quality. That is the Test Review stage's job.

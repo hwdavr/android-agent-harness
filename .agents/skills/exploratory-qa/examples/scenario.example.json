@@ -1,5 +1,11 @@
 {
   "scenario_id": "sticker-picker-keyboard-workflow-preview",
+  "execution": {
+    "mode": "ephemeral",
+    "driver": "agent-device",
+    "regression_targets": [],
+    "ci_required": false
+  },
   "feature": "Sticker picker keyboard visibility and restoration",
   "platforms": [
     "android"

@@ -60,6 +60,20 @@ verbose command output in its referenced log/report.
 Static-quality evidence must include `bash harness/scripts/check-full-source-rules.sh` against the
 complete repository source tree.
 
+## Ephemeral Test Execution Results
+
+When the test plan includes ephemeral cases, record actual runs here using the same QA IDs.
+Keep the test plan's overview table, preconditions, numbered steps, and expected outcomes free
+of execution records and collected evidence. Include unsuccessful attempts and cleanup results.
+Use `Not run` here until execution; missing runtime/hooks/receipts cannot PASS.
+
+| Case ID | Run ID / build / device | Outcome | Actual result | Evidence paths | Cleanup result / receipt |
+|---|---|---|---|---|---|
+| QA-01 | <run, binary fingerprint, device/OS> | <Not run / PASS / FAIL / INCONCLUSIVE> | <observations or missing prerequisite> | <run report and case artifacts> | <restored routing, removed mappings/reverse rules, stopped owned server; receipt> |
+
+Keep detailed observations and evidence links in this summary; verbose captures/reports remain
+under `.qa-artifacts/<run-id>/`. Omit this section when no ephemeral cases are planned.
+
 ## Observability & Execution Metrics
 
 Keep one authoritative machine-readable metrics block. Prose may summarize exceptional failures

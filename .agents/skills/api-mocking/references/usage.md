@@ -82,6 +82,41 @@ For shared servers replace `--exclusive` with `--scope-header X-QA-Session` and 
 
 External URLs support HTTPS with normal system trust and optional `WIREMOCK_ADMIN_TOKEN` bearer authentication through a gateway. No TLS bypass or secrets in URLs. Keep the Admin API private; its journal contains raw request content even though adapter output does not. Local mode binds loopback, disables request logging and bounds the in-memory journal to 1000 entries. It never records response fixtures from live traffic. External server privacy/retention policy is the operator's responsibility.
 
+## Mock coverage inventory
+
+Before applying fixtures for a feature flow, trace the request path from the user action through
+the app's service and repository, including successful mutation responses and follow-up syncs.
+Use code to identify method/path and payload construction; derive expected request/response
+behavior from the OpenAPI contract and approved shared/feature scenario. Do not make production
+calls to harvest response data. Fixture bodies must remain synthetic, and request body matchers
+should assert the feature payload when it matters.
+
+When a scenario declares `apiMocks` or `expectations.wiremock`, require an
+`expectations.mock_coverage` inventory. Each `fixture_ids` entry is an `apiMocks[].id` or a
+WireMock mapping `name`. Link it to the UI check that triggers the interaction and retain both
+the app call-site and contract/fixture source:
+
+```json
+{
+  "mode": "feature_api",
+  "interactions": [{
+    "id": "table-content-save",
+    "check_id": "table_persisted",
+    "operation": "updateNoteContent",
+    "method": "PATCH",
+    "path": "/v1/notes/{itemID}/content",
+    "api_source": "app/src/main/java/.../NotesApiService.kt#updateNoteContent",
+    "contract_source": "sharedContracts/test-scenarios/note_update_content_001.json#/apiMocks/0",
+    "fixture_ids": ["table-note-save"]
+  }]
+}
+```
+
+If mocks only prove that the app reaches the local server, use `mode: routing_only`, provide a
+reason, and state that this does not cover the feature API behavior. The exploratory-QA reporter
+marks absent or unlinked inventories `INCONCLUSIVE`, and names routing-only coverage separately
+from feature API coverage.
+
 ## Exploratory QA integration
 
 Use the run ID for the session. Add this to the run scenario's `expectations`, using the actual SHA-256 from apply output. The list is independent of existing mitmproxy `apiMocks` and `expectations.requests`.

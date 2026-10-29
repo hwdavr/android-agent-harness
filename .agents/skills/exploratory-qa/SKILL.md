@@ -9,6 +9,18 @@ This extends the installed [dogfood skill](../dogfood/SKILL.md). Use it for app 
 
 ## Target and scenario
 
+This is an ephemeral execution lane. Use `agent-device` to drive the installed app and
+keep the whole run under `.qa-artifacts/<run-id>/`. Do not create permanent `androidTest`
+classes, shared regression scenarios, app/test dependencies, journey-registry entries,
+or CI changes just to execute the run. A confirmed finding can be handed to bug fixing
+for separately scoped regression coverage.
+
+Declare this in `scenario.json` before device actions:
+`"execution": {"mode": "ephemeral", "driver": "agent-device", "regression_targets": [], "ci_required": false}`.
+The reporter rejects a mixed regression/instrumented execution declaration and cannot
+PASS without the execution intent. Review the source diff at cleanup to ensure the run
+did not introduce permanent test or CI files; declarations alone do not prove device actions.
+
 Accept a prebuilt APK or installed package; source code is optional. Record package/version, device/OS, APK SHA-256 when available, and requested scope. Follow project device-selection rules. The local app ID is `com.example.funphotoeditor`; do not assume the checkout matches a supplied APK.
 
 Generate `.qa-artifacts/<run-id>/scenario.json` for the selected feature. Read [scenario sources](references/scenario-sources.md) to derive checks from the matching workflow, discover code-only targets, and retain source hashes. The example illustrates the format, not the default journey for every run. Keep observations unset until runtime exploration.
@@ -33,7 +45,17 @@ The standalone [analytics-event-validator](../analytics-event-validator/SKILL.md
 
 - No proxy: dogfood UI evidence plus HarnessLens state and analytics; no network interception is required.
 - Capture: allowlisted HTTP metadata supplements dogfood evidence.
-- Mock: serve named synthetic fixtures from the scenario's `apiMocks`.
+- Mock: serve named synthetic fixtures from the scenario's `apiMocks` or native WireMock mappings.
+
+For mock mode, trace each in-scope API-affecting user action from its UI event through the
+ViewModel/use case/repository to the actual method and path. Include mutation responses and
+follow-up reads required by the app flow. Use the API contract or an approved shared/feature
+scenario for response shapes; source code discovers the call path but is not the correctness
+oracle. Declare this inventory in `expectations.mock_coverage`, linking each interaction to a
+UI `check_id`, operation, method/path, API and contract source, and fixture ID. The reporter
+marks missing or unlinked mock coverage `INCONCLUSIVE`. A routing-only probe must use
+`mode: routing_only`, give a reason, and be reported explicitly as not covering feature API
+behavior. A hit on an unrelated endpoint does not prove the feature's backend behavior.
 
 For capture or mocks, read [proxy setup and fixtures](references/proxy.md). Check the trusted `mitmdump --version` and `python3 --version`; do not install software automatically. A listener does not prove APK routing or CA trust. Require an actual in-app receipt before setting `proxy_verified: true`. Record unavailable interception as blocked/inconclusive and continue relevant dogfood work. Do not bypass pinning or rebuild/change app security automatically.
 

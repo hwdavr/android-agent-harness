@@ -61,6 +61,20 @@ The implementation plan must include:
   non-applicable or exception decision no longer holds.
 
 ### Step 2: Generate Test Plan
+
+Classify each verification item as maintained regression or ephemeral exploration before
+selecting a test layer. Temporary WireMock/device exploration uses `exploratory-qa` with
+`agent-device`, run-scoped fixtures/evidence, and cleanup; do not turn it into an
+`androidTest` class or CI dependency. Apply the per-endpoint integration requirement below
+to maintained API changes/tests, not endpoints merely exercised in an ephemeral QA run.
+Populate the test template's `Ephemeral Test Cases` section when that lane is selected:
+use a concise table for each QA ID, intent, fixture/preconditions, and expected outcome,
+then provide concrete, ordered, numbered execution steps for every QA ID below the table.
+Include real device actions, request/result verification checkpoints, and planned cleanup.
+The test plan contains planned procedures only; do not add execution records, actual results,
+or collected evidence links. Record `Not run` and subsequent outcomes, observations, run/build/
+device identity, evidence links, and cleanup receipts in `summary_v<N>.md`, keyed by QA ID.
+Keep verbose artifacts under `.qa-artifacts/<run-id>/` and link them from the summary.
 Create a separate, comprehensive test plan document following [test-plan-template.md](../../harness/templates/test-plan-template.md).
 
 The test plan must include:

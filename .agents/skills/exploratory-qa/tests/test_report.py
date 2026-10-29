@@ -12,6 +12,8 @@ import report
 
 SCENARIO = {
     'scenario_id': 'report-test',
+    'execution': {'mode': 'ephemeral', 'driver': 'agent-device',
+                  'regression_targets': [], 'ci_required': False},
     'entry_points': [{'id': 'editor-sticker', 'surface': 'Photo editor tool rail',
                       'action': 'Tap Sticker', 'expected': 'Sticker picker opens',
                       'check_id': 'success_screen'}],
@@ -25,6 +27,22 @@ NETWORK = [{'scenario_id': 'report-test', 'method': 'POST', 'host': 'qa.example.
 
 
 class ReportTest(unittest.TestCase):
+    def test_missing_execution_intent_cannot_pass(self):
+        scenario = copy.deepcopy(SCENARIO)
+        scenario.pop('execution')
+        self.assertEqual(report.evaluate(scenario, OK, NETWORK)[0], 'INCONCLUSIVE')
+
+    def test_ephemeral_run_cannot_declare_regression_or_ci(self):
+        for override in ({'mode': 'regression'}, {'driver': 'AndroidJUnitRunner'},
+                         {'regression_targets': ['app/src/androidTest/TemporaryWireMockTest.kt']},
+                         {'ci_required': True}):
+            with self.subTest(override=override):
+                scenario = copy.deepcopy(SCENARIO)
+                scenario['execution'].update(override)
+                result, checks = report.evaluate(scenario, OK, NETWORK)
+                self.assertEqual(result, 'FAIL')
+                self.assertTrue(any(c['id'] == 'execution-intent' and c['result'] == 'FAIL' for c in checks))
+
     def test_pass(self):
         self.assertEqual(report.evaluate(SCENARIO, OK, NETWORK)[0], 'PASS')
 
@@ -87,7 +105,8 @@ class ReportTest(unittest.TestCase):
             self.assertEqual((code, result['status']), (2, 'INCONCLUSIVE'))
             self.assertEqual(next(c['result'] for c in result['checks'] if c['id'] == 'entry-point-inventory'), 'PASS')
             self.assertEqual(next(c['result'] for c in result['checks'] if c['id'] == 'entry-point:editor-sticker-tool'), 'INCONCLUSIVE')
-            self.assertTrue(all(c['result'] == 'INCONCLUSIVE' for c in result['checks'] if c['id'] != 'entry-point-inventory'))
+            self.assertTrue(all(c['result'] == 'INCONCLUSIVE' for c in result['checks']
+                                if c['id'] not in ('entry-point-inventory', 'execution-intent')))
             self.assertTrue(result['generation']['sources'])
 
     def test_different_run_receipt_cannot_pass(self):

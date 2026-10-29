@@ -27,6 +27,8 @@ class HarnessLensReportTest(unittest.TestCase):
         self.run.mkdir(parents=True)
         self.native_run = 'a' * 32
         self.scenario = {
+            'execution': {'mode': 'ephemeral', 'driver': 'agent-device',
+                          'regression_targets': [], 'ci_required': False},
             'scenario_id': 'synthetic-home', 'app_id': 'com.example.debug',
             'target': {'platform': 'android', 'device_id': 'emulator-5554'},
             'generation': {'sources': []},

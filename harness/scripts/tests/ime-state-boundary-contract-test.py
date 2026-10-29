@@ -214,12 +214,13 @@ class SearchImeTest {
         spec += (
             "\n## Screen States\n\n| Screen | State ID | Requirement | Acceptance Criteria |\n|---|---|---|---|\n"
             "| Search | closed | FR-1 | restored |\n| Search | open | FR-1 | above IME |\n"
-            "\n## Reproduction Test\n\n- Test name: `opensAboveIme`\n- Production activity: `MainActivity`\n"
+            "\n## Reproduction Test\n\n- Reproducing the IME boundary: the Search results must stay visible while the keyboard is open.\n"
+            "- Test name: `opensAboveIme`\n- Production activity: `MainActivity`\n"
             f"- File: `{self.test_file}`\n- Run result: RED (expected geometry failure)\n"
         )
         (self.root / "spec_v1.md").write_text(spec)
         (self.root / "summary_v1.md").write_text("| Bug Reproduction | Complete RED | fixture |\n")
-        implementation = "# Plan\n" + mapping + "\n## UI State Stages\n\n| Stage ID | Implementation | Roborazzi target | Verification |\n|---|---|---|---|\n"
+        implementation = "# Plan\n" + mapping + "\n## UI State Stages\n\n| Stage ID | Implementation | Verification target | Verification |\n|---|---|---|---|\n"
         for index, name in enumerate(("closed", "open"), 1):
             implementation += (
                 f"| UI-0{index} | Render {name} | app/src/test/java/example/roborazzi/PickerRoborazziTest.kt#{name} | "

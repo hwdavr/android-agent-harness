@@ -9,11 +9,19 @@ Use real backends by default. Choose this capability when approved test conditio
 
 ## Run
 
+For temporary backend exploration, the execution intent is ephemeral: `agent-device`
+drives the installed app through the existing dogfood/exploratory-qa lane. Keep native
+WireMock fixtures and receipts in `.qa-artifacts/<run-id>/`; do not add WireMock to the
+app/test APK, author a permanent instrumented test, or require CI setup for this run.
+Only promote a journey into maintained regression coverage under a separately scoped
+feature/bug change. WireMock controls backend responses; it does not drive device actions.
+
 1. Inspect the selected app's network configuration and available server. Read [routing](references/routing.md) before changing device configuration. Use a dedicated server unless the app already sends a session header. A listener or curl response does not establish app routing.
 2. Use the existing QA run ID as `--session`. Use `hlens mock` from the HarnessLens CLI; its [usage guide](references/usage.md) covers fixture matching, GraphQL, passthrough and troubleshooting. Set `HLS_WIREMOCK_JAR` in your shell profile to reuse a trusted local JAR path; `start --jar <trusted-jar>` can override it. If neither is set, `start` health-checks an existing server. Do not download/install WireMock as part of routine QA.
-3. Select reviewed fixtures from `HarnessLens/examples/wiremock/` or the consuming feature. Apply native WireMock mapping JSON with `hlens mock apply`. The CLI namespaces scenarios, tags ownership, and health-checks before mutation. Use only synthetic fixture data.
-4. Perform the actual journey through the existing device tools. Capture UI/state and analytics through their existing collectors. Use `hlens mock requests` and `hlens mock verify --name <mapping>` to confirm each required mapping was exercised. Do not send helper traffic during the app evidence window. Retain sanitized CLI output inside `.qa-artifacts/<run-id>/wiremock/` with fixture hashes and action/time context.
-5. Verify and export evidence **before cleanup**. In a finally/trap path, `hlens mock reset` removes only this session's mappings and matched journal entries; restore the app URL, session header and any proxy/CA changes. Stop only a server started for this run. Unavailable routing/verification is INCONCLUSIVE; a healthy verification with insufficient hits is FAIL.
+3. Trace each in-scope user action that reads or writes backend state through the app's UI, ViewModel/use case, repository and service method. Record every resulting method/path, including autosave and follow-up list/sync calls. Use the API contract and an approved shared/feature test scenario as the expected request/response oracle; inspect code for call-path and payload-shape hints only. Do not call production to harvest response fixtures. Use synthetic data.
+4. Select reviewed fixtures from `HarnessLens/examples/wiremock/` or the consuming feature and apply native WireMock mapping JSON with `hlens mock apply`. For mitmproxy, retain the scenario `apiMocks` format. In exploratory-QA, declare `expectations.mock_coverage` linking each fixture to an API interaction and the UI check that triggers it. If the only purpose is to prove routing, label it `routing_only`, give a reason, and do not claim feature API coverage. The CLI namespaces scenarios, tags ownership, and health-checks before mutation.
+5. Perform the actual journey through the existing device tools. Capture UI/state and analytics through their existing collectors. Use `hlens mock requests` and `hlens mock verify --name <mapping>` to confirm each required mapping was exercised. Do not send helper traffic during the app evidence window. Retain sanitized CLI output inside `.qa-artifacts/<run-id>/wiremock/` with fixture hashes and action/time context.
+6. Verify and export evidence **before cleanup**. In a finally/trap path, `hlens mock reset` removes only this session's mappings and matched journal entries; restore the app URL, session header and any proxy/CA changes. Stop only a server started for this run. Unavailable routing/verification is INCONCLUSIVE; a healthy verification with insufficient hits is FAIL.
 
 ## Ownership and evidence
 

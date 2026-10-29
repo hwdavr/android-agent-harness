@@ -7,6 +7,7 @@ description: Deliver an Android feature end-to-end through approved implementati
 Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
 
 ## When to use
+
 - Use this workflow when you are acting as the **Generator** (Implementer) agent.
 - Implementing a new feature
 - Enhancing an existing feature
@@ -99,6 +100,11 @@ Gate: `./gradlew assembleDebug` passes, all layer rules are satisfied, and UI ch
 ---
 
 ### Stage 5 — Testing
+
+Select maintained regression tests for the approved app change. A temporary WireMock smoke
+journey is executed separately through `exploratory-qa`/`agent-device`; exercising an
+existing endpoint during that journey does not itself require a new `androidTest` class,
+shared regression scenario, test dependency, or CI job.
 **INVOKE** the `android-testing` skill via the Skill tool (name: `android-testing`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
 Create or complete the approved tests against the implementation and verify them GREEN. Do not
