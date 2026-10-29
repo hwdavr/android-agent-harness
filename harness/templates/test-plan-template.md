@@ -2,6 +2,11 @@
 
 Use this template when producing the test plan in the **Implementation Plan** stage (alongside the implementation plan).
 
+The test plan contains planned cases, preconditions, numbered steps, and expected outcomes only.
+Record actual execution status, observations, evidence links, and cleanup results in the change
+summary (`summary_v<N>.md`); keep verbose artifacts in the run directory. Do not add execution
+records, result tables, or actual evidence to this plan.
+
 ---
 
 ## Feature / Bug
@@ -16,9 +21,9 @@ specification to a test, static check, review evidence, or documented blocking f
 Its `Not applicable` and `Exception` rationales remain canonical in the specification;
 update the specification if a new test trigger appears.
 
-| Required Rule ID | Test / evidence |
+| Required Rule ID | Planned verification |
 |---|---|
-| <RULE_ID> | <test IDs, command, or blocking evidence> |
+| <RULE_ID> | <test IDs, planned command, review check, or verification gap> |
 
 ---
 
@@ -35,42 +40,57 @@ The integration and instrumented requirements below apply to maintained regressi
 | Unit tests (`app/src/test/`) | ✅ / ❌ | |
 | Integration tests (`app/src/test/` or instrumented loopback boundary) | ✅ / ❌ | |
 | Instrumented UI tests (`app/src/androidTest/`) | ✅ / ❌ | |
+| Ephemeral exploration (`exploratory-qa` / `agent-device`) | ✅ / ❌ | |
 
 ---
 
 ## Ephemeral Test Cases
 
-Required when ephemeral exploration is included; otherwise record `Not applicable` with
-a scope-specific reason. Assign stable `QA-xx` IDs and trace them to the relevant
-requirement or exploratory question. These cases use `exploratory-qa`/`agent-device`
-against the installed app. Keep generated scenarios, native WireMock mappings, captures,
-reports, and cleanup receipts under `.qa-artifacts/<run-id>/`.
+Required when ephemeral exploration is included; otherwise record `Not applicable` with a
+scope-specific reason. Use `exploratory-qa`/`agent-device` against the installed app. Keep
+run artifacts under `.qa-artifacts/<run-id>/`; report the case outcomes and artifact links
+in the change summary.
 
-### Planned cases
+### Case overview
 
-| ID | Requirement / question | Preconditions / temporary fixtures | agent-device actions | Expected result | Evidence required |
-|---|---|---|---|---|---|
-| QA-01 | <requirement ID or question> | <installed build/device, starting state, session-owned fixture> | <actual UI entry, gestures, and request trigger> | <observable UI/state/network outcome> | <screenshots, state checkpoint, correlated request receipt, report> |
-| QA-02 | <error/recovery requirement> | <temporary error fixture> | <real UI trigger and recovery actions> | <expected failure/recovery behavior> | <UI/state evidence and fixture receipt> |
+Keep descriptions concise in this table. Every listed ID must also have a detailed
+execution procedure below; a table row alone does not define an executable case.
 
-### Execution results
+| ID | Requirement / question | Short description | Preconditions / temporary fixture | Expected result |
+|---|---|---|---|---|
+| QA-01 | <requirement or question> | <brief intent> | <starting screen, installed build/device, session-owned fixture> | <observable outcome> |
+| QA-02 | <error/recovery requirement> | <brief failure/recovery intent> | <temporary error fixture and starting state> | <expected failure/recovery behavior> |
 
-Fill this table after execution. Use `Not run` during planning, then `PASS`, `FAIL`, or
-`INCONCLUSIVE` with actual evidence. A planned case is not evidence that it was tested.
-Reference the run's report and case-specific artifacts; do not copy generated run JSON
-into this document. Missing runtime, routing, required hooks, or receipts cannot PASS.
+### QA-01 — Detailed execution steps
 
-| Case ID | Run ID / build / device | Outcome | Actual result | Evidence paths | Cleanup result / receipt |
-|---|---|---|---|---|---|
-| QA-01 | <run-id, APK hash/version, device/OS> | Not run | <observed result or missing prerequisite> | `.qa-artifacts/<run-id>/report.json` and <case evidence> | <routing restored, session mocks reset, owned processes stopped; receipt> |
-| QA-02 | <run-id, APK hash/version, device/OS> | Not run | <observed result or missing prerequisite> | <case evidence> | <cleanup outcome and receipt> |
+1. Start the session-owned WireMock fixture and establish the declared device-to-host route.
+2. Open the actual app screen and verify the required starting state.
+3. Select the mock target through the app's runtime routing control and verify its selected state.
+4. Trigger the request through the real app UI; name the screen, control, or gesture.
+5. Verify the fixture's distinct visible result and correlate the action with its WireMock request receipt.
+6. Follow the planned restoration and cleanup procedure.
+
+### QA-02 — Detailed execution steps
+
+1. Prepare the declared error fixture and required app starting state.
+2. Select the mock target and trigger the failing request through the real app UI.
+3. Verify the expected UI/error/cache behavior and correlate the action with the error-response receipt.
+4. Perform the recovery actions and verify their expected result.
+5. Follow the planned restoration and cleanup procedure.
+
+Replace these examples with concrete, ordered, numbered steps for every QA ID. Name each
+screen/control/gesture and its observable checkpoint. For WireMock cases, explicitly cover
+target selection, the shipped-client request trigger, the distinct UI result, and request
+correlation. A routing selection or server receipt alone cannot prove the complete journey.
 
 ### Session cleanup
 
-Declare the original routing and other settings to restore, session-owned mappings to
-remove, and any reverse rules or server processes created for the run. Verify/export
-before cleanup, perform cleanup even on failure, and record its result separately from
-the case outcome. Ephemeral cases create no permanent app test or CI requirement.
+Declare the original routing/settings to restore, session-owned mappings to remove, and
+reverse rules/server processes to remove or stop. Verify/export before cleanup and perform
+cleanup even on failure. Record actual case outcomes, retries, evidence paths, and cleanup
+results in the summary, keyed by QA ID. Do not put `Not run`, PASS/FAIL/INCONCLUSIVE result
+rows, execution records, or collected evidence in this test plan. Ephemeral cases create no
+permanent app test or CI requirement.
 
 ---
 
@@ -115,7 +135,7 @@ supplemental evidence and cannot justify declaring the production bug fixed.
 
 ## Test Cases
 
-List every test case grouped by the class under test. Assign a short ID (e.g. `T1`) so cases can be referenced in reviews and PRs.
+List every test case grouped by the class under test. Use concise tables for the case descriptions and stable IDs. Provide concrete, ordered, numbered test steps below each table for every case; Given/When/Then rows alone are insufficient.
 
 ### `<ClassName>Test.kt` — Unit
 
@@ -123,6 +143,19 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 |----|-------|------|------|
 | T1 | \<precondition\> | \<action / trigger\> | \<expected outcome\> |
 | T2 | \<precondition\> | \<action / trigger\> | \<expected outcome\> |
+
+
+#### T1 — Detailed steps
+
+1. Arrange the precondition declared in the table.
+2. Perform the declared action or trigger.
+3. Assert the expected outcome.
+
+#### T2 — Detailed steps
+
+1. Arrange this case's precondition.
+2. Perform this case's action or trigger.
+3. Assert this case's expected outcome.
 
 ### `<ClassName>IntegrationTest.kt` or `<FixtureServer>InstrumentedTest.kt` — Integration
 
@@ -134,6 +167,19 @@ List every test case grouped by the class under test. Assign a short ID (e.g. `T
 |----|-------|------|------|-----------------|
 | T3 | \<precondition\> | \<action / trigger\> | \<expected outcome\> | `scenario.json` |
 | T4 | API returns error | load data | show error UiState | `scenario-error.json` |
+
+
+#### T3 — Detailed steps
+
+1. Arrange the precondition declared in the table.
+2. Perform the declared action or trigger.
+3. Assert the expected outcome.
+
+#### T4 — Detailed steps
+
+1. Arrange this case's precondition.
+2. Perform this case's action or trigger.
+3. Assert this case's expected outcome.
 
 ### `<Feature>RoborazziTest.kt` — Dedicated Visual Comparison *(only when `requires_visual_verification == true`)*
 

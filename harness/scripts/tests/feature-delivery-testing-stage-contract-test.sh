@@ -80,6 +80,16 @@ create_fixture "$VALID" "Not applicable — logic-only fixture." "Not applicable
 HARNESS_PROJECT_ROOT="$VALID" bash "$STAGE_CHECKER" feature-delivery testing "$VALID" >/dev/null ||
   fail_test "valid logic-only feature-delivery Testing artifacts did not pass"
 
+MISSING_TEST_MAPPING="$FIXTURE_ROOT/missing-test-mapping"
+create_fixture "$MISSING_TEST_MAPPING" "Not applicable — logic-only fixture." "Not applicable — no navigation."
+python3 - "$MISSING_TEST_MAPPING/test_plan_v1.md" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+path.write_text("\n".join(line for line in path.read_text().splitlines() if not line.startswith("| TEST |")) + "\n")
+PY
+expect_failure "$MISSING_TEST_MAPPING" "missing the required TEST evidence mapping"
+
 MISSING_PLAN="$FIXTURE_ROOT/missing-test-plan"
 create_fixture "$MISSING_PLAN" "Not applicable — logic-only fixture." "Not applicable — no navigation."
 rm "$MISSING_PLAN/test_plan_v1.md"

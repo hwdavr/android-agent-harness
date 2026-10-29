@@ -20,7 +20,7 @@ STATE_COLUMNS = [
 ]
 DESIGN_COLUMNS = ["Design source", "Design node ID", "Design node role", "Design image"]
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
-PLAN_COLUMNS = ["Stage ID", "Implementation", "Roborazzi target", "Verification"]
+PLAN_COLUMNS = ["Stage ID", "Implementation", "Verification target", "Verification"]
 IME_COLUMNS = [
     "Screen", "Input tag", "Window viewport", "Keyboard closed state", "Keyboard open state",
     "Dismissed state", "Layout policy", "Keyboard behavior", "Required visible tags",
@@ -331,21 +331,28 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
         if len(plan_stages) != len(plan_rows) or stages != plan_stages:
             fail(f"UI plan stages differ from contract: missing {sorted(stages - plan_stages)}, extra {sorted(plan_stages - stages)}")
         states_by_stage = {row["Plan stage"]: row for row in rows}
-        roborazzi_targets = set()
+        verification_targets = set()
         for plan_row in plan_rows:
             stage = plan_row["Stage ID"]
-            target = plan_row["Roborazzi target"]
-            if not ROBORAZZI_TARGET.fullmatch(target):
-                fail(f"UI state {stage} needs a valid Roborazzi target under app/src/test/java/**/roborazzi/ ending in RoborazziTest.kt#method")
-            if target in roborazzi_targets:
-                fail(f"Roborazzi target reused across UI plan stages: {target}")
-            roborazzi_targets.add(target)
+            target = plan_row["Verification target"]
             verification = plan_row["Verification"]
-            if "./gradlew app:verifyRoborazziDebug" not in verification:
-                fail(f"UI state {stage} needs a method-scoped verifyRoborazziDebug command")
-            design_image = states_by_stage[stage]["Design image"]
-            if design_image not in verification:
-                fail(f"UI state {stage} verification must cite its approved design image: {design_image}")
+            comparison = states_by_stage[stage]["Comparison"]
+            if comparison in ("exact", "roborazzi"):
+                if not ROBORAZZI_TARGET.fullmatch(target):
+                    fail(f"UI state {stage} needs a valid Roborazzi target under app/src/test/java/**/roborazzi/ ending in RoborazziTest.kt#method")
+                if "./gradlew app:verifyRoborazziDebug" not in verification:
+                    fail(f"UI state {stage} needs a method-scoped verifyRoborazziDebug command")
+                design_image = states_by_stage[stage]["Design image"]
+                if design_image not in verification:
+                    fail(f"UI state {stage} verification must cite its approved design image: {design_image}")
+            else:
+                if not INSTRUMENTED_TARGET.fullmatch(target):
+                    fail(f"UI state {stage} needs a valid instrumented target under app/src/androidTest/ ending in Test.kt#method")
+                if "./gradlew connectedDebugAndroidTest" not in verification:
+                    fail(f"UI state {stage} needs a connectedDebugAndroidTest command for its instrumented target")
+            if target in verification_targets:
+                fail(f"verification target reused across UI plan stages: {target}")
+            verification_targets.add(target)
     if report:
         if not report.is_file():
             fail(f"missing {report}")

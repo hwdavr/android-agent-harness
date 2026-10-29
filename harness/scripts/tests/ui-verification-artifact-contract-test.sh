@@ -191,9 +191,9 @@ FIXTURE
 
 ## UI State Stages
 
-| Stage ID | Implementation | Roborazzi target | Verification |
+| Stage ID | Implementation | Verification target | Verification |
 |---|---|---|---|
-| UI-01 | Implement editor content | `app/src/test/java/example/roborazzi/EditorRoborazziTest.kt#contentMatchesApprovedDesign` | Compare `design/mockup_editor.png` with `./gradlew app:verifyRoborazziDebug --tests "example.EditorRoborazziTest.contentMatchesApprovedDesign"`. |
+| UI-01 | Implement editor content | `app/src/androidTest/java/example/EditorVisualFlowTest.kt#captureEditor` | Verify the structural state against `design/mockup_editor.png` with `./gradlew connectedDebugAndroidTest`. |
 FIXTURE
 }
 

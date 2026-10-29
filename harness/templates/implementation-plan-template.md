@@ -100,15 +100,17 @@ States covered:
 ## UI State Stages
 
 For UI changes, copy each unique Plan stage ID from `UI_contract.md`. Give each state its own
-implementation step and a unique planned JVM Roborazzi method. The method source can be created
-during implementation, but it must be named before approval so the implementation-plan gate can
-reject UI work with no visual evidence target. Every verification cell must cite the approved
-design image and its method-scoped `verifyRoborazziDebug` command. Remove this section for
-non-UI work.
+implementation step and a unique verification target appropriate to its Comparison. Use a JVM
+Roborazzi method and a method-scoped `verifyRoborazziDebug` command for `roborazzi` comparisons.
+Use an Android instrumented method and a `connectedDebugAndroidTest` command for `exact` or
+`structural` interaction checks. The target method can be created during implementation, but it
+must be named before approval so the implementation-plan gate can validate the evidence type.
+Keep the approved design image in the verification description; do not claim pixel parity for
+structural checks. Remove this section for non-UI work.
 
-| Stage ID | Implementation | Roborazzi target | Verification |
+| Stage ID | Implementation | Verification target | Verification |
 |---|---|---|---|
-| UI-01 | <screen/state-specific code change> | `app/src/test/java/<package>/roborazzi/<Feature>RoborazziTest.kt#<stateMethod>` | Compare the approved PNG exported from the canonical `.pen` state (`design/mockup_<state>.png`) with `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.<stateMethod>"`. |
+| UI-01 | <screen/state-specific code change> | `app/src/test/java/<package>/roborazzi/<Feature>RoborazziTest.kt#<stateMethod>` or `app/src/androidTest/java/<package>/<Feature>Test.kt#<stateMethod>` | Match the command and approved image to the selected comparison: `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.<stateMethod>"` for pixel checks, or `./gradlew connectedDebugAndroidTest` for instrumented interaction checks. |
 
 ---
 

@@ -68,9 +68,13 @@ selecting a test layer. Temporary WireMock/device exploration uses `exploratory-
 `androidTest` class or CI dependency. Apply the per-endpoint integration requirement below
 to maintained API changes/tests, not endpoints merely exercised in an ephemeral QA run.
 Populate the test template's `Ephemeral Test Cases` section when that lane is selected:
-list each QA ID, intent, fixture, real device actions, expected outcome, required evidence,
-and cleanup. Leave execution results `Not run` until an actual run supplies evidence;
-then link each outcome and cleanup receipt to its `.qa-artifacts/<run-id>/` report.
+use a concise table for each QA ID, intent, fixture/preconditions, and expected outcome,
+then provide concrete, ordered, numbered execution steps for every QA ID below the table.
+Include real device actions, request/result verification checkpoints, and planned cleanup.
+The test plan contains planned procedures only; do not add execution records, actual results,
+or collected evidence links. Record `Not run` and subsequent outcomes, observations, run/build/
+device identity, evidence links, and cleanup receipts in `summary_v<N>.md`, keyed by QA ID.
+Keep verbose artifacts under `.qa-artifacts/<run-id>/` and link them from the summary.
 Create a separate, comprehensive test plan document following [test-plan-template.md](../../harness/templates/test-plan-template.md).
 
 The test plan must include:
