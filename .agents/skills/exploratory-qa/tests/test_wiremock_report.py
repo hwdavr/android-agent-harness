@@ -53,6 +53,88 @@ class WireMockReportTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Invalid WireMock'):
                 self.check()
 
+    def test_missing_mock_coverage_inventory_is_inconclusive(self):
+        check = report.evaluate_mock_coverage(self.scenario)[0]
+        self.assertEqual(check['result'], 'INCONCLUSIVE')
+        self.assertIn('routing receipt alone does not establish feature API coverage', check['detail'])
+
+    def test_feature_api_interaction_must_link_action_and_fixture(self):
+        scenario = {
+            'expectations': {
+                'ui_checks': ['table_saved'],
+                'wiremock': [{'name': 'table-note-save'}],
+                'mock_coverage': {
+                    'mode': 'feature_api',
+                    'interactions': [{
+                        'id': 'table-autosave',
+                        'check_id': 'table_saved',
+                        'operation': 'updateNoteContent',
+                        'method': 'PATCH',
+                        'path': '/v1/notes/{itemID}/content',
+                        'api_source': 'NotesApiService.updateNoteContent',
+                        'contract_source': 'note_update_content_001.json#/apiMocks/0',
+                        'fixture_ids': ['table-note-save'],
+                    }],
+                },
+            },
+        }
+        check = report.evaluate_mock_coverage(scenario)[0]
+        self.assertEqual(check['result'], 'PASS')
+
+        scenario['expectations']['mock_coverage']['interactions'][0]['check_id'] = 'folders_loaded'
+        check = report.evaluate_mock_coverage(scenario)[0]
+        self.assertEqual(check['result'], 'INCONCLUSIVE')
+        self.assertIn('expectations.ui_checks ID', check['detail'])
+
+    def test_unlinked_fixture_fails_coverage_declaration(self):
+        scenario = {
+            'expectations': {
+                'ui_checks': ['folders_loaded'],
+                'wiremock': [{'name': 'folders-list'}, {'name': 'table-note-save'}],
+                'mock_coverage': {
+                    'mode': 'feature_api',
+                    'interactions': [{
+                        'id': 'folders-list',
+                        'check_id': 'folders_loaded',
+                        'operation': 'listItems',
+                        'method': 'GET',
+                        'path': '/v1/items',
+                        'api_source': 'NotesApiService.listItems',
+                        'contract_source': 'note_shared_list_001.json#/apiMocks/0',
+                        'fixture_ids': ['folders-list'],
+                    }],
+                },
+            },
+        }
+        check = report.evaluate_mock_coverage(scenario)[0]
+        self.assertEqual(check['result'], 'INCONCLUSIVE')
+        self.assertIn('unlinked fixture(s): table-note-save', check['detail'])
+
+    def test_routing_only_scope_is_explicitly_not_feature_api_coverage(self):
+        scenario = {
+            'expectations': {
+                'ui_checks': ['folders_loaded'],
+                'wiremock': [{'name': 'folders-list'}],
+                'mock_coverage': {
+                    'mode': 'routing_only',
+                    'reason': 'Verify that debug routing reaches the local server only.',
+                    'interactions': [{
+                        'id': 'folders-route-probe',
+                        'check_id': 'folders_loaded',
+                        'operation': 'listItems',
+                        'method': 'GET',
+                        'path': '/v1/items',
+                        'api_source': 'NotesApiService.listItems',
+                        'contract_source': 'note_shared_list_001.json#/apiMocks/0',
+                        'fixture_ids': ['folders-list'],
+                    }],
+                },
+            },
+        }
+        check = report.evaluate_mock_coverage(scenario)[0]
+        self.assertEqual(check['result'], 'PASS')
+        self.assertIn('feature API behavior is not covered', check['detail'])
+
 
 if __name__ == '__main__':
     unittest.main()

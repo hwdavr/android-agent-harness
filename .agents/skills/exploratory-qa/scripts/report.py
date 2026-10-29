@@ -244,6 +244,87 @@ def evaluate_wiremock(scenario, observations, run_dir, url=None, session=None, h
     return checks, receipts
 
 
+def evaluate_mock_coverage(scenario):
+    """Require each declared fixture to be tied to a scoped API interaction."""
+    expected = scenario.get('expectations', {})
+    wiremock_rules = expected.get('wiremock', []) if isinstance(expected, dict) else []
+    api_mocks = scenario.get('apiMocks', [])
+    if not wiremock_rules and not api_mocks:
+        return []
+
+    check = {'id': 'mock-coverage-scope', 'kind': 'evidence', 'evidence': ['scenario.json']}
+    coverage = expected.get('mock_coverage') if isinstance(expected, dict) else None
+    errors = []
+    if not isinstance(coverage, dict):
+        errors.append('Declare expectations.mock_coverage; a routing receipt alone does not establish feature API coverage')
+    else:
+        mode = coverage.get('mode')
+        if mode not in ('feature_api', 'routing_only'):
+            errors.append('mock_coverage.mode must be feature_api or routing_only')
+        if mode == 'routing_only' and (
+                not isinstance(coverage.get('reason'), str) or not coverage['reason'].strip()):
+            errors.append('routing_only mock coverage requires a reason and does not cover feature API behavior')
+
+        interactions = coverage.get('interactions')
+        if not isinstance(interactions, list) or not interactions:
+            errors.append('mock_coverage.interactions must inventory each mocked API operation')
+            interactions = []
+
+        available_ids = set()
+        for mock in api_mocks if isinstance(api_mocks, list) else []:
+            if isinstance(mock, dict) and isinstance(mock.get('id'), str) and mock['id']:
+                available_ids.add(mock['id'])
+        for rule in wiremock_rules if isinstance(wiremock_rules, list) else []:
+            if isinstance(rule, dict) and isinstance(rule.get('name'), str) and rule['name']:
+                available_ids.add(rule['name'])
+
+        declared_ui_checks = expected.get('ui_checks', [])
+        ui_checks = ({check_id for check_id in declared_ui_checks if isinstance(check_id, str)}
+                     if isinstance(declared_ui_checks, list) else set())
+        interaction_ids = set()
+        referenced_fixtures = set()
+        for interaction in interactions:
+            if not isinstance(interaction, dict):
+                errors.append('Each mock interaction must be an object')
+                continue
+            required_strings = ('id', 'check_id', 'operation', 'method', 'path', 'api_source', 'contract_source')
+            if any(not isinstance(interaction.get(field), str) or not interaction[field].strip()
+                   for field in required_strings):
+                errors.append('Each mock interaction requires id, check_id, operation, method, path, api_source and contract_source')
+                continue
+            interaction_id = interaction['id']
+            if interaction_id in interaction_ids:
+                errors.append('Mock interaction IDs must be unique')
+            interaction_ids.add(interaction_id)
+            if interaction['check_id'] not in ui_checks:
+                errors.append('Mock interaction %s must reference an expectations.ui_checks ID' % interaction_id)
+            fixture_ids = interaction.get('fixture_ids')
+            if (not isinstance(fixture_ids, list) or not fixture_ids
+                    or any(not isinstance(fixture_id, str) or not fixture_id.strip() for fixture_id in fixture_ids)):
+                errors.append('Mock interaction %s requires fixture_ids' % interaction_id)
+                continue
+            referenced_fixtures.update(fixture_ids)
+            missing = set(fixture_ids) - available_ids
+            if missing:
+                errors.append('Mock interaction %s references undeclared fixture(s): %s' % (
+                    interaction_id, ', '.join(sorted(missing))))
+
+        unused_fixtures = available_ids - referenced_fixtures
+        if unused_fixtures:
+            errors.append('Every declared mock fixture must map to an interaction; unlinked fixture(s): %s' %
+                          ', '.join(sorted(unused_fixtures)))
+        if mode == 'feature_api' and not interactions:
+            errors.append('feature_api scope requires at least one API interaction')
+
+    if errors:
+        check.update(result='INCONCLUSIVE', detail='; '.join(errors))
+    elif coverage['mode'] == 'routing_only':
+        check.update(result='PASS', detail='Explicitly routing-only; feature API behavior is not covered: ' + coverage['reason'].strip())
+    else:
+        check.update(result='PASS', detail='Declared feature API coverage for %s interaction(s)' % len(coverage['interactions']))
+    return [check]
+
+
 def render_markdown(report):
     lines = ['# Exploratory QA — ' + str(report['scenario']), '', '**Outcome:** ' + report['status'],
              '**Proxy verified:** ' + str(report['proxy_verified']),
@@ -267,6 +348,19 @@ def render_markdown(report):
             route.get('expected', 'expected outcome not recorded'), route.get('check_id', 'unmapped')))
     for route in report.get('excluded_entry_points', []):
         lines.append('- **%s — EXCLUDED**: %s' % (route.get('id', '?'), route.get('reason', 'reason not recorded')))
+    coverage = report.get('mock_coverage')
+    if coverage:
+        lines += ['', '## Mock coverage scope', '', '**Mode:** ' + str(coverage.get('mode', 'undeclared'))]
+        if coverage.get('reason'):
+            lines.append('**Reason:** ' + str(coverage['reason']))
+        for interaction in coverage.get('interactions', []):
+            if not isinstance(interaction, dict):
+                continue
+            lines.append('- `%s` → `%s %s` via `%s`; contract: `%s`; check: `%s`; fixtures: %s' % (
+                interaction.get('operation', '?'), interaction.get('method', '?'), interaction.get('path', '?'),
+                interaction.get('api_source', '?'), interaction.get('contract_source', '?'),
+                interaction.get('check_id', '?'),
+                ', '.join(map(str, interaction.get('fixture_ids', [])))))
     lines += ['', '## Target and provenance', '', 'See `report.json` and the retained run `scenario.json` for binary/source/fixture hashes.',
               '', '## Exploration notes', '', 'Visited states: ' + ', '.join(map(str, report['states_visited']))]
     for finding in report['findings']:
@@ -306,6 +400,7 @@ def main(argv=None):
                                                       args.wiremock_url, args.wiremock_session,
                                                       args.harnesslens_root)
         checks.extend(mock_checks)
+        checks.extend(evaluate_mock_coverage(scenario))
         lens_checks, lens_receipts = evaluate_harnesslens(scenario, args.run_dir, digest, args.harnesslens_root)
         checks.extend(lens_checks)
         status = outcome([check['result'] for check in checks])
@@ -317,6 +412,7 @@ def main(argv=None):
             'execution': scenario.get('execution'),
             'entry_points': scenario.get('entry_points', []),
             'excluded_entry_points': scenario.get('excluded_entry_points', []),
+            'mock_coverage': scenario.get('expectations', {}).get('mock_coverage'),
             'network_request_count': len(requests), 'mocked_request_count': sum(r.get('mocked') is True for r in requests),
             'network_summary': dict(Counter('%s %s%s -> %s' % (r.get('method'), r.get('host'), r.get('path'), r.get('status')) for r in requests)),
             'fixture_receipts': [{k: r[k] for k in ('mock_rule_id', 'fixture_sha256', 'mock_scenario_sha256') if k in r}

@@ -45,7 +45,17 @@ The standalone [analytics-event-validator](../analytics-event-validator/SKILL.md
 
 - No proxy: dogfood UI evidence plus HarnessLens state and analytics; no network interception is required.
 - Capture: allowlisted HTTP metadata supplements dogfood evidence.
-- Mock: serve named synthetic fixtures from the scenario's `apiMocks`.
+- Mock: serve named synthetic fixtures from the scenario's `apiMocks` or native WireMock mappings.
+
+For mock mode, trace each in-scope API-affecting user action from its UI event through the
+ViewModel/use case/repository to the actual method and path. Include mutation responses and
+follow-up reads required by the app flow. Use the API contract or an approved shared/feature
+scenario for response shapes; source code discovers the call path but is not the correctness
+oracle. Declare this inventory in `expectations.mock_coverage`, linking each interaction to a
+UI `check_id`, operation, method/path, API and contract source, and fixture ID. The reporter
+marks missing or unlinked mock coverage `INCONCLUSIVE`. A routing-only probe must use
+`mode: routing_only`, give a reason, and be reported explicitly as not covering feature API
+behavior. A hit on an unrelated endpoint does not prove the feature's backend behavior.
 
 For capture or mocks, read [proxy setup and fixtures](references/proxy.md). Check the trusted `mitmdump --version` and `python3 --version`; do not install software automatically. A listener does not prove APK routing or CA trust. Require an actual in-app receipt before setting `proxy_verified: true`. Record unavailable interception as blocked/inconclusive and continue relevant dogfood work. Do not bypass pinning or rebuild/change app security automatically.
 
