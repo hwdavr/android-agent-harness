@@ -10,7 +10,21 @@ Define the always-applicable test-layer, coverage, and evidence contract. Load d
 authoring practices only during testing or review, and load runtime evidence rules only when UI,
 navigation, visual, platform, locale, permission, lifecycle, or Android SDK behavior is in scope.
 
-## Test Pyramid
+## Choose the execution intent first
+
+Requests to explore an installed app or temporarily simulate backend conditions use the
+`exploratory-qa` skill with `agent-device`. This is ephemeral testing: keep scenarios,
+WireMock mappings, captures, reports, and cleanup receipts in `.qa-artifacts/<run-id>/`.
+Do not create AndroidJUnit/`androidTest` classes, shared regression scenarios, app test
+dependencies, journey-registry entries, or CI jobs merely to execute that QA request.
+Promoting a finding or journey into a maintained regression requires an explicit product
+change/bug-fixing scope. Unavailable CI is not a blocker for an authorized local QA run.
+
+The test-layer, per-endpoint integration, and platform regression requirements below apply
+to maintained application changes. Ephemeral runtime evidence does not replace a required
+feature regression gate, and a source test does not replace the requested device exploration.
+
+## Maintained test pyramid
 
 ```text
       [Instrumented UI tests]      <- smallest layer

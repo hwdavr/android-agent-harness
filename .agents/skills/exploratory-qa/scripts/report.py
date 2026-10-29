@@ -51,6 +51,20 @@ def evaluate(scenario, observations, requests, scenario_hash=None, fixture_hashe
     def add(cid, result, detail, kind='app', evidence=None):
         checks.append({'id': cid, 'result': result, 'kind': kind, 'detail': detail, 'evidence': evidence or []})
 
+    execution = scenario.get('execution')
+    if execution is None:
+        add('execution-intent', 'INCONCLUSIVE',
+            'Declare ephemeral execution with agent-device before running exploratory QA',
+            'setup', ['scenario.json'])
+    elif (not isinstance(execution, dict) or execution.get('mode') != 'ephemeral'
+          or execution.get('driver') != 'agent-device'
+          or execution.get('regression_targets') != [] or execution.get('ci_required') is not False):
+        add('execution-intent', 'FAIL',
+            'Exploratory QA requires agent-device, no regression targets, and no CI requirement; '
+            'route maintained tests through the feature/bug workflow', 'setup', ['scenario.json'])
+    else:
+        add('execution-intent', 'PASS', 'Declared ephemeral agent-device run', 'setup', ['scenario.json'])
+
     entry_points = scenario.get('entry_points')
     excluded_entry_points = scenario.get('excluded_entry_points', [])
     if entry_points is not None and not isinstance(entry_points, list):
@@ -300,6 +314,7 @@ def main(argv=None):
             'scenario': scenario.get('scenario_id', 'unspecified'), 'scenario_sha256': digest,
             'status': status, 'proxy_verified': observations.get('proxy_verified') is True,
             'target': scenario.get('target', {}), 'generation': scenario.get('generation', {}),
+            'execution': scenario.get('execution'),
             'entry_points': scenario.get('entry_points', []),
             'excluded_entry_points': scenario.get('excluded_entry_points', []),
             'network_request_count': len(requests), 'mocked_request_count': sum(r.get('mocked') is True for r in requests),

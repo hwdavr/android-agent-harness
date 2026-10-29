@@ -9,6 +9,13 @@ Use real backends by default. Choose this capability when approved test conditio
 
 ## Run
 
+For temporary backend exploration, the execution intent is ephemeral: `agent-device`
+drives the installed app through the existing dogfood/exploratory-qa lane. Keep native
+WireMock fixtures and receipts in `.qa-artifacts/<run-id>/`; do not add WireMock to the
+app/test APK, author a permanent instrumented test, or require CI setup for this run.
+Only promote a journey into maintained regression coverage under a separately scoped
+feature/bug change. WireMock controls backend responses; it does not drive device actions.
+
 1. Inspect the selected app's network configuration and available server. Read [routing](references/routing.md) before changing device configuration. Use a dedicated server unless the app already sends a session header. A listener or curl response does not establish app routing.
 2. Use the existing QA run ID as `--session`. Use `hlens mock` from the HarnessLens CLI; its [usage guide](references/usage.md) covers fixture matching, GraphQL, passthrough and troubleshooting. Set `HLS_WIREMOCK_JAR` in your shell profile to reuse a trusted local JAR path; `start --jar <trusted-jar>` can override it. If neither is set, `start` health-checks an existing server. Do not download/install WireMock as part of routine QA.
 3. Select reviewed fixtures from `HarnessLens/examples/wiremock/` or the consuming feature. Apply native WireMock mapping JSON with `hlens mock apply`. The CLI namespaces scenarios, tags ownership, and health-checks before mutation. Use only synthetic fixture data.

@@ -8,6 +8,13 @@ SDK behavior, hardware/device services, models, locales, permissions, or visual 
 
 ## Runtime Selection and Execution
 
+First classify the request using `testing-strategy.md`. For an ephemeral exploratory run,
+drive the installed app through `agent-device`; collect actual UI actions, state, request
+receipts, and cleanup under `.qa-artifacts/<run-id>/`. Do not translate a WireMock/device
+journey into a permanent instrumented test merely because it crosses Android networking.
+The instrumented source/XML requirements below govern maintained feature/bug regression
+acceptance; they do not require authoring test code for standalone exploratory QA.
+
 - Prefer an emulator for instrumented UI tests; use a connected physical device only when no
   emulator is present.
 - Use `createComposeRule()` for isolated rendering/callback checks.

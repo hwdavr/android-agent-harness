@@ -15,6 +15,10 @@ The generated scenario stays beside its report. Source inventory is not a runtim
 
 ## JSON fields
 
+- `execution`: required `{mode: ephemeral, driver: agent-device, regression_targets: [], ci_required: false}`.
+  This declares temporary exploration; the reporter rejects permanent test targets or a CI requirement.
+  Preserve actual action evidence and review source changes separately; this field is not an observation.
+
 - `scenario_id`, `feature`, `app_id`, `environment`, `initial_state`, `max_steps`: scope.
 - `target`: APK path/hash, package/version, device and installed-build identity when known.
 - `generation.sources`: artifact provenance; initial `runtime_verified: false`.

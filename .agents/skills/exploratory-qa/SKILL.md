@@ -9,6 +9,18 @@ This extends the installed [dogfood skill](../dogfood/SKILL.md). Use it for app 
 
 ## Target and scenario
 
+This is an ephemeral execution lane. Use `agent-device` to drive the installed app and
+keep the whole run under `.qa-artifacts/<run-id>/`. Do not create permanent `androidTest`
+classes, shared regression scenarios, app/test dependencies, journey-registry entries,
+or CI changes just to execute the run. A confirmed finding can be handed to bug fixing
+for separately scoped regression coverage.
+
+Declare this in `scenario.json` before device actions:
+`"execution": {"mode": "ephemeral", "driver": "agent-device", "regression_targets": [], "ci_required": false}`.
+The reporter rejects a mixed regression/instrumented execution declaration and cannot
+PASS without the execution intent. Review the source diff at cleanup to ensure the run
+did not introduce permanent test or CI files; declarations alone do not prove device actions.
+
 Accept a prebuilt APK or installed package; source code is optional. Record package/version, device/OS, APK SHA-256 when available, and requested scope. Follow project device-selection rules. The local app ID is `com.example.funphotoeditor`; do not assume the checkout matches a supplied APK.
 
 Generate `.qa-artifacts/<run-id>/scenario.json` for the selected feature. Read [scenario sources](references/scenario-sources.md) to derive checks from the matching workflow, discover code-only targets, and retain source hashes. The example illustrates the format, not the default journey for every run. Keep observations unset until runtime exploration.

@@ -61,6 +61,12 @@ The implementation plan must include:
   non-applicable or exception decision no longer holds.
 
 ### Step 2: Generate Test Plan
+
+Classify each verification item as maintained regression or ephemeral exploration before
+selecting a test layer. Temporary WireMock/device exploration uses `exploratory-qa` with
+`agent-device`, run-scoped fixtures/evidence, and cleanup; do not turn it into an
+`androidTest` class or CI dependency. Apply the per-endpoint integration requirement below
+to maintained API changes/tests, not endpoints merely exercised in an ephemeral QA run.
 Create a separate, comprehensive test plan document following [test-plan-template.md](../../harness/templates/test-plan-template.md).
 
 The test plan must include:

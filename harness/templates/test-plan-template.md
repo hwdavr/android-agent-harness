@@ -24,6 +24,12 @@ update the specification if a new test trigger appears.
 
 ## Layer Selection
 
+Declare each item's execution intent before choosing a layer: maintained regression for
+the approved app change, or ephemeral exploration using `exploratory-qa`/`agent-device`.
+For ephemeral WireMock checks, name the run-scoped scenario, UI journey, request evidence,
+and cleanup; do not invent a permanent test class, shared regression fixture, or CI job.
+The integration and instrumented requirements below apply to maintained regression scope.
+
 | Layer | Included | Reason |
 |-------|----------|--------|
 | Unit tests (`app/src/test/`) | ✅ / ❌ | |
