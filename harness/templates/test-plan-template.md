@@ -74,42 +74,6 @@ the case outcome. Ephemeral cases create no permanent app test or CI requirement
 
 ---
 
-## Ephemeral Test Cases
-
-Required when ephemeral exploration is included; otherwise record `Not applicable` with
-a scope-specific reason. Assign stable `QA-xx` IDs and trace them to the relevant
-requirement or exploratory question. These cases use `exploratory-qa`/`agent-device`
-against the installed app. Keep generated scenarios, native WireMock mappings, captures,
-reports, and cleanup receipts under `.qa-artifacts/<run-id>/`.
-
-### Planned cases
-
-| ID | Requirement / question | Preconditions / temporary fixtures | agent-device actions | Expected result | Evidence required |
-|---|---|---|---|---|---|
-| QA-01 | <requirement ID or question> | <installed build/device, starting state, session-owned fixture> | <actual UI entry, gestures, and request trigger> | <observable UI/state/network outcome> | <screenshots, state checkpoint, correlated request receipt, report> |
-| QA-02 | <error/recovery requirement> | <temporary error fixture> | <real UI trigger and recovery actions> | <expected failure/recovery behavior> | <UI/state evidence and fixture receipt> |
-
-### Execution results
-
-Fill this table after execution. Use `Not run` during planning, then `PASS`, `FAIL`, or
-`INCONCLUSIVE` with actual evidence. A planned case is not evidence that it was tested.
-Reference the run's report and case-specific artifacts; do not copy generated run JSON
-into this document. Missing runtime, routing, required hooks, or receipts cannot PASS.
-
-| Case ID | Run ID / build / device | Outcome | Actual result | Evidence paths | Cleanup result / receipt |
-|---|---|---|---|---|---|
-| QA-01 | <run-id, APK hash/version, device/OS> | Not run | <observed result or missing prerequisite> | `.qa-artifacts/<run-id>/report.json` and <case evidence> | <routing restored, session mocks reset, owned processes stopped; receipt> |
-| QA-02 | <run-id, APK hash/version, device/OS> | Not run | <observed result or missing prerequisite> | <case evidence> | <cleanup outcome and receipt> |
-
-### Session cleanup
-
-Declare the original routing and other settings to restore, session-owned mappings to
-remove, and any reverse rules or server processes created for the run. Verify/export
-before cleanup, perform cleanup even on failure, and record its result separately from
-the case outcome. Ephemeral cases create no permanent app test or CI requirement.
-
----
-
 ## Production Journey Boundary
 
 > **MANDATORY when `NAV` is `Required` for navigation, saved-state, back-stack,
