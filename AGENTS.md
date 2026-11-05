@@ -52,6 +52,7 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | New feature or simple enhancement | `.agents/workflows/feature-delivery.md` |
 | Any user-visible UI implementation or update, including a single component or state | `.agents/workflows/create-ui-and-verify.md` |
 | Independent code review before merge | `.agents/workflows/feature-review.md` |
+| Plan, approve, and execute post-merge feature acceptance | `.agents/workflows/feature-acceptance.md` (invokes `exploratory-qa` after approval) |
 | UI-only mobile exploration | `.agents/skills/dogfood/SKILL.md` |
 | APK QA with scenario reports or network capture/mocks | `.agents/skills/exploratory-qa/SKILL.md` (reuses `dogfood`) |
 | Harness documentation, rule, gate, or evidence repairs | `.agents/skills/harness-retrospective/SKILL.md` |

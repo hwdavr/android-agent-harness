@@ -77,6 +77,8 @@ The invariant must be enforceable by a script, test, or required artifact—not 
 
 ### 4. Patch the authoritative source
 
+Read relevant existing skills and workflows; keep new instructions minimal and link existing guidance instead of repeating it.
+
 Make the smallest change that closes the gap at its source:
 
 - Update the workflow, rule, gate, schema, or template that allowed the failure.
@@ -86,26 +88,11 @@ Make the smallest change that closes the gap at its source:
 
 Use `apply_patch` for file edits. Do not add suppressions, exclusions, warning-only paths, silent skips, or broad “best effort” fallbacks. Do not modify product code, product requirements, model behavior, or platform capabilities while acting as this skill.
 
-### 5. Repair specification artifacts (SPEC_GAP only)
+### 5. Apply evidence rules
 
-When the classification is `SPEC_GAP`, repair the feature workspace artifacts in `.scratch/<dated-feature-dir>/`:
+Apply [Evidence Invariants](../../rules/testing-strategy.md#evidence-invariants); for platform incidents, also apply [Platform-Bound Evidence](../../rules/testing-runtime-evidence.md#platform-bound-evidence) and the [capability matrix contract](../../../harness/templates/platform-capability-matrix-template.md).
 
-1. **`spec.md`** — Clarify the ambiguous, conflicting, or absent acceptance criteria. Add or rewrite the affected requirement with unambiguous language. Preserve all unrelated requirements.
-2. **`UI_contract.md` and Pen references** — Correct the affected state inventory and behavior first, then update its Pen design and mapped exports. Preserve unrelated states and design decisions.
-3. **`sprint-contract.md`** — Update affected slices, acceptance criteria, and scope to align with the repaired spec and design. Preserve unrelated slices and their status.
-
-After repairing, verify internal consistency: every acceptance criterion in `spec.md` must trace to a state/Pen reference in `UI_contract.md` and to at least one slice or task in `sprint-contract.md`. Flag any remaining gaps that require user confirmation before proceeding.
-
-### 6. Enforce fail-loud environment behavior
-
-For every required emulator, physical device, model, locale, permission, hardware feature, SDK, or external service, require one of these outcomes:
-
-1. The check runs and exits successfully with observable, source-fed evidence; or
-2. The check exits nonzero and records `Blocked` or `Revise` with the missing prerequisite.
-
-Missing, skipped, warning-only, empty, fake-only, or unexecuted evidence must never be recorded as passing. A product-approved fallback is allowed only when it is explicitly represented in the capability matrix and covered by a test. Keep unsupported environments diagnosable instead of converting them into green results.
-
-### 7. Validate the harness change
+### 6. Validate the harness change
 
 Run the narrowest relevant checks, then the project gates affected by the change. Typical checks are:
 
@@ -121,7 +108,7 @@ git diff --check
 
 Expected negative cases must be asserted as expected failures in a contract test; do not hide them with `|| true` or suppress their output. Run Android build, unit, coverage, lint, or instrumented checks when the harness change affects app compilation or that gate’s behavior. Otherwise, state explicitly that no app source changed and why those gates were not relevant.
 
-### 8. Record and hand off
+### 7. Record and hand off
 
 Create `docs/changes/harness-retro-<YYYY-MM-DD>-<short-slug>/retrospective.md` with:
 
@@ -139,14 +126,4 @@ Quote exact artifact paths and one-line excerpts so a reviewer can verify the ch
 
 ## Completion Criteria
 
-The retrospective is complete only when:
-
-- The failure has an explicit root-cause classification.
-- The authoritative workflow, rule, gate, template, or validator is minimally repaired.
-- A regression fixture proves the old false pass is rejected.
-- Required unavailable environments cannot pass silently.
-- `SPEC_GAP` repairs are reflected consistently across `spec.md`, `UI_contract.md`/Pen references, and `sprint-contract.md`.
-- Out-of-scope model, platform, and application concerns are routed rather than "fixed" here.
-- Relevant validators and contract tests pass, including the expected negative cases.
-- The retrospective artifact records commands, results, paths, excerpts, and remaining risk.
-- The working tree and any lifecycle state remain accurate; no slice is selected or transitioned merely to complete the retrospective.
+Complete when the applicable [validation](#6-validate-the-harness-change) and [handoff record](#7-record-and-hand-off) above are finished.

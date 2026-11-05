@@ -2,16 +2,72 @@
 
 Fixtures are server-side. After an app points at WireMock, applying/replacing/disabling fixtures requires no app rebuild. Preserve the original URL, proxy, trust and session-header settings and restore them after the run. Backend interception must be established by a real in-app receipt, not server health or host-side curl.
 
-## Inspected NotesTakingApp baseline
+## Inspect the installed target first
 
-- `app/build.gradle.kts` reads `API_BASE_URL` from local.properties, then environment, then `https://api.example.com/`; it writes `BuildConfig.API_BASE_URL` at build time. A local.properties value takes precedence over an environment override.
-- `app/src/main/java/com/example/notesapp/di/AppModule.kt` creates singleton Retrofit from that constant and keeps the existing AuthInterceptor/TokenAuthenticator. No runtime URL override was found.
-- `app/src/main/AndroidManifest.xml` disallows cleartext HTTP. The debug manifest adds a test activity and has no debug Network Security Configuration. Debuggable alone does not establish HTTPS test-CA trust.
-- No iOS target/configuration was found in this checkout. No device routing or iOS analytics collector is claimed as verified by this skill's host tests.
+Routing is app- and build-specific. Inspect the current target instead of treating an old
+repository snapshot or the example below as proof of the installed build's capabilities.
 
-The smallest one-time setup is a debug build with `API_BASE_URL` pointing to a trusted HTTPS WireMock gateway. Set the value through the existing local.properties/environment mechanism; confirm the packaged build and launch it through the existing device skill. Subsequent mapping changes are immediate. Preserve the original value and build after the test if a different artifact is needed. Do not change production networking/security for this harness task.
+1. Record the selected device, package/bundle ID, installed version, debuggable status and
+   installed artifact identity where available. When the user authorizes an existing
+   installed build, use it for local QA and record any unavailable source/CI provenance.
+   Do not rebuild or reinstall merely to create a routing prerequisite. Local QA results
+   do not establish post-merge or release provenance when that identity is unavailable.
+2. Inspect the app's current base URL construction, request interceptors, debug target
+   picker and route persistence. Verify an existing runtime route in the installed UI.
+   A checkout containing a picker does not prove that the installed artifact has it.
+3. Inspect main/debug manifests and the packaged or merged network-security configuration.
+   Record whether the selected HTTP/HTTPS origin is permitted, including any certificate
+   trust or pinning constraints. Debuggable alone does not establish cleartext permission
+   or test-CA trust. Do not weaken TLS or release policy to make routing work.
+4. Prefer the existing runtime route when available. Use a build-time override only when
+   the installed target has no supported runtime route and a different build is separately
+   authorized. A missing route is an explicit affected-case evidence gap; it does not
+   authorize an application change, implicit rebuild, or a passing routing claim.
+5. Before changing routing, create `wiremock/routing-preflight.md` in the run leaf with the
+   required fields below. After the app action, add its request proof and the restoration
+   result. A server listener, health check or host-side curl cannot prove app routing.
 
-If runtime switching is required, propose a separate, small debug-only change at the existing Retrofit/OkHttp construction point: a validated debug preference for a test origin and, only if shared servers are needed, a debug session-header setting. Recreate the client or restart the process when the preference changes; keep release wiring on BuildConfig and preserve auth behavior. No such app change is implemented here. Debug cleartext/CA changes also require a separately authorized app scope; prefer a trusted HTTPS endpoint where practical.
+| Required field | Evidence to retain |
+|---|---|
+| `installed_artifact` | Device, package/version/debuggable status, installed artifact hash or explicit limitation; no substitution of checkout HEAD for installed identity. |
+| `routing_control` | Current source/config paths, installed UI control and observed selection, target origin, route lifetime, dedicated-server/session isolation. |
+| `network_security` | Main/debug/packaged configuration and target-specific HTTP/HTTPS allowance, trust and pinning limits. |
+| `app_request_receipt` | Mapping name/hash and app-originated method/path hit correlated with the triggering UI action; pending until the action actually runs. |
+| `restore` | Original app target, proxy/trust/header and ADB reverse state, owned changes, cleanup commands and verified restoration result. |
+
+## NotesTakingApp debug routing example
+
+The current source provides the following route. Verify it in the selected installed
+artifact before using it; these source facts are not device evidence:
+
+- `app/build.gradle.kts` configures `BuildConfig.API_BASE_URL` from local.properties, then
+  environment, then the default URL. `AppModule.kt` installs
+  `RuntimeApiBaseUrlInterceptor` alongside the existing auth interceptor/authenticator.
+- In debug builds, tap `settings_debug_api_routing_trigger` seven times within three
+  seconds in Settings. Select the visible “Localhost, localhost:8080” option, then “Done”
+  (source tags `debug_api_target_localhost` and `debug_api_routing_done`). Use the fresh
+  installed snapshot's selectors: Compose dialog windows may expose labels without their
+  test tags even when Activity controls expose tags as IDs. The fixed localhost endpoint is `http://localhost:8080/`;
+  new requests preserve their path/query while their scheme, host and port change.
+  The choice is process-local and takes effect without a client rebuild or process restart.
+- `app/src/debug/AndroidManifest.xml` supplies
+  `@xml/debug_localhost_network_security_config`, whose domain policy permits cleartext
+  only for `localhost`; the main manifest retains its cleartext restriction. This does
+  not establish trust for unrelated HTTPS certificates or origins.
+- For a host-side WireMock listener, use serial-pinned
+  `adb -s <serial> reverse tcp:8080 tcp:8080` so the Android localhost target reaches the
+  host. Inspect existing reverse rules first and preserve them. `10.0.2.2` is not the
+  target selected by this fixed localhost picker.
+- The picker does not supply a session-header control. Use a dedicated WireMock server
+  unless the installed app independently supports and demonstrably sends a session header.
+- Restore the visible “Production, Configured API URL” option (source tag
+  `debug_api_target_production`) and dismiss the picker during cleanup. “Production”
+  means the build-configured API URL: verify its actual authorized environment before real
+  requests or passthrough writes. A process restart resets the choice, so recheck it after
+  interruptions. Export/verify mocks before removing only this run's reverse rule/session.
+
+If the installed target lacks this route, record that mismatch and keep affected mocked
+cases INCONCLUSIVE. Do not infer an iOS route from this Android example.
 
 ## Platform capability matrix
 

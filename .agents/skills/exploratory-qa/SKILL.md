@@ -1,11 +1,127 @@
 ---
 name: exploratory-qa
-description: Verify an Android APK or installed app with workflow-derived scenarios, HarnessLens internal state and analytics contracts, optional mitmproxy or WireMock fixtures, and evidence reports. Use dogfood directly for UI-only exploration.
+description: Execute approved mobile QA plans or explore feature risks with agent-device, HarnessLens and API fixtures.
 ---
 
 # Exploratory QA
 
 This extends the installed [dogfood skill](../dogfood/SKILL.md). Use it for app discovery, agent-device interaction, UI evidence, reproduction, and findings. Follow its installed CLI guidance instead of maintaining another device-action loop here.
+
+## Invocation modes
+
+The existing standalone scenario/capture/report workflow below remains available.
+[feature-acceptance](../../workflows/feature-acceptance.md) invokes this skill after plan
+approval in **approved-plan** mode to execute the reviewed cases. It invokes
+**acceptance-support** mode separately for adaptive risk investigation. Keep planned
+case results and exploratory findings separate, even though both use this skill.
+
+### Artifact layout for plans with many cases
+
+Follow the shared [artifact layout](references/artifact-layout.md) for suite/leaf paths,
+run identity, provider sessions and report sections. Examples below use standalone paths;
+substitute the selected execution leaf in a suite.
+
+### Approved-plan execution mode
+
+Accept the plan, approval record, bound input hashes, installed build/device/environment,
+fixtures/replays, mock providers and suite directory. Read the complete plan and verify
+the caller's [approval contract](../../workflows/feature-acceptance.md#generate-the-test-plan-and-request-review--stop).
+Missing approval, changed inputs or conflicting instructions block affected planned execution.
+
+1. Verify the approval hashes and installed build identity, then activate prepared QA
+   fixtures/routing/captures under the [cleanup contract](#cleanup). Use the existing
+   dogfood/agent-device tools and capture/report procedures below; do not add another
+   driver. Execute the approved case order serially with isolated case/attempt evidence.
+2. Verify each case's initial state and isolate QA data. For mocks, use
+   [api-mocking's run/isolation procedure](../api-mocking/SKILL.md#run) between attempts.
+3. Arm required captures before actions. Reuse a stable, reviewed `.ad` via
+   `agent-device replay <path>` where appropriate; otherwise interact with fresh runtime
+   selectors while keeping the approved actions, assertions and bounded waits unchanged.
+   Screenshot-only evidence or replay exit 0 is insufficient to establish the outcome.
+4. Assert every approved oracle and retain expected/actual observations: screenshots
+   and accessibility, fresh HarnessLens state/analytics verifier output when required,
+   mock receipts and authoritative staging backend observations. Use approved staging
+   APIs/read-only queries with case-specific correlation IDs for backend checks.
+   Internal state cannot substitute for rendered UI. Respect each collector's evidence limits.
+5. Complete [API mock verification](../api-mocking/SKILL.md#run) and the approved
+   post-timeout status enquiry/recovery assertions before exporting the attempt.
+6. Record every attempt under `Planned acceptance` using the shared artifact contract:
+
+   | Result | Meaning |
+   |---|---|
+   | PASS | Every approved assertion ran and matched with all required fresh evidence. |
+   | FAIL | An observed assertion mismatch on a valid setup; classify its cause after reproduction. |
+   | INCONCLUSIVE | Setup, automation, identity, oracle or required evidence cannot establish the result. |
+   | SKIPPED | Deliberately not executed, with reason and owner/disposition; never counts as covered. |
+
+7. Reproduce failures in fresh attempts with the same approved inputs and distinguish
+   application defects from automation/environment failures. Keep the first failure and
+   retries; a flaky pass cannot erase a failure. Invalid automation/environment proof is
+   INCONCLUSIVE. Missing assertions, required evidence or unverified/unhit required mocks
+   can never PASS. Keep independent cases running where safe.
+   For an untestable real-server flow, return to the caller's
+   [mock-flow replanning](../../workflows/feature-acceptance.md#mock-flow-replanning).
+8. Return every case result and evidence link to the caller, including skipped and
+   inconclusive cases. If using the existing structured reporter, preserve its manifest,
+   contract and verification requirements; its aggregate verdict cannot replace per-case
+   results. Complete [cleanup](#cleanup) even on failure. Run additional adaptive
+   investigation separately in acceptance-support mode.
+
+### Acceptance-support inputs
+
+For adaptive investigation, accept feature scope, exploratory risk targets, planned acceptance coverage/results
+summary and gaps, build/environment/device configuration, available mock providers, a
+unique execution leaf and a bounded exploration budget. Set both time and action
+limits and stop at the first limit, a safety boundary or an environment blocker; retain
+partial evidence and the stop reason. Do not merely replay the planned acceptance list.
+Use the caller-verified Android package/iOS bundle and installed build identity; example
+package IDs in the standalone guidance are not defaults for either acceptance mode.
+
+### Adaptive investigation in acceptance-support mode
+
+1. Read approved behavior, known risks, recent changes, architecture/dependency hints,
+   API failure modes and the supplied coverage summary. Start with an uncovered high-risk
+   state or transition. Targets are hypotheses, not mandatory deterministic cases.
+2. Observe the actual UI/accessibility tree, available HarnessLens state/analytics and
+   network evidence. Choose the next action based on the current observation and risk:
+   record observation → hypothesis → chosen action/reason → result/next question in the
+   leaf's existing `dogfood-report.md`. Use fresh agent-device observations; code hints are not findings.
+3. Consider boundary values, lifecycle/background/foreground, concurrent operations,
+   retries, duplicated actions at different timing points, delayed/malformed/unexpected
+   responses, restoration/recovery and cross-feature interference. Change one suspected
+   cause at a time where practical. Repeat planned journeys only to investigate a failure.
+4. Use [api-mocking](../api-mocking/SKILL.md) for approved selective faults, or the
+   [mitmproxy provider](references/proxy.md). Use one response owner per route;
+   their fallback behavior is not interchangeable. Verify injection through the provider.
+5. Capture HarnessLens state and analytics when available, using approved contracts and
+   the same app/device/actions. If required evidence is missing, preserve INCONCLUSIVE;
+   useful UI investigation may continue. If optional instrumentation is unavailable,
+   disclose the limitation. The existing structured reporter still requires its declared
+   HarnessLens prerequisites and must not be weakened to obtain PASS. Its verdict is
+   auxiliary investigation evidence, not the caller's planned acceptance verdict.
+6. Keep planned ACs and expected results unchanged. Log newly observed paths separately;
+   do not edit a hashed scenario/contract after capture. If a new fault or approved oracle
+   requires another scenario, finish/export/verify and clean the current segment, then
+   start a fresh linked run within the remaining budget. Risk targets with no independent
+   oracle stay hypotheses; they are not required PASS/FAIL checks in `scenario.json`.
+7. Reproduce suspected defects with controlled inputs and seek an independent expected
+   behavior source (approved AC/contract or explicit product clarification). Distinguish
+   `confirmed defect` (reproduced with established expectation), `suspected issue`
+   (observed, not fully reproduced/attributed), and `unverified hypothesis` (not observed).
+   Record environment/automation failures separately from application defects.
+
+Return the shared artifact contract's `Exploratory findings` section with budget use/stop
+reason and linked leaf evidence. Confirmed defects use the [bug-fixing handoff](#handoff-to-bug-fixing)
+plus build/merged SHA, environment, business impact and relevant state/network evidence
+(or its recorded absence). Suspected issues and hypotheses remain outside confirmed `findings`.
+
+Include a `Regression candidates` subsection within `Exploratory findings` (or within
+the existing standalone `dogfood-report.md`), listing only confirmed defects or explicitly
+none: finding ID, established expected behavior/source, smallest reproducible setup/actions, proposed assertions, fixture
+references and likely test layer. These are proposals, not newly implemented regression tests.
+Do not claim AC coverage or an arbitrary state-space percentage from exploration. A PASS
+from the existing reporter covers only its declared checks; findings inform the caller's
+release risk assessment, and a confirmed critical defect blocks release promotion.
 
 ## Target and scenario
 
@@ -21,7 +137,9 @@ The reporter rejects a mixed regression/instrumented execution declaration and c
 PASS without the execution intent. Review the source diff at cleanup to ensure the run
 did not introduce permanent test or CI files; declarations alone do not prove device actions.
 
-Accept a prebuilt APK or installed package; source code is optional. Record package/version, device/OS, APK SHA-256 when available, and requested scope. Follow project device-selection rules. The local app ID is `com.example.funphotoeditor`; do not assume the checkout matches a supplied APK.
+Accept a prebuilt APK or installed package; source code is optional. Use dogfood's target
+discovery and project device-selection rules. Record package/version, device/OS, artifact
+hash when available and requested scope; the checkout alone cannot identify a supplied app.
 
 Generate `.qa-artifacts/<run-id>/scenario.json` for the selected feature. Read [scenario sources](references/scenario-sources.md) to derive checks from the matching workflow, discover code-only targets, and retain source hashes. The example illustrates the format, not the default journey for every run. Keep observations unset until runtime exploration.
 
@@ -31,13 +149,13 @@ Before choosing a journey, inventory the feature's relevant entry points, includ
 
 ## Internal state and analytics — HarnessLens required
 
-Invoke the installed [HarnessLens skill](../harnesslens/SKILL.md) and follow [capture, checkpoints and contract verification](references/harnesslens.md). Use the same installed app, selected device and real dogfood actions for UI, internal state and analytics evidence. Confirm the selected state hooks and analytics decorator exist in the debug build; absent instrumentation, missing approved expectations or an unavailable CLI is `INCONCLUSIVE`, with the prerequisite recorded. Continue useful UI exploration while preserving that incomplete verdict.
-
-Before acting, declare `expectations.harnesslens`: a full-run capture, at least one state checkpoint linked to a UI check and action, and the approved analytics contract. Derive expected scope/field/value assertions from approved requirements; source code can reveal exported fields but cannot supply the correctness oracle. Cover the relevant initial, success, error and restored states declared by the scenario. Record unknown or unexported fields as evidence gaps.
-
-Arm capture before launching/navigating. At each checkpoint, record the pre-action sequence boundary, perform its actual action, wait for the expected state within a bounded timeout, and export a separate snapshot before the next action. The reporter requires fresh state after that boundary and verifies each snapshot against its own contract. A correct final screen cannot substitute for an earlier checkpoint. Keep the full capture for analytics counts, parameters, forbidden events and order.
-
-The reporter reruns the real HarnessLens verifiers against captured evidence; it ignores manually supplied PASS flags. A fresh observed mismatch is `FAIL`; absent/stale state, zero analytics events, changed contracts or mixed runs are `INCONCLUSIVE`. Analytics contract mismatches in a non-empty capture are `FAIL`. Both outcomes block overall PASS. Include expected and actual state values through the linked state reports. A sampled state history cannot establish every transient transition, and app-side analytics cannot prove Firebase ingestion.
+Invoke the installed [HarnessLens skill](../harnesslens/SKILL.md) and follow the complete
+[capture/checkpoint/verification contract](references/harnesslens.md). That reference owns
+expectations, manifests, readiness, fresh sequence boundaries and verifier commands.
+The structured reporter requires its state/analytics proof even when a caller's case has
+optional channels. Missing prerequisites remain INCONCLUSIVE; continue useful UI work
+without turning that auxiliary reporter result into a PASS. Fresh observed mismatches
+remain FAIL. Capture only the selected authorized app/device/actions.
 
 The standalone [analytics-event-validator](../analytics-event-validator/SKILL.md) remains available for legacy captures. Its recorder and analytics-only parser do not replace this workflow's HarnessLens capture or internal state checks.
 
@@ -47,11 +165,8 @@ The standalone [analytics-event-validator](../analytics-event-validator/SKILL.md
 - Capture: allowlisted HTTP metadata supplements dogfood evidence.
 - Mock: serve named synthetic fixtures from the scenario's `apiMocks` or native WireMock mappings.
 
-For mock mode, trace each in-scope API-affecting user action from its UI event through the
-ViewModel/use case/repository to the actual method and path. Include mutation responses and
-follow-up reads required by the app flow. Use the API contract or an approved shared/feature
-scenario for response shapes; source code discovers the call path but is not the correctness
-oracle. Declare this inventory in `expectations.mock_coverage`, linking each interaction to a
+For mocks, obtain the API interaction inventory from [api-mocking](../api-mocking/SKILL.md#run).
+Declare it in `expectations.mock_coverage`, linking each interaction to a
 UI `check_id`, operation, method/path, API and contract source, and fixture ID. The reporter
 marks missing or unlinked mock coverage `INCONCLUSIVE`. A routing-only probe must use
 `mode: routing_only`, give a reason, and be reported explicitly as not covering feature API
@@ -65,17 +180,21 @@ Fixtures are external to the APK. Once interception works, edit fixtures and res
 
 ### Optional WireMock backend conditions
 
-Keep real backend mode as the default. For controlled REST/GraphQL responses, use [api-mocking](../api-mocking/SKILL.md) and its [usage guide](../api-mocking/references/usage.md). If direct skill invocation is unavailable, run `hlens mock --session <run-id> --exclusive <command>` against a dedicated server. The existing mitmproxy modes remain available; do not translate native WireMock fixtures into `apiMocks` or run two response owners on the same route.
+Use [api-mocking](../api-mocking/SKILL.md) for the backend lifecycle. This section owns
+only the adapter-to-reporter interface.
 
-Declare required mapping names, fixture hashes and hit bounds under `expectations.wiremock` as shown in that guide. Apply before the existing dogfood actions, verify app routing with a real in-app receipt, and set `wiremock_routing_verified` in observations only after correlating that receipt with the action. Save sanitized request/verification JSON in this run's `wiremock/` directory. Keep screenshots, functional findings, HarnessLens state and analytics capture in their existing paths.
-
-Run the report **while mappings are still active**, adding `--wiremock-url <server> --wiremock-session <run-id>`. It queries the shared adapter itself; a missing/wrong-session fixture or unverified routing is INCONCLUSIVE, and insufficient hits fail. Then reset session-owned mocks and restore routing in a finally/trap path, including on report failure. WireMock evidence cannot replace HarnessLens or establish that analytics events were emitted.
+Declare mapping names, fixture hashes and hit bounds under `expectations.wiremock` as
+shown in the [usage guide](../api-mocking/references/usage.md). Set `wiremock_routing_verified`
+only from the correlated app receipt. Add `--wiremock-url <server> --wiremock-session <run-id>`
+to the report command below; it re-verifies live mappings through the adapter.
 
 Use dogfood for the scoped journey. Start/mark logs when relevant, save their path while the session is active, and correlate findings with the proxy timeline. `agent-device network dump` parses app logs; empty output does not establish no traffic. Code testTags are selector hints until confirmed in fresh runtime snapshots.
 
 Populate `observations.json` from `examples/observations.example.json` with actual checks, crash count, visited states, findings, and evidence paths. Update `harnesslens/run.json` with checkpoint sequence boundaries from that same live session. Keep dogfood's detailed findings as `dogfood-report.md` so the structured report does not overwrite them. Record unreachable states and missing expectations/oracles. Exploration supplements the project's deterministic Android and Roborazzi gates.
 
-Stop and export HarnessLens capture before closing the app/session; retain failed commands and partial evidence. Stop proxy/logs and restore any device proxy/CA changes made. Then run with Python 3.10+ (omit `--harnesslens-root` only when this Python environment already has HarnessLens installed):
+Stop/export capture using the HarnessLens contract, keeping failed commands and partial
+evidence. Run the reporter once with Python 3.10+, **before WireMock cleanup while its
+mappings remain active**. Omit `--harnesslens-root` only when this interpreter has HarnessLens installed:
 
 ```bash
 python3 .agents/skills/exploratory-qa/scripts/report.py \
@@ -85,6 +204,17 @@ python3 .agents/skills/exploratory-qa/scripts/report.py \
 ```
 
 Exit codes: 0 `PASS`, 1 `FAIL`, 2 `INCONCLUSIVE`/invalid input. PASS requires UI/network checks and all required HarnessLens state/analytics checks. Missing observations, omitted HarnessLens expectations or unexercised required mocks cannot pass; setup mismatches are labeled separately from app findings. Keep artifacts local and review/redact screenshots, logs, state values and URL paths before sharing. Capture only approved low-sensitivity fields; never tokens, user content, credentials or live HTTP bodies.
+
+## Cleanup
+
+Register finally/trap cleanup before changing resources and run it on every exit. Export
+captures and report evidence before closing the app/session. Delegate backend restoration
+to [api-mocking](../api-mocking/SKILL.md#run); stop owned logs/proxies/device sessions and
+restore other changed device settings. Remove only isolated QA data through
+approved staging procedures; never perform destructive production cleanup.
+Check actual cleanup exit results and retain native receipts in the execution leaf;
+record restoration in the suite's `Cleanup` section. Preserve partial evidence on interruption.
+Redact credentials, tokens, PII, user content and payment details before sharing artifacts.
 
 ## Handoff to bug fixing
 
