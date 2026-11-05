@@ -44,8 +44,10 @@ artifact before using it; these source facts are not device evidence:
   environment, then the default URL. `AppModule.kt` installs
   `RuntimeApiBaseUrlInterceptor` alongside the existing auth interceptor/authenticator.
 - In debug builds, tap `settings_debug_api_routing_trigger` seven times within three
-  seconds in Settings. Select `debug_api_target_localhost`, then
-  `debug_api_routing_done`. The fixed localhost endpoint is `http://localhost:8080/`;
+  seconds in Settings. Select the visible “Localhost, localhost:8080” option, then “Done”
+  (source tags `debug_api_target_localhost` and `debug_api_routing_done`). Use the fresh
+  installed snapshot's selectors: Compose dialog windows may expose labels without their
+  test tags even when Activity controls expose tags as IDs. The fixed localhost endpoint is `http://localhost:8080/`;
   new requests preserve their path/query while their scheme, host and port change.
   The choice is process-local and takes effect without a client rebuild or process restart.
 - `app/src/debug/AndroidManifest.xml` supplies
@@ -58,7 +60,8 @@ artifact before using it; these source facts are not device evidence:
   target selected by this fixed localhost picker.
 - The picker does not supply a session-header control. Use a dedicated WireMock server
   unless the installed app independently supports and demonstrably sends a session header.
-- Restore `debug_api_target_production` and dismiss the picker during cleanup. “Production”
+- Restore the visible “Production, Configured API URL” option (source tag
+  `debug_api_target_production`) and dismiss the picker during cleanup. “Production”
   means the build-configured API URL: verify its actual authorized environment before real
   requests or passthrough writes. A process restart resets the choice, so recheck it after
   interruptions. Export/verify mocks before removing only this run's reverse rule/session.
