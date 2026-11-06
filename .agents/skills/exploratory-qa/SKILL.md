@@ -190,7 +190,17 @@ to the report command below; it re-verifies live mappings through the adapter.
 
 Use dogfood for the scoped journey. Start/mark logs when relevant, save their path while the session is active, and correlate findings with the proxy timeline. `agent-device network dump` parses app logs; empty output does not establish no traffic. Code testTags are selector hints until confirmed in fresh runtime snapshots.
 
-Populate `observations.json` from `examples/observations.example.json` with actual checks, crash count, visited states, findings, and evidence paths. Update `harnesslens/run.json` with checkpoint sequence boundaries from that same live session. Keep dogfood's detailed findings as `dogfood-report.md` so the structured report does not overwrite them. Record unreachable states and missing expectations/oracles. Exploration supplements the project's deterministic Android and Roborazzi gates.
+Populate `observations.json` from `examples/observations.example.json` with actual checks, crash count, visited states, findings, and evidence paths. Update `harnesslens/run.json` with checkpoint sequence boundaries from that same live session. Record unreachable states and missing expectations/oracles. Exploration supplements the project's deterministic Android and Roborazzi gates.
+
+### Dogfood report reconciliation
+
+When this run has a manual dogfood report, place it in the execution leaf as `dogfood-report.md`.
+Reconcile its reportable observations into `observations.json.findings` before generating the
+case report. Set `dogfood_report_reviewed: true` only after comparison; explicitly use an empty
+findings list when there is nothing to promote. The reporter enforces this attestation, records
+the source path/hash and structured findings, and links the detailed narrative instead of copying
+raw Markdown. An unreviewed source keeps the case report INCONCLUSIVE. This is the sole report
+reconciliation procedure; owning workflows link here.
 
 Stop/export capture using the HarnessLens contract, keeping failed commands and partial
 evidence. Run the reporter once with Python 3.10+, **before WireMock cleanup while its

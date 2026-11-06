@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -144,6 +145,49 @@ class ReportTest(unittest.TestCase):
                                  ('scenario-hash', {'expected-error': 'changed-fixture'})]:
             with self.subTest(digest=digest, fixtures=fixtures):
                 self.assertEqual(report.evaluate(scenario, OK, [receipt], digest, fixtures)[0], 'INCONCLUSIVE')
+
+    def test_dogfood_report_is_reconciled_and_findings_are_exported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / '.qa-artifacts' / 'dogfood-report'
+            run_dir.mkdir(parents=True)
+            scenario_path = run_dir / 'scenario.json'
+            scenario_path.write_text(json.dumps(SCENARIO))
+            dogfood_path = run_dir / 'dogfood-report.md'
+            dogfood_path.write_text('# Manual observations\n\nThe expected result was not observed.\n')
+            (run_dir / 'network.jsonl').write_text(json.dumps(NETWORK[0]) + '\n')
+            finding = {
+                'id': 'QA-F01', 'title': 'Expected result was not observed',
+                'category': 'ui_observation', 'status': 'unconfirmed',
+                'expected': 'A result should appear.', 'actual': 'No result appeared.',
+                'evidence': ['screenshots/failure.png'],
+            }
+            observations_path = run_dir / 'observations.json'
+            observations = {**OK, 'findings': [finding], 'dogfood_report_reviewed': False}
+            observations_path.write_text(json.dumps(observations))
+
+            with patch.object(report, 'evaluate_harnesslens', return_value=([], [])):
+                report.main(['--run-dir', str(run_dir), '--scenario', str(scenario_path)])
+            result = json.loads((run_dir / 'report.json').read_text())
+            check = next(c for c in result['checks'] if c['id'] == 'dogfood-reconciliation')
+            self.assertEqual(result['status'], 'INCONCLUSIVE')
+            self.assertEqual(check['result'], 'INCONCLUSIVE')
+            self.assertEqual(result['dogfood_report']['path'], 'dogfood-report.md')
+            self.assertEqual(result['dogfood_report']['sha256'], hashlib.sha256(dogfood_path.read_bytes()).hexdigest())
+            self.assertEqual(result['findings'][0]['id'], 'QA-F01')
+
+            observations['dogfood_report_reviewed'] = True
+            observations_path.write_text(json.dumps(observations))
+            with patch.object(report, 'evaluate_harnesslens', return_value=([], [])):
+                report.main(['--run-dir', str(run_dir), '--scenario', str(scenario_path)])
+            result = json.loads((run_dir / 'report.json').read_text())
+            check = next(c for c in result['checks'] if c['id'] == 'dogfood-reconciliation')
+            markdown = (run_dir / 'report.md').read_text()
+            self.assertEqual(result['status'], 'PASS')
+            self.assertEqual(check['result'], 'PASS')
+            self.assertEqual(result['dogfood_report']['finding_ids'], ['QA-F01'])
+            self.assertIn('[dogfood-report.md](dogfood-report.md)', markdown)
+            self.assertIn('QA-F01: Expected result was not observed** (unconfirmed)', markdown)
+            self.assertIn('**Actual:** No result appeared.', markdown)
 
     def test_invalid_observations_fail_clearly(self):
         with self.assertRaises(ValueError):

@@ -86,6 +86,12 @@ Make the smallest change that closes the gap at its source:
 - Add a focused regression fixture or contract test that reproduces the old false pass and proves rejection now.
 - Add a knowledge pitfall only when the lesson is reusable beyond the incident.
 
+Keep each operational rule in one authoritative document. Before editing, assign ownership:
+workflows own stage order and gates, skills own reusable procedures, and schemas/scripts own
+artifact shape and mechanical enforcement. Put the full issue-specific instruction only in
+its owner; replace repeats in other documents with a short link. Search those documents before
+and after editing to remove duplicates without deleting necessary ownership or handoff links.
+
 Use `apply_patch` for file edits. Do not add suppressions, exclusions, warning-only paths, silent skips, or broad “best effort” fallbacks. Do not modify product code, product requirements, model behavior, or platform capabilities while acting as this skill.
 
 ### 5. Apply evidence rules

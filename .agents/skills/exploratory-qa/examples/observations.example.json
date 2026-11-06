@@ -4,5 +4,6 @@
   "unexpected_crashes": null,
   "states_visited": [],
   "transitions": [],
-  "findings": []
+  "findings": [],
+  "dogfood_report_reviewed": false
 }

@@ -49,6 +49,11 @@ reporter still creates `report.json`/`report.md` inside each execution leaf; the
 maintains the suite report and links that evidence. Never run the reporter against the
 suite root or let generated leaf reports overwrite the suite report.
 
+Dogfood report placement and reconciliation follow the
+[exploratory-qa procedure](../SKILL.md#dogfood-report-reconciliation). The suite report links
+the generated case report and the leaf's evidence sources where they support a planned result
+or exploratory finding.
+
 ## Suite report
 
 Maintain these sections in `.qa-artifacts/<suite-id>/suite-report.md`.

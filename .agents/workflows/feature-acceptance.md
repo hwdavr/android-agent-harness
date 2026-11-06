@@ -99,6 +99,11 @@ ACs with rationale; report any ratio only over the explicitly enumerated approve
 A leaf reporter's PASS covers only its declared checks; verify the approved case's complete
 oracles before assigning AC coverage. Exploration contributes risk evidence separately.
 
+Before suite consolidation, complete the exploratory-qa skill's
+[dogfood report reconciliation](../skills/exploratory-qa/SKILL.md#dogfood-report-reconciliation).
+Link the generated case report from the suite report; keep exploratory findings separate from
+planned AC results and preserve each case verdict.
+
 Apply these gate rules in order; evidence tables are required, not optional narrative:
 
 1. Critical planned acceptance FAILs or confirmed critical exploratory defects → BLOCKED.

@@ -325,7 +325,37 @@ def evaluate_mock_coverage(scenario):
     return [check]
 
 
+def dogfood_report_metadata(run_dir, observations):
+    path = local_path(run_dir, 'dogfood-report.md')
+    if not path.is_file():
+        return None
+    findings = observations.get('findings', [])
+    return {
+        'path': 'dogfood-report.md',
+        'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+        'reviewed': observations.get('dogfood_report_reviewed') is True,
+        'finding_ids': [finding.get('id', '?') for finding in findings if isinstance(finding, dict)],
+    }
+
+
+def evaluate_dogfood_report(metadata):
+    if metadata is None:
+        return []
+    reviewed = metadata['reviewed']
+    return [{
+        'id': 'dogfood-reconciliation',
+        'result': 'PASS' if reviewed else 'INCONCLUSIVE',
+        'kind': 'evidence',
+        'detail': ('Manual dogfood observations were reconciled into structured findings'
+                   if reviewed else 'dogfood-report.md exists but is not marked reviewed and reconciled'),
+        'evidence': ['dogfood-report.md', 'observations.json'],
+    }]
+
+
 def render_markdown(report):
+    def safe_text(value):
+        return str(value).replace('|', '\\|').replace('\n', ' ')
+
     lines = ['# Exploratory QA — ' + str(report['scenario']), '', '**Outcome:** ' + report['status'],
              '**Proxy verified:** ' + str(report['proxy_verified']),
              '**Captured requests:** %s (mocked: %s)' % (report['network_request_count'], report['mocked_request_count']),
@@ -364,7 +394,24 @@ def render_markdown(report):
     lines += ['', '## Target and provenance', '', 'See `report.json` and the retained run `scenario.json` for binary/source/fixture hashes.',
               '', '## Exploration notes', '', 'Visited states: ' + ', '.join(map(str, report['states_visited']))]
     for finding in report['findings']:
-        lines.append('- %s: %s; evidence: %s' % (finding.get('id', '?'), finding.get('title', ''), ', '.join(finding.get('evidence', []))))
+        status = ' (%s)' % safe_text(finding['status']) if finding.get('status') else ''
+        lines.append('- **%s: %s**%s' % (safe_text(finding.get('id', '?')),
+                                        safe_text(finding.get('title', '')), status))
+        for field in ('expected', 'actual'):
+            if finding.get(field):
+                lines.append('  - **%s:** %s' % (field.title(), safe_text(finding[field])))
+        if finding.get('evidence'):
+            lines.append('  - **Evidence:** %s' % ', '.join(map(safe_text, finding['evidence'])))
+    dogfood = report.get('dogfood_report')
+    if dogfood:
+        lines += ['', '## Manual dogfood report', '',
+                  '- Source: [%s](%s) (SHA-256 `%s`).' % (dogfood['path'], dogfood['path'], dogfood['sha256']),
+                  '- Reconciled into structured findings: %s.' % ('yes' if dogfood['reviewed'] else 'no'),
+                  '- Reportable observations belong in the structured findings above; the linked file retains the detailed manual narrative.']
+        if dogfood.get('finding_ids'):
+            lines.append('- Finding IDs: ' + ', '.join('`%s`' % finding_id for finding_id in dogfood['finding_ids']))
+        else:
+            lines.append('- Finding IDs: none recorded.')
     lines += ['', '## Request summary', '']
     lines += ['- `%s`: %s' % pair for pair in report['network_summary'].items()] or ['No allowlisted requests captured; absence requires verified capture.']
     lines += ['', 'PASS requires all declared UI/network and required HarnessLens evidence checks to pass. Exploration is not exhaustive. Setup failures are not automatically app defects.', '']
@@ -394,6 +441,7 @@ def main(argv=None):
             _, _, rules = load_rules(args.scenario, hosts)
             hashes = {r['id']: r['fixture_sha256'] for r in rules}
         observations = read_json(local_path(args.run_dir, 'observations.json'))
+        observations = observations or {}
         requests = read_jsonl(local_path(args.run_dir, 'network.jsonl'))
         status, checks = evaluate(scenario, observations, requests, digest, hashes)
         mock_checks, mock_receipts = evaluate_wiremock(scenario, observations, args.run_dir,
@@ -403,8 +451,9 @@ def main(argv=None):
         checks.extend(evaluate_mock_coverage(scenario))
         lens_checks, lens_receipts = evaluate_harnesslens(scenario, args.run_dir, digest, args.harnesslens_root)
         checks.extend(lens_checks)
+        dogfood_report = dogfood_report_metadata(args.run_dir, observations)
+        checks.extend(evaluate_dogfood_report(dogfood_report))
         status = outcome([check['result'] for check in checks])
-        observations = observations or {}
         report = {
             'scenario': scenario.get('scenario_id', 'unspecified'), 'scenario_sha256': digest,
             'status': status, 'proxy_verified': observations.get('proxy_verified') is True,
@@ -417,6 +466,7 @@ def main(argv=None):
             'network_summary': dict(Counter('%s %s%s -> %s' % (r.get('method'), r.get('host'), r.get('path'), r.get('status')) for r in requests)),
             'fixture_receipts': [{k: r[k] for k in ('mock_rule_id', 'fixture_sha256', 'mock_scenario_sha256') if k in r}
                                  for r in requests if r.get('mocked') is True],
+            'dogfood_report': dogfood_report,
             'checks': checks, 'states_visited': observations.get('states_visited', []), 'findings': observations.get('findings', []),
             'harnesslens_verifications': lens_receipts,
             'wiremock_verifications': mock_receipts,
