@@ -33,14 +33,12 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | `docs/knowledge/` | Past bugs, pitfalls, architecture decisions (L3). |
 | `docs/changes/` | Audit trail — one directory per delivered change. |
 | `docs/product/product.md` | Product capabilities, roadmap, and the authoritative Harness Feature Tracker. |
----
 ## Agent Roles
 | Role | Responsibility | Primary Actions |
 |---|---|---|
 | **Planner** | Defines requirements & architectural slices | Creates implementation plans & vertical slice checklists |
 | **Coder** | Implements robust features & solves tasks | Delivers clean Kotlin/Compose/Room changes incrementally |
 | **Evaluator** | Performs automated & manual quality gates | Runs code quality checks, static analysis, & test coverage reviews |
----
 ## Workflow Routing — Mandatory Step Before Any Task
 **Before starting ANY task, you MUST:** identify the task type, then read the matching workflow **in full** and follow its pipeline without skipping stages or stops. Do not write code before reading the selected workflow and its current-stage skill.
 
@@ -77,7 +75,6 @@ Key skills under `.agents/skills/`:
 - **Review & Quality**: `code-quality-fix`, `android-code-review`, `code-review-and-quality`, `android-test-review`, `android-code-quality-checks`
 - **Session & Knowledge**: `context-management`, `knowledge-capture`, `documentation-and-adrs`, `karpathy-guidelines`
 
----
 ## Non-negotiable Rules
 - **No secrets in source code** — use `local.properties` + `BuildConfig`
 - **No business logic in Composables**
@@ -97,6 +94,7 @@ Key skills under `.agents/skills/`:
 - **Validate harness lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting a complex feature and after every tracker transition. Folder location never represents status; the tracker and per-slice evidence do.
 - **Stage completion requires evidence** — when marking a stage complete in `summary_v<N>.md`, cite the artifact path and paste a one-line excerpt. A stage is not complete until the artifact exists on disk and is referenced from the summary. Summaries reference canonical scope and Rule Applicability artifacts; they do not duplicate their matrices, acceptance criteria, or slice metadata.
 - **Do not suppress rule violations** — agents must fix root causes, not add `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disable comments, baselines, or broader excludes unless the user explicitly approves a documented false positive
+- **Instruction-file changes require approval** — before editing `.agents/rules/`, `.agents/workflows/`, or `.agents/skills/`, present the exact file list and proposed changes and get explicit user approval. Approval applies only to listed files; ask again if scope changes.
 - **Fix rule/workflow/skill mismatches through a PR** — if an agent finds conflicting, stale, or mismatched instructions across rules, workflows, skills, gates, or templates, it must state the issue and why the fix is needed, then raise a PR that corrects the source instruction instead of silently working around it
 - **Product documentation flow** — follow `.agents/rules/product-documentation.md`; read/update affected `docs/product/requirements/<capability>.md` files and retain approved change contracts in `.scratch/`.
 - **Keep `docs/product/product.md` current** — maintain the capability index and the sole complex-change lifecycle tracker. Detailed current and planned behavior lives in the existing capability requirement files, not repeated overview sections.
@@ -114,7 +112,6 @@ bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ./gradlew connectedDebugAndroidTest  # instrumented UI tests (when UI changed)
 ```
 
----
 ## Distribution Commands
 Package and distribute to Firebase App Distribution: `./gradlew appDistributionUploadDebug` (Debug, v1.0-Debug) or `./gradlew appDistributionUploadRelease` (Release, v1.0-Release), both to MyAccounts.
 

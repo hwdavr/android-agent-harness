@@ -77,6 +77,14 @@ The invariant must be enforceable by a script, test, or required artifact—not 
 
 ### 4. Patch the authoritative source
 
+Before editing `.agents/rules/`, `.agents/workflows/`, or `.agents/skills/`:
+
+1. Finish the read-only diagnosis and identify the exact instruction files that need changes.
+2. Present the file list, reason for each change, and a concise diff or change outline to the user; request explicit approval.
+3. Stop before editing. Resume only after approval covers the proposed files. If the scope changes, request approval for the added files first.
+
+A request to review, investigate, or retro an instruction mismatch does not itself authorize editing those files. Apply this gate before the patching steps below.
+
 Read relevant existing skills and workflows; keep new instructions minimal and link existing guidance instead of repeating it.
 
 Make the smallest change that closes the gap at its source:

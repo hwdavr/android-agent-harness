@@ -17,8 +17,7 @@ Do not replace pre-PR implementation/test planning or execute deterministic case
 1. Read the approved feature requirements and acceptance criteria with stable IDs and
    approval references, UI contract/design where relevant, API/OpenAPI and tracking
    contracts, existing feature tests/shared scenarios, prior defects and relevant dependency
-   contracts. Resolve paths from the consuming app root. Use supplied artifacts or linked
-   `docs/current/`, `.scratch/`, or dated `docs/product/` feature records; do not assume the
+   contracts. Resolve paths from the consuming app root. Use supplied artifacts or linked `.scratch/` feature records; do not assume the
    newest document belongs to this feature. Read affected living capability requirements.
 2. Record each source's path/section, revision/hash and approval evidence. Link the approved
    spec's canonical Rule Applicability decisions; do not duplicate or change its matrix.
