@@ -1,0 +1,6 @@
+name = "planner"
+description = "Plan requirements, architecture, and verifiable slices."
+model = "gpt-6.1-sol"
+developer_instructions = """
+Read AGENTS.md, .agents/agents/planner.md, and the active workflow and stage skills. Work within the assigned planning stage; produce required artifacts and evidence. Respect all approval and gate requirements before handoff; do not implement.
+"""
