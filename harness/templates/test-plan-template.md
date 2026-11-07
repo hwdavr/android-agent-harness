@@ -126,10 +126,11 @@ Open and dismissal may share a method when that method proves the complete trans
 
 | Screen | Input tag | Production activity | Open test | Dismiss test | Command | Result XML |
 |---|---|---|---|---|---|---|
-| <screen> | <input testTag> | <shipped Activity> | app/src/androidTest/java/<package>/<ImeTest>.kt#<openMethod> | app/src/androidTest/java/<package>/<ImeTest>.kt#<dismissMethod> | ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<package>.<ImeTest> | evidence/<runner-results>.xml |
+| <screen> | <input testTag> | <shipped Activity> | app/src/androidTest/java/<package>/<ImeTest>.kt#<openMethod> | app/src/androidTest/java/<package>/<ImeTest>.kt#<dismissMethod> | ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class <package>.<ImeTest>#<openMethod> --class <package>.<ImeTest>#<dismissMethod> | evidence/android-instrumented.xml |
 
-The XML is the copied raw Android runner result, with the selected class/methods executed and
-not failed, errored, or skipped. Validate source and results with the active Testing/UI verification
+The XML is the JUnit report emitted by the direct AndroidJUnitRunner wrapper. Copy it from the
+run-specific `.qa-artifacts/android-instrumented/` directory into the declared evidence path,
+alongside the raw `.log`. Validate source and results with the active Testing/UI verification
 stage gate. Static keyboard previews, configuration-only tests, and Content fixtures are
 supplemental evidence and cannot justify declaring the production bug fixed.
 
@@ -250,5 +251,5 @@ Location: `sharedContracts/test-scenarios/` or a feature-owned JSON resource cat
 ./gradlew testDebugUnitTest          # unit + integration tests
 ./gradlew :app:koverXmlReportDebug   # machine-readable coverage report
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
-./gradlew connectedDebugAndroidTest  # instrumented UI tests (when UI changed)
+ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --all  # instrumented UI tests (when UI changed)
 ```

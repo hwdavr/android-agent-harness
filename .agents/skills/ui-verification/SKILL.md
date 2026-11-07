@@ -38,8 +38,8 @@ Visual acceptance runs through `./gradlew app:verifyRoborazziDebug`. A dedicated
 `*RoborazziTest` renders every named state using deterministic fixtures and calls
 `captureRoboImage()` with the approved Pen export. Instrumented tests remain required for the
 behavior, navigation, or platform boundaries they cover, but do not provide visual-comparison
-evidence. Run `ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest` only when one of
-those runtime claims is in scope.
+evidence. When one of those runtime claims is in scope, use
+`harness/scripts/run-android-instrumented-tests.sh` as documented by the `android-testing` skill.
 
 For evidence-backed reports, `design_anchors` and `runtime_evidence` are a pair. Expected geometry
 lives only in `design_anchors.json`; captured bounds live only in `ui_frames.json`. Version 2+

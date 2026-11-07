@@ -182,7 +182,7 @@ def ime_runtime(inventory, test_plan, runtime, project_root):
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]*", item["Production activity"]):
             fail("IME Production activity must name the shipped Activity")
         command = item["Command"]
-        if "connected" not in command or "AndroidTest" not in command or "android.testInstrumentationRunnerArguments.class=" not in command:
+        if "harness/scripts/run-android-instrumented-tests.sh" not in command or "--class" not in command:
             fail("IME Command must select the instrumented boundary class")
         result_ref = Path(item["Result XML"])
         if result_ref.is_absolute() or ".." in result_ref.parts:
@@ -210,9 +210,8 @@ def ime_runtime(inventory, test_plan, runtime, project_root):
             class_name = Path(file).stem
             package = KotlinFile(project_root / file).package_name
             qualified_class = f"{package}.{class_name}" if package else class_name
-            selector = re.search(r"android\.testInstrumentationRunnerArguments\.class=([^\s]+)", command)
-            selections = selector.group(1).strip("\"'").split(",") if selector else []
-            if qualified_class not in selections and f"{qualified_class}#{method}" not in selections:
+            selections = [value.rstrip("`.,;") for value in re.findall(r"--class\s+([^\s]+)", command)]
+            if f"{qualified_class}#{method}" not in selections:
                 fail(f"IME Command does not select {qualified_class}#{method}")
             cases = [case for case in result.iter("testcase")
                      if case.get("name", "").split("[")[0] == method
@@ -348,8 +347,13 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
             else:
                 if not INSTRUMENTED_TARGET.fullmatch(target):
                     fail(f"UI state {stage} needs a valid instrumented target under app/src/androidTest/ ending in Test.kt#method")
-                if "./gradlew connectedDebugAndroidTest" not in verification:
-                    fail(f"UI state {stage} needs a connectedDebugAndroidTest command for its instrumented target")
+                if "harness/scripts/run-android-instrumented-tests.sh" not in verification:
+                    fail(f"UI state {stage} needs the direct AndroidJUnitRunner wrapper for its instrumented target")
+                test_file, test_method = target.split("#", 1)
+                test_class = Path(test_file).stem
+                selectors = [value.rstrip("`.,;") for value in re.findall(r"--class\s+([^\s]+)", verification)]
+                if not any(selector.endswith(f"{test_class}#{test_method}") for selector in selectors):
+                    fail(f"UI state {stage} command must select {test_class}#{test_method}")
             if target in verification_targets:
                 fail(f"verification target reused across UI plan stages: {target}")
             verification_targets.add(target)

@@ -101,7 +101,7 @@ write_valid_fixture "$outdated_instrumented"
 sed -i.bak \
   -e 's#app/src/test/java/example/roborazzi/EmojiPickerRoborazziTest.kt#app/src/androidTest/java/example/EmojiPickerVisualFlowTest.kt#g' \
   -e 's/EmojiPickerRoborazziTest/EmojiPickerVisualFlowTest/g' \
-  -e 's|./gradlew app:verifyRoborazziDebug --tests "example.EmojiPickerVisualFlowTest.emojiPickerContentLightTheme"|./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme|g' \
+  -e 's|./gradlew app:verifyRoborazziDebug --tests "example.EmojiPickerVisualFlowTest.emojiPickerContentLightTheme"|ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.EmojiPickerVisualFlowTest#emojiPickerContentLightTheme|g' \
   "$outdated_instrumented/sprint-contract.md"
 expect_failure "must name a dedicated app/src/test/java/**/roborazzi/*RoborazziTest.kt#method target" \
   bash "$VALIDATOR" "$outdated_instrumented"

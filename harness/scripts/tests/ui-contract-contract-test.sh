@@ -88,7 +88,7 @@ cat > "$FIXTURE/implementation_plan_v1.md" <<'EOF'
 
 | Stage ID | Implementation | Verification target | Verification |
 |---|---|---|---|
-| UI-01 | Implement crop selected controls | `app/src/androidTest/java/example/TransformTest.kt#cropSelectedMatchesDesign` | Check `design/mockup_crop.png` structure with `./gradlew connectedDebugAndroidTest`. |
+| UI-01 | Implement crop selected controls | `app/src/androidTest/java/example/TransformTest.kt#cropSelectedMatchesDesign` | Check `design/mockup_crop.png` structure with `ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.TransformTest#cropSelectedMatchesDesign`. |
 | UI-02 | Implement rotate selected controls | `app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign` | Compare `design/mockup_rotate.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"`. |
 EOF
 touch "$FIXTURE/summary_v1.md"

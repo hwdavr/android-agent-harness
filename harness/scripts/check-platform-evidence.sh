@@ -139,12 +139,12 @@ while IFS= read -r test_id; do
   [ -n "$CONTRACT_ROW" ] || fail "real platform test $test_id is not declared in sprint-contract.md"
   printf '%s\n' "$CONTRACT_ROW" | grep -Eiq 'instrumented|androidTest|android test' \
     || fail "real platform test $test_id must be instrumented"
-  printf '%s\n' "$CONTRACT_ROW" | grep -Fq 'connectedDebugAndroidTest' \
-    || fail "real platform test $test_id must use connectedDebugAndroidTest"
+  printf '%s\n' "$CONTRACT_ROW" | grep -Fq 'harness/scripts/run-android-instrumented-tests.sh' \
+    || fail "real platform test $test_id must use the direct AndroidJUnitRunner wrapper"
 
-  EVIDENCE_COUNT=$(jq --arg id "$test_id" '[.features[]?.evidence[]? | select(type == "object" and .test_id == $id and .exit_status == 0 and ((.executed_command // "") | contains("connectedDebugAndroidTest")))] | length' "$FEATURE_JSON")
+  EVIDENCE_COUNT=$(jq --arg id "$test_id" '[.features[]?.evidence[]? | select(type == "object" and .test_id == $id and .exit_status == 0 and ((.executed_command // "") | contains("harness/scripts/run-android-instrumented-tests.sh")))] | length' "$FEATURE_JSON")
   [ "$EVIDENCE_COUNT" -gt 0 ] \
-    || fail "real platform test $test_id has no successful connected-test evidence"
+    || fail "real platform test $test_id has no successful direct-runner evidence"
 done <<EOF
 $REAL_TEST_IDS
 EOF

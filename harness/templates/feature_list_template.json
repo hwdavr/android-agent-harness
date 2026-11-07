@@ -47,7 +47,7 @@
         "TC-US-1-VIS-001"
       ],
       "verification": [
-        "./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.notesapp.ItemTests",
+        "ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class com.example.notesapp.ItemTests",
         "./gradlew app:verifyRoborazziDebug --tests \"com.example.notesapp.ItemRoborazziTest.captureItemScreen\""
       ],
       "evidence": [],
@@ -79,7 +79,7 @@
         "TC-US-2-01"
       ],
       "verification": [
-        "./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.notesapp.ItemEditorTests"
+        "ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class com.example.notesapp.ItemEditorTests"
       ],
       "evidence": [],
       "notes": ""

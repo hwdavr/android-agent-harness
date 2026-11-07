@@ -109,7 +109,7 @@ bash harness/scripts/check-full-source-rules.sh # repository-wide source rules
 bash harness/scripts/check-coverage.sh app/build/reports/kover/reportDebug.xml
 ./gradlew ktlintCheck                # formatting
 ./gradlew detekt                     # static analysis
-./gradlew connectedDebugAndroidTest  # instrumented UI tests (when UI changed)
+ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --all # Android instrumented tests
 ```
 
 ## Distribution Commands

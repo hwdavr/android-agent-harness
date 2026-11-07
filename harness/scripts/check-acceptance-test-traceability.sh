@@ -129,19 +129,18 @@ $test_id"
     || fail "$test_id has an invalid Kotlin test method '$test_method'"
 
   suite=$(basename "$test_file" .kt)
-  printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./)?gradlew([[:space:]]|$)' \
-    || fail "$test_id exact command must execute Gradle through ./gradlew"
-  printf '%s' "$command" | grep -Eq '(^|[[:space:]])(connectedDebugAndroidTest|testDebugUnitTest|test[A-Za-z0-9]*UnitTest|([A-Za-z0-9_-]+:)?verifyRoborazzi(Debug)?)([[:space:]]|$)' \
-    || fail "$test_id exact command must execute a supported Android test task"
-
   case "$test_file" in
     app/src/androidTest/*.kt)
-      printf '%s' "$command" | grep -Fq 'connectedDebugAndroidTest' \
-        || fail "$test_id instrumented test command must execute connectedDebugAndroidTest"
-      printf '%s' "$command" | grep -Eq -- "-Pandroid\.testInstrumentationRunnerArguments\.class=[^[:space:]]*$suite(#[A-Za-z_][A-Za-z0-9_]*)?" \
+      printf '%s' "$command" | grep -Fq 'harness/scripts/run-android-instrumented-tests.sh' \
+        || fail "$test_id instrumented test command must use the direct AndroidJUnitRunner wrapper"
+      printf '%s' "$command" | grep -Eq -- "--class[[:space:]]+[^[:space:]]*$suite(#[A-Za-z_][A-Za-z0-9_]*)?([[:space:]]|$)" \
         || fail "$test_id exact command does not target instrumented suite $suite"
       ;;
     app/src/test/*.kt)
+      printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./)?gradlew([[:space:]]|$)' \
+        || fail "$test_id exact command must execute Gradle through ./gradlew"
+      printf '%s' "$command" | grep -Eq '(^|[[:space:]])(testDebugUnitTest|test[A-Za-z0-9]*UnitTest|([A-Za-z0-9_-]+:)?verifyRoborazzi(Debug)?)([[:space:]]|$)' \
+        || fail "$test_id exact command must execute a supported JVM test task"
       printf '%s' "$command" | grep -Fq -- '--tests' \
         || fail "$test_id JVM test command must use --tests for suite scoping"
       printf '%s' "$command" | grep -Fq "$suite" \
@@ -224,8 +223,8 @@ EOF
       [ -n "$evidence_command" ] || continue
       case "$test_file" in
         app/src/androidTest/*.kt)
-          if printf '%s' "$evidence_command" | grep -Fq 'connectedDebugAndroidTest' && \
-            printf '%s' "$evidence_command" | grep -Eq -- "-Pandroid\.testInstrumentationRunnerArguments\.class=[^[:space:]]*$suite(#[A-Za-z_][A-Za-z0-9_]*)?"; then
+          if printf '%s' "$evidence_command" | grep -Fq 'harness/scripts/run-android-instrumented-tests.sh' && \
+            printf '%s' "$evidence_command" | grep -Eq -- "--class[[:space:]]+[^[:space:]]*$suite(#[A-Za-z_][A-Za-z0-9_]*)?([[:space:]]|$)"; then
             evidence_targets_suite=1
           fi
           ;;

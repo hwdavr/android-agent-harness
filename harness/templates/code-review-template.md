@@ -76,7 +76,7 @@ diagnostic follow-ups only.
 | `testDebugUnitTest` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
 | `koverLog` overall | | | Independently executed / Recorded / Up-to-date / Not run | ✅ X% ≥ 80% / ❌ | |
 | `koverLog` new classes | | | Independently executed / Recorded / Up-to-date / Not run | ✅ X% ≥ 90% / ❌ | |
-| `connectedDebugAndroidTest` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL / ⏭ SKIPPED | |
+| Direct AndroidJUnitRunner (`run-android-instrumented-tests.sh`) | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL / ⏭ SKIPPED | |
 | `ktlintCheck` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
 | `detekt` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |
 | `lintDebug` | | | Independently executed / Recorded / Up-to-date / Not run | ✅ PASS / ❌ FAIL | |

@@ -290,7 +290,7 @@ one_output=$(bash "$VALIDATOR" \
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-DUMMY-JOURNEY \
   --dry-run)
-printf '%s\n' "$one_output" | grep -Fq 'connectedDebugAndroidTest' || fail_test "Android journey did not select the instrumented runner"
+printf '%s\n' "$one_output" | grep -Fq 'harness/scripts/run-android-instrumented-tests.sh --class com.example.test.DummyJourneyTest#validJourneyMethod' || fail_test "Android journey did not select the direct instrumented runner and method"
 
 cat << 'EOF' >> "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
   - id: J-DUMMY-ROBORAZZI
@@ -310,10 +310,10 @@ all_dry_run_output=$(bash "$VALIDATOR" \
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-all \
   --dry-run)
-printf '%s\n' "$all_dry_run_output" | grep -Fq 'connectedDebugAndroidTest' || fail_test "Mixed run-all omitted the instrumented runner"
+printf '%s\n' "$all_dry_run_output" | grep -Fq 'harness/scripts/run-android-instrumented-tests.sh --class com.example.test.DummyJourneyTest#validJourneyMethod' || fail_test "Mixed run-all omitted the direct instrumented runner"
 printf '%s\n' "$all_dry_run_output" | grep -Fq 'roborazziJourneyTest -ProborazziJourneyFilter=com.example.test.DummyRoborazziJourneyTest.robolectricJourneyMethod' || fail_test "Mixed run-all omitted the Roborazzi runner and filter"
 
-# Case 11: A Gradle runner that exits 0 without executing the selected test is rejected.
+# Case 11: A direct AndroidJUnitRunner that exits 0 without executing the selected method is rejected.
 cat << 'EOF' > "$FIXTURE_ROOT/docs/product/journey-registry.yaml"
 journeys:
   - id: J-DUMMY-JOURNEY
@@ -331,22 +331,45 @@ EOF
 
 cat << 'EOF' > "$FIXTURE_ROOT/gradlew"
 #!/usr/bin/env bash
-printf '%s\n' 'com.example.test.DummyJourneyTest#validJourneyMethod PASSED'
+set -euo pipefail
+mkdir -p app/build/outputs/apk/debug app/build/outputs/apk/androidTest/debug
+touch app/build/outputs/apk/debug/app-debug.apk
+touch app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 EOF
 chmod +x "$FIXTURE_ROOT/gradlew"
+
+mkdir -p "$FIXTURE_ROOT/harness/scripts" "$FIXTURE_ROOT/fake-bin"
+cp "$REPO_ROOT/harness/scripts/run-android-instrumented-tests.sh" \
+  "$FIXTURE_ROOT/harness/scripts/run-android-instrumented-tests.sh"
+cat << 'EOF' > "$FIXTURE_ROOT/fake-bin/adb"
+#!/usr/bin/env bash
+set -euo pipefail
+case "$*" in
+  *"get-state") echo device ;;
+  *"pm list instrumentation") echo 'instrumentation:com.example.notesapp.test/com.example.notesapp.HiltTestRunner (target=com.example.notesapp)' ;;
+  *"shell am instrument"*)
+    echo 'INSTRUMENTATION_STATUS: class=com.example.test.DummyJourneyTest'
+    echo "INSTRUMENTATION_STATUS: test=${FAKE_METHOD:-validJourneyMethod}"
+    echo 'INSTRUMENTATION_STATUS_CODE: 0'
+    echo 'INSTRUMENTATION_RESULT: stream=\nOK (1 test)'
+    echo 'INSTRUMENTATION_CODE: -1'
+    ;;
+  *"pm path com.example.notesapp.test") echo 'package:/data/app/test/base.apk' ;;
+  *"pm path com.example.notesapp") echo 'package:/data/app/main/base.apk' ;;
+  *"install -r"*) echo Success ;;
+  *) echo "unexpected adb invocation: $*" >&2; exit 2 ;;
+esac
+EOF
+chmod +x "$FIXTURE_ROOT/fake-bin/adb"
+export PATH="$FIXTURE_ROOT/fake-bin:$PATH"
+export ANDROID_SERIAL=fixture-device
 
 expect_success bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-DUMMY-JOURNEY
 
-cat << 'EOF' > "$FIXTURE_ROOT/gradlew"
-#!/usr/bin/env bash
-exit 0
-EOF
-chmod +x "$FIXTURE_ROOT/gradlew"
-
-expect_failure 1 "did not execute registered journey method(s)" bash "$VALIDATOR" \
+FAKE_METHOD=unrelatedMethod expect_failure 1 "did not execute registered journey method(s)" bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --registry "$FIXTURE_ROOT/docs/product/journey-registry.yaml" \
   --run-one J-DUMMY-JOURNEY

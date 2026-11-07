@@ -89,16 +89,21 @@ Run every selected test with a suite-scoped selector. For example:
 
 ```bash
 ./gradlew :app:testDebugUnitTest --tests '<fully.qualified.TestClass>'
-ANDROID_SERIAL=<device-serial> ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<fully.qualified.InstrumentedTestClass>
+ANDROID_SERIAL=<device-serial> bash harness/scripts/run-android-instrumented-tests.sh --class <fully.qualified.InstrumentedTestClass>[#method]
 ```
 
-Use the exact method selector when the runner supports it. For Roborazzi, use the approved
-state's scoped verification command. Run instrumented tests whenever the runtime analysis
-requires them, including existing tests affected by the change; adding a new instrumented test
-is not the only trigger. Prefer an emulator, using a connected physical device when the
-required capability or availability calls for one. Do not run unfiltered
-`testDebugUnitTest` or `connectedDebugAndroidTest`, `koverLog`, or full coverage reports in this
-skill. The later workflow or CI gate owns repository-wide test and coverage evidence.
+The shared runner assembles both APKs, installs/updates them with `adb install -r`, invokes
+`AndroidJUnitRunner` directly, records a log, and verifies the app and test packages remain
+installed. It rejects empty or failing test results. Use `--class <Class#method>` for the exact
+method when supported, or `--all` for the full instrumented suite. Set `ANDROID_SERIAL` or pass
+`--serial` so the intended device is explicit. Do not invoke Gradle's connected instrumentation
+task: its UTP cleanup uninstalls the app package and removes its private data. For Roborazzi,
+use the approved state's scoped verification command. Run instrumented tests whenever the runtime
+analysis requires them, including existing tests affected by the change; adding a new
+instrumented test is not the only trigger. Prefer an emulator, using a connected physical device
+when the required capability or availability calls for one. Do not run unfiltered
+`testDebugUnitTest`, `koverLog`, or full coverage reports in this skill. The later workflow or CI
+gate owns repository-wide test and coverage evidence.
 
 Record each selected test ID or method, exact command, exit code, non-zero executed test count,
 and runtime in the stage evidence. Keep verbose output in a referenced log or generated report.

@@ -103,11 +103,12 @@ class SearchImeTest {
         self.plan.write_text(
             "# Test plan\n\n## IME Production Boundary\n\n" + BOUNDARY_HEADER + "\n|" + "---|" * 7 + "\n"
             f"| Search | search_input | MainActivity | {self.test_file}#opensAboveIme | "
-            f"{self.test_file}#restoresAfterDismissal | ./gradlew connectedDebugAndroidTest "
-            "-Pandroid.testInstrumentationRunnerArguments.class=example.SearchImeTest | evidence/connected.xml |\n"
+            f"{self.test_file}#restoresAfterDismissal | ANDROID_SERIAL=emulator-5554 bash "
+            "harness/scripts/run-android-instrumented-tests.sh --class example.SearchImeTest#opensAboveIme "
+            "--class example.SearchImeTest#restoresAfterDismissal | evidence/android-instrumented.xml |\n"
         )
         (self.root / "evidence").mkdir(exist_ok=True)
-        (self.root / "evidence/connected.xml").write_text(
+        (self.root / "evidence/android-instrumented.xml").write_text(
             '<testsuite tests="2" failures="0" errors="0" skipped="0">'
             '<testcase classname="example.SearchImeTest" name="opensAboveIme" />'
             '<testcase classname="example.SearchImeTest" name="restoresAfterDismissal" /></testsuite>'
@@ -162,23 +163,25 @@ class SearchImeTest {
                       "must not replace production Activity content")
 
     def test_skipped_runtime_cannot_pass(self):
-        report = self.root / "evidence/connected.xml"
+        report = self.root / "evidence/android-instrumented.xml"
         report.write_text(report.read_text().replace('name="opensAboveIme" />', 'name="opensAboveIme"><skipped /></testcase>'))
         self.rejected(self.check("--test-plan", str(self.plan), "--runtime", "--project-root", str(self.root)),
                       "did not pass")
 
     def test_missing_runtime_cannot_pass(self):
-        (self.root / "evidence/connected.xml").unlink()
+        (self.root / "evidence/android-instrumented.xml").unlink()
         self.rejected(self.check("--test-plan", str(self.plan), "--runtime", "--project-root", str(self.root)),
                       "missing IME result XML")
 
     def test_wrong_selected_class_cannot_pass(self):
-        self.plan.write_text(self.plan.read_text().replace("class=example.SearchImeTest", "class=example.UnrelatedTest"))
+        self.plan.write_text(self.plan.read_text().replace(
+            "example.SearchImeTest#opensAboveIme", "example.UnrelatedTest#opensAboveIme"
+        ))
         self.rejected(self.check("--test-plan", str(self.plan), "--runtime", "--project-root", str(self.root)),
                       "does not select example.SearchImeTest")
 
     def test_failed_runtime_cannot_pass(self):
-        report = self.root / "evidence/connected.xml"
+        report = self.root / "evidence/android-instrumented.xml"
         report.write_text(report.read_text().replace('name="opensAboveIme" />', 'name="opensAboveIme"><failure /></testcase>'))
         self.rejected(self.check("--test-plan", str(self.plan), "--runtime", "--project-root", str(self.root)),
                       "did not pass")

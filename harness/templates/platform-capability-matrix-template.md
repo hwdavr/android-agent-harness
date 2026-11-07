@@ -25,7 +25,7 @@ Every required runtime boundary must appear as a row. `Unsupported (explicit fal
 - Test IDs: `{TC-US-*-PLATFORM}`
 - Instrumented test file(s): `{app/src/androidTest/...}`
 - Real-platform signal: `{production boundary class or Android API referenced by the test}`
-- Exact command(s): `{ANDROID_SERIAL=... ./gradlew connectedDebugAndroidTest ...}`
+- Exact command(s): `{ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class <package.Class#method>}`
 - Fixture/data source: `{deterministic local fixture; no live backend}`
 - Assertion: `{observable platform result, not only an intent/fake callback}`
 

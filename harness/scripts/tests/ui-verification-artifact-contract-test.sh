@@ -193,7 +193,7 @@ FIXTURE
 
 | Stage ID | Implementation | Verification target | Verification |
 |---|---|---|---|
-| UI-01 | Implement editor content | `app/src/androidTest/java/example/EditorVisualFlowTest.kt#captureEditor` | Verify the structural state against `design/mockup_editor.png` with `./gradlew connectedDebugAndroidTest`. |
+| UI-01 | Implement editor content | `app/src/androidTest/java/example/EditorVisualFlowTest.kt#captureEditor` | Verify the structural state against `design/mockup_editor.png` with `ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.EditorVisualFlowTest#captureEditor`. |
 FIXTURE
 }
 

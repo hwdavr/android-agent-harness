@@ -16,7 +16,7 @@
 |---|---:|---|---|---|---|
 | `./gradlew testDebugUnitTest` | | | | Independently executed / Recorded / Up-to-date / Not run | |
 | `./gradlew koverLog` | | | | Independently executed / Recorded / Up-to-date / Not run | |
-| `./gradlew connectedDebugAndroidTest` | | | | Independently executed / Recorded / Up-to-date / Not run | |
+| `harness/scripts/run-android-instrumented-tests.sh --class <suite>#<method>` | | | | Independently executed / Recorded / Up-to-date / Not run | |
 
 Do not label recorded, up-to-date, skipped, or unexecuted evidence as a fresh pass.
 

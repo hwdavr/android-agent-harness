@@ -261,6 +261,8 @@ Roborazzi comparisons remain appearance evidence; they do not establish real IME
 
 ### Instrumented UI tests (when UI changed)
 ```bash
-./gradlew connectedDebugAndroidTest
+bash harness/scripts/run-android-instrumented-tests.sh --all
 ```
-Run when the change modifies Composable screens or navigation.
+Run when the change modifies Composable screens or navigation. Set `ANDROID_SERIAL` to the
+intended emulator/device; the runner installs APKs in place, runs `AndroidJUnitRunner` directly,
+and verifies the app remains installed after the test.

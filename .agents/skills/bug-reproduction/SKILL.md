@@ -65,7 +65,7 @@ Write a failing test that reproduces the defect before attempting a fix:
 or for instrumented tests:
 
 ```bash
-./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<FullyQualifiedTestClass>
+ANDROID_SERIAL=<device-serial> bash harness/scripts/run-android-instrumented-tests.sh --class <FullyQualifiedTestClass>[#method]
 ```
 
 **The test must fail.** A test that passes immediately means one of:
@@ -102,7 +102,7 @@ Update `summary_v<N>.md`: mark this stage complete.
 **This stage is complete when all of the following are true — all must be mechanically verifiable:**
 
 - [ ] A reproduction test exists that targets the root cause statement in `spec_v<N>.md`
-- [ ] `./gradlew testDebugUnitTest` (or `connectedDebugAndroidTest`) exits **non-zero** for the new test, confirming RED
+- [ ] The selected JVM test command or `harness/scripts/run-android-instrumented-tests.sh` exits **non-zero** for the new test, confirming RED
 - [ ] The failure message matches the root cause — not a compilation error or unrelated assertion
 - [ ] No application source code has been modified in this stage
 - [ ] `spec_v<N>.md` is updated with the Reproduction Test section

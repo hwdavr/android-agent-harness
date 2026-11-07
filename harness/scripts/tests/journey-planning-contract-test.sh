@@ -92,7 +92,7 @@ write_fixture() {
     '' \
     '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|---|' \
-    '| TC-US-1-01 | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/JourneyTest.kt#returnsToEditor | N/A — no API | Open the picker, select a target, and return to the editor. | The linked label is visible after return. | ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.JourneyTest |' \
+    '| TC-US-1-01 | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/JourneyTest.kt#returnsToEditor | N/A — no API | Open the picker, select a target, and return to the editor. | The linked label is visible after return. | ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.JourneyTest#returnsToEditor |' \
     '| TC-US-2-01 | AC-US-2-01 | JVM unit | app/src/test/java/example/FormattingTest.kt#togglesBold | N/A — no API | Toggle the local formatting state. | The mark is applied. | ./gradlew testDebugUnitTest --tests example.FormattingTest |' \
     > "$FEATURE_DIR/sprint-contract.md"
 }

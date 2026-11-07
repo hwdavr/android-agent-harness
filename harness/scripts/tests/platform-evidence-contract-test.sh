@@ -23,7 +23,7 @@ write_contract() {
   local feature_dir="$1"
   {
     printf '%s\n' '# Sprint Contract' '' '## US-1: Platform behavior' '' '| Test ID | Covers AC | Test layer | Test file and method | Setup and action | Required assertions | Exact command |'
-    printf '%s\n' '| TC-US-REAL | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/PlatformTest.kt#realBoundary | fixture | real result | connectedDebugAndroidTest |'
+    printf '%s\n' '| TC-US-REAL | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/PlatformTest.kt#realBoundary | fixture | real result | ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.PlatformTest#realBoundary |'
   } > "$feature_dir/sprint-contract.md"
 }
 
@@ -46,7 +46,7 @@ write_feature_list() {
     printf '%s\n' '    "evidence": [{'
     printf '%s\n' '      "test_id": "TC-US-REAL",'
     printf '%s\n' '      "exit_status": 0,'
-    printf '%s\n' '      "executed_command": "ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest"'
+    printf '%s\n' '      "executed_command": "ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.PlatformTest#realBoundary"'
     printf '%s\n' '    }]'
     printf '%s\n' '  }]'
     printf '%s\n' '}'
@@ -102,7 +102,7 @@ printf '%s\n' 'class PlatformTest { val recognizer = SpeechRecognizer.createSpee
 jq '.features[0].evidence = []' "$owner_missing_evidence/feature_list.json" > \
   "$owner_missing_evidence/feature_list.json.tmp"
 mv "$owner_missing_evidence/feature_list.json.tmp" "$owner_missing_evidence/feature_list.json"
-expect_failure "has no successful connected-test evidence" bash "$VALIDATOR" "$owner_missing_evidence" --evaluate --slice US-1
+expect_failure "has no successful direct-runner evidence" bash "$VALIDATOR" "$owner_missing_evidence" --evaluate --slice US-1
 
 fake_only="$fixture_root/fake-only"
 mkdir -p "$fake_only/app/src/androidTest/java/example"
@@ -162,5 +162,15 @@ write_feature_list "$valid"
 write_matrix "$valid" "Verified"
 printf '%s\n' 'class PlatformTest { val recognizer = SpeechRecognizer.createSpeechRecognizer(context) }' > "$valid/app/src/androidTest/java/example/PlatformTest.kt"
 (cd "$valid" && bash "$VALIDATOR" . --evaluate)
+
+legacy_runner="$fixture_root/legacy-runner"
+cp -R "$valid" "$legacy_runner"
+sed 's|ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.PlatformTest#|./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.PlatformTest#|' \
+  "$legacy_runner/sprint-contract.md" > "$legacy_runner/sprint-contract.tmp"
+mv "$legacy_runner/sprint-contract.tmp" "$legacy_runner/sprint-contract.md"
+jq '.features[0].evidence[0].executed_command = "ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest"' \
+  "$legacy_runner/feature_list.json" > "$legacy_runner/feature_list.json.tmp"
+mv "$legacy_runner/feature_list.json.tmp" "$legacy_runner/feature_list.json"
+expect_failure "must use the direct AndroidJUnitRunner wrapper" bash "$VALIDATOR" "$legacy_runner" --evaluate
 
 echo "PASS: platform evidence validator accepts reason-only non-platform features, defers non-owning slices, and rejects missing matrices, unavailable runtimes, fake-only tests, and boundary owners without evidence."

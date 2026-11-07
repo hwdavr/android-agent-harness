@@ -322,7 +322,7 @@ def check_coverage(journeys):
 
 def _fresh_result_methods(start_ns):
     result_roots = [
-        project_root / "app" / "build" / "outputs" / "androidTest-results" / "connected",
+        project_root / ".qa-artifacts" / "android-instrumented",
         project_root / "app" / "build" / "test-results" / "testDebugUnitTest",
     ]
     methods = set()
@@ -347,7 +347,7 @@ def _runner_for_entry(entry):
     test_file = entry["test_file"]
     selector = entry["gradle_selector"]
     if test_file.startswith("app/src/androidTest/"):
-        return "connectedDebugAndroidTest", "instrumented", selector
+        return "run-android-instrumented-tests.sh", "instrumented", selector
     if test_file.startswith("app/src/test/"):
         class_method = selector.replace("#", ".", 1)
         if "RoborazziJourneyTest.kt" in Path(test_file).name:
@@ -365,15 +365,16 @@ def _commands_for_entries(entries):
 
     commands = []
     for (task, runner_kind), group in grouped.items():
-        cmd = ["./gradlew", task]
         selectors = [selector for _, selector in group]
         if runner_kind == "instrumented":
-            cmd.append(
-                f"-Pandroid.testInstrumentationRunnerArguments.class={','.join(selectors)}"
-            )
+            cmd = ["bash", "harness/scripts/run-android-instrumented-tests.sh"]
+            for selector in selectors:
+                cmd.extend(["--class", selector])
         elif runner_kind == "roborazzi":
+            cmd = ["./gradlew", task]
             cmd.append(f"-ProborazziJourneyFilter={','.join(selectors)}")
         else:
+            cmd = ["./gradlew", task]
             for selector in selectors:
                 cmd.extend(["--tests", selector])
         commands.append((cmd, [entry["test_method"] for entry, _ in group]))
@@ -434,7 +435,7 @@ elif mode == "run-one":
 
     commands = _commands_for_entries([entry])
     if len(commands) != 1:
-        print(f"FAIL: Journey '{target_id}' maps to an ambiguous Gradle runner.", file=sys.stderr)
+        print(f"FAIL: Journey '{target_id}' maps to an ambiguous test runner.", file=sys.stderr)
         sys.exit(2)
     cmd, expected_methods = commands[0]
 
