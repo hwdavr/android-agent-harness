@@ -34,11 +34,9 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | `docs/changes/` | Audit trail — one directory per delivered change. |
 | `docs/product/product.md` | Product capabilities, roadmap, and the authoritative Harness Feature Tracker. |
 ## Agent Roles
-| Role | Responsibility | Primary Actions |
-|---|---|---|
-| **Planner** | Defines requirements & architectural slices | Creates implementation plans & vertical slice checklists |
-| **Coder** | Implements robust features & solves tasks | Delivers clean Kotlin/Compose/Room changes incrementally |
-| **Evaluator** | Performs automated & manual quality gates | Runs code quality checks, static analysis, & test coverage reviews |
+Planner: requirements, architecture, design, acceptance, and slices. Implementer: approved Kotlin/Compose/Room changes and findings.
+Tester: test authorship, bug reproduction, verification, and evidence. Evaluator: independent code, test, evidence, and quality review.
+Codex uses `.codex/agents/`; other clients use equivalent roles. Workflows own assignment, stages, approvals, and gates.
 ## Workflow Routing — Mandatory Step Before Any Task
 **Before starting ANY task, you MUST:** identify the task type, then read the matching workflow **in full** and follow its pipeline without skipping stages or stops. Do not write code before reading the selected workflow and its current-stage skill.
 

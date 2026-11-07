@@ -44,7 +44,7 @@ require_before harness-generator.md "check-acceptance-test-traceability.sh" "###
 rg -Fq 'bash harness/scripts/check-stage-artifacts.sh harness-generator orient "$FEATURE_DIR" "$FEATURE_ID"' "$WORKFLOW_DIR/harness-generator.md" \
   || fail_test "generator Stage 1 does not validate the selected slice summary"
 require_before harness-fix.md "check-acceptance-test-traceability.sh" "### Fix-Stage 5 — Finalize"
-require_before feature-delivery.md "### Stage 3 — Implementation" "### Stage 4 — Testing"
+require_before feature-delivery.md "### Stage 4 — Implementation" "### Stage 5 — Testing"
 require_before bug-fixing.md "### Stage 2 — Bug Reproduction" "### Stage 4 — Implementation"
 
 TESTING_SKILL="$PROJECT_ROOT/.agents/skills/android-testing/SKILL.md"

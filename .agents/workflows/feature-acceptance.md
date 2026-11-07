@@ -4,6 +4,9 @@ description: Gate post-merge Android/iOS feature acceptance with planned cases a
 
 # Workflow: Feature Acceptance — Stage 2
 
+Use `planner` for the acceptance plan and `tester` for execution and evidence.
+If required delegation or a requested model is unavailable or unsupported, block the affected stage and report it; never silently substitute. Record requested and actual models in stage evidence when available.
+
 Use after a PR has merged into the integration/QA branch and before release promotion.
 This workflow consumes approved requirements and the integrated QA build. It does not
 change Stage 1 implementation, development verification, review, or merge gates.

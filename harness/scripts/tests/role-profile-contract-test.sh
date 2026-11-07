@@ -10,11 +10,13 @@ fail_test() {
   exit 1
 }
 
-require_text() {
-  local file="$1"
-  local expected="$2"
-  grep -Fq "$expected" "$AGENT_DIR/$file" \
-    || fail_test "$file must contain: $expected"
+require_link() {
+  local profile="$1"
+  local target="$2"
+  grep -Fq "]($target)" "$AGENT_DIR/$profile" \
+    || fail_test "$profile must link to $target"
+  [ -f "$AGENT_DIR/$target" ] \
+    || fail_test "$profile links to missing file: $target"
 }
 
 forbid_text() {
@@ -25,38 +27,25 @@ forbid_text() {
   fi
 }
 
-# Complex-feature planning is rooted in one dated .scratch workspace and
-# hands off the approved feature list and sprint contract, never docs/current.
+# Profiles point to the stage contracts instead of copying their details.
+require_link planner.md "../workflows/harness-planning.md"
+require_link generator.md "../workflows/harness-generator.md"
+require_link generator.md "../workflows/harness-fix.md"
+require_link generator.md "tester.md"
+require_link tester.md "../workflows/bug-fixing.md"
+require_link evaluator.md "../workflows/harness-evaluation.md"
+require_link evaluator.md "../workflows/feature-review.md"
+require_link evaluator.md "../workflows/harness-fix.md"
+
+# Retain the historical stale-reference regression checks.
 forbid_text planner.md "docs/current/"
 forbid_text planner.md "task-list.md"
 forbid_text planner.md "docs/templates/"
 forbid_text planner.md "only relies on stateless Composable logic"
-require_text planner.md ".scratch/<YYYY-MM-DD>-<feature-short-name>/"
-require_text planner.md '`feature-specification`'
-require_text planner.md '`slice-planning`'
-require_text planner.md "Awaiting specification approval"
-require_text planner.md "Awaiting implementation approval"
-require_text planner.md "stateful screen wrappers"
-
-# The Generator selects only an approved tracker-backed slice and routes
-# evaluator findings through harness-fix rather than a made-up pipeline stage.
 forbid_text generator.md ".docs/current/"
 forbid_text generator.md "Select One Task"
 forbid_text generator.md "HSL palettes"
-require_text generator.md '`feature-orient`'
-require_text generator.md "Harness Feature Tracker"
-require_text generator.md '`harness-fix`'
-require_text generator.md "Install App To Device"
-require_text generator.md "stateful screen wrappers"
-require_text generator.md "LocalAppColors"
-
-# Evaluator skills and template links must match the installed harness names.
 forbid_text evaluator.md "android-ui-verification"
 forbid_text evaluator.md "docs/templates/"
-require_text evaluator.md '`android-test-review`'
-require_text evaluator.md '`android-code-review`'
-require_text evaluator.md '`ui-verification`'
-require_text evaluator.md '`harness-fix`'
-require_text evaluator.md "harness/templates/evaluator-rubric-template.md"
 
-echo "PASS: role profiles align with the canonical complex-feature workflows and installed skills."
+echo "PASS: role profiles link to installed canonical workflows and avoid stale references."

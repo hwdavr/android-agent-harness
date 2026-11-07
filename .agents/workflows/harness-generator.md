@@ -4,6 +4,9 @@ description: Implement an approved complex Android feature slice through harness
 
 # Workflow: Harness Generator
 
+Use `implementer` for implementation, `tester` for Test, and `evaluator` to review completed evidence.
+If required delegation or a requested model is unavailable or unsupported, block the affected stage and report it; never silently substitute. Record requested and actual models in stage evidence when available. The evaluator must be fresh and independent, having neither implemented nor tested the change; if unavailable, keep independent review pending.
+
 Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
 
 ## When to use
