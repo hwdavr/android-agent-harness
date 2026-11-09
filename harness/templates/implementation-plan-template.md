@@ -1,83 +1,122 @@
-# Implementation Plan Template
+# Implementation Plan — <Feature Name>
 
-Use this template when producing the plan in the **Implementation Plan** stage.
+**Feature ID**: `<feature-id>`
+**Workspace**: `.scratch/<YYYY-MM-DD>-<feature-id>/`
+**Workflow**: feature-delivery / harness-planning / bug-fixing / api-contract-update / create-ui-and-verify
+**Lane**: single / sliced *(fixed at Specify: no user stories → single; two or more → sliced)*
+**Date**: YYYY-MM-DD
+**Status**: Draft / Approved — <user, YYYY-MM-DD>
 
----
-
-## Feature / Bug
-
-> One line description of what is being implemented or fixed.
-
----
-
-## Requirement Summary
-
-> 2–3 sentences. What is being built, why, and for whom.
-
-## Rule Applicability Implementation
-
-Canonical decisions: [`spec_v<N>.md#rule-applicability`](spec_v<N>.md#rule-applicability).
-Do not duplicate the ten-row matrix. Map every `Required` row from that exact approved
-specification to implementation work and verification evidence below. Its `Not
-applicable` and `Exception` rationales remain canonical in the specification; update
-the specification if implementation introduces a new trigger.
-
-| Required Rule ID | Implementation work / verification evidence |
-|---|---|
-| <RULE_ID> | <planned files, check, and evidence> |
+Use this template in the **Implementation Plan** stage of every lane. It is written once per workspace and
+revised in place; do not create `_v<N>` copies. The living capability files own product intent
+(WHAT/WHY); this plan owns HOW, the Rule Applicability decisions, and verification ownership.
+`test-plan.md` owns everything about tests. The sliced lane adds `tasks.md` (ordered work per
+story) and `feature_list.json` (slice status and evidence); the single lane uses neither.
 
 ---
 
-## Impact Summary
+## Product Requirements
 
-| Layer | Files Affected | Change Type |
-|-------|---------------|-------------|
-| UI | `path/to/Screen.kt` | modify |
-| Presentation | `path/to/ViewModel.kt` | modify |
-| Domain | `path/to/UseCase.kt` | new |
-| Data | `path/to/Dto.kt`, `path/to/Mapper.kt` | modify |
-| Navigation | `path/to/NavGraph.kt` | extend |
-| Test infrastructure | `path/to/FixtureServer.kt`, `path/to/TestHarness.kt` | new/modify |
-| Tests | `path/to/ViewModelTest.kt` | modify |
+One row per capability file that carries this feature's block. The SHA-256 is computed over
+the text between `<!-- feature: <feature-id> -->` and `<!-- /feature: <feature-id> -->`
+(exclusive) and is recorded when the specification is approved. A changed block requires
+re-approval before the plan can pass the analyze gate.
 
----
+| Capability file | Feature block | Requirement IDs | Approved block SHA-256 | Approved by / date |
+|---|---|---|---|---|
+| `docs/product/requirements/<capability>.md` | `<feature-id>` | FR-###, FR-### | `<64 hex characters>` | <user, YYYY-MM-DD> |
 
-## API Changes
+Bug-fixing lane without a block: write `none — restores <capability>.md#FR-###` in the
+Feature block column and `N/A` for the hash.
 
-- **Classification**: backward compatible / backward compatible but risky / breaking / none
+## Summary
+
+<Two or three sentences: the primary requirement and the chosen technical approach.>
+
+## Root Cause & Reproduction *(bug-fixing lane only; remove these bug sections otherwise)*
+
+Written in the bug-context stage, before the rest of the plan.
+
+- **Violated requirement**: `<capability>.md#FR-###` / `AC-###`
+- **Observed vs expected**: <observed behavior> vs <behavior the requirement promises>
+- **Root cause**: <file, function, and the faulty assumption>
+
+## Screen States *(UI bug only; the screen/state pairs the fix touches)*
+
+| Screen | State ID | Requirement | Acceptance Criteria |
+|---|---|---|---|
+| <screen> | <screen-state> | FR-### | AC-### |
+
+## Technical Context
+
+- **Language/Version**: Kotlin <version>, Java/Kotlin 17
+- **Primary dependencies**: <Compose, Room, Hilt, Retrofit, … plus any new library and version>
+- **Storage**: <Room entities/migrations, DataStore, files, or "No persistence change">
+- **Network/API**: <endpoints in `sharedContracts/openapi.yaml`, or "None">
+- **Testing**: <JVM unit / integration / instrumented layers and UI review captures in scope>
+- **Target platform**: minSdk 24 / targetSdk 34; <devices, locales, permissions, services>
+- **Constraints**: <performance, offline, security, accessibility>
+- **Unknowns**: <list each as `NEEDS RESEARCH: …`, or "None">
+
+## Rule Applicability
+
+The project's rules gate and the canonical matrix for this change. Keep all ten rows. Use
+`Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`.
+Decide every row before Phase 0, and re-check the decisions after Phase 1 design: a design that
+introduces a new trigger updates its row. A deviation from a rule is never silent — it is an
+`Exception — approved by <user/date>` row whose evidence column states the approved boundary.
+Reviews independently reconcile all ten decisions against the diff.
+
+| Rule ID | Rule document | Decision | Feature-specific trigger or reason | Planned work and evidence |
+|---|---|---|---|---|
+| ARCH | `android-architecture.md` | <decision> | | |
+| IMPL | `implementation-rules.md` | <decision> | | |
+| TEST | `testing-strategy.md` | <decision> | | |
+| SUI | `compose-rules.md` | <decision> | | |
+| L10N | `localization-rules.md` | <decision> | | |
+| NAV | `navigation-rules.md` | <decision> | | |
+| API | `api-contract-rules.md` | <decision> | | |
+| OBS | `observability.md` | <decision> | | |
+| ANL | `analytics-rules.md` | <decision> | | |
+| SEC | `android-security.md` | <decision> | Authentication, sensitive storage, URI/IPC, exported components, network/TLS, WebView, AI/model, SDK, or release-security boundary. | |
+
+## Phase 0 — Research
+
+Resolve every `NEEDS RESEARCH` item. For each: decision, rationale, alternatives considered.
+Write long findings to `research.md` in the workspace and link it; otherwise record
+"No unknowns".
+
+| Unknown | Decision | Rationale | Alternatives considered |
+|---|---|---|---|
+| <unknown> | <decision> | <why> | <rejected options> |
+
+## Phase 1 — Design
+
+### Project Structure
+
+| Layer | Files affected | Change type |
+|---|---|---|
+| UI | `path/to/Screen.kt` | new / modify / delete |
+| Presentation | `path/to/ViewModel.kt` | |
+| Domain | `path/to/UseCase.kt` | |
+| Data | `path/to/Repository.kt`, `path/to/Dto.kt` | |
+| Navigation | `path/to/NavGraph.kt` | |
+| Test infrastructure | `path/to/FixtureServer.kt` | |
+| Tests | `path/to/ViewModelTest.kt` | |
+
+### Data Model & Persistence
+
+<Entities, fields, relationships, validation, state transitions. Room schema version and
+migration, or "No persistence change". Write long models to `data-model.md` and link it.>
+
+### API Contract Changes
+
+- **Classification**: none / backward compatible / backward compatible but risky / breaking
 - **Force update required**: yes / no / unknown
-- **Fields added**: `fieldName: Type`
-- **Fields removed**: `fieldName`
-- **Fields changed**: `fieldName: OldType → NewType`
-- **OpenAPI Status**: <Already defined in sharedContracts/openapi.yaml / Requires update: list changes>
+- **OpenAPI status**: <already defined in `sharedContracts/openapi.yaml` / requires update: …>
+- **Shared JSON scenarios**: <`sharedContracts/test-scenarios/<scenario>.json` to add or reuse>
 
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `path/to/NewFile.kt` | reason |
-
----
-
-## Files to Modify
-
-| File | What Changes |
-|------|-------------|
-| `path/to/ExistingFile.kt` | description of change |
-
----
-
-## Files to Delete
-
-| File | Reason |
-|------|--------|
-| `path/to/OldFile.kt` | reason |
-
----
-
-## UiState Design
+### UiState Design *(UI scope)*
 
 ```kotlin
 data class ExampleUiState(
@@ -87,59 +126,45 @@ data class ExampleUiState(
 )
 ```
 
-States covered:
-- [ ] Loading
-- [ ] Success / Content
-- [ ] Empty
-- [ ] Error
-- [ ] Retry
-- [ ] Permission / Auth (if applicable)
+States covered: Loading · Content · Empty · Error · Retry · Permission/Auth (if applicable)
 
----
+### UI State Stages *(UI scope; remove otherwise)*
 
-## UI State Stages
+Copy each Plan stage ID from `UI_contract.md` and name the registered design-system Composables
+the state reuses. How each state is verified (review capture and structural check) is planned in
+`test-plan.md` under `## UI State Verification`.
 
-For UI changes, copy each unique Plan stage ID from `UI_contract.md`. Give each state its own
-implementation step and a unique verification target appropriate to its Comparison. Use a JVM
-Roborazzi method and a method-scoped `verifyRoborazziDebug` command for `roborazzi` comparisons.
-Use an Android instrumented method and
-`ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class <package.Class#method>`
-for `exact` or `structural` interaction checks. The target method can be created during
-implementation, but it must be named before approval so the implementation-plan gate can validate
-the evidence type.
-Keep the approved design image in the verification description; do not claim pixel parity for
-structural checks. Remove this section for non-UI work.
+| Stage ID | Reused registered components | Implementation |
+|---|---|---|
+| UI-01 | `NoteCard`, `TopActionBar` | <state-specific change> |
 
-| Stage ID | Implementation | Verification target | Verification |
-|---|---|---|---|
-| UI-01 | <screen/state-specific code change> | `app/src/test/java/<package>/roborazzi/<Feature>RoborazziTest.kt#<stateMethod>` or `app/src/androidTest/java/<package>/<Feature>Test.kt#<stateMethod>` | Match the command and approved image to the selected comparison: `./gradlew app:verifyRoborazziDebug --tests "<package>.<Feature>RoborazziTest.<stateMethod>"` for pixel checks, or `ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class <package>.<Feature>Test#<stateMethod>` for instrumented interaction checks. |
+## Platform Capability & Environment Contract *(platform-bound changes only)*
 
----
+Declare whether the change crosses an Android device/platform boundary (runtime, device, model,
+locale, permission, or system service). When it does, link `platform-capability-matrix.md`; the
+real instrumented boundary tests are planned in `test-plan.md`, and missing platform resources
+fail loudly. The sliced lane mirrors this declaration in `feature_list.json` `platform_validation`.
 
-## Test Plan
+- **Platform-bound**: No — <reason> / Yes — see `platform-capability-matrix.md`
 
-> Produce a separate test plan document using **[`harness/templates/test-plan-template.md`](test-plan-template.md)** and link it here once created.
+## Test Strategy
 
----
+Test design lives in [`test-plan.md`](test-plan.md) (from `harness/templates/test-plan-template.md`):
+Rule Applicability test mapping, reproduction (bugs), Spec Coverage Matrix, acceptance test cases,
+Production Journey Planning Contract, UI state verification, and layer selection.
+
+## Delivery
+
+- **Single lane**: this plan, [`test-plan.md`](test-plan.md), and [`summary.md`](summary.md)
+  (plus `UI_contract.md` for UI). One approval covers the spec block, design, and both plans.
+- **Sliced lane**: adds [`tasks.md`](tasks.md) and [`feature_list.json`](feature_list.json) (one
+  slice per user story); each slice records evidence in `summary_<FEATURE_ID>.md`.
+
+## Risks & Migration Notes
+
+1. Risk: <what could go wrong> — Mitigation: <how it is reduced>
+2. Migration/compatibility: <Room migration, phased rollout, backward compatibility, or "None">
 
 ## Explicit Assumptions
 
-1. <assumption>
-
----
-
-## Risks
-
-1. Risk: <what could go wrong> — Mitigation: <how to reduce it>
-
----
-
-## Migration / Compatibility Notes
-
-> Any Room migration, backward compatibility handling, or phased rollout considerations.
-
----
-
-## Out of Scope
-
-> List anything explicitly NOT being changed in this task to prevent scope creep.
+1. <technical assumption>
