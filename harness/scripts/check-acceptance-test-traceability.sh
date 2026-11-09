@@ -139,20 +139,15 @@ $test_id"
     app/src/test/*.kt)
       printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./)?gradlew([[:space:]]|$)' \
         || fail "$test_id exact command must execute Gradle through ./gradlew"
-      printf '%s' "$command" | grep -Eq '(^|[[:space:]])(testDebugUnitTest|test[A-Za-z0-9]*UnitTest|([A-Za-z0-9_-]+:)?verifyRoborazzi(Debug)?)([[:space:]]|$)' \
+      if printf '%s' "$command" | grep -Eq '(record|verify|compare|verifyAndRecord)Roborazzi'; then
+        fail "$test_id runs a Roborazzi golden task; visual approval is the ui-verification conformance review, not a pixel gate"
+      fi
+      printf '%s' "$command" | grep -Eq '(^|[[:space:]])(testDebugUnitTest|test[A-Za-z0-9]*UnitTest)([[:space:]]|$)' \
         || fail "$test_id exact command must execute a supported JVM test task"
       printf '%s' "$command" | grep -Fq -- '--tests' \
         || fail "$test_id JVM test command must use --tests for suite scoping"
       printf '%s' "$command" | grep -Fq "$suite" \
         || fail "$test_id exact command does not target JVM suite $suite"
-      if printf '%s' "$test_target" | grep -Fq 'RoborazziTest'; then
-        case "$test_file" in
-          app/src/test/java/*/roborazzi/*RoborazziTest.kt) ;;
-          *) fail "$test_id Roborazzi test source must be under app/src/test/java/**/roborazzi/" ;;
-        esac
-        printf '%s' "$command" | grep -Fq 'verifyRoborazziDebug' \
-          || fail "$test_id Roborazzi test command must execute verifyRoborazziDebug"
-      fi
       ;;
   esac
 
@@ -231,10 +226,7 @@ EOF
         app/src/test/*.kt)
           if printf '%s' "$evidence_command" | grep -Fq -- '--tests' && \
             printf '%s' "$evidence_command" | grep -Fq "$suite"; then
-            if ! printf '%s' "$test_target" | grep -Fq 'RoborazziTest' || \
-              printf '%s' "$evidence_command" | grep -Fq 'verifyRoborazziDebug'; then
-              evidence_targets_suite=1
-            fi
+            evidence_targets_suite=1
           fi
           ;;
       esac

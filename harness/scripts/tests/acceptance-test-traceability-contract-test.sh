@@ -105,7 +105,7 @@ expect_failure "has no successful evidence command scoped to FixtureIntegrationT
 # satisfy an acceptance row that claims visible text styling.
 write_rendered_fixture() {
   rm -rf "$FEATURE_DIR"
-  mkdir -p "$FEATURE_DIR" "$FIXTURE_ROOT/app/src/test/java/example/roborazzi"
+  mkdir -p "$FEATURE_DIR" "$FIXTURE_ROOT/app/src/test/java/example"
 
   printf '%s\n' \
     '{' \
@@ -115,7 +115,7 @@ write_rendered_fixture() {
     '    "acceptance_test_ids": ["TC-US-1-01"],' \
     '    "evidence": [{' \
     '      "test_id": "TC-US-1-01",' \
-    '      "executed_command": "./gradlew app:verifyRoborazziDebug --tests example.RenderedRoborazziTest.markedTextIsRendered",' \
+    '      "executed_command": "./gradlew testDebugUnitTest --tests example.RenderedOutputTest.markedTextIsRendered",' \
     '      "exit_status": 0,' \
     '      "result": "Rendered-output fixture passed"' \
     '    }]' \
@@ -130,7 +130,7 @@ write_rendered_fixture() {
     '' \
     '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|---|' \
-    '| TC-US-1-01 | AC-US-1-01 | JVM visual | `app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt#markedTextIsRendered` | N/A — no API | Render marked text in the deterministic editor fixture. | Following text visibly inherits Bold and matches the approved Pen export. | ./gradlew app:verifyRoborazziDebug --tests example.RenderedRoborazziTest.markedTextIsRendered |' \
+    '| TC-US-1-01 | AC-US-1-01 | JVM visual | `app/src/test/java/example/RenderedOutputTest.kt#markedTextIsRendered` | N/A — no API | Render marked text in the deterministic editor fixture. | Following text visibly inherits Bold (span style on the rendered node). | ./gradlew testDebugUnitTest --tests example.RenderedOutputTest.markedTextIsRendered |' \
     > "$FEATURE_DIR/test-plan.md"
 }
 
@@ -141,14 +141,14 @@ printf '%s\n' \
   'import org.junit.Assert.assertTrue' \
   'import org.junit.Test' \
   '' \
-  'class RenderedRoborazziTest {' \
+  'class RenderedOutputTest {' \
   '  @Test' \
   '  fun markedTextIsRendered() {' \
   '    val marks = listOf("bold")' \
   '    assertTrue("bold" in marks)' \
   '  }' \
   '}' \
-  > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"
+  > "$FIXTURE_ROOT/app/src/test/java/example/RenderedOutputTest.kt"
 expect_failure "must assert the rendered node's AnnotatedString span styles" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture --test US-1
 
@@ -158,18 +158,25 @@ printf '%s\n' \
   '' \
   'import org.junit.Test' \
   '' \
-  'class RenderedRoborazziTest {' \
+  'class RenderedOutputTest {' \
   '  @Test' \
   '  fun markedTextIsRendered() {' \
   '    val text = onNodeWithTag("note_body").fetchSemanticsNode().config[SemanticsProperties.Text].first()' \
   '    assertTrue(text.spanStyles.any { it.item == SpanStyle(fontWeight = FontWeight.Bold) })' \
   '  }' \
   '}' \
-  > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"
+  > "$FIXTURE_ROOT/app/src/test/java/example/RenderedOutputTest.kt"
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \
   .scratch/2026-09-01-fixture --test US-1 >/dev/null
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" \
   .scratch/2026-09-01-fixture --evaluate >/dev/null
+
+# A Roborazzi golden task is never acceptance evidence.
+write_rendered_fixture
+sed -i.bak 's#./gradlew testDebugUnitTest --tests example.RenderedOutputTest.markedTextIsRendered#./gradlew app:verifyRoborazziDebug --tests example.RenderedOutputTest.markedTextIsRendered#' "$FEATURE_DIR/test-plan.md"
+rm -f "$FEATURE_DIR/test-plan.md.bak"
+expect_failure "runs a Roborazzi golden task" \
+  env HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --test US-1
 
 # Route-open ownership regression: an acceptance row that claims opening or
 # navigating to a route must be the named production-journey owner.

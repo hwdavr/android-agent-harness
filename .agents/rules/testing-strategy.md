@@ -77,7 +77,7 @@ Do not use instrumented tests for behavior that a deterministic JVM test proves 
 | Overall project | 80% |
 | New ViewModel classes | 90% |
 | New domain use case classes | 90% |
-| Compose screens/components | Excluded; verify runtime semantics and interaction with instrumented tests when triggered; visual verification is the `ui-verification` conformance review, not screenshot goldens |
+| Compose screens/components | Excluded; verify runtime semantics and interaction with instrumented tests when triggered; visuals pass `ui-verification` conformance review |
 
 Machine-readable verification:
 
