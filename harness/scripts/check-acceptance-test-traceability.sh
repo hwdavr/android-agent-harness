@@ -50,7 +50,7 @@ case "$FEATURE_DIR" in
 esac
 
 FEATURE_JSON="$FEATURE_DIR/feature_list.json"
-CONTRACT="$FEATURE_DIR/sprint-contract.md"
+CONTRACT="$FEATURE_DIR/test-plan.md"
 [ -f "$FEATURE_JSON" ] || fail "missing $FEATURE_JSON"
 [ -f "$CONTRACT" ] || fail "missing $CONTRACT"
 
@@ -62,7 +62,7 @@ route_open_signal_pattern='open(s|ed|ing)?[[:space:]]+(the[[:space:]]+)?(existin
 
 HEADER='| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |'
 grep -Fq "$HEADER" "$CONTRACT" \
-  || fail "sprint-contract.md must use the acceptance table with Test file and method, Shared scenario(s), and Exact command columns"
+  || fail "test-plan.md must use the acceptance table with Test file and method, Shared scenario(s), and Exact command columns"
 
 if [ -n "$SLICE_ID" ]; then
   jq -e --arg id "$SLICE_ID" 'any(.features[]?; .id == $id)' "$FEATURE_JSON" >/dev/null 2>&1 \
@@ -88,7 +88,7 @@ rows=$(
   ' "$CONTRACT"
 )
 
-[ -n "$rows" ] || fail "sprint-contract.md has no parseable acceptance Test ID rows"
+[ -n "$rows" ] || fail "test-plan.md has no parseable acceptance Test ID rows"
 
 seen_ids=""
 checked=0
@@ -102,7 +102,7 @@ while IFS=$'\t' read -r test_id covers_ac test_layer test_target scenarios setup
   fi
 
   if printf '%s\n' "$seen_ids" | grep -Fxq "$test_id"; then
-    fail "$test_id is declared more than once in sprint-contract.md"
+    fail "$test_id is declared more than once in test-plan.md"
   fi
   seen_ids="$seen_ids
 $test_id"

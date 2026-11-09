@@ -71,7 +71,7 @@ write_fixture() {
   printf '%s\n' \
     '# Sprint Contract' \
     '' \
-    '## Rule Applicability Contract' \
+    '## Rule Applicability' \
     '' \
     '| Rule ID | Rule document | Decision | Slice evidence |' \
     '|---|---|---|---|' \
@@ -94,32 +94,32 @@ write_fixture() {
     '|---|---|---|---|---|---|---|---|' \
     '| TC-US-1-01 | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/JourneyTest.kt#returnsToEditor | N/A — no API | Open the picker, select a target, and return to the editor. | The linked label is visible after return. | ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.JourneyTest#returnsToEditor |' \
     '| TC-US-2-01 | AC-US-2-01 | JVM unit | app/src/test/java/example/FormattingTest.kt#togglesBold | N/A — no API | Toggle the local formatting state. | The mark is applied. | ./gradlew testDebugUnitTest --tests example.FormattingTest |' \
-    > "$FEATURE_DIR/sprint-contract.md"
+    > "$FEATURE_DIR/test-plan.md"
 }
 
 write_fixture
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture
 
 sed '/^## Production Journey Planning Contract/,$d' \
-  "$FEATURE_DIR/sprint-contract.md" \
+  "$FEATURE_DIR/test-plan.md" \
   > "$FEATURE_DIR/sprint-contract.tmp"
-mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/test-plan.md"
 expect_failure "is missing the '## Production Journey Planning Contract' section" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture
 
 write_fixture
 sed 's/| US-1 | Yes |/| US-1 | No |/' \
-  "$FEATURE_DIR/sprint-contract.md" \
+  "$FEATURE_DIR/test-plan.md" \
   > "$FEATURE_DIR/sprint-contract.tmp"
-mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/test-plan.md"
 expect_failure "does not match planning row 'No'" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture
 
 write_fixture
 sed 's/| TC-US-1-01 | AC-US-1-01 | Instrumented UI |/| TC-US-1-01 | AC-US-1-01 | JVM unit |/' \
-  "$FEATURE_DIR/sprint-contract.md" \
+  "$FEATURE_DIR/test-plan.md" \
   > "$FEATURE_DIR/sprint-contract.tmp"
-mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/test-plan.md"
 expect_failure "must be planned as an Instrumented UI acceptance test" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture
 

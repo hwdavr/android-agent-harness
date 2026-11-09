@@ -25,20 +25,20 @@ expect_failure() {
   }
 }
 
-missing_summary="$FIXTURE_ROOT/missing-summary"
+missing_summary="$FIXTURE_ROOT/.scratch/2026-11-09-missing-summary"
 mkdir -p "$missing_summary"
-expect_failure "no file matching 'summary_US-1.md'" \
+expect_failure "no 'summary_US-1.md'" \
   bash "$STAGE_GATE" harness-generator orient "$missing_summary" US-1
 
-with_summary="$FIXTURE_ROOT/with-summary"
+with_summary="$FIXTURE_ROOT/.scratch/2026-11-09-with-summary"
 mkdir -p "$with_summary"
 touch "$with_summary/summary_US-1.md"
 bash "$STAGE_GATE" harness-generator orient "$with_summary" US-1 >/dev/null
 
-expect_failure "no file matching 'summary_US-2.md'" \
+expect_failure "no 'summary_US-2.md'" \
   bash "$STAGE_GATE" harness-generator orient "$with_summary" US-2
 
-expect_failure "requires the selected feature id" \
+expect_failure "requires the selected slice id" \
   bash "$STAGE_GATE" harness-generator orient "$with_summary"
 
 echo "PASS: harness-generator Stage 1 requires the exact selected-slice summary file."

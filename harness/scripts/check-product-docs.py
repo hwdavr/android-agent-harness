@@ -134,19 +134,13 @@ def check(root, change_dir=None, summary=None):
         nested = root / "android-agent-harness"
         if workspace.is_relative_to(nested):
             fail("change workspace must not belong to the shared harness")
-        spec = workspace / "spec.md"
+        spec = workspace / "implementation-plan.md"
         if not spec.is_file():
-            versioned = sorted(
-                (p for p in workspace.glob("spec_v*.md") if re.fullmatch(r"spec_v\d+\.md", p.name)),
-                key=lambda p: int(re.search(r"_v(\d+)\.md$", p.name).group(1)),
-            )
-            if not versioned:
-                fail("change workspace has no specification")
-            spec = versioned[-1]
+            fail("change workspace has no implementation-plan.md")
         text = spec.read_text()
         match = re.search(r"^## Product Requirements\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
         if not match:
-            fail("new change specification requires a Product Requirements section")
+            fail("implementation-plan.md requires a Product Requirements section")
         refs = re.findall(r"docs/product/requirements/([a-z0-9-]+\.md)", match.group(1))
         if not refs:
             fail("Product Requirements must reference an existing capability file")

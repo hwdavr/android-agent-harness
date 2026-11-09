@@ -45,10 +45,12 @@ done
 
 [ -n "$FEATURE_DIR" ] && [ -n "$SLICE_ID" ] || usage
 
-CONTRACT="$FEATURE_DIR/sprint-contract.md"
+CONTRACT="$FEATURE_DIR/implementation-plan.md"
+TEST_PLAN="$FEATURE_DIR/test-plan.md"
 FEATURE_LIST="$FEATURE_DIR/feature_list.json"
 
 [ -f "$CONTRACT" ] || fail "missing $CONTRACT"
+[ -f "$TEST_PLAN" ] || fail "missing $TEST_PLAN"
 [ -f "$FEATURE_LIST" ] || fail "missing $FEATURE_LIST"
 command -v jq >/dev/null 2>&1 || fail "jq is required to print the context index"
 
@@ -68,12 +70,12 @@ case "$PLATFORM_VALIDATION_REQUIRED" in
 esac
 
 RULE_ROWS=$(awk '
-  /^## Rule Applicability Contract/ { in_contract = 1; next }
+  /^## Rule Applicability/ { in_contract = 1; next }
   in_contract && /^## / { exit }
   in_contract && /^\| (ARCH|IMPL|TEST|SUI|L10N|NAV|API|OBS|ANL|SEC) \|/ { print }
 ' "$CONTRACT")
 
-[ -n "$RULE_ROWS" ] || fail "$CONTRACT has no Rule Applicability Contract rows"
+[ -n "$RULE_ROWS" ] || fail "$CONTRACT has no Rule Applicability rows"
 
 RULE_IDS="ARCH IMPL TEST SUI L10N NAV API OBS ANL SEC"
 REQUIRED_RULES=""
@@ -157,6 +159,7 @@ if [ "$(printf '%s' "$SLICE_JSON" | jq -r '.affects_ui // false')" = "true" ] \
 fi
 STAGE_TESTING_FILES_JSON=$(to_json_array "$STAGE_TESTING_FILES")
 CONTRACT_HASH=$(sha256_file "$CONTRACT")
+TEST_PLAN_HASH=$(sha256_file "$TEST_PLAN")
 FEATURE_LIST_HASH=$(sha256_file "$FEATURE_LIST")
 
 jq -n \
@@ -164,6 +167,8 @@ jq -n \
   --arg contract_path "$CONTRACT" \
   --arg feature_list_path "$FEATURE_LIST" \
   --arg contract_hash "$CONTRACT_HASH" \
+  --arg test_plan_path "$TEST_PLAN" \
+  --arg test_plan_hash "$TEST_PLAN_HASH" \
   --arg feature_list_hash "$FEATURE_LIST_HASH" \
   --argjson platform_validation_required "$PLATFORM_VALIDATION_REQUIRED" \
   --argjson slice_metadata "$SLICE_JSON" \
@@ -175,9 +180,11 @@ jq -n \
   '{
     slice: $slice,
     authority: {
-      sprint_contract: $contract_path,
+      implementation_plan: $contract_path,
+      test_plan: $test_plan_path,
       feature_list: $feature_list_path,
-      sprint_contract_sha256: $contract_hash,
+      implementation_plan_sha256: $contract_hash,
+      test_plan_sha256: $test_plan_hash,
       feature_list_sha256: $feature_list_hash
     },
     rule_context: {
@@ -197,8 +204,9 @@ jq -n \
     },
     acceptance_test_ids: ($slice_metadata.acceptance_test_ids // []),
     source_pointers: {
-      rule_applicability: "sprint-contract.md#Rule Applicability Contract",
-      slice: ("sprint-contract.md#" + $slice),
+      rule_applicability: "implementation-plan.md#rule-applicability",
+      slice: ("test-plan.md#" + ($slice | ascii_downcase)),
+      tasks: ("tasks.md#" + $slice),
       execution_metadata: ("feature_list.json#features[id=" + $slice + "]")
     }
   }'

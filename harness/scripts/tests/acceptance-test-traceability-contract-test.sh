@@ -54,7 +54,7 @@ write_fixture() {
     '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|---|' \
     '| TC-US-1-01 | AC-US-1-01 | JVM integration | app/src/test/java/example/FixtureIntegrationTest.kt#loadsSharedScenario | sharedContracts/test-scenarios/fixture_001.json | Load the shared response through the production fixture path. | The shared scenario is decoded and the domain result is asserted. | ./gradlew testDebugUnitTest --tests example.FixtureIntegrationTest |' \
-    > "$FEATURE_DIR/sprint-contract.md"
+    > "$FEATURE_DIR/test-plan.md"
 
   printf '%s\n' \
     'package example' \
@@ -131,7 +131,7 @@ write_rendered_fixture() {
     '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|---|' \
     '| TC-US-1-01 | AC-US-1-01 | JVM visual | `app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt#markedTextIsRendered` | N/A — no API | Render marked text in the deterministic editor fixture. | Following text visibly inherits Bold and matches the approved Pen export. | ./gradlew app:verifyRoborazziDebug --tests example.RenderedRoborazziTest.markedTextIsRendered |' \
-    > "$FEATURE_DIR/sprint-contract.md"
+    > "$FEATURE_DIR/test-plan.md"
 }
 
 write_rendered_fixture
@@ -205,7 +205,7 @@ write_journey_fixture() {
     '|---|---|---|---|---|---|---|---|' \
     '| TC-US-1-01 | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/JourneyTest.kt#returnsToEditor | N/A — no API | Open the picker, select a target, and return to the editor. | The linked label is visible after return. | ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.JourneyTest#returnsToEditor |' \
     '| TC-US-1-02 | AC-US-1-02 | Instrumented UI | app/src/androidTest/java/example/LinkScreenTest.kt#opensTarget | N/A — no API | Render a valid inserted link and tap its semantic link node. | Label is tappable and styled. | ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.LinkScreenTest#opensTarget |' \
-    > "$FEATURE_DIR/sprint-contract.md"
+    > "$FEATURE_DIR/test-plan.md"
 }
 
 ROUTE_OPEN_CLAIM='and opens the existing target Editor route'
@@ -213,17 +213,17 @@ ROUTE_OPEN_CLAIM='and opens the existing target Editor route'
 # The named journey owner may claim the route-open outcome.
 write_journey_fixture
 sed "s/The linked label is visible after return./The linked label is visible after return $ROUTE_OPEN_CLAIM./" \
-  "$FEATURE_DIR/sprint-contract.md" \
+  "$FEATURE_DIR/test-plan.md" \
   > "$FEATURE_DIR/sprint-contract.tmp"
-mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/test-plan.md"
 HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
 
 # A non-owner row claiming the same outcome must be rejected.
 write_journey_fixture
 sed "s/Label is tappable and styled./Label is tappable $ROUTE_OPEN_CLAIM./" \
-  "$FEATURE_DIR/sprint-contract.md" \
+  "$FEATURE_DIR/test-plan.md" \
   > "$FEATURE_DIR/sprint-contract.tmp"
-mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/test-plan.md"
 expect_failure "TC-US-1-02 claims an open/navigate-to-route outcome but is not the named production-journey owner" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
 
@@ -234,8 +234,8 @@ HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixtu
 # Legacy connected-test commands are rejected for instrumented acceptance cases.
 write_journey_fixture
 sed 's|ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.JourneyTest#|./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.JourneyTest#|' \
-  "$FEATURE_DIR/sprint-contract.md" > "$FEATURE_DIR/sprint-contract.tmp"
-mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/sprint-contract.md"
+  "$FEATURE_DIR/test-plan.md" > "$FEATURE_DIR/sprint-contract.tmp"
+mv "$FEATURE_DIR/sprint-contract.tmp" "$FEATURE_DIR/test-plan.md"
 expect_failure "must use the direct AndroidJUnitRunner wrapper" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
 
