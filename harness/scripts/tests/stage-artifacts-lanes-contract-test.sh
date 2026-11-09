@@ -238,6 +238,7 @@ expect_fail "reuses unregistered components ['FancyChip']" feature-delivery ux-d
 
 write_ui_contract '`TopActionBar`, `NoteCard`' complete
 write_feature_plans
+expect_pass feature-delivery analyze .scratch/2026-11-09-share-expiry
 expect_pass feature-delivery implementation-plan .scratch/2026-11-09-share-expiry
 
 python3 - "$W/implementation-plan.md" <<'PY'

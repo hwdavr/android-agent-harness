@@ -245,6 +245,23 @@ replace "$CAPABILITY" "**Status**: Approved — user, 2026-11-09" "**Status**: C
 write_plan single
 expect_failure "**Status** is not Approved"
 
+# --pre-approval: a clarified block with no recorded hash can be analyzed before approval.
+write_single
+replace "$CAPABILITY" "**Status**: Approved — user, 2026-11-09" "**Status**: Clarified"
+python3 - "$FEATURE_DIR/implementation-plan.md" <<'PY2'
+import re, sys
+p = sys.argv[1]
+text = open(p, encoding="utf-8").read()
+open(p, "w", encoding="utf-8").write(re.sub(r"`[0-9a-f]{64}`", "`<64 hex characters>`", text))
+PY2
+bash "$VALIDATOR" "$FEATURE_DIR" --project-root "$FIXTURE_ROOT" --pre-approval >/dev/null ||
+  fail_test "pre-approval analysis rejected a clarified, unhashed block"
+expect_failure "approved block SHA-256 is not recorded"
+replace "$FEATURE_DIR/test-plan.md" "| TC-02 | AC-003 |" "| TC-02 | AC-002 |"
+if bash "$VALIDATOR" "$FEATURE_DIR" --project-root "$FIXTURE_ROOT" --pre-approval >/dev/null 2>&1; then
+  fail_test "pre-approval analysis must still enforce acceptance coverage"
+fi
+
 write_single
 replace "$CAPABILITY" "##### FR-002 — Invitation expiry (New)" "##### FR-001 — Invitation expiry (New)"
 write_plan single

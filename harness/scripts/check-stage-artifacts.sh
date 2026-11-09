@@ -3,8 +3,12 @@
 #
 # Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> <workspace> [feature-id]
 #   workspace: .scratch/<YYYY-MM-DD>-<feature-id>/ (every lane; docs/current/ is retired)
-#   feature-delivery:  specify | ui-contract | ux-design | implementation-plan | ui-verification | testing
-#   bug-fixing:        bug-context | bug-reproduction | implementation-plan | ui-verification | testing
+#   feature-delivery:  specify | ui-contract | ux-design | analyze | implementation-plan | ui-verification | testing
+#   bug-fixing:        bug-context | bug-reproduction | analyze | implementation-plan | ui-verification | testing
+#
+# analyze             = every planning check before the package is presented for approval
+#                       (block Status and recorded SHA-256 not yet required)
+# implementation-plan = the same checks after approval, including the approval fields
 #
 # implementation-plan.md owns how the code changes and the Rule Applicability matrix; test-plan.md
 # owns all test material (bug Reproduction Test and QA handoff, Spec Coverage Matrix, acceptance
@@ -29,8 +33,8 @@ FEATURE_ID="${4:-}"
 
 usage() {
   echo "Usage: $0 <workflow> <stage> <workspace> [feature-id]" >&2
-  echo "  feature-delivery:  specify | ui-contract | ux-design | implementation-plan | ui-verification | testing" >&2
-  echo "  bug-fixing:        bug-context | bug-reproduction | implementation-plan | ui-verification | testing" >&2
+  echo "  feature-delivery:  specify | ui-contract | ux-design | analyze | implementation-plan | ui-verification | testing" >&2
+  echo "  bug-fixing:        bug-context | bug-reproduction | analyze | implementation-plan | ui-verification | testing" >&2
   echo "  harness-generator: orient <workspace> <feature-id>" >&2
 }
 
@@ -171,7 +175,11 @@ plan_lane() {
 }
 
 require_planning_contracts() {
-  bash "$SCRIPT_DIR/check-spec-plan-consistency.sh" "$DOCS_DIR" --project-root "$PROJECT_ROOT"
+  if [ "$STAGE" = "analyze" ]; then
+    bash "$SCRIPT_DIR/check-spec-plan-consistency.sh" "$DOCS_DIR" --project-root "$PROJECT_ROOT" --pre-approval
+  else
+    bash "$SCRIPT_DIR/check-spec-plan-consistency.sh" "$DOCS_DIR" --project-root "$PROJECT_ROOT"
+  fi
   if [ "$(plan_lane)" = "sliced" ]; then
     # Slice contracts exist only in the sliced lane (feature_list.json, tasks.md, per-story tests).
     bash "$SCRIPT_DIR/check-platform-evidence.sh" "$DOCS_DIR" --planning
@@ -452,7 +460,7 @@ case "$WORKFLOW/$STAGE" in
       echo "N/A: the feature block has no Screen States (no UI scope)."
     fi
     ;;
-  feature-delivery/implementation-plan|bug-fixing/implementation-plan)
+  feature-delivery/analyze|bug-fixing/analyze|feature-delivery/implementation-plan|bug-fixing/implementation-plan)
     require_tracker_row
     require_plan_rules "$WORKFLOW implementation plan"
     compose_spec

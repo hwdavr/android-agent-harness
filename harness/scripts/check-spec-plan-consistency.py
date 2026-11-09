@@ -7,8 +7,11 @@ test-plan.md agree — every AC-### has a primary acceptance test, Rule Applicab
 Sliced lane (two or more user stories): additionally tasks.md and feature_list.json agree with the
 stories, the Spec Coverage Matrix, the per-story acceptance tests, and the journey contract.
 
+--pre-approval runs every check except the approval fields (block **Status** Approved and the
+recorded block SHA-256), so the package can be analyzed before it is presented for approval.
+
 Usage:
-  python3 harness/scripts/check-spec-plan-consistency.py <feature-dir> [--project-root <dir>]
+  python3 harness/scripts/check-spec-plan-consistency.py <feature-dir> [--project-root <dir>] [--pre-approval]
 """
 
 from __future__ import annotations
@@ -97,7 +100,7 @@ class Spec:
         self.files: list[str] = []
 
 
-def read_requirements(r: Report, plan: str, feature_id: str, root: Path) -> Spec:
+def read_requirements(r: Report, plan: str, feature_id: str, root: Path, pre_approval: bool = False) -> Spec:
     spec = Spec()
     rows = [row for row in table_rows(section(plan, "Product Requirements"))
             if row and "docs/product/requirements/" in row[0]]
@@ -130,13 +133,15 @@ def read_requirements(r: Report, plan: str, feature_id: str, root: Path) -> Spec
             r.fail(f"{rel}: {error}")
             continue
         actual = hashlib.sha256(block.encode("utf-8")).hexdigest()
-        if not SHA.match(recorded):
+        if pre_approval:
+            pass
+        elif not SHA.match(recorded):
             r.fail(f"{rel}: approved block SHA-256 is not recorded in implementation-plan.md (current: {actual})")
         elif recorded != actual:
             r.fail(f"{rel}: feature block changed after approval (recorded {recorded}, current {actual}); re-approve the specification")
         if "[NEEDS CLARIFICATION" in block:
             r.fail(f"{rel}: feature block still contains [NEEDS CLARIFICATION] markers")
-        if not re.search(r"^\*\*Status\*\*:.*\bApproved\b", block, re.M):
+        if not pre_approval and not re.search(r"^\*\*Status\*\*:.*\bApproved\b", block, re.M):
             r.fail(f"{rel}: feature block **Status** is not Approved")
 
         frs = set(FR_DEF.findall(block))
@@ -327,7 +332,7 @@ def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path) -> None
                 r.fail(f"feature_list.json {sid} production_journey.required disagrees with test-plan.md")
 
 
-def check(workspace: Path, root: Path) -> Report:
+def check(workspace: Path, root: Path, pre_approval: bool = False) -> Report:
     r = Report()
     plan_path, test_plan_path = workspace / "implementation-plan.md", workspace / "test-plan.md"
     for p in (plan_path, test_plan_path):
@@ -350,7 +355,7 @@ def check(workspace: Path, root: Path) -> Report:
         r.fail("implementation-plan.md must declare '**Lane**: single' or '**Lane**: sliced'")
         return r
 
-    spec = read_requirements(r, plan, feature_id, root)
+    spec = read_requirements(r, plan, feature_id, root, pre_approval)
     check_rules(r, plan)
     (check_single if m.group(1) == "single" else check_sliced)(r, spec, test_plan, workspace)
     return r
@@ -360,17 +365,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("feature_dir")
     parser.add_argument("--project-root", default=os.environ.get("HARNESS_PROJECT_ROOT", os.getcwd()))
+    parser.add_argument("--pre-approval", action="store_true",
+                        help="skip the approval fields (block Status and recorded SHA-256)")
     args = parser.parse_args()
     root = Path(args.project_root).resolve()
     workspace = Path(args.feature_dir)
     workspace = (workspace if workspace.is_absolute() else root / workspace).resolve()
-    report = check(workspace, root)
+    report = check(workspace, root, args.pre_approval)
     for message in report.failures:
         print(f"FAIL: {message}", file=sys.stderr)
     if report.failures:
         print(f"FAIL: analyze gate found {len(report.failures)} inconsistency(ies) in {workspace.name}", file=sys.stderr)
         return 1
-    print(f"OK: requirements and plans are consistent for {workspace.name}")
+    suffix = " (pre-approval: block Status and SHA-256 not yet required)" if args.pre_approval else ""
+    print(f"OK: requirements and plans are consistent for {workspace.name}{suffix}")
     return 0
 
 
