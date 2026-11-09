@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harness Router"
+  short_description: "Route project work to the right harness workflow"
+  default_prompt: "Use $harness-router to identify the right project workflow and continue from the first incomplete stage."
