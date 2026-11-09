@@ -20,7 +20,7 @@ expect_failure() {
   local exit_code
   set +e
   output=$(HARNESS_PROJECT_ROOT="$fixture" bash "$STAGE_CHECKER" \
-    feature-delivery testing "$fixture" 2>&1)
+    feature-delivery testing "$fixture/.scratch/2026-11-09-fixture" 2>&1)
   exit_code=$?
   set -e
   [ "$exit_code" -ne 0 ] || fail_test "invalid fixture unexpectedly passed: $fixture"
@@ -34,10 +34,16 @@ create_fixture() {
   local fixture="$1"
   local sui_decision="$2"
   local nav_decision="$3"
-  mkdir -p "$fixture"
-  printf '%s\n' '# Stage Summary' > "$fixture/summary_v1.md"
-  cat > "$fixture/spec_v1.md" <<EOF
-# Feature Spec
+  local ws="$fixture/.scratch/2026-11-09-fixture"
+  mkdir -p "$ws" "$fixture/docs/product/requirements"
+  printf '%s\n' '# Capability' '' '## Planned changes' '' '<!-- feature: fixture -->' \
+    '### fixture — Stage gate fixture' '' '**Status**: Approved — user, 2026-11-09' '' \
+    '#### Requirements' '' '##### FR-001 — Fixture behavior (New)' '' '**Acceptance criteria**' '' \
+    '- **AC-001**: Given the fixture, when the gate runs, then it validates the stage.' \
+    '<!-- /feature: fixture -->' > "$fixture/docs/product/requirements/fixture.md"
+  printf '%s\n' '# Stage Summary' > "$ws/summary.md"
+  cat > "$ws/implementation-plan.md" <<EOF
+# Implementation Plan
 
 ## Rule Applicability
 
@@ -55,10 +61,10 @@ create_fixture() {
 | SEC | Security | Conditional | Not applicable — fixture isolates the stage gate. | Isolated fixture. | None. |
 EOF
 
-  cat > "$fixture/test_plan_v1.md" <<'EOF'
+  cat > "$ws/test-plan.md" <<'EOF'
 # Test Plan
 
-Canonical decisions: `spec_v1.md#rule-applicability`.
+Canonical decisions: [`implementation-plan.md#rule-applicability`](implementation-plan.md#rule-applicability).
 
 ## Rule Applicability Test Mapping
 
@@ -68,21 +74,21 @@ Canonical decisions: `spec_v1.md#rule-applicability`.
 EOF
 
   if [ "$sui_decision" = "Required" ]; then
-    printf '%s\n' '| SUI | UI contract and rendered state tests. |' >> "$fixture/test_plan_v1.md"
+    printf '%s\n' '| SUI | UI contract and rendered state tests. |' >> "$ws/test-plan.md"
   fi
   if [ "$nav_decision" = "Required" ]; then
-    printf '%s\n' '| NAV | Production-entry journey boundary. |' >> "$fixture/test_plan_v1.md"
+    printf '%s\n' '| NAV | Production-entry journey boundary. |' >> "$ws/test-plan.md"
   fi
 }
 
 VALID="$FIXTURE_ROOT/valid"
 create_fixture "$VALID" "Not applicable — logic-only fixture." "Not applicable — no navigation."
-HARNESS_PROJECT_ROOT="$VALID" bash "$STAGE_CHECKER" feature-delivery testing "$VALID" >/dev/null ||
+HARNESS_PROJECT_ROOT="$VALID" bash "$STAGE_CHECKER" feature-delivery testing "$VALID/.scratch/2026-11-09-fixture" >/dev/null ||
   fail_test "valid logic-only feature-delivery Testing artifacts did not pass"
 
 MISSING_TEST_MAPPING="$FIXTURE_ROOT/missing-test-mapping"
 create_fixture "$MISSING_TEST_MAPPING" "Not applicable — logic-only fixture." "Not applicable — no navigation."
-python3 - "$MISSING_TEST_MAPPING/test_plan_v1.md" <<'PY'
+python3 - "$MISSING_TEST_MAPPING/.scratch/2026-11-09-fixture/test-plan.md" <<'PY'
 from pathlib import Path
 import sys
 path = Path(sys.argv[1])
@@ -92,12 +98,12 @@ expect_failure "$MISSING_TEST_MAPPING" "missing the required TEST evidence mappi
 
 MISSING_PLAN="$FIXTURE_ROOT/missing-test-plan"
 create_fixture "$MISSING_PLAN" "Not applicable — logic-only fixture." "Not applicable — no navigation."
-rm "$MISSING_PLAN/test_plan_v1.md"
-expect_failure "$MISSING_PLAN" "no file matching 'test_plan_v*.md'"
+rm "$MISSING_PLAN/.scratch/2026-11-09-fixture/test-plan.md"
+expect_failure "$MISSING_PLAN" "no 'test-plan.md'"
 
 MISSING_UI_CONTRACT="$FIXTURE_ROOT/missing-ui-contract"
 create_fixture "$MISSING_UI_CONTRACT" "Required" "Not applicable — no navigation."
-expect_failure "$MISSING_UI_CONTRACT" "no file matching 'UI_contract.md'"
+expect_failure "$MISSING_UI_CONTRACT" "no 'UI_contract.md'"
 
 MISSING_NAV_BOUNDARY="$FIXTURE_ROOT/missing-nav-boundary"
 create_fixture "$MISSING_NAV_BOUNDARY" "Not applicable — logic-only fixture." "Required"

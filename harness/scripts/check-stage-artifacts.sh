@@ -464,7 +464,7 @@ case "$WORKFLOW/$STAGE" in
     require_planning_contracts
     ;;
   feature-delivery/ui-verification|bug-fixing/ui-verification)
-    require_plan_rules "$WORKFLOW UI verification"
+    require_file "implementation-plan.md" "implementation plan (Rule Applicability validated at the implementation-plan stage)"
     compose_spec
     if spec_has_ui "$COMPOSED_SPEC"; then
       require_ui_verification
@@ -473,7 +473,7 @@ case "$WORKFLOW/$STAGE" in
     fi
     ;;
   feature-delivery/testing|bug-fixing/testing)
-    require_plan_rules "$WORKFLOW testing"
+    require_file "implementation-plan.md" "implementation plan (Rule Applicability validated at the implementation-plan stage)"
     compose_spec
     require_testing_evidence "$WORKFLOW testing"
     ;;

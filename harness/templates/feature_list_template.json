@@ -26,7 +26,7 @@
       "area": "editor",
       "title": "Create a new item",
       "description": "Implement domain use case and Room entity/DAO to create and persist items.",
-      "ui_design": "docs/current/design/home_screen.png",
+      "ui_design": "design/home_screen.png",
       "user_visible_behavior": "User can tap add button to create a new item.",
       "affects_ui": true,
       "requires_visual_verification": true,
@@ -43,15 +43,13 @@
       },
       "status": "not_started",
       "acceptance_test_ids": [
-        "TC-US-1-01",
-        "TC-US-1-VIS-001"
+        "TC-US-1-01"
       ],
       "verification": [
-        "ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class com.example.notesapp.ItemTests",
-        "./gradlew app:verifyRoborazziDebug --tests \"com.example.notesapp.ItemRoborazziTest.captureItemScreen\""
+        "ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class com.example.notesapp.ItemTests"
       ],
       "evidence": [],
-      "notes": ""
+      "notes": "requires_visual_verification marks the final UI slice that owns the conformance review."
     },
     {
       "id": "US-2",
@@ -59,7 +57,7 @@
       "area": "editor",
       "title": "Edit existing item",
       "description": "Update existing item in Room database and update ViewModel state.",
-      "ui_design": "docs/current/design/editor_screen.png",
+      "ui_design": "design/editor_screen.png",
       "user_visible_behavior": "User can modify item text and changes persist immediately.",
       "affects_ui": true,
       "requires_visual_verification": false,
@@ -84,5 +82,6 @@
       "evidence": [],
       "notes": ""
     }
-  ]
+  ],
+  "lane": "sliced — feature_list.json is used only in the sliced lane (two or more user stories)"
 }

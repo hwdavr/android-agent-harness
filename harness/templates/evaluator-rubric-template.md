@@ -40,16 +40,15 @@ If any required answer is `No`, the evaluator MUST score the feature below `5.0 
 
 If any required answer is `No`, the evaluator MUST use `Revise`.
 
-### Visual Verification Hard Gate *(when `requires_visual_verification == true`)*
+### UI Conformance Review Hard Gate *(when the slice owns the conformance review: `requires_visual_verification == true`)*
 
-- Dedicated JVM `*RoborazziTest.kt` renders every visual state and calls `captureRoboImage()` with an approved Pen export: Yes / No / N/A
-- Every visual acceptance command and receipt runs `./gradlew app:verifyRoborazziDebug`: Yes / No / N/A
-- `ui_verification.json` present and passes `check-ui-verification-artifact.sh`: Yes / No / N/A
-- `reference-anchor-verification.md` references `*RoborazziTest` methods in JVM proof column: Yes / No / N/A
-- Canonical `pen_source`/`pen_node_id` and approved Pen-export PNG are declared: Yes / No / N/A
-- `./gradlew app:verifyRoborazziDebug` exits 0 without recording an implementation golden; component-scoped references are used when surrounding screen content differs: Yes / No / N/A
-- `check-visual-evidence-contract.sh` exits 0: Yes / No / N/A
-- Rich-text/inline-formatting appearance claims have `captureRoboImage()` evidence in the named `*RoborazziTest` method: Yes / No / N/A
+- Every `UI_contract.md` state has a review capture rendered at its Viewport (Pen frame size and density): Yes / No / N/A
+- Every state's structural check (`testTag`s present, ordered, bounds within tolerance) passes: Yes / No / N/A
+- The user approved every state side by side with its approved design in `ui_verification.json`: Yes / No / N/A
+- `ui_verification.json` passes `check-ui-verification-artifact.sh`; no screenshot golden was recorded or compared: Yes / No / N/A
+- Each state's reused registered components are called from the changed UI files, and the compose "Registered design-system components" rule passes: Yes / No / N/A
+- `check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate` exits 0: Yes / No / N/A
+- Rich-text/inline-formatting appearance claims assert the rendered AnnotatedString span styles: Yes / No / N/A
 
 If any required answer is `No`, the evaluator MUST score `Verification` below `5.0 / 5` and use `Revise`.
 
@@ -58,7 +57,7 @@ If any required answer is `No`, the evaluator MUST score `Verification` below `5
 | File | Present | Quality | Notes |
 |------|---------|---------|-------|
 | feature_list.json | Yes | Complete | 15 features, all pass with evidence |
-| progress.md | Yes | Complete | Session log with benchmark results |
+| summary.md / summary_<slice>.md | Yes | Complete | Stage evidence and execution metrics |
 | session-handoff.md | Yes | Complete | Full handoff with decisions and files modified |
 | clean-state-checklist.md | Yes | Complete | 30 check items across 7 categories |
 | evaluator-rubric.md | Yes | Complete | This file |

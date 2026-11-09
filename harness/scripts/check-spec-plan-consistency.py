@@ -158,13 +158,16 @@ def read_requirements(r: Report, plan: str, feature_id: str, root: Path) -> Spec
 
 
 def check_rules(r: Report, plan: str) -> None:
-    rules = {row[0]: row for row in table_rows(section(plan, "Rule Applicability")) if row}
+    rows = table_rows(section(plan, "Rule Applicability"))
+    header = rows[0] if rows else []
+    column = next((i for i, cell in enumerate(header) if cell.startswith("Decision")), 2)
+    rules = {unquote(row[0]): row for row in rows[1:] if row}
     for rule in RULE_IDS:
         row = rules.get(rule)
-        if not row or len(row) < 3:
+        if not row or len(row) <= column:
             r.fail(f"implementation-plan.md Rule Applicability is missing the {rule} row")
             continue
-        decision = row[2]
+        decision = row[column]
         if not (decision == "Required" or re.match(r"^Not applicable — \S", decision)
                 or re.match(r"^Exception — approved by \S", decision)):
             r.fail(f"implementation-plan.md Rule Applicability {rule} has an unsupported decision: '{decision}'")
