@@ -43,9 +43,17 @@ openpencil eval <candidate.fig> -w -c '<minimal Figma Plugin API change>'
 
 ## Verify
 
-- **Structural**: compare `openpencil tree` / `query` output before and after; every unrelated
-  screen and node ID is unchanged and new nodes have the intended parent. `openpencil lint
-  <candidate.fig> --json` must report no new findings in the edited frames.
+- **Structural**: compare the source and freshly reopened candidate using
+  `openpencil diff files <source.fig> <candidate.fig> --json` and persisted source-GUID
+  inventories captured from each document. Every pre-existing unrelated saved layer must retain
+  its source GUID, name, type, and parent source GUID; the structural diff must show no changes
+  to unrelated layers. Inspect each allowed change and ensure new nodes have the intended parent.
+  Scene-graph IDs displayed by OpenPencil may be generated afresh on load and are not a substitute
+  for persisted source GUIDs. Resolve the actual candidate screen node IDs after the fresh reopen,
+  ensure they are unique and valid, and record those IDs in the UI contract. If persisted source
+  GUIDs, the structural diff, or their interpretation cannot be obtained, fail the check rather
+  than assuming preservation. `openpencil lint <candidate.fig> --json` must report no new findings
+  in the edited frames.
 - **Visual**: `openpencil export <candidate.fig> --node <frame-id> -o <png>`, then view the PNG.
   Export at scale 1 so the PNG matches the frame's dp size (the Viewport in `UI_contract.md`).
 - Re-read the candidate in a fresh command (for example `openpencil info <candidate.fig>`) to prove
