@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "purpose": "Mockup-generation target for the Pen design (appearance, size, locale, content states). The implementation is approved by the conformance review in ui_verification.json, never compared pixel-for-pixel with these references.",
+  "purpose": "Mockup-generation target for the design-tool design (appearance, size, locale, content states). The implementation is approved by the conformance review in ui_verification.json, never compared pixel-for-pixel with these references.",
   "target_id": "<feature>-<appearance>-<device>-<locale>",
   "appearance": "light",
   "device": "Pixel 8",
@@ -9,8 +9,9 @@
     "height": 915
   },
   "locale": "en-US",
-  "pen_source": "../UI_design/fun_photo_editor.pen",
-  "pen_node_id": "<pen-frame-or-node-id>",
+  "design_tool": "<pen.dev | openpencil — from UX/design-tool.json>",
+  "design_source": "<UX/NotesApp.pen | UX/NotesApp.fig>",
+  "design_node_id": "<screen-frame node id>",
   "states": {
     "<stable-content-state-id>": {
       "content_state_id": "<stable-content-state-id>",

@@ -144,6 +144,13 @@ sed 's/rotate-node/crop-node/' "$FIXTURE/original-contract" > "$C"
 expect_failure "design node reused across states" python3 "$CHECK" "$C"
 sed 's|design/source.pen|../UI_design/../../design/source.pen|' "$FIXTURE/original-contract" > "$C"
 expect_failure "unsafe design path" python3 "$CHECK" "$C"
+# OpenPencil sources (.fig) are design-tool sources too; a screen-frame node is still required.
+printf 'Fig fixture' > "$W/design/source.fig"
+sed 's|design/source.pen|design/source.fig|g' "$FIXTURE/original-contract" > "$C"
+python3 "$CHECK" "$C" >/dev/null
+sed -e 's|design/source.pen|design/source.fig|g' -e 's/| crop-node | screen-frame |/| crop-node | component |/' "$FIXTURE/original-contract" > "$C"
+expect_failure "design-tool state crop needs a top-level screen-frame node" python3 "$CHECK" "$C"
+rm "$W/design/source.fig"
 cp "$FIXTURE/original-contract" "$C"
 mv "$W/design/mockup_rotate.png" "$FIXTURE/rotate.bak"
 expect_failure "missing or empty design PNG" python3 "$CHECK" "$C"

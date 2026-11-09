@@ -52,11 +52,12 @@ Sliced lane: ⛔ STOP for block approval. Single lane: continue; approval comes 
 **INVOKE** `ux-design`. Input: the block's Screen States and Navigation, supplied visual inputs, and
 `docs/product/design_system.md` with its Component Registry.
 
-1. Write `$FEATURE_DIR/UI_contract.md` (every state, viewport = Pen frame size, controls, fixtures,
+1. Write `$FEATURE_DIR/UI_contract.md` (every state, viewport = design frame size, controls, fixtures,
    IME behavior; design references and reused components may be `Pending`). Gate:
    `check-stage-artifacts.sh feature-delivery ui-contract "$FEATURE_DIR"`.
-2. **INVOKE** `pen-design-editor` with that contract. Design from registered components; record each
-   state's Pen node, export, and reused components. Gate:
+2. **INVOKE** `ui-design-tool` with that contract; it drives the tool set in `UX/design-tool.json`
+   (pen.dev or OpenPencil). Design from registered components; record each state's design node,
+   export, and reused components. Gate:
    `check-stage-artifacts.sh feature-delivery ux-design "$FEATURE_DIR"`.
 
 Sliced lane: ⛔ STOP for design approval. Single lane: continue; the design is approved with the

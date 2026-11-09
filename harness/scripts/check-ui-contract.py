@@ -113,10 +113,15 @@ def registry(design_system):
     return names
 
 
+# Native design-tool sources (UX/design-tool.json): pen.dev `.pen`, OpenPencil `.fig`.
+DESIGN_SOURCE_SUFFIXES = (".pen", ".fig")
+
+
 def existing_path(contract, value):
     parts = Path(value).parts
-    sibling_pen = len(parts) == 3 and parts[0] == ".." and parts[1] == "UI_design" and parts[2].endswith(".pen")
-    if Path(value).is_absolute() or (".." in parts and not sibling_pen):
+    sibling_source = (len(parts) == 3 and parts[0] == ".." and parts[1] == "UI_design"
+                      and parts[2].endswith(DESIGN_SOURCE_SUFFIXES))
+    if Path(value).is_absolute() or (".." in parts and not sibling_source):
         fail(f"unsafe design path: {value}")
     candidates = [contract.parent / value, Path.cwd() / value]
     return next((path for path in candidates if path.is_file() and path.stat().st_size > 0), None)
@@ -283,13 +288,13 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
         if any(pending) and not all(pending):
             fail(f"state {key[1]} must complete all design reference fields or mark all four Pending")
         if all(pending) and not inventory_only:
-            fail(f"state {key[1]} has pending design references; complete Pen design before UX approval or planning")
+            fail(f"state {key[1]} has pending design references; complete the design before UX approval or planning")
         source, node, role = row["Design source"], row["Design node ID"], row["Design node role"]
         if not all(pending) and not existing_path(contract, source):
             fail(f"missing or empty design source: {source}")
-        if not all(pending) and source.endswith(".pen"):
+        if not all(pending) and source.endswith(DESIGN_SOURCE_SUFFIXES):
             if node.lower() == "external" or role != "screen-frame":
-                fail(f"Pen state {key[1]} needs a top-level screen-frame node")
+                fail(f"design-tool state {key[1]} needs a top-level screen-frame node")
         elif not all(pending) and (node.lower() != "external" or role != "external-screen"):
             fail(f"external design state {key[1]} must use node ID external and role external-screen")
         if not all(pending):
