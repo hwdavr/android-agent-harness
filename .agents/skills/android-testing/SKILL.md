@@ -29,16 +29,16 @@ approved behavior before invoking this skill.
 **Then load only the selected test-layer guidance:**
 - `rules/testing-practices.md` for test structure, doubles, reliability, and assertion quality
 - `skills/android-unit-test/SKILL.md` for unit or JVM integration coverage
-- `skills/ui-verification/SKILL.md` for approved visual comparison through JVM Roborazzi tests
-- `rules/testing-runtime-evidence.md` for instrumented UI, navigation, platform, or other runtime claims; visual claims use the Roborazzi contract
+- `skills/ui-verification/SKILL.md` for the UI conformance review (review captures at the Pen frame size, structural checks, user approval)
+- `rules/testing-runtime-evidence.md` for instrumented UI, navigation, platform, or other runtime claims; visual claims use the conformance review, never a screenshot golden
 - `skills/shared-json-scenarios/SKILL.md` only when an API endpoint or shared fixture is in scope
 - `rules/android-security.md` when the test covers a security boundary; use its
   required real-runtime boundary evidence and fail loudly when the runtime is unavailable
 
-**Adhoc workflows** (`feature-delivery`, `bug-fixing`):
-- `docs/current/test_plan_v<N>.md` — test cases, layers, and coverage targets approved by user
+**Single lane** (`feature-delivery`, `bug-fixing`):
+- `$FEATURE_DIR/test-plan.md` — test cases, layers, and coverage targets approved by the user
 
-**Harness workflow** (`harness-generator`):
+**Sliced lane** (`harness-generator`):
 - Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`.
 - Read only the selected acceptance-test rows and matching `feature_list.json` entry. Read the summary only for prior evidence, blockers, and handoff decisions.
 
@@ -47,7 +47,7 @@ approved behavior before invoking this skill.
 ## Execute
 
 ### 1. Analyze runtime and test scope
-For ad-hoc workflows, read the approved `docs/current/test_plan_v<N>.md`. For the harness workflow, read the selected user story and its acceptance-test rows in `$FEATURE_DIR/sprint-contract.md`, plus the matching `verification` and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When `production_journey.required` is `true`, implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the canonical specification's Rule Applicability matrix. Every `Required` Rule Applicability row must have test, static-check, or review evidence.
+Read the approved `$FEATURE_DIR/test-plan.md`. Single lane: its flat `## Acceptance Test Cases` table. Sliced lane: the selected story's `### US-n` acceptance-test rows, plus the matching `verification`, `acceptance_test_ids`, and `production_journey` entries in `$FEATURE_DIR/feature_list.json`. When a journey is required (`production_journey.required: true`, or `## Production Journey Boundary` in the single lane), implement the named acceptance-test owner as a production-entry journey with the declared actions, return boundary, and visible post-return assertion. Read the Rule Applicability matrix in `implementation-plan.md`. Every `Required` Rule Applicability row must have test, static-check, or review evidence.
 
 First determine whether any affected behavior requires instrumented evidence: Compose interaction,
 navigation, lifecycle, Android SDK or platform behavior, permissions, device capabilities, or an
@@ -97,8 +97,8 @@ The shared runner assembles both APKs, installs/updates them with `adb install -
 installed. It rejects empty or failing test results. Use `--class <Class#method>` for the exact
 method when supported, or `--all` for the full instrumented suite. Set `ANDROID_SERIAL` or pass
 `--serial` so the intended device is explicit. Do not invoke Gradle's connected instrumentation
-task: its UTP cleanup uninstalls the app package and removes its private data. For Roborazzi,
-use the approved state's scoped verification command. Run instrumented tests whenever the runtime
+task: its UTP cleanup uninstalls the app package and removes its private data. For UI states,
+run the planned review-capture and structural-check commands. Run instrumented tests whenever the runtime
 analysis requires them, including existing tests affected by the change; adding a new
 instrumented test is not the only trigger. Prefer an emulator, using a connected physical device
 when the required capability or availability calls for one. Do not run unfiltered

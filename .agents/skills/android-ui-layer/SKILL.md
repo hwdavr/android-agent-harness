@@ -1,12 +1,42 @@
 ---
 name: android-ui-layer
-description: Implement Compose UI screens and components with unidirectional state flow.
+description: Implement Compose UI with unidirectional state flow — as the UI step of a planned change, or as the direct lane for an appearance-only tweak that an existing approved design or the design system already defines.
 ---
 
 # Skill — Android UI Layer
 
 ## Purpose
 Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composable screens, and navigation wiring.
+
+Used in two ways:
+
+- **Within a workflow** (`feature-delivery` Stage 4, `bug-fixing`, `harness-generator`): implement the
+  approved plan's UI State Stages.
+- **Direct lane** for a small appearance-only adjustment to an existing screen (spacing, color,
+  icon, copy wording, reordering existing elements, aligning with the design system). No spec block,
+  plan, or tracker row.
+
+## Direct lane — entry check
+
+Use the direct lane only when **every** item holds; otherwise stop and route to `feature-delivery`
+(or `bug-fixing` for a defect):
+
+- [ ] No new or changed UI state, interaction, gesture, navigation, data, persistence, or API.
+- [ ] No new screen or component; only existing registered components are used.
+- [ ] The target appearance is already defined by an approved design (existing `UI_contract.md`
+      state or Pen frame) or by `docs/product/design_system.md` tokens and components.
+- [ ] Copy changes keep `stringResource()` and pass the localization rules.
+
+State the check result to the user before editing. A direct-lane change still needs the user's
+go-ahead on the described edit.
+
+## Direct lane — verification
+
+After the edit, run the `ui-verification` skill for the affected states: review capture at the
+reference's Viewport, structural check, and side-by-side approval against the existing approved
+design (or the design-system definition). Record the result in a short workspace
+`.scratch/<YYYY-MM-DD>-<tweak-id>/ui_verification.json` with a one-paragraph `summary.md`; no tracker
+row is needed. Then run the Done When checks below and `code-quality-fix`.
 
 ---
 
@@ -20,8 +50,9 @@ Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composab
 - `rules/implementation-rules.md`
 - `rules/android-security.md` when the change handles deep links, URI grants,
   permissions, WebView, exported entry points, AI/model output, or sensitive UI data
-- `docs/current/implementation_plan_v<N>.md` (Implementation Plan stage output)
-- `docs/current/spec_v<N>.md` — UiState design from the Requirement, Impact & Design Analysis stage
+- Within a workflow: `$FEATURE_DIR/implementation-plan.md` (UiState design, UI State Stages and their
+  reused registered components) and `$FEATURE_DIR/UI_contract.md`.
+- Direct lane: the existing approved design or design-system definition named in the entry check.
 
 ---
 
@@ -46,7 +77,7 @@ Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composab
 3. Keep Composables small — extract reusable UI to `components/`
 4. Use `stringResource()` for all user-visible text — **no hardcoded strings**
 5. Add `Modifier.testTag("stable_name")` to all interactive elements and key content areas
-6. Reuse semantic tokens from `LocalAppColors` and established shared components according to `docs/product/design_system.md`; do not add raw colors or a parallel component style without an explicit approved design exception
+6. Reuse semantic tokens from `LocalAppColors` and the registered components in the design-system Component Registry; never call a Material primitive that has a registered wrapper (the compose "Registered design-system components" rule enforces this), add raw colors, or create a parallel component style without an approved design exception
 
 ### 4. Navigation wiring
 1. Update the navigation graph if new routes are added or arguments changed
@@ -72,22 +103,8 @@ Updated / created:
 - Navigation graph (if changed)
 - `strings.xml` (for all new copy)
 
-Update `docs/current/coding_report_v<N>.md` with a UI Layer section:
-```
-## UI Layer Changes
-
-### Files Changed
-| File | Action | Notes |
-|------|--------|-------|
-
-### UiState Implemented
-<confirm all states are covered: loading / success / empty / error>
-
-### testTags Added
-<list key testTag values added>
-```
-
-Update `summary_v<N>.md`: mark the UI Layer stage complete.
+Record the UI layer changes in the active summary (`$FEATURE_DIR/summary.md`, or the slice
+summary): files changed, UiState branches covered, testTags added, and registered components reused.
 
 ---
 
@@ -98,7 +115,8 @@ Update `summary_v<N>.md`: mark the UI Layer stage complete.
 - [ ] Composable screens do not contain business logic
 - [ ] All user-visible text uses `stringResource()` — no hardcoded strings (`grep -r '"[A-Z]' ui/`)
 - [ ] All interactive elements have `Modifier.testTag(...)` with a stable name
-- [ ] UI uses `docs/product/design_system.md` semantic tokens/components and documents every approved exception
+- [ ] UI uses `docs/product/design_system.md` semantic tokens and registered components, and documents every approved exception
+- [ ] `bash harness/scripts/check-compose-rules.sh` exits 0
 - [ ] UiState covers loading, success, empty, and error states
 - [ ] Navigation arguments are serializable types
 - [ ] No dummy code in UI-layer files — no `TODO()`, `NotImplementedError`, stub return values, no-op handlers (`{}` or log-only), or `// dummy implementation` comments in `ui/` sources; every ViewModel method, UiState branch, and Composable callback implements the actual requirement behavior. `@Preview` composables may use sample `UiState` values for tooling (see the rule's "Allowed exceptions"); production composables and `UiState` data classes are still in scope (see `rules/implementation-rules.md`)

@@ -70,7 +70,7 @@ onSaveClick = viewModel::onSaveClick
 
 ### 1.5 No "compiles but doesn't implement" code
 
-Any function, class, branch, or path that satisfies the type system and builds cleanly but does not perform the actual behavior defined in the active `spec.md`, `implementation_plan_v<N>.md`, `feature_list.json`, or `sprint-contract.md` requirement it claims to fulfill is a violation.
+Any function, class, branch, or path that satisfies the type system and builds cleanly but does not perform the actual behavior defined in the approved feature block, `implementation-plan.md`, `test-plan.md`, `tasks.md`, or `feature_list.json` requirement it claims to fulfill is a violation.
 
 This includes:
 - Branches that return early with a placeholder value before the real logic runs.

@@ -19,7 +19,7 @@ Read and follow [Product documentation flow](../rules/product-documentation.md).
 ## 1. Core Operating Principles
 Review independently and adversarially. Execute required static and runtime checks, score only from
 observable evidence, and keep any missing boundary or acceptance proof non-passing. The canonical
-review criteria live in the invoked review skills, sprint contract, and evaluator rubric template.
+review criteria live in the invoked review skills, the plans, and evaluator rubric template.
 
 ---
 
@@ -39,10 +39,10 @@ Applicability matrix against the submitted diff. Missing rows, triggered Not app
 decisions, and unapproved exceptions are review failures.
 - Run `bash harness/scripts/check-feature-lifecycle.sh`; stop if lifecycle state is invalid.
 - Select the active non-complete `FEATURE_DIR` from the Harness Feature Tracker in `docs/product/product.md`. Do not infer lifecycle state by scanning product directories.
-- Read `$FEATURE_DIR/sprint-contract.md` to see the agreed **Acceptance Criteria**, **Scope**, and **Exclusions**.
+- Read the approved feature block(s) in `docs/product/requirements/` (requirements, acceptance criteria, out of scope), `$FEATURE_DIR/implementation-plan.md` (Rule Applicability, design, file list), the slice's `### US-n` section and journey row in `$FEATURE_DIR/test-plan.md`, and its `tasks.md` phase.
 - Read `$FEATURE_DIR/feature_list.json` to verify the target feature definition and its current status.
 - Validate the platform contract with `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate`. The platform capability matrix exists only for platform-bound features (`platform_validation.required: true`); for those, a missing matrix, missing required API row, pending/unavailable/skipped environment, or non-zero real-boundary test is a review failure. Non-platform features must declare `required: false` with an explicit `reason` in `feature_list.json`. Do not convert any failure into a pass because the environment is inconvenient.
-- When `feature_list.json` declares a visual-verification owner, validate visual traceability with `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"`; a visual method without a sprint-contract row, successful `verifyRoborazziDebug` evidence, or reference-anchor proof is a review failure. Each Pen target must be an exact screen or component scope. Rich-text or inline-formatting appearance rows must also pass the source-fed rendered-output contract through their named `RoborazziTest`. Do not promote a screenshot recorded from the implementation as a golden baseline.
+- When `feature_list.json` declares the conformance-review owner (`requires_visual_verification: true`), run `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate`: every `UI_contract.md` state needs a review capture at its Viewport, a passing structural check, its registered components called from the changed UI files, and the user's approval. Rich-text appearance rows must pass the rendered-output (span-style) contract. A screenshot golden recorded from the implementation is a review finding, not evidence.
 - If the change affects UI, read `docs/product/design_system.md`, `$FEATURE_DIR/UI_contract.md`, its canonical Pen source, and mapped exports. Treat unexplained deviations from the global design system as review findings.
 
 ---
@@ -77,7 +77,7 @@ non-zero result as a review failure, including pre-existing findings.
 ### Stage 4: Execute Runtime Verification
 - Execute local unit and integration tests to verify correctness: `./gradlew testDebugUnitTest`.
 - Run instrumented Compose UI tests to check interactivity and transitions with `harness/scripts/run-android-instrumented-tests.sh` as documented by the `android-testing` skill. This runtime command does not satisfy the visual-comparison gate.
-- **If the feature touches the UI**, **INVOKE** the `ui-verification` skill via the Skill tool (name: `ui-verification`) to verify the implemented UI against the approved Pen export/design. Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Run `./gradlew app:verifyRoborazziDebug` for every declared exact screen or component scope in `visual_evidence/visual-target.json`. Any Critical or unresolved Major deviation (wrong layout, spacing, typography, color, clipped text) is a review finding. For rich-text or inline-formatting claims, confirm the named Roborazzi method proves the approved rendered appearance. Record the outcome as visual-evidence contract proof in `$FEATURE_DIR/visual_evidence/` and confirm `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate` passes, including `reference-anchor-verification.md`.
+- **If the feature touches the UI**, **INVOKE** the `ui-verification` skill via the Skill tool (name: `ui-verification`) to review the implemented UI against the approved design as a conformance review (side-by-side captures, structural checks, registered-component reuse). Reading the SKILL.md manually is not a substitute when the Skill tool is available.
 - Execute the declared real platform boundary tests from `platform_validation.real_boundary_test_ids`. The test must exercise the shipped Android API/resource boundary and produce successful direct-runner evidence from `harness/scripts/run-android-instrumented-tests.sh`. Fake recognizers, fake callbacks, JVM-only intent tests, and tests that merely instantiate a seam are supplemental and cannot close the finding.
 - If the required runtime, device, model, locale, permission, or service is missing, record the command as failed/blocked and keep the verdict `Revise` or `Block`. Never record a skip, warning, or absent result as evidence of support.
 

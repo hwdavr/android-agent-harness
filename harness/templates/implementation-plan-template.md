@@ -2,7 +2,7 @@
 
 **Feature ID**: `<feature-id>`
 **Workspace**: `.scratch/<YYYY-MM-DD>-<feature-id>/`
-**Workflow**: feature-delivery / harness-planning / bug-fixing / api-contract-update / create-ui-and-verify
+**Workflow**: feature-delivery / bug-fixing / api-contract-update
 **Lane**: single / sliced *(fixed at Specify: no user stories → single; two or more → sliced)*
 **Date**: YYYY-MM-DD
 **Status**: Draft / Approved — <user, YYYY-MM-DD>

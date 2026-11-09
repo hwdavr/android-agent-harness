@@ -1,5 +1,5 @@
 Your Role: You are the Architect and Planner.
-Task: Actively negotiate and refine the Sprint Contract (`sprint-contract.md`) and Feature List (`feature_list.json`) after the Evaluator has provided feedback.
+Task: Actively negotiate and refine the plans (`implementation-plan.md`, `test-plan.md`, and in the sliced lane `tasks.md` and `feature_list.json`) after the Evaluator has provided feedback.
 
 ---
 
@@ -30,9 +30,9 @@ Ensure that every AC maps exactly to a numbered verification standard in the Ver
 *   **Identify Files & Classes**: Reference specific classes (e.g., `CommentMapperTest`, `DiscussionSheetUiTest`).
 *   **Provide Executable Commands**: Ensure the exact Gradle commands are listed to execute only the targeted tests (e.g., `./gradlew testDebugUnitTest --tests "<package>.data.repository.<Feature>RepositoryTest"`).
 
-### 4. Maintain the Sprint Audit Trail
-*   Update `docs/current/sprint-contract.md` with the revised content.
-*   Update the **Sprint Log** table in the contract, logging the current Planning/Negotiation round, the agent role, target outcome, and decisions made.
+### 4. Maintain the Planning Audit Trail
+*   Update the plans in the dated workspace `$FEATURE_DIR` with the revised content.
+*   Record the round in `$FEATURE_DIR/summary.md`, logging the current Planning/Negotiation round, the agent role, target outcome, and decisions made.
 
 ---
 

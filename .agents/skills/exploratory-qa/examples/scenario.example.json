@@ -18,11 +18,11 @@
     "scope": "Example selected from the Sticker keyboard v24 workflow; not an automatic selection of whichever UI_contract.md happens to exist.",
     "sources": [
       {
-        "path": "docs/current/UI_contract.md",
+        "path": ".scratch/2026-11-09-sticker-picker/UI_contract.md",
         "sha256": "20d5b14c3b0863fb5be73e882494c4fe109d4fb393965ca1f82edaa4dff6cf41"
       },
       {
-        "path": "docs/current/spec_v24.md",
+        "path": "docs/product/requirements/stickers.md",
         "sha256": "a3e5889d81fa28f8f8e3bf5d65c98eb227c9bc74cce17e4d338ab8f3cc0825ae"
       },
       {
@@ -34,7 +34,7 @@
         "sha256": "1c4a6b612ff5f8422f4760c107b737a3086a229733eb21c5b89468994b884a95"
       }
     ],
-    "expected_behavior_source": "docs/current/UI_contract.md#state-details and #verification-contract",
+    "expected_behavior_source": ".scratch/2026-11-09-sticker-picker/UI_contract.md#state-details and #verification-contract",
     "code_role": "Candidate selectors, prerequisites and route hints only; code is not the correctness oracle."
   },
   "initial_state": "Home/Edit screen, with a disposable image available through the Android system picker.",
@@ -52,7 +52,7 @@
       "entry_action": "Open Sticker mode and leave search unfocused.",
       "check_id": "picker_closed_controls_reachable",
       "expected": "Search, emoji groups, category tabs and result grid are reachable above the navigation inset.",
-      "source": "docs/current/UI_contract.md#ui-01--sticker-picker-with-keyboard-closed"
+      "source": ".scratch/2026-11-09-sticker-picker/UI_contract.md#ui-01--sticker-picker-with-keyboard-closed"
     },
     {
       "id": "sticker-picker-keyboard-open-v24",
@@ -60,7 +60,7 @@
       "entry_action": "Tap the real Sticker search input and wait for the Android keyboard to settle.",
       "check_id": "picker_open_controls_above_keyboard",
       "expected": "The picker and its first result remain above the real keyboard; search and category controls remain usable.",
-      "source": "docs/current/UI_contract.md#ui-02--sticker-picker-with-keyboard-open"
+      "source": ".scratch/2026-11-09-sticker-picker/UI_contract.md#ui-02--sticker-picker-with-keyboard-open"
     },
     {
       "id": "sticker-picker-keyboard-dismissed",
@@ -68,7 +68,7 @@
       "entry_action": "Dismiss the real keyboard.",
       "check_id": "picker_restores_after_keyboard_dismissal",
       "expected": "The panel returns to its normal bottom placement.",
-      "source": "docs/current/UI_contract.md#verification-contract"
+      "source": ".scratch/2026-11-09-sticker-picker/UI_contract.md#verification-contract"
     }
   ],
   "entry_points": [

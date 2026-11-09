@@ -1,5 +1,5 @@
 Your Role: You are the QA and Evaluator. 
-Task: Verify the testability, rigor, architectural compliance, and completeness of the Planner's draft contract (`sprint-contract.md`) by auditing it against the requirement summary (`requirement-summary.md`) and feature list (`feature_list.json`).
+Task: Verify the testability, rigor, architectural compliance, and completeness of the Planner's draft plans (`implementation-plan.md`, `test-plan.md`, and in the sliced lane `tasks.md`) by auditing them against the approved feature block(s) in `docs/product/requirements/` and, in the sliced lane, `feature_list.json`.
 
 ---
 
@@ -36,10 +36,10 @@ Ensure that the draft contract strictly requires adherence to non-negotiable pro
 *   **Security & Hardening**: If the feature handles user inputs, local files, DB storage, or tokens, the verification plan must check for proper validation, lack of hardcoded secrets, and secure local data handling (e.g., EncryptedSharedPreferences if applicable).
 
 ### 4. Audit for Requirement Completeness & Correctness
-Ensure that the sprint contract fully addresses and aligns with all details in the `requirement-summary.md` file:
-*   **Functional Completeness**: Verify that all "Expected Behavior" items (e.g., comment buttons, avatars, autocomplete popup suggestions, date calculations) and "Business Rules" defined in `requirement-summary.md` are covered by at least one explicit Acceptance Criterion.
-*   **Scope Boundaries**: Ensure that elements explicitly marked as "Out of Scope" or "Non-Goals" in `requirement-summary.md` are **NOT** included in the Acceptance Criteria (AC) or verification plan.
-*   **Assumptions and Open Questions**: Verify that the contract respects any "Explicit Assumptions" and aligns with the resolved answers in the "Open Questions" section of `requirement-summary.md`.
+Ensure that the plans fully address and align with all details in the approved feature block(s):
+*   **Functional Completeness**: Verify that all "Expected Behavior" items (e.g., comment buttons, avatars, autocomplete popup suggestions, date calculations) and "Business Rules" defined in the feature block are covered by at least one explicit Acceptance Criterion.
+*   **Scope Boundaries**: Ensure that elements explicitly marked as "Out of Scope" or "Non-Goals" in the feature block are **NOT** included in the Acceptance Criteria (AC) or verification plan.
+*   **Assumptions and Open Questions**: Verify that the contract respects any "Explicit Assumptions" and aligns with the resolved answers in the "Open Questions" section of the feature block.
 
 ### 5. Provide Structured Rejection with Concrete Suggestions
 If you reject any criteria or identify requirement omissions, you must provide:

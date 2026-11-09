@@ -30,30 +30,30 @@ Determine scope before running any stage:
 - `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read
 - `rules/api-contract-rules.md`
 - `harness/templates/rule-applicability-template.md`
-- `docs/current/implementation_plan_v<N>.md` (once generated in Stage 2)
+- `$FEATURE_DIR/implementation-plan.md` and `test-plan.md` (once generated in Stage 2)
 
 ---
 
 ## Execute
 
-### Stage 1 — Requirement, Impact & Design Analysis ✅ Always
-**INVOKE** the `requirement-analysis` skill via the Skill tool (name: `requirement-analysis`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
+### Stage 1 — Specify & Clarify ✅ Always
+**INVOKE** the `feature-specification` skill via the Skill tool (name: `feature-specification`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
-Adapt the skill output to cover:
+The feature block (and, in Stage 2, the plan) must cover:
 - API impact classification (additive, breaking, partial)
 - DTO and Domain model changes required
 - Identify which layers are affected (data, domain, UI)
-- The complete Rule Applicability matrix is required for this workflow. API is Required;
+- In Stage 2 the plan's complete Rule Applicability matrix is required. API is Required;
   every other rule needs an explicit decision and evidence plan.
 
-Run `bash harness/scripts/check-stage-artifacts.sh api-contract-update requirement-analysis` — must exit 0 before proceeding.
+Run `bash harness/scripts/check-stage-artifacts.sh api-contract-update specify "$FEATURE_DIR"` — must exit 0 before proceeding.
 
 ---
 
 ### Stage 2 — Implementation Plan ⛔ STOP ✅ Always
 **INVOKE** the `implementation-plan` skill via the Skill tool (name: `implementation-plan`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
-Run `bash harness/scripts/check-stage-artifacts.sh api-contract-update implementation-plan` — must exit 0.
+Run `bash harness/scripts/check-stage-artifacts.sh api-contract-update analyze "$FEATURE_DIR"` before presenting the plan and `... implementation-plan "$FEATURE_DIR"` after approval — both must exit 0.
 
 **Stop and present the plan. Do not proceed until the user explicitly approves.**
 
@@ -100,8 +100,7 @@ Only run if the contract change involves a tricky mapping, a breaking change, a 
 - Updated domain models and use cases (if affected)
 - Updated Compose screens/ViewModels (if UI scope)
 - Integration tests for every changed endpoint using shared JSON scenarios
-- `docs/current/coding_report_v<N>.md` updated through each stage
-- `docs/current/summary_v<N>.md` with all completed stages marked
+- `$FEATURE_DIR/summary.md` with all completed stages marked and their evidence
 - Rule Applicability decisions preserved with evidence for every Required row
 
 ---
@@ -116,6 +115,6 @@ Only run if the contract change involves a tricky mapping, a breaking change, a 
 - [ ] Navigation and coverage harness checks pass when their rules are triggered
 - [ ] Build passes: `./gradlew assembleDebug`
 - [ ] Unit + integration tests pass: `./gradlew testDebugUnitTest`
-- [ ] `summary_v<N>.md` marks all executed stages as complete with artifact references
+- [ ] `$FEATURE_DIR/summary.md` marks all executed stages as complete with artifact references
 
 **APPROVED →** This skill is complete. Return control to the caller or close the task.

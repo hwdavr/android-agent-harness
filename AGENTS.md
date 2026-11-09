@@ -16,7 +16,7 @@ Load context in layers; more is not better.
 | **L2 — Phase-triggered** | Per stage | The current stage's skill(s) plus `harness/templates/rule-applicability-template.md` for requirements/planning/review. Load `implementation-rules.md` only during Implementation. Load a conditional rule only if Required, excepted, or diff-triggered. Load `android-security.md` for `SEC` or a security/AI/WebView/network/manifest boundary; load `testing-practices.md` during test authoring/review, `testing-runtime-evidence.md` for UI/navigation/visual/platform/runtime claims, and `docs/product/design_system.md` for UI work. |
 | **L3 — On-demand** | When needed | `docs/knowledge/` docs, `sharedContracts/openapi.yaml`, and feature-specific evidence or rule detail newly triggered by the approved Rule Applicability matrix |
 
-Do not preload unrelated skills or conditional rules. Requirements, planning, and review use the trigger catalog and load only Required, excepted, or diff-triggered rules. For a complex slice, run
+Do not preload unrelated skills or conditional rules. Requirements, planning, and review use the trigger catalog and load only Required, excepted, or diff-triggered rules. For a sliced-lane slice, run
 `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` after selection. Its output is disposable and must be regenerated when either source hash changes.
 ---
 ## Harness Structure
@@ -28,8 +28,8 @@ Do not preload unrelated skills or conditional rules. Requirements, planning, an
 | `.agents/gates/` | CI checks and review/release checklists. |
 | `harness/templates/` | Standard output formats for plans, reviews, tests. |
 | `harness/scripts/` | Validation scripts and contract test runners. |
-| `.scratch/<YYYY-MM-DD>-<feature-short-name>/` | Stable complex-feature workspace for planning, implementation, evidence, and completed records. |
-| `docs/product/requirements/` | One living Markdown file per product capability; update it in place for every behavior change. |
+| `.scratch/<YYYY-MM-DD>-<feature-id>/` | One dated workspace per feature or bug fix: plans, summaries, design, and evidence. |
+| `docs/product/requirements/` | One living file per capability; a change's specification is its feature block under `## Planned changes`. |
 | `docs/knowledge/` | Past bugs, pitfalls, architecture decisions (L3). |
 | `docs/changes/` | Audit trail — one directory per delivered change. |
 | `docs/product/product.md` | Product capabilities, roadmap, and the authoritative Harness Feature Tracker. |
@@ -40,14 +40,14 @@ Codex uses `.codex/agents/`; other clients use equivalent roles. Workflows own a
 ## Workflow Routing — Mandatory Step Before Any Task
 **Before starting ANY task, you MUST:** identify the task type, then read the matching workflow **in full** and follow its pipeline without skipping stages or stops. Do not write code before reading the selected workflow and its current-stage skill.
 
-### Ad-hoc Development (Simple Features & Bug Fixing)
-
 | Task type | Read this file first |
 |-----------|----------------------|
+| New feature or enhancement, any size (Specify selects the single or sliced lane) | `.agents/workflows/feature-delivery.md` |
 | Bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
-| New feature or simple enhancement | `.agents/workflows/feature-delivery.md` |
-| Any user-visible UI implementation or update, including a single component or state | `.agents/workflows/create-ui-and-verify.md` |
-| Independent code review before merge | `.agents/workflows/feature-review.md` |
+| Appearance-only tweak an approved design or the design system already defines | `.agents/skills/android-ui-layer/SKILL.md` (direct lane; entry check + conformance review) |
+| Next slice of an approved sliced-lane feature | `.agents/workflows/harness-generator.md` |
+| Sliced-lane evaluator findings (`To be fixed`) | `.agents/workflows/harness-fix.md` |
+| Independent review: single lane / sliced-lane slice | `.agents/workflows/feature-review.md` / `.agents/workflows/harness-evaluation.md` |
 | Plan, approve, and execute post-merge feature acceptance | `.agents/workflows/feature-acceptance.md` (invokes `exploratory-qa` after approval) |
 | UI-only mobile exploration | `.agents/skills/dogfood/SKILL.md` |
 | APK QA with scenario reports or network capture/mocks | `.agents/skills/exploratory-qa/SKILL.md` (reuses `dogfood`) |
@@ -55,18 +55,9 @@ Codex uses `.codex/agents/`; other clients use equivalent roles. Workflows own a
 | App-side analytics event contracts | `.agents/skills/analytics-event-validator/SKILL.md` (standalone; optional in `exploratory-qa`) |
 | Controlled REST/GraphQL backend responses during mobile QA | `.agents/skills/api-mocking/SKILL.md` (shared WireMock adapter; optional in QA and analytics) |
 
-### Project-Based Development (Complex Features)
-
-| Task type | Read this file first |
-|-----------|----------------------|
-| Clarifying requirements and planning a complex feature into vertical slices | `.agents/workflows/harness-planning.md` |
-| Implementing features step-by-step | `.agents/workflows/harness-generator.md` |
-| Resolving evaluator findings when a feature scored below 5.0/5 (`To be fixed`) | `.agents/workflows/harness-fix.md` |
-| Code and test review of an implemented change | `.agents/workflows/harness-evaluation.md` |
-
 ## Skills Index
 Key skills under `.agents/skills/`:
-- **Planning & Requirements**: `spec-driven-development`, `feature-specification`, `slice-planning`, `implementation-plan`
+- **Planning & Requirements**: `spec-driven-development`, `feature-specification` (Specify + Clarify), `implementation-plan` (Plan + Tasks + Analyze)
 - **UX & Design**: `ux-design`
 - **Implementation**: `android-implementation`, `android-ui-layer`, `api-contract-update`
 - **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`, `dogfood`, `exploratory-qa`, `analytics-event-validator`, `api-mocking`
@@ -83,19 +74,20 @@ Key skills under `.agents/skills/`:
 - **Every new feature must have tests**
 - **Platform-bound features must include a platform capability matrix and a real instrumented boundary test** — fake/JVM-only tests are supplemental; missing runtimes, devices, models, locales, permissions, or services fail loudly and cannot be recorded as passing evidence
 - **No dummy code in production** — every function, branch, and callback must implement the actual requirement logic; no `TODO()`, `NotImplementedError`, stub return values, no-op handlers, or `// dummy implementation` comments. See `.agents/rules/implementation-rules.md`
-- **Implementation authorization must be approved by the user before code is written** — ad-hoc workflows require approval of `implementation_plan_v<N>.md`; the complex harness path uses the approved `feature_list.json` and `sprint-contract.md` from `harness-planning` and must not generate a duplicate implementation plan in `harness-generator`
-- **No direct UI-change lane** — every user-visible UI request, including a one-component styling, layout, state, or interaction change, must use `create-ui-and-verify` (or `bug-fixing` when it is an unexpected defect) and receive an approved implementation plan before source changes
+- **Implementation authorization must be approved by the user before code is written** — every lane requires the approved `implementation-plan.md` and `test-plan.md` (block SHA-256 recorded); the sliced lane adds `tasks.md` and `feature_list.json`, and `harness-generator` must not generate a duplicate plan
+- **Direct UI lane is appearance-only** — `android-ui-layer` may change an existing screen's appearance without a plan only when it passes the skill's entry check (no new state, interaction, navigation, data, or API; target defined by an approved design or the design system) and ends with the `ui-verification` conformance review; anything else uses `feature-delivery` (or `bug-fixing` for a defect)
+- **UI appearance is approved by a conformance review, never a screenshot golden** — review captures at the Pen frame size, structural checks, registered design-system components, and user approval
 - **Every stage gate must pass before advancing** — do not skip gates
 - **Every stage skill must be invoked through the available skill mechanism** — use the Skill tool when it is exposed. If this environment does not expose it, read the repository's matching `SKILL.md`, follow its workflow, and record the unavailable invocation interface in the stage evidence. An unavailable interface never permits skipping an executable stage gate or verification command named by the skill.
-- **Every specification artifact must contain the complete Rule Applicability matrix** — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all ten rules. The approved specification is canonical: implementation and test plans link its `#rule-applicability` anchor and map only `Required` rows to work/evidence; reviews independently reconcile all ten decisions rather than copy them.
-- **Memory of prior approval does not bypass workflow stages** — source of truth is on disk. Ad-hoc workflows use `docs/current/`; every complex harness feature uses one stable dated workspace under `.scratch/`. Re-run the owning stage for missing artifacts. Require approved `spec.md`, `UI_contract.md` and Pen references for UI scope, `feature_list.json`, and `sprint-contract.md` in that workspace.
-- **Validate harness lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting a complex feature and after every tracker transition. Folder location never represents status; the tracker and per-slice evidence do.
-- **Stage completion requires evidence** — when marking a stage complete in `summary_v<N>.md`, cite the artifact path and paste a one-line excerpt. A stage is not complete until the artifact exists on disk and is referenced from the summary. Summaries reference canonical scope and Rule Applicability artifacts; they do not duplicate their matrices, acceptance criteria, or slice metadata.
+- **Every implementation plan contains the complete Rule Applicability matrix** (`harness/templates/rule-applicability-template.md`) — use `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>` for all ten rules. The approved `implementation-plan.md` is canonical: `test-plan.md` links its `#rule-applicability` anchor and maps only `Required` rows to evidence; reviews independently reconcile all ten decisions rather than copy them.
+- **Memory of prior approval does not bypass workflow stages** — source of truth is on disk: the approved feature block in `docs/product/requirements/` and the dated `.scratch/` workspace (`docs/current/` is retired). Re-run the owning stage for missing artifacts.
+- **Validate harness lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting tracked work and after every tracker transition. Folder location never represents status; the tracker and per-slice evidence do.
+- **Stage completion requires evidence** — when marking a stage complete in the workspace `summary.md` (or slice summary), cite the artifact path and paste a one-line excerpt. A stage is not complete until the artifact exists on disk and is referenced from the summary. Summaries reference canonical scope and Rule Applicability artifacts; they do not duplicate their matrices, acceptance criteria, or slice metadata.
 - **Do not suppress rule violations** — agents must fix root causes, not add `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disable comments, baselines, or broader excludes unless the user explicitly approves a documented false positive
 - **Instruction-file changes require approval** — before editing `.agents/rules/`, `.agents/workflows/`, or `.agents/skills/`, present the exact file list and proposed changes and get explicit user approval. Approval applies only to listed files; ask again if scope changes.
 - **Fix rule/workflow/skill mismatches through a PR** — if an agent finds conflicting, stale, or mismatched instructions across rules, workflows, skills, gates, or templates, it must state the issue and why the fix is needed, then raise a PR that corrects the source instruction instead of silently working around it
-- **Product documentation flow** — follow `.agents/rules/product-documentation.md`; read/update affected `docs/product/requirements/<capability>.md` files and retain approved change contracts in `.scratch/`.
-- **Keep `docs/product/product.md` current** — maintain the capability index and the sole complex-change lifecycle tracker. Detailed current and planned behavior lives in the existing capability requirement files, not repeated overview sections.
+- **Product documentation flow** — follow `.agents/rules/product-documentation.md`; the feature block in `docs/product/requirements/<capability>.md` is the specification; plans and evidence stay in `.scratch/`.
+- **Keep `docs/product/product.md` current** — maintain the capability index and the sole lifecycle tracker for every feature and bug fix. Detailed current and planned behavior lives in the existing capability requirement files, not repeated overview sections.
 
 ---
 ## Build Commands — run from project root

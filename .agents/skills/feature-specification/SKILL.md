@@ -1,166 +1,106 @@
 ---
 name: feature-specification
-description: Clarify product requirements and write an approved spec before the separate UX design stage.
+description: Specify and clarify a feature or enhancement (Spec Kit /specify + /clarify) by writing an approved feature block into the living requirement file, and set up its dated workspace.
 ---
 
-# Skill — Feature Specification
+# Skill — Feature Specification (Specify + Clarify)
 
-Follow `.agents/rules/product-documentation.md`. Read affected `docs/product/requirements/<capability>.md` files and update those same files for behavior changes. Keep dated change contracts/evidence in `.scratch/`. New specs include `## Product Requirements` with capability links, changed requirements, and approval-time SHA-256 hashes. Completion reconciles verified behavior or records `Confirmed unchanged` for an already-correct bug contract.
+Follow `.agents/rules/product-documentation.md`. The living capability file in
+`docs/product/requirements/` **is** the specification: this skill writes the change as a feature
+block under its `## Planned changes`. The dated workspace holds plans and evidence, never a spec.
 
 ## Purpose
 
-Turn a general feature request into approved source artifacts:
+Turn a request into an approved, unambiguous feature block, and decide the delivery lane:
 
-- `docs/current/spec.md` — **always produced by ad-hoc workflows**
-- `$FEATURE_DIR/spec.md` — the requirements output when invoked by `harness-planning`
+- **single lane** — one deliverable change; the block has no user stories.
+- **sliced lane** — two or more independently deliverable, independently testable stories.
 
-The later UX Design stage defines `UI_contract.md` before creating Pen sources, visual-target manifests, and review
-exports. This skill captures behavior and the required screen/state inventory without generating
-visual designs or invoking `ux-design`/`pen-design-editor` inside requirements clarification.
-
-This skill replaces both `screen-specification` and `requirement-capture`. It adapts its depth based on the task type:
-
-| Task Type | `spec.md` | Later UX Design | Screen-specific spec sections |
-|-----------|-----------|-----------------|-------------------------------|
-| New screen or major UI flow | Full | Required | Include |
-| Enhancement to existing screen | Full | Required if UI changes | Changed behavior/states only |
-| Pure logic/behavior change | Full | N/A | Skip |
-
-Do not plan implementation slices. Do not write code. Do not invent missing product decisions.
-This skill ends only when every material question has been answered by the user and all artifacts contain no unresolved assumptions or open questions.
-
----
+Describe WHAT and WHY only. Do not choose libraries, classes, or files; do not write code; do not
+plan slices or tasks; do not invent product decisions; do not create visual designs (UX Design
+owns `UI_contract.md` and the Pen design).
 
 ## Load
 
-- `rules/android-architecture.md` (skip if already loaded this session — L1 is session-scoped)
-- `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read
-- `harness/templates/rule-applicability-template.md` as the conditional-rule trigger catalog
-- Load the mapped conditional rule only after its row is `Required`, excepted, or
-  newly triggered by inspected scope. For UI scope this includes
-  `docs/product/design_system.md`, `rules/compose-rules.md`, and
-  `rules/localization-rules.md`; the Compose keyboard/IME section applies to text input.
-- `harness/templates/feature-spec-template.md`
-
----
+- L1 rules (skip if already loaded this session).
+- `harness/templates/requirement-delta-template.md` — the block format and writing guidelines.
+- `docs/product/requirements/README.md`, then every affected capability file **in full**.
+- `harness/templates/product-requirements-template.md` only when no capability file fits.
+- For a bug that restores already-specified behavior, stop: use the `bug-fixing` workflow instead.
 
 ## Execute
 
-### 1. Capture The Raw Request
+### 1. Capture the request
 
-Read the user's request exactly as stated. Preserve concrete inputs as source-of-truth anchors, including:
+Record the user's words verbatim for the block's **Input** line. Preserve concrete anchors: named
+screens, entry points, roles, copy, non-goals. Save supplied screenshots or mockups unchanged under
+`<workspace>/design/` for UX Design.
 
-- Named screens, tabs, entry points, and destinations
-- User roles or audiences
-- Provided screenshots, sketches, or mockups
-- Required copy, labels, or product terminology
-- Explicit non-goals
+### 2. Locate the capability and set up the workspace
 
-If the user provides a screenshot, mockup, or visual reference, save it unchanged under the active
-artifact directory's `design/` folder and reference it from `spec.md` as an input for UX Design.
-In `harness-planning`, the active artifact directory is `$FEATURE_DIR`.
+- Pick the affected capability file(s). A new capability gets a new file from
+  `product-requirements-template.md` and an entry in `requirements/README.md`.
+- Choose a lowercase kebab-case `<feature-id>`. Create `.scratch/<YYYY-MM-DD>-<feature-id>/`
+  (local date) with `summary.md` from `harness/templates/summary-template.md` and the
+  `feature-delivery` stage profile.
+- Add the Harness Feature Tracker row in `docs/product/product.md` (status `Planning`, link label
+  = the workspace path) and run `bash harness/scripts/check-feature-lifecycle.sh`.
 
-### 2. Classify The Task Type
+### 3. Specify — draft the block
 
-Before asking questions, determine the task type:
+Copy the block from `requirement-delta-template.md` under `## Planned changes` of each affected
+file, between the exact `<!-- feature: <feature-id> -->` markers.
 
-- **New screen**: No existing screen serves this purpose. Requires full `spec.md` and later UX Design.
-- **Enhancement**: Adds or modifies behavior on an existing screen. Requires `spec.md` only (screen-specific sections only for changed parts).
-- **Logic-only**: No UI changes. Requires `spec.md` only (skip all screen-specific sections).
+- Continue the file's `FR-###`, `AC-###`, `SC-###` sequences; never reuse an ID. Mark each
+  requirement `New`, `Changes FR-###`, or `Retires FR-###`. Leave delivered requirements under
+  `## Requirements` untouched until Product Document Update.
+- One `AC-###` per outcome the requirement promises: happy path plus each fallback, error,
+  boundary, and compatibility outcome.
+- UI scope: add **Screen States** (every visually distinct screen/state, including empty,
+  loading, error, selected, disabled, overlay, and keyboard-open variants) and **Navigation**
+  when routes or the back stack change.
+- **Lane**: write `#### User Scenarios` only when the change splits into two or more
+  independently deliverable stories (sliced lane), each listing its `FR-###`. Otherwise omit the
+  section (single lane). Never split or merge stories to steer the lane.
+- Mark every unresolved product decision inline as `[NEEDS CLARIFICATION: <question>]`. Make an
+  informed guess only for low-impact defaults, and list it under Assumptions.
 
-State the classification to the user and confirm before proceeding.
+### 4. Clarify — resolve the markers
 
-#### Rule applicability decision
+Ask at most five questions per round, the highest-impact first (scope, security/privacy, user
+experience, then technical defaults). For each question offer a recommended answer and two to four
+concrete options. After each answer:
 
-Before asking product questions, copy the complete matrix from
-`harness/templates/rule-applicability-template.md` and decide every row. Use only
-`Required`, `Not applicable — <feature-specific reason>`, or
-`Exception — approved by <user/date>`. Record the trigger and evidence for required
-rows. Assess analytics and observability explicitly; they do not require new events or
-logs when their triggers are absent.
+- record it under `#### Clarifications` → `##### Session <YYYY-MM-DD>` as `- Q: … → A: …`;
+- update the affected `FR-###`/`AC-###` text immediately and remove the marker.
 
-### 3. Ask Clarifying Questions In Chat
+Repeat until no `[NEEDS CLARIFICATION` remains and every Review & Acceptance Checklist item holds.
+Set **Status** to `Clarified`.
 
-Ask targeted questions before writing the artifacts. Prefer 3–7 questions per round.
-Questions must be concrete and answerable, not broad prompts like "anything else?"
+### 5. Gate
 
-**Surface assumptions first** — state what you are assuming about the request before asking about behavior; every assumption is a question until the user confirms it.
+```bash
+bash harness/scripts/check-stage-artifacts.sh feature-delivery specify .scratch/<YYYY-MM-DD>-<feature-id>
+```
 
-**Always cover:**
-1. **User and goal**: who uses the feature, what they are trying to complete, and what success means.
-2. **Expected behavior**: concrete, observable behaviors — each independently testable.
-3. **Business rules**: constraints imposed by business logic.
-4. **Scope boundaries**: what is explicitly out of scope for this version.
+Record the stage in `summary.md` with the block location and a one-line excerpt.
 
-**Cover if new screen or enhancement with UI changes:**
-5. **Entry and exit**: how the user reaches the screen/feature, what back/close/submit actions do, and where success/failure navigates.
-6. **Core content**: exact data, sections, controls, copy, and required empty/loading/error states.
-7. **Interactions**: taps, selection, editing, gestures, validation, confirmation, destructive actions, and disabled states.
-8. **State and persistence**: local-only state, saved state, backend/API expectations, offline behavior, and configuration-change behavior.
-9. **Visual inputs and constraints**: capture supplied references and product constraints for the
-   later UX Design stage; settle layout, density, and styling during that separate stage.
-10. **Accessibility and testing**: content descriptions, focus order, dynamic text, test tags, and verifiable acceptance criteria.
+## Approval
 
-If an answer creates a new ambiguity, ask a follow-up. Continue until the requirement can be written without assumptions.
+- **Sliced lane**: present the block now. On explicit approval set **Status** to
+  `Approved — <user>, <YYYY-MM-DD>` and the tracker to `Awaiting specification approval` → UX
+  Design (UI) or Implementation Plan.
+- **Single lane**: do not stop here. The block is approved together with the design and both
+  plans in one review at the end of the Implementation Plan stage.
 
-### 4. Zero-Ambiguity Gate
+After approval the block is frozen: `implementation-plan.md` records its SHA-256, and any later edit
+returns to this skill for re-approval.
 
-Before writing any artifacts, verify:
+## Done When
 
-- [ ] Every material product decision is answered by the user.
-- [ ] No unresolved assumptions are needed to describe the intended behavior.
-- [ ] Scope boundaries and non-goals are explicit.
-- [ ] Every user-visible state has a defined behavior (if UI is involved).
-- [ ] Every destructive or irreversible action has a defined confirmation/recovery behavior.
-- [ ] The user has confirmed the clarified scope is correct.
-- [ ] Every rule-applicability row has a supported decision, rationale, and planned evidence.
-
-If any item fails, ask more questions and do not write the artifacts yet.
-
-### 5. Write the active `spec.md`
-
-Use `harness/templates/feature-spec-template.md`.
-
-The spec file must always describe:
-- Objective and user goal
-- Scope (in scope / out of scope)
-- **Technical spec** (libraries & dependencies, key technical decisions, external APIs/services, platform constraints)
-- Functional requirements with stable IDs
-- Acceptance criteria with stable IDs
-- Data and persistence requirements
-- Edge cases and error states
-- Explicit assumptions
-- Open questions (all must be ✅ Answered)
-- Verification expectations
-- The complete **Rule Applicability** matrix, copied from the canonical template; this specification is the canonical record for downstream plans and reviews
-
-**Outcome decomposition (one AC per named outcome):** Each functional requirement decomposes into acceptance criteria covering every distinct behavior its text promises — the happy path plus each fallback, error, boundary, and persistence/compatibility outcome. A single AC per FR is valid only when the FR names exactly one outcome. In particular, a requirement that promises *backward/forward compatibility* or *graceful fallback for missing/unknown input* must include a dedicated AC for each fallback path — a clean round-trip AC alone does not cover it.
-
-**Conditional sections** (include only for new screen or enhancement with UI changes):
-- Screen States table
-- Navigation section
-- Traceability to the later `UI_contract.md`
-
-Do not include an "Open Questions" section with unresolved items. If there are unresolved items, return to Step 3 instead.
-
-Update `spec.md` when a clarified answer changes behavior, scope, data, navigation, or the required
-state inventory. Visual revisions stay in the later UX Design stage and do not rewrite the spec.
-
-## Output
-
-- Ad-hoc callers: `docs/current/spec.md` (use the active workflow's versioned name when required).
-- Harness planning: `$FEATURE_DIR/spec.md`.
-- Preserved user-supplied inputs, when present, referenced from the spec.
-
-The spec owns product behavior, acceptance criteria, the complete Rule Applicability matrix,
-and the required state inventory. The next UX Design stage owns visual artifacts.
-
-## Done When — ⛔ MANDATORY STOP
-
-- [ ] The spec contains every required section and no unresolved material product questions.
-- [ ] Every rule has an explicit applicability decision, rationale, and planned evidence.
-- [ ] UI scope has a behavioral screen/state inventory ready for UX Design.
-- [ ] Supplied inputs are preserved and referenced.
-- [ ] The user has approved the clarified specification.
-
-**APPROVED by user →** Return to the active workflow: UX Design for UI scope, otherwise Slice Planning.
+- [ ] The block sits between exact markers under `## Planned changes` in every affected file.
+- [ ] No `[NEEDS CLARIFICATION]` remains; the Clarifications log records every answer.
+- [ ] IDs continue each file's sequence; every outcome has its own `AC-###`.
+- [ ] UI scope has Screen States (and Navigation when routes change).
+- [ ] The lane is decided: no user stories (single) or two or more (sliced).
+- [ ] Workspace, `summary.md`, and tracker row exist; the `specify` gate exits 0.

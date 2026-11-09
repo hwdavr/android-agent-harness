@@ -1,93 +1,62 @@
 #!/usr/bin/env bash
-# Contract test for Pen-export-backed Roborazzi visual verification.
-
+# Contract test for the UI conformance-review policy: no screenshot goldens, captures at the Pen frame
+# size, structural checks, registered-component reuse, and user approval — consistent across the
+# rules, skills, workflows, templates, and gates.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-fail_test() {
-  echo "FAIL: $1" >&2
-  exit 1
-}
+fail_test() { echo "FAIL: $1" >&2; exit 1; }
+has() { grep -Fq -- "$2" "$1" || fail_test "$1 must contain: $2"; }
+lacks() { if grep -Eq -- "$2" "$1"; then fail_test "$1 must not contain: $2"; fi; }
 
-SKILL="$REPO_ROOT/.agents/skills/ui-verification/SKILL.md"
 RULE="$REPO_ROOT/.agents/rules/testing-runtime-evidence.md"
-CONTRACT="$REPO_ROOT/harness/scripts/check-visual-evidence-contract.sh"
-TEMPLATE="$REPO_ROOT/harness/templates/visual-target-template.json"
-DESIGN_TEMPLATE="$REPO_ROOT/harness/templates/UI_contract-template.md"
-PLANNING_WORKFLOW="$REPO_ROOT/.agents/workflows/harness-planning.md"
-UX_SKILL="$REPO_ROOT/.agents/skills/ux-design/SKILL.md"
-STAGE_GATE="$REPO_ROOT/harness/scripts/check-stage-artifacts.sh"
-REVIEW_SKILL="$REPO_ROOT/.agents/skills/android-code-review/SKILL.md"
+UIV="$REPO_ROOT/.agents/skills/ui-verification/SKILL.md"
+UX="$REPO_ROOT/.agents/skills/ux-design/SKILL.md"
+UIL="$REPO_ROOT/.agents/skills/android-ui-layer/SKILL.md"
+FD="$REPO_ROOT/.agents/workflows/feature-delivery.md"
+CONTRACT_T="$REPO_ROOT/harness/templates/UI_contract-template.md"
+REPORT_T="$REPO_ROOT/harness/templates/ui-verification-template.json"
+TEST_PLAN_T="$REPO_ROOT/harness/templates/test-plan-template.md"
+TASKS_T="$REPO_ROOT/harness/templates/tasks-template.md"
 
-[ ! -e "$REPO_ROOT/harness/scripts/compare-visual-evidence.sh" ] \
-  || fail_test "the removed Python/Pillow comparator must not be present"
-[ ! -e "$REPO_ROOT/harness/scripts/check-existing-screen-baseline-contract.sh" ] \
-  || fail_test "planning must not require an implementation screenshot baseline"
-[ ! -e "$REPO_ROOT/harness/scripts/tests/existing-screen-baseline-contract-test.sh" ] \
-  || fail_test "the removed screenshot-baseline contract test must not be present"
-grep -Fq './gradlew app:verifyRoborazziDebug' "$SKILL" \
-  || fail_test "ui-verification skill must use verifyRoborazziDebug"
-grep -Fq 'pen_source' "$RULE" \
-  || fail_test "runtime evidence rules must declare the canonical Pen source"
-grep -Fq 'approved-pen-export' "$TEMPLATE" \
-  || fail_test "visual target template must declare the approved Pen export policy"
-grep -Fq '"content_alignment": "exact"' "$TEMPLATE" \
-  || fail_test "visual target template must require exact content within its scope"
-grep -Fq '"scope": "screen"' "$TEMPLATE" \
-  || fail_test "visual target template must declare the Roborazzi comparison scope"
-grep -Fq '../UI_design/fun_photo_editor.pen' "$TEMPLATE" \
-  || fail_test "visual target template must point to the canonical sibling Pen design"
-grep -Fq 'verifyRoborazziDebug' "$CONTRACT" \
-  || fail_test "visual evidence contract must validate Roborazzi verification"
-if grep -Fq 'compare-visual-evidence.sh' "$CONTRACT"; then
-  fail_test "visual evidence contract must not invoke the removed comparator"
-fi
-if grep -Eqi 'similarity[[:space:]]*>=[[:space:]]*0\.95|golden baseline' "$SKILL" "$RULE" "$CONTRACT"; then
-  fail_test "visual verification rules must not use the removed similarity/golden-baseline gate"
-fi
-if grep -Fq 'Existing Surface Baseline' "$DESIGN_TEMPLATE" "$PLANNING_WORKFLOW" "$UX_SKILL" "$STAGE_GATE"; then
-  fail_test "planning sources must not require an existing-surface screenshot baseline"
-fi
-if grep -Fq 'applicable golden comparison' "$REVIEW_SKILL"; then
-  fail_test "code review guidance must name Pen-export Roborazzi verification"
-fi
+# Removed pixel-golden machinery stays removed.
+for retired in harness/scripts/compare-visual-evidence.sh harness/scripts/check-existing-screen-baseline-contract.sh \
+  harness/templates/visual-reference-anchor-verification-template.md .agents/workflows/create-ui-and-verify.md \
+  .agents/workflows/harness-planning.md; do
+  [ ! -e "$REPO_ROOT/$retired" ] || fail_test "$retired must not exist"
+done
 
-fixture_root=$(mktemp -d "${TMPDIR:-/tmp}/pen-design-reference-contract.XXXXXX")
-trap 'rm -rf "$fixture_root"' EXIT
-printf '%s\n' \
-  '# Spec' \
-  '' \
-  '## Screen States' \
-  '' \
-  '| Screen | State ID | Requirement | Acceptance Criteria |' \
-  '|---|---|---|---|' \
-  '| Editor | ready | FR-001 | AC-001 |' \
-  '' \
-  '## Rule Applicability' \
-  '' \
-  '| Rule ID | Rule document | Decision | Evidence |' \
-  '|---|---|---|---|' \
-  '| ARCH | rule.md | Required | fixture |' \
-  '| IMPL | rule.md | Required | fixture |' \
-  '| TEST | rule.md | Required | fixture |' \
-  '| SUI | rule.md | Required | fixture |' \
-  '| L10N | rule.md | Not applicable — no copy | fixture |' \
-  '| NAV | rule.md | Not applicable — no route | fixture |' \
-  '| API | rule.md | Not applicable — no API | fixture |' \
-  '| OBS | rule.md | Not applicable — no boundary | fixture |' \
-  '| ANL | rule.md | Not applicable — analytics: none | fixture |' \
-  '| SEC | rule.md | Not applicable — no security boundary | fixture |' \
-  > "$fixture_root/spec.md"
-cat > "$fixture_root/UI_contract.md" <<'EOF'
-# UI Contract
-Project design system: `docs/product/design_system.md`
+# Policy text.
+has "$RULE" "## UI Conformance Evidence"
+has "$RULE" "never by a screenshot golden"
+has "$RULE" "Never resize a capture or"
+has "$UIV" "Review capture"
+has "$UIV" "Structural check"
+has "$UIV" "Never record, commit, or compare a screenshot golden"
+has "$UIV" "check-visual-evidence-contract.sh \"\$FEATURE_DIR\" --evaluate"
+has "$UX" "Build every state from Pen component instances that"
+has "$UX" "Do not create, version, or edit the requirement block or summary during visual iteration"
+has "$UIL" "## Direct lane — entry check"
+has "$UIL" "run the \`ui-verification\` skill"
+has "$FD" "### Stage 6 — UI Verification"
+has "$FD" "No screenshot golden is recorded or compared"
+has "$FD" "### Stage 1 — Specify & Clarify"
+has "$FD" "### Stage 3 — Implementation Plan & Analyze"
 
-## Screen States
+# Templates carry the new contract and none of the pixel contract.
+has "$CONTRACT_T" "| Reused components |"
+lacks "$CONTRACT_T" "\\| Comparison \\|"
+has "$REPORT_T" "No screenshot golden is recorded or compared"
+lacks "$REPORT_T" "pixel_parity|runtime_evidence|verifyRoborazziDebug"
+has "$TEST_PLAN_T" "## UI State Verification"
+lacks "$TEST_PLAN_T" "TC-US-1-VIS|captureRoboImage"
+lacks "$TASKS_T" "TC-US-1-VIS|captureRoboImage"
 
-| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Editor | ready | Pending | Pending | Pending | Pending | 430x932 | primary-content; state-controls; persistent-controls | Apply button; preview | editor-ready | roborazzi | None | UI-01 |
-EOF
-bash "$STAGE_GATE" harness-planning ui-contract "$fixture_root" >/dev/null
+# Skills and workflows never plan a pixel gate as acceptance evidence.
+for file in "$REPO_ROOT"/.agents/workflows/*.md "$REPO_ROOT"/.agents/skills/*/SKILL.md; do
+  if grep -Eq "captureRoboImage\\(\\)|reference-anchor-verification|visual_evidence/visual-target.json" "$file"; then
+    fail_test "$file still requires the retired pixel-golden contract"
+  fi
+done
 
-echo "PASS: Pen-export verification requires deterministic Roborazzi comparisons."
+echo "PASS: UI appearance is approved by a conformance review, consistently across the harness."

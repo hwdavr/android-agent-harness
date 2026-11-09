@@ -21,10 +21,11 @@ static quality after Test Review. The canonical report structure and per-rule ch
   scope.
 - `rules/android-security.md` only when the approved scope or diff touches a security boundary.
 - The active diff, merge base/reviewed commit, changed production files, and mapped tests.
-- Ad-hoc baseline: `docs/current/spec_v<N>.md`, `implementation_plan_v<N>.md`,
-  `test_plan_v<N>.md`, and `test_review_v<N>.md`.
-- Complex baseline: `$FEATURE_DIR/spec.md`, optional design, `sprint-contract.md`, selected slice
-  metadata/summary, and `test_review_{feature_id}.md`.
+- Single-lane baseline: the approved feature block(s), `$FEATURE_DIR/implementation-plan.md`,
+  `test-plan.md`, and `test_review.md`.
+- Sliced-lane baseline: the approved feature block(s), optional design, `implementation-plan.md`,
+  the slice's `test-plan.md` section and `tasks.md` phase, selected slice metadata/summary, and
+  `test_review_{feature_id}.md`.
 
 ## Execute
 
@@ -93,20 +94,22 @@ approval checklist.
 ### 6. Verify UI/runtime claims conditionally
 
 Run UI verification when the slice says `affects_ui`, or when the diff changes a Composable despite
-that flag. Record a planning defect for the mismatch and continue verification. When visual
-verification is required, run every declared visual command and validator; require target-state
-proof, a passing `verifyRoborazziDebug` receipt, reference-anchor evidence, an exact Pen-export
-screen or component scope, and Roborazzi proof for rich-text appearance claims.
+that flag. Record a planning defect for the mismatch and continue verification. When the change
+owns the UI conformance review, require for every `UI_contract.md` state a review capture at its
+Viewport, a passing structural check, the user's approval in `ui_verification.json`, its registered
+components called from the changed UI files (the compose "Registered design-system components" rule
+passes), and span-style assertions for rich-text appearance claims. A screenshot golden recorded
+from the implementation is a finding, not evidence.
 
-For UI changes without a visual owner, run the mapped automated acceptance tests and name the
-slice that owns final visual verification. Do not capture an unrelated screen.
+For UI changes without the review owner, run the mapped automated acceptance tests and name the
+slice that owns the final conformance review. Do not capture an unrelated screen.
 
 ## Output
 
 Fill `harness/templates/code-review-template.md` completely:
 
-- Ad-hoc: `docs/current/code_review_v<N>.md`.
-- Complex: `$FEATURE_DIR/code_review_{feature_id}.md`.
+- Single lane: `$FEATURE_DIR/code_review.md`.
+- Sliced lane: `$FEATURE_DIR/code_review_{feature_id}.md`.
 
 ## Done When
 

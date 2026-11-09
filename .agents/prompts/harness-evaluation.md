@@ -7,9 +7,10 @@ Target feature for evaluation (auto-selected by `__AGENT_NAME__-harness-generato
 - Workspace: `__FEATURE_DIR__/`
 - Status: `To be reviewed` (all slices are passing)
 
-Read, in order: `AGENTS.md`, the workflow, `__FEATURE_DIR__/sprint-contract.md`,
-`__FEATURE_DIR__/feature_list.json`, `__FEATURE_DIR__/spec.md`,
-`__FEATURE_DIR__/progress.md`, and `__FEATURE_DIR__/session-handoff.md`. Apply the AGENTS
+Read, in order: `AGENTS.md`, the workflow, the approved feature block(s) listed in
+`__FEATURE_DIR__/implementation-plan.md`, that plan, `__FEATURE_DIR__/test-plan.md`,
+`__FEATURE_DIR__/feature_list.json`, `__FEATURE_DIR__/summary.md`, and
+`__FEATURE_DIR__/session-handoff.md`. Apply the AGENTS
 non-negotiable rules and the workflow’s selected-rule and verification requirements.
 
 After Stage 5, update the Harness Feature Tracker in `docs/product/product.md` with the required score-based transition:

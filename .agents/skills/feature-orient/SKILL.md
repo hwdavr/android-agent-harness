@@ -1,6 +1,6 @@
 ---
 name: feature-orient
-description: Orient to the active sprint contract, slice, and task state.
+description: Orient to the approved sliced-lane plans, the selected slice, and its task state.
 ---
 
 # Skill — Feature Orient
@@ -30,14 +30,14 @@ true. The index is derived from the approved contract; it does not replace it.
 
 ## Execute
 
-This is a gated spec-driven workflow: `$FEATURE_DIR/spec.md` (Phase 1: Specify) and `$FEATURE_DIR/sprint-contract.md` (Phase 2: Plan) are already user-approved. Orient to them — never re-open approved requirements or re-plan the sprint contract. The sprint contract's acceptance tests and gates are the plan's verification checkpoints; the active slice's `acceptance_test_ids` and `verification` commands are where this session proves completion.
+This is a gated spec-driven workflow: the feature block(s) in `docs/product/requirements/` (Specify) and `$FEATURE_DIR/implementation-plan.md`, `test-plan.md`, `tasks.md`, and `feature_list.json` (Plan) are already user-approved. Orient to them — never re-open approved requirements or re-plan the slices. A changed block (its SHA-256 no longer matches the plan) is a blocker that returns to Specify.
 
 Before making any changes or planning code, gather complete session and git context:
 
 1. **Validate and select `FEATURE_DIR` first**: run `bash harness/scripts/check-feature-lifecycle.sh`, then read the Harness Feature Tracker in `docs/product/product.md`. Continue an `In Progress` product workspace, or select the approved `Awaiting implementation approval` product workspace. Stop if validation fails; never infer lifecycle state by scanning directories or start a second feature while one is `In Progress`.
-2. **Select the slice, then generate the context index**: read the selected slice in `$FEATURE_DIR/feature_list.json`, run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`, and retain its source hashes. Read only the `FR-*` / `AC-*` rows mapped to that slice, the selected user-story section, and the matching acceptance rows in `$FEATURE_DIR/spec.md` and `$FEATURE_DIR/sprint-contract.md`.
+2. **Select the slice, then generate the context index**: read the selected slice in `$FEATURE_DIR/feature_list.json`, run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`, and retain its source hashes. Read only the `FR-*` / `AC-*` rows mapped to that slice, the selected user-story section, and the matching rows in the feature block(s) under `## Planned changes` and the slice's `### US-n` acceptance tests and Spec Coverage Matrix rows in `$FEATURE_DIR/test-plan.md`.
 3. **Read `$FEATURE_DIR/evaluator-rubric.md`** only when it names unresolved findings for the selected slice.
-4. **Read active logs**: start with the latest relevant entry in `$FEATURE_DIR/progress.md` (or session logs); expand only when it names an unresolved dependency or blocker.
+4. **Read active logs**: start with the latest relevant entry in `$FEATURE_DIR/summary.md` and the latest slice summary (or session logs); expand only when it names an unresolved dependency or blocker.
 5. **Run recent git history analysis** (`git log -n 5 --oneline`).
 6. **Review prior knowledge** in `docs/knowledge/`:
    - Search titles and metadata for the selected feature area, affected components, and required-rule IDs first.
@@ -48,6 +48,6 @@ Before making any changes or planning code, gather complete session and git cont
    - Update its status in `$FEATURE_DIR/feature_list.json` to `in_progress`, update the tracker row to `In Progress`, and run `bash harness/scripts/check-feature-lifecycle.sh` again before continuing.
    - Generate `$FEATURE_DIR/summary_{feature_id}.md` from `harness/templates/summary-template.md`
      plus only `harness/templates/summary-profiles/harness-generator.md`. Its **Context
-     Provenance** section cites the approved `sprint-contract.md`, `feature_list.json`, selected
+     Provenance** section cites the approved `implementation-plan.md`, `test-plan.md`, `feature_list.json`, selected
      slice, and generated index hashes. Do not repeat Rule Applicability, scope, acceptance
      criteria, or feature-list metadata.

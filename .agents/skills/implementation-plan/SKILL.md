@@ -1,113 +1,127 @@
 ---
 name: implementation-plan
-description: Create a detailed implementation and test plan before coding.
+description: Plan an approved or clarified change (Spec Kit /plan + /tasks + /analyze) — implementation-plan.md and test-plan.md for every lane, plus tasks.md and feature_list.json in the sliced lane — and stop for approval before any code.
 ---
 
-# Skill — Implementation Plan
+# Skill — Implementation Plan (Plan + Tasks + Analyze)
 
 ## Purpose
-Produce a concrete, reviewable plan before any code is written.
-This is the final gate before implementation begins.
 
----
+Produce a reviewable plan before any code is written, in the dated workspace
+`.scratch/<YYYY-MM-DD>-<feature-id>/`:
+
+| Artifact | Single lane | Sliced lane |
+|---|---|---|
+| `implementation-plan.md` — HOW the code changes; canonical Rule Applicability | ✓ | ✓ |
+| `test-plan.md` — every test concern | ✓ (flat acceptance table) | ✓ (per-story tables, coverage matrix, journey contract) |
+| `tasks.md` — ordered work per story | — | ✓ |
+| `feature_list.json` — slice contract for the generator | — | ✓ |
+
+The lane is fixed by the feature block: no user stories → single; two or more → sliced.
 
 ## Load
-- `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read
-- `rules/testing-practices.md`
-- `harness/templates/rule-applicability-template.md`
-- `harness/templates/implementation-plan-template.md`
-- `harness/templates/test-plan-template.md`
-- `docs/current/spec_v<N>.md` (Requirement & Impact Analysis output)
-- Approved `docs/current/UI_contract.md` and its canonical Pen/reference mappings for UI scope.
 
-When the approved `SEC` decision is `Required` or excepted, load
-`rules/android-security.md` and carry its required boundary, failure-mode, and test
-evidence into the plan.
-Load `rules/testing-runtime-evidence.md` only when the planned evidence includes a
-platform, instrumented runtime, end-to-end journey, or visual claim.
-
----
+- `harness/templates/implementation-plan-template.md`, `harness/templates/test-plan-template.md`,
+  and — sliced lane only — `harness/templates/tasks-template.md`,
+  `harness/templates/feature_list_template.json`.
+- `harness/templates/rule-applicability-template.md` (decision vocabulary and triggers).
+- The feature block(s) in `docs/product/requirements/`, or for a bug the plan's Root Cause and the
+  test plan's Reproduction Test. For UI scope, the approved `UI_contract.md`, its Pen references,
+  and the design-system Component Registry.
+- `rules/testing-practices.md`. Load a conditional rule only when its row is `Required`, excepted,
+  or newly triggered; `rules/testing-runtime-evidence.md` only for platform, instrumented,
+  journey, or UI claims; `rules/android-security.md` when SEC is Required or excepted.
 
 ## Execute
 
-### Step 1: Generate Implementation Plan
-Using the clarified requirements and the approved outputs of the separate **UX Design** stage
-for UI scope, compile a complete implementation plan.
+### 1. Implementation plan — `implementation-plan.md`
 
-Start by reading the approved **Rule Applicability** matrix in the active specification.
-Link that exact `spec_v<N>.md#rule-applicability` record from both plans instead of
-copying its ten decisions. Every `Required` row needs concrete work and verification
-evidence. `Not applicable` and `Exception` rationales remain canonical in the
-specification. Do not introduce analytics events or logs solely because their rows
-exist.
+Follow the template exactly. In particular:
 
-> [!IMPORTANT]
-> You **MUST** follow the structure and sections in [implementation-plan-template.md](../../harness/templates/implementation-plan-template.md) exactly.
+- **Product Requirements**: one row per capability file with the block ID; leave the SHA-256
+  column `<64 hex characters>` until approval. A bug restoring existing behavior writes
+  `none — restores <capability>.md#FR-###`.
+- **Rule Applicability** is the rules gate: decide all ten rows before Phase 0 and re-check them
+  after Phase 1. A deviation is an `Exception — approved by <user/date>` row stating its boundary.
+  Do not add analytics events or logs only because a row exists.
+- **Phase 0** resolves every `NEEDS RESEARCH` unknown (decision, rationale, alternatives).
+- **Phase 1**: Project Structure (every file created, modified, deleted — the UI row lists the
+  screen files), data model and migrations, API contract changes against
+  `sharedContracts/openapi.yaml`, UiState, and for UI scope **UI State Stages**: one row per
+  `UI_contract.md` Plan stage ID naming the registered components it reuses. A needed component
+  that is not registered is added to the design-system Component Registry with approval first.
+- No test material in this file.
 
-The implementation plan must include:
-- **File Breakdown**: List all files to create, modify, or delete.
-- **Domain Models**: Detail any new or modified domain model fields.
-- **API & DTO Layer**: Outline DTO changes and defensive parsing logic.
-- **OpenAPI Verification**: 
-  - Check if any new/modified endpoints are in `sharedContracts/openapi.yaml`.
-  - If not, explicitly list the OpenAPI spec changes required.
-- **UiState Implementation**: Define the new fields and states matching the spec's designed state structure.
-- **UI State Stages**: For UI work, copy every Plan stage ID from `UI_contract.md` into its own
-  implementation and runtime-verification row. Do not collapse selected subtools into one row.
-- **Navigation Flow**: Reference routes, arguments, and backstack details from the design.
-- **Risks & Mitigations**: Identify technical risks (such as payload changes, synchronization issues, database migration) and document their mitigation strategies.
-- **Rule Applicability Implementation**: Link the canonical specification record and
-  map every required rule to planned files and evidence; update the specification if a
-  non-applicable or exception decision no longer holds.
+### 2. Test plan — `test-plan.md`
 
-### Step 2: Generate Test Plan
+Follow the template exactly. Classify each verification item as maintained regression or
+ephemeral exploration first; temporary WireMock/device exploration belongs to `exploratory-qa`
+with `agent-device`, never to an `androidTest` class or CI dependency. The plan holds planned
+procedures only — results go to the summary.
 
-Classify each verification item as maintained regression or ephemeral exploration before
-selecting a test layer. Temporary WireMock/device exploration uses `exploratory-qa` with
-`agent-device`, run-scoped fixtures/evidence, and cleanup; do not turn it into an
-`androidTest` class or CI dependency. Apply the per-endpoint integration requirement below
-to maintained API changes/tests, not endpoints merely exercised in an ephemeral QA run.
-Populate the test template's `Ephemeral Test Cases` section when that lane is selected:
-use a concise table for each QA ID, intent, fixture/preconditions, and expected outcome,
-then provide concrete, ordered, numbered execution steps for every QA ID below the table.
-Include real device actions, request/result verification checkpoints, and planned cleanup.
-The test plan contains planned procedures only; do not add execution records, actual results,
-or collected evidence links. Record `Not run` and subsequent outcomes, observations, run/build/
-device identity, evidence links, and cleanup receipts in `summary_v<N>.md`, keyed by QA ID.
-Keep verbose artifacts under `.qa-artifacts/<run-id>/` and link them from the summary.
-Create a separate, comprehensive test plan document following [test-plan-template.md](../../harness/templates/test-plan-template.md).
+- **Rule Applicability Test Mapping** links `implementation-plan.md#rule-applicability` and maps
+  every `Required` row to tests, checks, or review evidence.
+- **Acceptance Test Cases**: exactly one primary automated test per `AC-###`; a fallback, error,
+  boundary, or compatibility outcome gets its own AC and test. Single lane: one flat table
+  (`TC-01`…). Sliced lane: a `### US-n` subsection per story (`TC-US-n-01`…). Every row names the
+  layer, the real test file and method, shared scenario (`sharedContracts/test-scenarios/…` or
+  `N/A — no API`), assertions, and an exact scoped command.
+- Each affected API endpoint has at least one integration test using a shared JSON scenario.
+- **NAV Required**: declare the real instrumented journey in `## Production Journey Boundary`.
+- **UI scope**: `## UI State Verification` — one review-capture method (rendered at the state's
+  Viewport, i.e. the Pen frame size and density) and one structural-check method per UI state.
+  No screenshot golden, `TC-*-VIS` row, or Roborazzi verify/record command.
+- **Sliced lane only**: the Spec Coverage Matrix (every `FR-###`, `AC-###`, `SC-###` → story →
+  primary test, or `Out of scope — <reason>`), and the Production Journey Planning Contract with
+  one row per story (Yes when any AC crosses a destination, back stack, saved state, recreation,
+  or post-return persistence boundary; `NAV: Required` needs at least one Yes).
 
-The test plan must include:
-- **Test Layer Selection**: Use `testing-strategy.md` (already loaded) to decide the minimum test layers needed (start at the lowest layer that provides enough confidence).
-- **Required Tests Coverage**: Check the active task's "Required tests" table in `docs/current/task-list.md` and ensure all specified test cases are explicitly covered in your test plan.
-- **Test Case Definition**: Define test cases per class (Mapper, ViewModel, UI) with Given/When/Then and a unique ID for each test case.
-- **API Integration Tests**: **MANDATORY** to include at least one integration test using a shared JSON scenario for each affected API endpoint. If the claim requires the real app process and Retrofit/OkHttp, the owning test may live in `app/src/androidTest/` beside a loopback server; name the server harness, shipped-client path, receipts, and runtime gate explicitly.
-- **Rule-Driven Verification**: Link the canonical specification record and map each
-  required applicability row to test IDs, static checks, review evidence, or an
-  explicit reason no executable test is needed.
+### 3. Sliced lane only — `tasks.md` and `feature_list.json`
 
----
+- **Vertical slices**: each story must pass the test "After this slice ships alone, a user can
+  observe <delta> through the existing entry point <screen or action already in the app>."
+  Merge any horizontal slice into the story that first makes it user-visible. Order by priority;
+  put the riskiest foundation first only when it is itself vertical.
+- `tasks.md`: `T### [P] [US-n] description in exact/path.kt`, phases Setup → Foundational → one
+  phase per story (`**Slice**: \`US-n\``, its acceptance test IDs) → Polish.
+- `feature_list.json`: one entry per story with `id` = `US-n`, `priority`, `area`, `title`,
+  `description` (execution directions, not the story text), `ui_design`, `user_visible_behavior`,
+  `affects_ui`, `requires_visual_verification` (true only for the final UI slice, which owns the
+  conformance review), `production_journey` (mirrors the journey contract), `status`
+  `not_started`, `acceptance_test_ids` (exactly that story's TC IDs), `verification`,
+  `evidence: []`, `notes`. The root declares `platform_validation`
+  (`required`, `unsupported_environment_policy: "fail_loudly"`, and a reason or capability
+  matrix). Platform-bound work adds `platform-capability-matrix.md`.
 
-## Output
+### 4. Analyze
 
-Write `docs/current/implementation_plan_v<N>.md` (follow `harness/templates/implementation-plan-template.md`).
-Write `docs/current/test_plan_v<N>.md` (follow `harness/templates/test-plan-template.md`).
-Update `summary_v<N>.md`: mark the Implementation Plan stage complete.
+```bash
+bash harness/scripts/check-stage-artifacts.sh feature-delivery analyze .scratch/<YYYY-MM-DD>-<feature-id>
+```
 
----
+(`bug-fixing analyze` for bugs.) Fix every inconsistency at its source: a requirement gap returns to
+`feature-specification`; a design gap returns to UX Design; plan and test gaps are fixed here.
+Record the stage in `summary.md`.
 
-## Done When — ⛔ MANDATORY STOP
+## Approval — ⛔ MANDATORY STOP
 
-**You MUST stop here and present the implementation plan to the user.**
+Present the package and wait for explicit approval. Do not create or edit source files before it.
 
-### Feedback Loop
-1. **Feedback**: The user provides feedback via chat, file comments, or direct edits to the plan.
-2. **Iteration**: Route visual feedback to the separate UX Design stage and update only its design
-   artifacts. Return to requirements analysis only when behavior, scope, data, navigation, or the
-   required state inventory changes. Plan-only feedback stays in this stage. Reconcile the affected
-   plan/test bindings after an approved design or requirements change and request plan approval again.
-3. **Approval**: The agent returns to the active workflow file and proceeds to the next stage defined there.
+- **Single lane**: one review covers the feature block, the design (UI scope), and both plans.
+- **Sliced lane**: the block was approved earlier; this review covers both plans, `tasks.md`,
+  `feature_list.json`, journey ownership, and the platform contract.
 
-Do not write any code, create any source files, or call any file-editing tools until the user explicitly approves.
+Feedback routing: visual feedback → UX Design (design artifacts only); behavior, scope, data,
+navigation, or state-inventory changes → `feature-specification`; plan-only feedback stays here.
 
-**APPROVED by user →** Return to the active workflow file and proceed to the next stage defined there.
+On approval:
+
+1. Set the block **Status** to `Approved — <user>, <YYYY-MM-DD>` (single lane) and record each
+   block's SHA-256 (text between the markers) in Product Requirements; set the plan **Status**.
+2. Move the tracker to `Awaiting implementation approval` → `In Progress` and run
+   `bash harness/scripts/check-feature-lifecycle.sh`.
+3. Run the post-approval gate:
+   `bash harness/scripts/check-stage-artifacts.sh <workflow> implementation-plan .scratch/<YYYY-MM-DD>-<feature-id>`.
+
+**APPROVED →** return to the active workflow: single lane continues to Implementation; sliced lane
+hands off to `harness-generator`.

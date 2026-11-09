@@ -257,7 +257,7 @@ elif [ "$FIX_MODE" -eq 1 ]; then
   # --- 6c. build fix-mode prompt ---------------------------------------------
   # The feature was evaluated but did NOT score 5.0/5, so its tracker status is
   # "To be fixed". The Generator must resolve every code_review / test_review
-  # finding, re-verify against the sprint-contract gates, and transition to
+  # finding, re-verify against the test-plan acceptance gates, and transition to
   # "To be human reviewed".
   PROMPT_TEMPLATE="$(cat "$ROOT_DIR/.agents/prompts/harness-fix.md")"
 

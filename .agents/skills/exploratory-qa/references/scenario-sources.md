@@ -2,7 +2,7 @@
 
 The agent writes run-specific JSON; the reporter evaluates it and never scans source or invents observations.
 
-1. Resolve the requested feature, bug, APK, or diff. Prefer its approved spec/UI contract, then its test plan or sprint contract in `docs/current/` or its stable `.scratch/<feature>/` workspace. Check `Related spec`; the latest shared UI contract may belong to another feature.
+1. Resolve the requested feature, bug, APK, or diff. Prefer its approved feature block in `docs/product/requirements/` and its UI contract, then its `test-plan.md` in the tracker-linked `.scratch/<YYYY-MM-DD>-<feature-id>/` workspace. Check the contract's `Related spec`; another workspace's UI contract belongs to another feature.
 2. Inventory the feature's relevant user-visible entry points before selecting a journey. Include Home shortcuts/cards and in-context tool entries, plus other documented routes such as notifications or deep links when relevant. Use the approved contract, a Home/runtime snapshot, journey registry, and action inventory as discovery sources. These sources are hints; runtime behavior is still the evidence.
 3. Put every in-scope entry point in `entry_points` with its surface, action, expected destination/behavior, and a `check_id` present in `expectations.ui_checks`. Put only explicitly out-of-scope or future routes in `excluded_entry_points` with a reason. Do not silently omit unclear entry points; record the ambiguity and report missing intent.
 4. Map selected Screen States, IME State Coverage, entry actions, controls, fixtures, and verification expectations to `states` and `expectations.ui_checks`. Retain state IDs/plan stages and bound the exploration budget. Ensure each in-scope entry point has a corresponding runtime check.

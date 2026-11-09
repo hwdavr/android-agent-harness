@@ -35,7 +35,7 @@ Classify before editing. Use exactly one primary classification:
 | `HARNESS_ENVIRONMENT` | A workflow, gate, validator, fixture, environment probe, or evidence rule allowed a false pass or misleading result. | Repair and regression-test the harness. |
 | `WORKFLOW_GAP` | The correct rule exists nowhere or is not attached to the required stage. | Add it to the authoritative workflow/template/gate and test enforcement. |
 | `TEST_EVIDENCE_GAP` | The test runner or evidence schema cannot prove the required boundary. | Add a mechanical evidence requirement; do not implement the product behavior. |
-| `SPEC_GAP` | The expected product behavior or acceptance criteria are ambiguous, conflicting, or absent. | Repair `spec.md`, `UI_contract.md`/Pen references, and `sprint-contract.md` in the feature workspace; then re-validate downstream artifacts. |
+| `SPEC_GAP` | The expected product behavior or acceptance criteria are ambiguous, conflicting, or absent. | Repair the feature block in `docs/product/requirements/` (re-approval), `UI_contract.md`/Pen references, and the plans in the feature workspace; then re-validate downstream artifacts. |
 | `MODEL_OR_PLATFORM_CAPABILITY` | The runtime, model, OEM, SDK, or service cannot provide the requested capability. | Stop; route to product/architecture decision. Add only fail-loud diagnostics if needed. |
 | `APPLICATION_DEFECT` | The harness correctly exposed a defect in shipped application behavior. | Stop; route to the application bug-fixing workflow. |
 
