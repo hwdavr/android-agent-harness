@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 MAX_DESCRIPTION_CHARS=120
 MAX_TOTAL_CHARS=3600
-EXPECTED_DESCRIPTION_COUNT=39
+EXPECTED_DESCRIPTION_COUNT=41
 
 fail() {
   echo "FAIL: $1" >&2
@@ -66,32 +66,27 @@ EOF
 
 assert_contains .agents/workflows/feature-delivery.md 'feature.*end-to-end'
 assert_contains .agents/workflows/bug-fixing.md 'bug'
-assert_contains .agents/workflows/create-ui-and-verify.md 'UI'
 assert_contains .agents/workflows/feature-review.md 'ad-hoc.*review'
-assert_contains .agents/workflows/harness-planning.md 'complex.*slice'
 assert_contains .agents/workflows/harness-generator.md 'complex.*slice'
 assert_contains .agents/workflows/harness-evaluation.md 'complex.*code.*test.*review'
 assert_contains .agents/workflows/harness-fix.md 'evaluator.*finding'
-assert_file_contains AGENTS.md 'No direct UI-change lane'
-assert_file_contains AGENTS.md 'Any user-visible UI implementation or update'
-assert_file_not_contains AGENTS.md 'direct skill lane'
 assert_contains .agents/skills/context-management/SKILL.md 'session.*context'
 assert_file_contains .agents/skills/context-management/SKILL.md 'UI Request Routing'
-assert_file_contains .agents/skills/context-management/SKILL.md 'create-ui-and-verify'
 assert_file_contains .agents/skills/context-management/SKILL.md 'current-state'
 assert_file_contains .agents/skills/context-management/SKILL.md 'defect'
 assert_file_contains .agents/skills/context-management/SKILL.md 'evidence'
-assert_file_contains .agents/workflows/bug-fixing.md 'create-ui-and-verify'
 assert_file_contains .agents/workflows/bug-fixing.md 'RED'
 assert_file_contains .agents/workflows/bug-fixing.md 'Fix Plan'
-assert_file_contains .agents/workflows/create-ui-and-verify.md 'No Direct UI-Change Lane'
-assert_file_contains .agents/workflows/create-ui-and-verify.md 'approved implementation plan'
-assert_file_contains .agents/skills/android-ui-layer/SKILL.md 'implementation-stage skill'
 assert_file_not_contains .agents/skills/context-management/SKILL.md 'Small UI Patch Triage'
 assert_file_not_contains .agents/skills/context-management/SKILL.md 'direct skill lane'
-assert_file_not_contains .agents/workflows/create-ui-and-verify.md 'Triage: Small UI Patch'
-assert_file_not_contains .agents/workflows/create-ui-and-verify.md 'Invoke.*android-ui-layer.*directly'
-assert_file_not_contains .agents/skills/android-ui-layer/SKILL.md 'direct implementation lane'
+# One feature entry; appearance-only UI changes use the android-ui-layer direct lane.
+for removed in .agents/workflows/create-ui-and-verify.md .agents/workflows/harness-planning.md; do
+  [ ! -e "$removed" ] || fail "$removed should be deleted (feature-delivery is the single entry)"
+done
+assert_file_contains .agents/skills/context-management/SKILL.md 'Appearance-only'
+assert_file_contains .agents/skills/context-management/SKILL.md 'android-ui-layer'
+assert_file_not_contains .agents/skills/context-management/SKILL.md 'create-ui-and-verify'
+assert_file_not_contains .agents/workflows/bug-fixing.md 'create-ui-and-verify'
 assert_contains .agents/skills/ui-verification/SKILL.md 'UI.*visual'
 assert_contains .agents/skills/security-and-hardening/SKILL.md 'Android.*security'
 assert_contains .agents/skills/api-contract-update/SKILL.md 'API.*contract'

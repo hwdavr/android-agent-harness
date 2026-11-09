@@ -73,7 +73,7 @@ package, and on approval records the block SHA-256, sets Status, moves the track
 bash harness/scripts/check-stage-artifacts.sh feature-delivery implementation-plan "$FEATURE_DIR"
 ```
 
-**Sliced lane ends here** → `harness-generator` executes the slices.
+**Sliced lane ends here**: the tracker stays at `Awaiting implementation approval` and `harness-generator` executes the slices.
 
 ---
 

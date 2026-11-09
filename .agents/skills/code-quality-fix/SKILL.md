@@ -80,7 +80,7 @@ For any remaining failures or warnings:
 - Fix root causes, do not suppress rules.
 
 ### 4. Record Results
-**Update `summary_{feature_id}.md`** (or `summary_v<N>.md`) to mark **Code Quality Fix** ✅ with notes and timestamp once all checks pass with 0 violations.
+**Update `summary.md`** (single lane) or `summary_<FEATURE_ID>.md` (sliced lane slice) to mark **Code Quality Fix** ✅ with notes and timestamp once all checks pass with 0 violations.
 
 ---
 

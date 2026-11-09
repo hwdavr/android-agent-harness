@@ -118,10 +118,14 @@ On approval:
 
 1. Set the block **Status** to `Approved — <user>, <YYYY-MM-DD>` (single lane) and record each
    block's SHA-256 (text between the markers) in Product Requirements; set the plan **Status**.
-2. Move the tracker to `Awaiting implementation approval` → `In Progress` and run
-   `bash harness/scripts/check-feature-lifecycle.sh`.
+2. Move the tracker and run `bash harness/scripts/check-feature-lifecycle.sh`:
+   - **Single lane**: `In Progress` — this session continues to Implementation.
+   - **Sliced lane**: `Awaiting implementation approval`, then stop. The generator picks up the
+     row, moves it to `In Progress`, and starts the first `not_started` slice. Do not set
+     `In Progress` yourself.
 3. Run the post-approval gate:
    `bash harness/scripts/check-stage-artifacts.sh <workflow> implementation-plan .scratch/<YYYY-MM-DD>-<feature-id>`.
 
-**APPROVED →** return to the active workflow: single lane continues to Implementation; sliced lane
-hands off to `harness-generator`.
+**APPROVED →** single lane continues to Implementation. Sliced lane ends the session: tell the user
+to start the generator (`bash harness/scripts/<agent>-harness-generator.sh`, the scheduled
+launcher, or "Read `.agents/workflows/harness-generator.md`").

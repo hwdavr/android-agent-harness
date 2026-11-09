@@ -43,7 +43,8 @@ documents. During testing/review load `rules/testing-practices.md`; add
 |-----------|-------------|
 | New feature or enhancement | `workflows/feature-delivery.md` |
 | Bug, crash, or regression | `workflows/bug-fixing.md` |
-| Any user-visible UI implementation or update, including a single component or state | `workflows/create-ui-and-verify.md` |
+| UI behavior, state, or new screen | `workflows/feature-delivery.md` |
+| Appearance-only UI change (no behavior, state, or data change) | `skills/android-ui-layer/SKILL.md` (direct lane, entry check) |
 | API contract change | `workflows/api-contract-update.md` |
 
 

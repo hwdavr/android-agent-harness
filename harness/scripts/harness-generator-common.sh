@@ -111,6 +111,25 @@ eligible_rows=$(awk -v start="$START_MARKER" -v end="$END_MARKER" '
   }
 ' "$PRODUCT_FILE")
 
+# Only the sliced lane hands off to the generator. Single-lane workspaces
+# (no feature_list.json) are delivered inside feature-delivery itself.
+sliced_rows=""
+while IFS= read -r row; do
+  [ -n "$row" ] || continue
+  row_dir=$(printf '%s' "$row" | cut -f2)
+  row_dir="${row_dir%/}"
+  if [ -f "$ROOT_DIR/$row_dir/feature_list.json" ]; then
+    sliced_rows="${sliced_rows}${row}
+"
+  else
+    row_id=$(printf '%s' "$row" | cut -f1)
+    info "SKIP '$row_id' — single-lane workspace (no feature_list.json); feature-delivery owns it."
+  fi
+done <<ROWS_END
+$eligible_rows
+ROWS_END
+eligible_rows=$(printf '%s' "$sliced_rows")
+
 if [ -z "$eligible_rows" ]; then
   info "No pending harness tasks (no In Progress, Awaiting implementation approval, To be reviewed, or To be fixed features in tracker)."
   exit 2
