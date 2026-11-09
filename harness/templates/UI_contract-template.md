@@ -1,7 +1,7 @@
 # UI Contract — <feature>
 
 **Project design system**: `docs/product/design_system.md`
-**Related spec**: `spec_v<N>.md` / `spec.md` (use the active workflow's path)
+**Related spec**: feature block `<feature-id>` in `docs/product/requirements/<capability>.md`
 **Reference status**: Inventory / Pen design in progress / Awaiting approval / Approved
 
 ## Research Decisions
@@ -10,7 +10,7 @@
 - Product questions resolved before design: <decisions or linked requirements>
 - Editable input inventory: <stable tags and IME coverage, or confirmed no editable inputs>
 - Design-system exceptions: None / <explicit user approval>
-- Roborazzi scope: <screen or approved component; exact content within that scope>
+- Reused registered components: <from the design-system Component Registry, per state below>
 
 ## Screen States
 
@@ -18,8 +18,9 @@ Create and validate this inventory after requirements clarification and before P
 UI_contract.md is the UI state contract for both ad-hoc and complex workflows. The actual visual
 design lives in the Pen file; no separate design.md is produced.
 
-Define every screen/state, viewport, visible regions, named controls, deterministic fixture,
-comparison, and plan stage. Loading, empty, error, selected, disabled, overlays, and keyboard
+Define every screen/state, viewport, visible regions, named controls, reused registered components,
+deterministic fixture, and plan stage. The Viewport is the Pen frame's logical size in dp; the
+review capture is rendered at exactly that size and density. Loading, empty, error, selected, disabled, overlays, and keyboard
 variants must be settled before generating visuals. Use globally unique State IDs for complex
 runtime targets.
 
@@ -29,9 +30,14 @@ rendered and inspected, replace them with the canonical source, unique top-level
 `screen-frame` role, and full-viewport PNG. A supplied approved image can use `external` and
 `external-screen`. A control-only crop is not a full-screen reference.
 
-| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| <screen> | <screen-state> | Pending | Pending | Pending | Pending | 430x932 | primary-content; state-controls; persistent-controls | <named controls, selection/disabled status, toolbar or sheet when present> | <fixture ID> | roborazzi | None / <approved content scope> | UI-01 |
+**Reused components** lists the design-system Component Registry entries the state uses (taken from
+the component instances in the Pen design), or `None — <reason>`. A design element that matches no
+registry entry is either a new shared component (add it to the registry with approval) or an
+approved exception. It may stay `Pending` only at the inventory gate.
+
+| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Reused components | Runtime fixture | Plan stage |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| <screen> | <screen-state> | Pending | Pending | Pending | Pending | 390x844 | primary-content; state-controls; persistent-controls | <named controls, selection/disabled status, toolbar or sheet when present> | `TopActionBar`, `NoteCard` | <fixture ID> | UI-01 |
 
 ## IME State Coverage
 
@@ -69,17 +75,16 @@ Keyboard behavior is exactly one of:
 
 ## Planning Handoff
 
-For ad-hoc delivery, copy every Plan stage ID into `## UI State Stages` in the implementation plan,
-with one unique planned Roborazzi method and its method-scoped verify command per state.
-
-For complex planning, derive `visual_evidence/visual-target.json` from this contract. Mirror its
-State IDs, viewports, and design-image paths exactly. Bind each runtime content state and approved
-reference to the sprint contract's visual rows. The manifest adds device/locale/dynamic-region
-metadata; it does not define another state inventory.
+Copy every Plan stage ID into `### UI State Stages` in `implementation-plan.md` (with the same
+reused components) and into `## UI State Verification` in `test-plan.md` (one review-capture method
+and one structural-check method per state).
 
 ## Verification Quickstart
 
-1. Before Pen: run the active workflow's `ui-contract` stage gate (`--inventory` checks the state contract).
-2. Generate/edit Pen frames from those rows, render and inspect them, then complete the reference fields.
-3. Run the full `ux-design` or UI-update `reference-design` gate and obtain design approval.
-4. After implementation approval, verify deterministic runtime states against the approved Pen exports.
+1. Before Pen: run the `ui-contract` stage gate (`--inventory` checks the state contract).
+2. Generate/edit Pen frames from those rows using registered components, render and inspect them,
+   then complete the reference fields and Reused components.
+3. Run the `ux-design` gate (validates components against the registry) and obtain design approval.
+4. After implementation: render each state at its Viewport, place it beside the approved design,
+   run the structural checks, and record the user's approval in `ui_verification.json`. No
+   screenshot golden is recorded or compared.

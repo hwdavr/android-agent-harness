@@ -81,9 +81,19 @@ while IFS='|' read -r _ raw_id raw_feature raw_workspace raw_status raw_updated 
 
   case "$status" in
     "Planning"|"Awaiting specification approval"|"Awaiting implementation approval"|"In Progress"|"Blocked") ;;
-    "To be reviewed"|"To be fixed"|"To be human reviewed"|"Complete")
+    "Complete")
+      # Single lane: no slices; completion evidence lives in summary.md.
+      if [ ! -f "$workspace/feature_list.json" ]; then
+        [ -f "$workspace/summary.md" ] || fail "Complete single-lane tracker row '$feature_id' has no summary.md."
+      else
+        non_passing_statuses=$(grep -E '"status"[[:space:]]*:' "$workspace/feature_list.json" |
+          grep -Ev '"status"[[:space:]]*:[[:space:]]*"passing"' || true)
+        [ -z "$non_passing_statuses" ] || fail "Complete tracker row '$feature_id' contains non-passing feature slices."
+      fi
+      ;;
+    "To be reviewed"|"To be fixed"|"To be human reviewed")
       feature_list="$workspace/feature_list.json"
-      [ -f "$feature_list" ] || fail "$status tracker row '$feature_id' has no feature_list.json."
+      [ -f "$feature_list" ] || fail "$status is a sliced-lane status; tracker row '$feature_id' has no feature_list.json."
       feature_statuses=$(grep -E '"status"[[:space:]]*:' "$feature_list" || true)
       [ -n "$feature_statuses" ] || fail "$status tracker row '$feature_id' has no feature statuses."
       non_passing_statuses=$(printf '%s\n' "$feature_statuses" | grep -Ev '"status"[[:space:]]*:[[:space:]]*"passing"' || true)
