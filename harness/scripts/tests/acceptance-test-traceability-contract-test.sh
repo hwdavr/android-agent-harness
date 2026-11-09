@@ -149,7 +149,7 @@ printf '%s\n' \
   '  }' \
   '}' \
   > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"
-expect_failure "must call captureRoboImage() in a Roborazzi JVM test" \
+expect_failure "must assert the rendered node's AnnotatedString span styles" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture --test US-1
 
 write_rendered_fixture
@@ -161,7 +161,8 @@ printf '%s\n' \
   'class RenderedRoborazziTest {' \
   '  @Test' \
   '  fun markedTextIsRendered() {' \
-  '    captureRoboImage("design/mockup_formatted_text.png")' \
+  '    val text = onNodeWithTag("note_body").fetchSemanticsNode().config[SemanticsProperties.Text].first()' \
+  '    assertTrue(text.spanStyles.any { it.item == SpanStyle(fontWeight = FontWeight.Bold) })' \
   '  }' \
   '}' \
   > "$FIXTURE_ROOT/app/src/test/java/example/roborazzi/RenderedRoborazziTest.kt"

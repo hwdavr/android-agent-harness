@@ -28,7 +28,7 @@ DESIGN_COLUMNS = ["Design source", "Design node ID", "Design node role", "Design
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
 PLAN_COLUMNS = ["Stage ID", "Reused registered components", "Implementation"]
 VERIFY_COLUMNS = ["Stage ID", "Review capture (test#method)", "Structural check (test#method)", "Command"]
-REGISTRY_COLUMNS = ["Component", "Pen component", "Composable", "Required testTag"]
+REGISTRY_COLUMNS = ["Component", "Pen component", "Composable", "Required testTag", "Wraps Material"]
 IME_COLUMNS = [
     "Screen", "Input tag", "Window viewport", "Keyboard closed state", "Keyboard open state",
     "Dismissed state", "Layout policy", "Keyboard behavior", "Required visible tags",
@@ -348,6 +348,8 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
     verification = {}
     if plan and test_plan:
         verification = verification_targets(test_plan, stages)
+    if plan and runtime:
+        validate_component_usage(plan, reused_by_stage, project_root)
     if report:
         if not test_plan:
             fail("conformance review validation requires --test-plan")
@@ -358,6 +360,31 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
     else:
         print(f"PASS: {len(states)} complete UI state(s) have unique screen-frame, viewport, regions, "
               f"registered components, fixture, and plan mappings.")
+
+
+def validate_component_usage(plan, reused_by_stage, project_root):
+    """Each reused registered component is called from a UI-layer file the plan changes."""
+    lines = plan.read_text(encoding="utf-8").splitlines()
+    start = heading_index(lines, "Project Structure")
+    ui_files = []
+    if start is not None:
+        for line in lines[start + 1:]:
+            if re.match(r"^#{1,3} ", line):
+                break
+            cells = [clean(cell) for cell in line.strip().strip("|").split("|")] if line.startswith("|") else []
+            if len(cells) >= 2 and cells[0] == "UI":
+                ui_files += [clean(part) for part in cells[1].split(",") if clean(part)]
+    sources = ""
+    for name in ui_files:
+        candidates = [project_root / name] + list((project_root / "app" / "src" / "main").rglob(Path(name).name))
+        path = next((c for c in candidates if c.is_file()), None)
+        if path is None:
+            fail(f"UI file named in the plan's Project Structure does not exist: {name}")
+        sources += path.read_text(encoding="utf-8")
+    for stage, components in sorted(reused_by_stage.items()):
+        for component in sorted(components):
+            if not re.search(rf"\b{re.escape(component)}\s*\(", sources):
+                fail(f"UI state {stage} lists {component}, but no UI file in the plan's Project Structure calls it")
 
 
 def verification_targets(test_plan, stages):

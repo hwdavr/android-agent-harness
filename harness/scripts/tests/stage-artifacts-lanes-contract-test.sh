@@ -87,10 +87,10 @@ setup_project() {
 
 ### Component Registry
 
-| Component | Pen component | Composable | Required testTag |
-|---|---|---|---|
-| TopActionBar | comp/top-bar | ui/components/TopActionBar.kt | top_action_bar |
-| NoteCard | comp/note-card | ui/components/NoteCard.kt | note_card |
+| Component | Pen component | Composable | Required testTag | Wraps Material |
+|---|---|---|---|---|
+| TopActionBar | comp/top-bar | ui/components/TopActionBar.kt | top_action_bar | TopAppBar, CenterAlignedTopAppBar |
+| NoteCard | comp/note-card | ui/components/NoteCard.kt | note_card | Card, ElevatedCard |
 MD
   cat > "$ROOT/docs/product/requirements/note-sharing.md" <<'MD'
 # Note Sharing
@@ -159,6 +159,12 @@ write_feature_plans() {
 $(rules Required)
 
 ## Phase 1 — Design
+
+### Project Structure
+
+| Layer | Files affected | Change type |
+|---|---|---|
+| UI | \`app/src/main/java/example/ShareInviteScreen.kt\` | modify |
 
 ### UI State Stages *(UI scope; remove otherwise)*
 
@@ -251,6 +257,47 @@ expect_fail "review capture must be app/src/test/java/<package>/review/" feature
 
 write_feature_plans
 expect_pass feature-delivery testing .scratch/2026-11-09-share-expiry
+
+# ------------------------------------------------------------ UI conformance review
+mkdir -p "$ROOT/app/src/main/java/example" "$ROOT/app/src/test/java/example/review" "$W/evidence/ui"
+printf 'package example\n\n@Composable\nfun ShareInviteScreen() {\n    TopActionBar(title = "Share")\n    NoteCard(note)\n}\n' \
+  > "$ROOT/app/src/main/java/example/ShareInviteScreen.kt"
+printf 'package example.review\n\nclass ShareInviteReviewCaptureTest\n' > "$ROOT/app/src/test/java/example/review/ShareInviteReviewCaptureTest.kt"
+printf 'package example\n\nclass ShareInviteStructureTest\n' > "$ROOT/app/src/test/java/example/ShareInviteStructureTest.kt"
+png "$W/evidence/ui/invite-expiry-selected.png" 780 1688
+write_report() {  # $1 decision
+  cat > "$W/ui_verification.json" <<JSON
+{
+  "version": 1,
+  "capture": {"renderer": "robolectric", "density": "xhdpi", "theme": "light", "locale": "en-US", "font_scale": 1.0},
+  "build_and_static_checks": {"assembleDebug": "PASS", "compose_rules": "PASS"},
+  "state_results": [{
+    "screen": "Share Invite", "state_id": "invite-expiry-selected",
+    "design_image": "design/share-invite.png",
+    "review_capture": "evidence/ui/invite-expiry-selected.png",
+    "review_capture_test": "app/src/test/java/example/review/ShareInviteReviewCaptureTest.kt#expirySelected",
+    "structural_check": "app/src/test/java/example/ShareInviteStructureTest.kt#expirySelected",
+    "structural_result": "PASS", "reused_components": ["TopActionBar", "NoteCard"],
+    "review_decision": "$1", "approved_by": "user", "approved_on": "2026-11-09",
+    "review_notes": "Font rasterization differs; accepted.", "result": "PASS"
+  }]
+}
+JSON
+}
+write_report approved
+expect_pass feature-delivery ui-verification .scratch/2026-11-09-share-expiry
+
+write_report changes-requested
+expect_fail "cannot PASS without an approved review" feature-delivery ui-verification .scratch/2026-11-09-share-expiry
+
+write_report approved
+png "$W/evidence/ui/invite-expiry-selected.png" 1080 1080
+expect_fail "was not rendered at the contract viewport 390x844" feature-delivery ui-verification .scratch/2026-11-09-share-expiry
+png "$W/evidence/ui/invite-expiry-selected.png" 780 1688
+
+printf 'package example\n\n@Composable\nfun ShareInviteScreen() {\n    TopActionBar(title = "Share")\n}\n' \
+  > "$ROOT/app/src/main/java/example/ShareInviteScreen.kt"
+expect_fail "lists NoteCard, but no UI file in the plan's Project Structure calls it" feature-delivery ui-verification .scratch/2026-11-09-share-expiry
 
 # ------------------------------------------------------------ bug lane
 cat > "$B/implementation-plan.md" <<MD
