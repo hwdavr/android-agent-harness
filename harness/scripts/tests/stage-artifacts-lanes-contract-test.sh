@@ -52,7 +52,7 @@ rules() {  # SUI decision
 | ARCH | \`android-architecture.md\` | Required | layers | review |
 | IMPL | \`implementation-rules.md\` | Required | behavior | tests |
 | TEST | \`testing-strategy.md\` | Required | tests | acceptance tests |
-| SUI | \`compose-rules.md\` | $1 | | |
+| SUI | \`compose-rules.md\` | $1 | picker | review capture |
 | L10N | \`localization-rules.md\` | Not applicable — no copy change | | |
 | NAV | \`navigation-rules.md\` | Not applicable — no route change | | |
 | API | \`api-contract-rules.md\` | Not applicable — no API change | | |

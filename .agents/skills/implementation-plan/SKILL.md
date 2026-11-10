@@ -43,6 +43,8 @@ Follow the template exactly. In particular:
   `none — restores <capability>.md#FR-###`.
 - **Rule Applicability** is the rules gate: decide all ten rows before Phase 0 and re-check them
   after Phase 1. A deviation is an `Exception — approved by <user/date>` row stating its boundary.
+  Every `Required` row needs planned work and a planned verification in `test-plan.md`; in the
+  sliced lane also tag a task with the rule ID (`ARCH`, `IMPL`, `TEST` are standing rules, exempt).
   Do not add analytics events or logs only because a row exists.
 - **Phase 0** resolves every `NEEDS RESEARCH` unknown (decision, rationale, alternatives).
 - **Phase 1**: Project Structure (every file created, modified, deleted — the UI row lists the
@@ -85,7 +87,7 @@ procedures only — results go to the summary.
 - `tasks.md`: a `## Slices` overview table (what each slice delivers, requirements, task IDs, depends
   on, acceptance tests), then one `## US-n:` section per slice (`**Slice**: \`US-n\``, its
   acceptance test IDs) with `### Implementation` and `### Tests`. Every task is
-  `T### [P] [US-n] description in exact/path.kt` and belongs to exactly one slice. Shared setup goes
+  `T### [P] [US-n] [RULE] description in exact/path.kt` and belongs to exactly one slice. Shared setup goes
   under `### Prerequisites` in the **first** slice only; the closing quality, product-doc, and
   install tasks go under `### Final checks` in the **last** slice only. There are no separate phases.
 - `feature_list.json`: one entry per story with `id` = `US-n`, `priority`, `area`, `title`,

@@ -15,11 +15,15 @@ acceptance tests. The analyze gate checks that all three agree.
 
 ## Format
 
-`- [ ] T### [P?] [US-n] <Description> in <exact/file/path.kt>`
+`- [ ] T### [P?] [US-n] [RULE?] <Description> in <exact/file/path.kt>`
 
 - `T###` — sequential task ID in execution order; never renumber after approval.
 - `[P]` — may run in parallel: different files and no dependency on an unfinished task.
 - `[US-n]` — the owning slice. **Every task carries one**, including prerequisites and final checks.
+- `[RULE]` — the Rule Applicability ID (`SUI`, `L10N`, `NAV`, `API`, `OBS`, `ANL`, `SEC`) whose
+  planned work this task carries. Every `Required` rule except the standing `ARCH`, `IMPL`, and
+  `TEST` must tag at least one task, and a tag only names a rule marked `Required`. A task may
+  carry several tags.
 - Every task names the exact file(s) it touches.
 - Implementation precedes tests within a slice (harness delivery is implementation-first;
   bug-fixing adds its RED reproduction task under Prerequisites).
@@ -57,7 +61,7 @@ includes the shared prerequisites; the last slice includes the final checks.
 
 - [ ] T004 [P] [US-1] <domain use case> in `app/src/main/java/.../<UseCase>.kt`
 - [ ] T005 [US-1] <ViewModel state and events> in `app/src/main/java/.../<Feature>ViewModel.kt`
-- [ ] T006 [US-1] <Composable, strings, testTags> in `app/src/main/java/.../<Feature>Screen.kt`
+- [ ] T006 [US-1] [SUI] [L10N] <Composable, strings, testTags> in `app/src/main/java/.../<Feature>Screen.kt`
 
 ### Tests
 

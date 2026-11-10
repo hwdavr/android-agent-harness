@@ -67,6 +67,11 @@ introduces a new trigger updates its row. A deviation from a rule is never silen
 `Exception — approved by <user/date>` row whose evidence column states the approved boundary.
 Reviews independently reconcile all ten decisions against the diff.
 
+Every `Required` row states its planned work and evidence. In the sliced lane, tag the tasks in
+`tasks.md` that do that work with the rule ID (for example `[SUI]`); `ARCH`, `IMPL`, and `TEST` are
+standing rules verified by the Final checks and review. `test-plan.md` maps every `Required` row to a
+planned verification.
+
 | Rule ID | Rule document | Decision | Feature-specific trigger or reason | Planned work and evidence |
 |---|---|---|---|---|
 | ARCH | `android-architecture.md` | <decision> | | |

@@ -144,6 +144,17 @@ $acceptance_header
 | TC-01 | AC-002 | JVM integration | \`ShareInviteIntegrationTest.kt#expiry\` | N/A — no API | Given invite | Row shows expiry | \`./gradlew testDebugUnitTest\` |
 | TC-02 | AC-003 | JVM integration | \`SharedUsersIntegrationTest.kt#expired\` | N/A — no API | Given expired | Row shows Expired | \`./gradlew testDebugUnitTest\` |
 
+## Rule Applicability Test Mapping
+
+| Required Rule ID | Planned verification |
+|---|---|
+| ARCH | review |
+| IMPL | TC-01 |
+| TEST | acceptance tests |
+| SUI | review capture |
+| L10N | strings check |
+| API | contract test |
+
 ## Layer Selection
 
 JVM only.
@@ -167,6 +178,17 @@ write_sliced() {
   write_plan sliced
   cat > "$FEATURE_DIR/test-plan.md" <<MD
 # Test Plan — Expiring share invitations
+
+## Rule Applicability Test Mapping
+
+| Required Rule ID | Planned verification |
+|---|---|
+| ARCH | review |
+| IMPL | TC-01 |
+| TEST | acceptance tests |
+| SUI | review capture |
+| L10N | strings check |
+| API | contract test |
 
 ## Acceptance Test Cases
 
@@ -213,11 +235,11 @@ MD
 
 ### Prerequisites
 
-- [ ] T001 [US-1] Add expiry strings in `app/src/main/res/values/strings.xml`
+- [ ] T001 [US-1] [L10N] Add expiry strings in `app/src/main/res/values/strings.xml`
 
 ### Implementation
 
-- [ ] T002 [US-1] Add expiry to invite state in `ShareInviteViewModel.kt`
+- [ ] T002 [US-1] [API] Add expiry to invite state in `ShareInviteViewModel.kt`
 
 ### Tests
 
@@ -229,7 +251,7 @@ MD
 
 ### Implementation
 
-- [ ] T004 [US-2] Map expired status in `ShareUiModels.kt`
+- [ ] T004 [US-2] [SUI] Map expired status in `ShareUiModels.kt`
 
 ### Final checks
 
@@ -362,9 +384,30 @@ write_sliced
 replace "$FEATURE_DIR/tasks.md" '**Slice**: `US-2` in `feature_list.json`' ''
 expect_failure "must declare '**Slice**: \`US-2\`'"
 
+# Required rules become planned work, a planned verification, and (sliced) a tagged task.
+write_single
+replace "$FEATURE_DIR/implementation-plan.md" "| SUI | \`compose-rules.md\` | Required | picker | review capture |" "| SUI | \`compose-rules.md\` | Required | picker | |"
+expect_failure "SUI is Required but has no planned work and evidence"
+
+write_single
+replace "$FEATURE_DIR/test-plan.md" "| L10N | strings check |" ""
+expect_failure "no planned verification for Required rule L10N"
+
+write_single
+replace "$FEATURE_DIR/test-plan.md" "| API | contract test |" "| API | <test IDs, planned command, review check, or verification gap> |"
+expect_failure "no planned verification for Required rule API"
+
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "[US-1] [L10N] Add expiry strings" "[US-1] Add expiry strings"
+expect_failure "tasks.md has no task tagged [L10N] for Required rule L10N"
+
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "[US-2] [SUI] Map" "[US-2] [NAV] Map"
+expect_failure "T004 is tagged [NAV], but Rule Applicability does not mark NAV Required"
+
 # Tasks belong to exactly one slice; Prerequisites / Final checks sit in one slice each.
 write_sliced
-replace "$FEATURE_DIR/tasks.md" "- [ ] T004 [US-2] Map" "- [ ] T004 Map"
+replace "$FEATURE_DIR/tasks.md" "- [ ] T004 [US-2] [SUI] Map" "- [ ] T004 [SUI] Map"
 expect_failure "T004 has no [US-n] label"
 
 write_sliced

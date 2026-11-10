@@ -4,6 +4,9 @@
 Single lane (no user stories): the approved feature block(s), implementation-plan.md, and
 test-plan.md agree — every AC-### has a primary acceptance test, Rule Applicability is complete.
 
+Every Required rule has planned work and a planned verification (test-plan.md). In the sliced lane
+each Required rule other than the standing ARCH/IMPL/TEST also tags at least one task in tasks.md.
+
 Sliced lane (two or more user stories): additionally tasks.md and feature_list.json agree with the
 stories, the Spec Coverage Matrix, the per-story acceptance tests, and the journey contract; every
 task belongs to exactly one slice, and each slice's tasks match in both files.
@@ -26,6 +29,10 @@ import sys
 from pathlib import Path
 
 RULE_IDS = ["ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC"]
+# Always-loaded rules that apply to every line of code: verified by Final checks and review, so a
+# Required row needs planned work and a test mapping but no dedicated tagged task.
+STANDING_RULES = {"ARCH", "IMPL", "TEST"}
+RULE_TAG = re.compile(r"\[(" + "|".join(RULE_IDS) + r")\]")
 FR_DEF = re.compile(r"^#{3,6}\s+(FR-\d{3})\b", re.M)
 AC_DEF = re.compile(r"\*\*(AC-\d{3})\*\*")
 SC_DEF = re.compile(r"\*\*(SC-\d{3})\*\*")
@@ -162,11 +169,14 @@ def read_requirements(r: Report, plan: str, feature_id: str, root: Path, pre_app
     return spec
 
 
-def check_rules(r: Report, plan: str) -> None:
+def check_rules(r: Report, plan: str) -> dict[str, str]:
+    """Validate the ten Rule Applicability rows; return {rule: decision}."""
     rows = table_rows(section(plan, "Rule Applicability"))
     header = rows[0] if rows else []
     column = next((i for i, cell in enumerate(header) if cell.startswith("Decision")), 2)
+    work_column = next((i for i, cell in enumerate(header) if cell.startswith("Planned work")), len(header) - 1)
     rules = {unquote(row[0]): row for row in rows[1:] if row}
+    decisions: dict[str, str] = {}
     for rule in RULE_IDS:
         row = rules.get(rule)
         if not row or len(row) <= column:
@@ -176,6 +186,25 @@ def check_rules(r: Report, plan: str) -> None:
         if not (decision == "Required" or re.match(r"^Not applicable — \S", decision)
                 or re.match(r"^Exception — approved by \S", decision)):
             r.fail(f"implementation-plan.md Rule Applicability {rule} has an unsupported decision: '{decision}'")
+            continue
+        decisions[rule] = "Required" if decision == "Required" else decision.split(" —")[0]
+        if decision == "Required":
+            work = row[work_column] if len(row) > work_column else ""
+            if not work or work.startswith("<"):
+                r.fail(f"implementation-plan.md Rule Applicability {rule} is Required but has no planned work and evidence")
+    return decisions
+
+
+def check_rule_test_mapping(r: Report, test_plan: str, decisions: dict[str, str]) -> None:
+    """Every Required rule maps to a planned verification in test-plan.md."""
+    rows = table_rows(section(test_plan, "Rule Applicability Test Mapping"))
+    mapped = {unquote(row[0]): row[1] for row in rows if len(row) > 1 and unquote(row[0]) in RULE_IDS}
+    for rule in RULE_IDS:
+        if decisions.get(rule) != "Required":
+            continue
+        verification = mapped.get(rule, "")
+        if not verification or verification.startswith("<"):
+            r.fail(f"test-plan.md Rule Applicability Test Mapping has no planned verification for Required rule {rule}")
 
 
 def test_cases(r: Report, rows: list[list[str]], where: str, into: dict[str, set[str]]) -> list[str]:
@@ -203,7 +232,7 @@ def check_coverage(r: Report, spec: Spec, covers: dict[str, set[str]]) -> None:
             r.fail(f"test-plan.md {tc} cites {ac}, which no listed capability file defines")
 
 
-def check_single(r: Report, spec: Spec, test_plan: str, workspace: Path) -> None:
+def check_single(r: Report, spec: Spec, test_plan: str, workspace: Path, decisions: dict[str, str]) -> None:
     if spec.stories:
         r.fail(f"single lane must not define user stories (found {', '.join(sorted(spec.stories))}); "
                "use the sliced lane or remove the User Scenarios section")
@@ -219,7 +248,7 @@ def check_single(r: Report, spec: Spec, test_plan: str, workspace: Path) -> None
     check_coverage(r, spec, covers)
 
 
-def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path) -> None:
+def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path, decisions: dict[str, str]) -> None:
     stories = set(spec.stories)
     if len(stories) < 2:
         r.fail("sliced lane needs two or more user stories; a single deliverable change uses the single lane")
@@ -271,7 +300,7 @@ def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path) -> None
     for story in sorted(stories - set(journeys)):
         r.fail(f"test-plan.md Production Journey Planning Contract has no row for {story}")
 
-    tasks_by_story = check_tasks_md(r, stories, workspace)
+    tasks_by_story = check_tasks_md(r, stories, workspace, decisions)
     check_feature_list(r, stories, tc_story, journeys, workspace, tasks_by_story)
 
 
@@ -288,7 +317,8 @@ def expand_task_ids(cell: str) -> set[str]:
     return ids
 
 
-def check_tasks_md(r: Report, stories: set[str], workspace: Path) -> dict[str, dict[str, bool]]:
+def check_tasks_md(r: Report, stories: set[str], workspace: Path,
+                   decisions: dict[str, str]) -> dict[str, dict[str, bool]]:
     """tasks.md: a Slices table, then one '## US-n:' section per slice owning every task.
 
     Returns {story: {task id: checked}} for the feature_list.json comparison.
@@ -308,6 +338,7 @@ def check_tasks_md(r: Report, stories: set[str], workspace: Path) -> dict[str, d
         r.fail(f"tasks.md section {story} is not a user story in any approved feature block")
 
     by_story: dict[str, dict[str, bool]] = {}
+    tagged: set[str] = set()
     for index, (story, body, _) in enumerate(sections):
         if not re.search(rf"^\*\*Slice\*\*:\s*`{story}`", body, re.M):
             r.fail(f"tasks.md section {story} must declare '**Slice**: `{story}`'")
@@ -324,6 +355,14 @@ def check_tasks_md(r: Report, stories: set[str], workspace: Path) -> dict[str, d
             elif labels != [story]:
                 r.fail(f"tasks.md {task_id} is in the {story} section but labelled {', '.join(labels)}")
             by_story[story][task_id] = m.group(1) in "xX"
+            for tag in RULE_TAG.findall(rest):
+                if decisions.get(tag) != "Required":
+                    r.fail(f"tasks.md {task_id} is tagged [{tag}], but Rule Applicability does not mark {tag} Required")
+                tagged.add(tag)
+
+    for rule in RULE_IDS:
+        if decisions.get(rule) == "Required" and rule not in STANDING_RULES and rule not in tagged:
+            r.fail(f"tasks.md has no task tagged [{rule}] for Required rule {rule}")
 
     spans = [span for _, _, span in sections]
     all_ids = [m.group(2) for m in TASK_ROW.finditer(tasks)]
@@ -442,8 +481,9 @@ def check(workspace: Path, root: Path, pre_approval: bool = False) -> Report:
         return r
 
     spec = read_requirements(r, plan, feature_id, root, pre_approval)
-    check_rules(r, plan)
-    (check_single if m.group(1) == "single" else check_sliced)(r, spec, test_plan, workspace)
+    decisions = check_rules(r, plan)
+    check_rule_test_mapping(r, test_plan, decisions)
+    (check_single if m.group(1) == "single" else check_sliced)(r, spec, test_plan, workspace, decisions)
     return r
 
 
