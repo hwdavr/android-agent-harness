@@ -3,13 +3,15 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+# Logical path (symlinks kept): the root the test was invoked through, like the shell contract tests.
+PROJECT_ROOT = Path(os.path.abspath(__file__)).parents[3]
 VALIDATOR = PROJECT_ROOT / "harness/scripts/check-codex-agent-adapters.py"
 ROLES = ("planner", "implementer", "tester", "evaluator")
 

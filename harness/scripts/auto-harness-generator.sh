@@ -84,8 +84,10 @@ fail() {
 
 # A fixed /tmp path keeps the lock visible to launchd and manually launched
 # processes while allowing separate worktrees to run independently.
+# HARNESS_LOCK_ROOT overrides the parent directory (sandboxed runs, contract tests).
+LOCK_ROOT="${HARNESS_LOCK_ROOT:-/tmp}"
 LOCK_KEY="$(printf '%s' "$ROOT_DIR" | cksum | awk '{print $1}')"
-LOCK_DIR="/tmp/android-harness-${LOCK_KEY}.lock"
+LOCK_DIR="${LOCK_ROOT%/}/android-harness-${LOCK_KEY}.lock"
 LOCK_ACQUIRED=0
 LOCK_PID_FILE="$LOCK_DIR/pid"
 LOCK_TASK_FILE="$LOCK_DIR/task"
@@ -217,6 +219,12 @@ acquire_lock() {
       return 0
     fi
 
+    # mkdir also fails when the lock root is missing or not writable (for example
+    # a sandbox that denies /tmp). Retrying cannot succeed, so stop instead of spinning.
+    if [ ! -d "$LOCK_DIR" ]; then
+      fail "Cannot create harness lock $LOCK_DIR; make $LOCK_ROOT writable or set HARNESS_LOCK_ROOT."
+    fi
+
     local owner_pid=""
     if [ -f "$LOCK_PID_FILE" ]; then
       owner_pid=$(sed -n '1p' "$LOCK_PID_FILE" 2>/dev/null || true)
@@ -244,7 +252,11 @@ acquire_lock() {
     fi
 
     info "OK  Reclaiming orphaned harness lock directory (no active pid)."
-    rm -rf "$LOCK_DIR"
+    rm -rf "$LOCK_DIR" 2>/dev/null || true
+    if [ -d "$LOCK_DIR" ]; then
+      fail "Cannot remove orphaned harness lock $LOCK_DIR; remove it manually."
+    fi
+    attempts=0
     continue
   done
 }
