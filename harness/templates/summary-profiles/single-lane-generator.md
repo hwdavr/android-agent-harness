@@ -1,11 +1,9 @@
-# Stage Profile — Feature Delivery
+# Stage Profile — Single-Lane Generator
+
+Append these rows below the `harness-planning` rows in a single-lane `summary.md`.
 
 | Stage | Status | Timestamp | Notes |
 |---|---|---|---|
-| Specify & Clarify | Pending | — | Feature block under `## Planned changes`; no `[NEEDS CLARIFICATION]` left. |
-| UX Design | Pending / N/A | — | UI scope only: UI contract inventory, Pen design with registered components. |
-| Implementation Plan & Analyze | Pending | — | `implementation-plan.md` + `test-plan.md` (+ `tasks.md`/`feature_list.json` when sliced); analyze gate passes. |
-| Approval | Pending | — | Single lane: one approval of block, design, and both plans. Sliced lane: hand off to harness-generator. |
 | Implementation | Pending | — | Runs before Testing. |
 | Testing | Pending | — | Post-implementation GREEN verification. |
 | UI Verification | Pending / N/A | — | Conformance review: captures at Viewport, structural checks, user approval. |

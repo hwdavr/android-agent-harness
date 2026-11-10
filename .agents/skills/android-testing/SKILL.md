@@ -35,10 +35,10 @@ approved behavior before invoking this skill.
 - `rules/android-security.md` when the test covers a security boundary; use its
   required real-runtime boundary evidence and fail loudly when the runtime is unavailable
 
-**Single lane** (`feature-delivery`, `bug-fixing`):
+**Single lane** (`single-lane-generator`, `bug-fixing`):
 - `$FEATURE_DIR/test-plan.md` — test cases, layers, and coverage targets approved by the user
 
-**Sliced lane** (`harness-generator`):
+**Sliced lane** (`sliced-lane-generator`):
 - Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`.
 - Read only the selected acceptance-test rows and matching `feature_list.json` entry. Read the summary only for prior evidence, blockers, and handoff decisions.
 

@@ -63,7 +63,7 @@ Do not create an implementation screenshot baseline.
 
 Run the calling workflow's pre-design gate:
 
-- `bash harness/scripts/check-stage-artifacts.sh feature-delivery ui-contract "$FEATURE_DIR"`
+- `bash harness/scripts/check-stage-artifacts.sh harness-planning ui-contract "$FEATURE_DIR"`
 
 The gate checks complete state behavior, one-to-one spec/state mappings when supplied, unique
 fixtures/stage IDs, viewports, controls, and IME coverage. It accepts `Pending` only for the four
@@ -99,7 +99,7 @@ typography, icon identity, contrast, and required controls.
 
 Run the caller's full UX gate after every reference is completed:
 
-- `bash harness/scripts/check-stage-artifacts.sh feature-delivery ux-design "$FEATURE_DIR"`
+- `bash harness/scripts/check-stage-artifacts.sh harness-planning ux-design "$FEATURE_DIR"`
 
 The full gate rejects pending references and components, verifies source/node/image mappings, and
 checks every reused component against the Component Registry.

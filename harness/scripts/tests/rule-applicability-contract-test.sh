@@ -30,7 +30,7 @@ assert_contains "$T/implementation-plan-template.md" "rules gate"
 assert_contains "$T/test-plan-template.md" "implementation-plan.md#rule-applicability"
 assert_contains "$T/summary-template.md" "Context Provenance"
 assert_contains "$T/summary-template.md" "## Product Requirement Reconciliation"
-assert_contains "$T/summary-profiles/feature-delivery.md" "Product Document Update"
+assert_contains "$T/summary-profiles/single-lane-generator.md" "Product Document Update"
 assert_contains "$T/summary-profiles/bug-fixing.md" "Ad-hoc Bug Fix"
 assert_contains "$T/code-review-template.md" "Rule Applicability Reconciliation"
 assert_contains "$T/test-review-template.md" "Rule Applicability Test Reconciliation"
@@ -47,8 +47,8 @@ assert_contains "$S/code-review-and-quality/SKILL.md" "Reconcile the Approved Ru
 assert_contains "$S/android-implementation/SKILL.md" "only triggered context"
 assert_contains "$PROJECT_ROOT/.agents/rules/product-documentation.md" "edit existing requirement rows and paragraphs in place"
 assert_contains "$PROJECT_ROOT/.agents/rules/product-documentation.md" "instead of appending a new dated/versioned subsection"
-assert_contains "$PROJECT_ROOT/.agents/workflows/feature-delivery.md" "Existing claim reviewed"
-assert_contains "$PROJECT_ROOT/.agents/workflows/harness-generator.md" "approved Rule Applicability decisions"
+assert_contains "$PROJECT_ROOT/.agents/workflows/single-lane-generator.md" "Existing claim reviewed"
+assert_contains "$PROJECT_ROOT/.agents/workflows/sliced-lane-generator.md" "approved Rule Applicability decisions"
 assert_contains "$PROJECT_ROOT/.agents/workflows/harness-fix.md" "Reconcile all Rule Applicability rows again"
 assert_contains "$PROJECT_ROOT/.agents/gates/ci-checks.md" "Rule Applicability Harness Contract"
 assert_contains "$HARNESS_AGENTS" "rule-applicability-template.md"
@@ -116,7 +116,7 @@ write_test_plan() {  # $1 = canonical reference, $2 = rule to omit from mapping
       '| TC-01 | AC-001 | JVM unit | `FixtureTest.kt#runs` | N/A — no API | Given fixture | Validates | `./gradlew testDebugUnitTest` |'
   } > "$W/test-plan.md"
 }
-gate() { HARNESS_PROJECT_ROOT="$ROOT" bash "$STAGE_CHECKER" feature-delivery analyze "$W"; }
+gate() { HARNESS_PROJECT_ROOT="$ROOT" bash "$STAGE_CHECKER" harness-planning analyze "$W"; }
 expect_fail() {
   local out
   if out=$(gate 2>&1); then fail "analyze gate accepted: $1"; fi

@@ -1,5 +1,5 @@
 ---
-description: Implement an approved complex Android feature slice through harness-generator stages.
+description: Implement an approved complex Android feature slice through sliced-lane-generator stages.
 ---
 
 # Workflow: Harness Generator
@@ -14,7 +14,7 @@ Use this workflow when you are acting as the **Generator** (Implementer) agent. 
 
 ## Planning Authorization
 
-This workflow starts only after the user approves the sliced-lane package from `feature-delivery` Stage 3 in one dated `.scratch/<YYYY-MM-DD>-<feature-id>/` workspace: the approved feature block(s), `implementation-plan.md`, `test-plan.md`, `tasks.md`, and `feature_list.json`. That approval authorizes implementation of the selected slice. Do not generate or request approval for a duplicate plan in this workflow; the slice's `feature_list.json` entry, its `tasks.md` phase, its `### US-n` acceptance tests in `test-plan.md`, the design, and the plan are the plan of record.
+This workflow starts only after the user approves the sliced-lane package from `harness-planning` Stage 3 in one dated `.scratch/<YYYY-MM-DD>-<feature-id>/` workspace: the approved feature block(s), `implementation-plan.md`, `test-plan.md`, `tasks.md`, and `feature_list.json`. That approval authorizes implementation of the selected slice. Do not generate or request approval for a duplicate plan in this workflow; the slice's `feature_list.json` entry, its `tasks.md` phase, its `### US-n` acceptance tests in `test-plan.md`, the design, and the plan are the plan of record.
 
 Before implementation begins, preserve the approved Rule Applicability decisions from
 the feature specification in the slice evidence and carry each Required row into its
@@ -37,9 +37,9 @@ be recorded as `⚠️ Blocked` or non-passing, and the workflow must stop befor
 ### Stage 1 — Orient
 Before making any changes or planning code, gather complete session and git context. Select the next task to implement.
 *   **Action**: **INVOKE** the `feature-orient` skill via the Skill tool (name: `feature-orient`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-*   **Action**: Run `bash harness/scripts/check-stage-artifacts.sh harness-generator orient "$FEATURE_DIR" "$FEATURE_ID"` after the orientation skill completes. If it fails, record Stage 1 as `⚠️ Blocked` and stop.
+*   **Action**: Run `bash harness/scripts/check-stage-artifacts.sh sliced-lane-generator orient "$FEATURE_DIR" "$FEATURE_ID"` after the orientation skill completes. If it fails, record Stage 1 as `⚠️ Blocked` and stop.
 *   **Objective**: Run `bash harness/scripts/check-feature-lifecycle.sh`, select the approved `.scratch/` workspace from the Harness Feature Tracker by status, run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`, and establish `implementation-plan.md`, the slice's `test-plan.md` section, and `feature_list.json` as the approved change-scope and execution authorities; read linked capability requirements for product intent. The slice summary must exist at `$FEATURE_DIR/summary_{feature_id}.md` and records their paths and hashes as Context Provenance; it does not duplicate scope, acceptance criteria, or the Rule Applicability matrix. Read and validate `$FEATURE_DIR/platform-capability-matrix.md` when the feature is platform-bound (`platform_validation.required: true`). If the index reports `affects_ui: true`, read `docs/product/design_system.md`, the approved feature `UI_contract.md`, its canonical Pen source, and mapped exports before implementation.
-*   **Gate**: `check-stage-artifacts.sh harness-generator orient` must exit `0` and find the exact `$FEATURE_DIR/summary_{feature_id}.md` file. A missing summary or missing feature id is `⚠️ Blocked`; do not advance to Setup.
+*   **Gate**: `check-stage-artifacts.sh sliced-lane-generator orient` must exit `0` and find the exact `$FEATURE_DIR/summary_{feature_id}.md` file. A missing summary or missing feature id is `⚠️ Blocked`; do not advance to Setup.
 
 ### Stage 2 — Setup
 Verify target emulator/device runtime environment readiness.

@@ -110,7 +110,7 @@ whether it was replaced, retired, retained, or confirmed unchanged.
 
 ### Spec-driven delivery (Spec Kit style)
 
-Every feature enters through **`feature-delivery.md`**:
+Every feature enters through **`harness-planning.md`**:
 
 1. **Specify & Clarify** (`feature-specification`) — write the feature block, resolve every
    `[NEEDS CLARIFICATION]`, and decide the lane: no user stories → **single lane**; two or more
@@ -120,9 +120,9 @@ Every feature enters through **`feature-delivery.md`**:
 3. **Implementation Plan & Analyze** (`implementation-plan`) — `implementation-plan.md` (HOW +
    Rule Applicability) and `test-plan.md` (all test material); the sliced lane adds `tasks.md` and
    `feature_list.json`. The analyze gate checks they agree with the approved block.
-4. **Single lane**: one approval (block + design + plans), then implementation → UI conformance
+4. **Single lane**: one approval (block + design + plans), then `single-lane-generator.md` runs implementation → UI conformance
    review → testing → quality → product-doc reconciliation → install.
-   **Sliced lane**: `harness-generator.md` implements one slice per story,
+   **Sliced lane**: `sliced-lane-generator.md` implements one slice per story,
    `harness-evaluation.md` reviews it, `harness-fix.md` resolves findings below 5.0/5.
 
 Other entries:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The generator only takes sliced-lane workspaces (with feature_list.json).
-# Single-lane features are delivered inside feature-delivery and must be skipped,
+# Single-lane features are delivered by single-lane-generator and must be skipped,
 # even when they are In Progress (which otherwise takes priority).
 set -euo pipefail
 

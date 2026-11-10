@@ -17,11 +17,12 @@ check_routing_contract() {
   local -a workflows=(
     bug-fixing.md
     feature-acceptance.md
-    feature-delivery.md
     feature-review.md
+    harness-planning.md
     harness-evaluation.md
     harness-fix.md
-    harness-generator.md
+    single-lane-generator.md
+    sliced-lane-generator.md
   )
   local required_roles
   local stage_contract='If required delegation or a requested model is unavailable or unsupported, block the affected stage and report it; never silently substitute. Record requested and actual models in stage evidence when available.'
@@ -34,13 +35,15 @@ check_routing_contract() {
   for workflow in "${workflows[@]}"; do
     [ -f "$workflow_dir/$workflow" ] || { fail_test "missing workflow: $workflow"; return 1; }
     case "$workflow" in
-      bug-fixing.md|feature-delivery.md)
+      bug-fixing.md)
         required_roles='planner implementer tester evaluator' ;;
+      harness-planning.md)
+        required_roles='planner' ;;
       feature-acceptance.md)
         required_roles='planner tester' ;;
       feature-review.md|harness-evaluation.md)
         required_roles='evaluator' ;;
-      harness-fix.md|harness-generator.md)
+      harness-fix.md|single-lane-generator.md|sliced-lane-generator.md)
         required_roles='implementer tester evaluator' ;;
     esac
     for role in $required_roles; do
@@ -70,8 +73,8 @@ trap 'rm -rf "$fixture_dir"' EXIT
 mkdir -p "$fixture_dir/.agents/workflows"
 cp "$PROJECT_ROOT/AGENTS.md" "$fixture_dir/AGENTS.md"
 for workflow in bug-fixing.md feature-acceptance.md \
-  feature-delivery.md feature-review.md harness-evaluation.md harness-fix.md \
-  harness-generator.md; do
+  feature-review.md harness-evaluation.md harness-fix.md harness-planning.md \
+  single-lane-generator.md sliced-lane-generator.md; do
   cp "$WORKFLOW_DIR/$workflow" "$fixture_dir/.agents/workflows/"
 done
 

@@ -218,35 +218,37 @@ MD
 
 # ------------------------------------------------------------ feature lane
 setup_project
-expect_pass feature-delivery specify .scratch/2026-11-09-share-expiry
+expect_pass harness-planning specify .scratch/2026-11-09-share-expiry
+expect_fail "unknown workflow/stage 'feature-delivery/specify'" feature-delivery specify .scratch/2026-11-09-share-expiry
+expect_fail "unknown workflow/stage 'harness-generator/orient'" harness-generator orient .scratch/2026-11-09-share-expiry US-1
 
 mkdir -p "$ROOT/.scratch/2026-11-09-untracked"
-expect_fail "has no row linking .scratch/2026-11-09-untracked" feature-delivery specify .scratch/2026-11-09-untracked
+expect_fail "has no row linking .scratch/2026-11-09-untracked" harness-planning specify .scratch/2026-11-09-untracked
 
 mkdir -p "$ROOT/docs/current"
-expect_fail "is not a dated feature workspace under .scratch/" feature-delivery specify docs/current
+expect_fail "is not a dated feature workspace under .scratch/" harness-planning specify docs/current
 
 write_ui_contract '`TopActionBar`, `NoteCard`' Pending
-expect_pass feature-delivery ui-contract .scratch/2026-11-09-share-expiry
-expect_fail "has pending design references" feature-delivery ux-design .scratch/2026-11-09-share-expiry
+expect_pass harness-planning ui-contract .scratch/2026-11-09-share-expiry
+expect_fail "has pending design references" harness-planning ux-design .scratch/2026-11-09-share-expiry
 
 write_ui_contract '`TopActionBar`, `NoteCard`' complete
-expect_pass feature-delivery ux-design .scratch/2026-11-09-share-expiry
+expect_pass harness-planning ux-design .scratch/2026-11-09-share-expiry
 
 write_ui_contract '`TopActionBar`, `FancyChip`' complete
-expect_fail "reuses unregistered components ['FancyChip']" feature-delivery ux-design .scratch/2026-11-09-share-expiry
+expect_fail "reuses unregistered components ['FancyChip']" harness-planning ux-design .scratch/2026-11-09-share-expiry
 
 write_ui_contract '`TopActionBar`, `NoteCard`' complete
 write_feature_plans
-expect_pass feature-delivery analyze .scratch/2026-11-09-share-expiry
-expect_pass feature-delivery implementation-plan .scratch/2026-11-09-share-expiry
+expect_pass harness-planning analyze .scratch/2026-11-09-share-expiry
+expect_pass harness-planning implementation-plan .scratch/2026-11-09-share-expiry
 
 python3 - "$W/implementation-plan.md" <<'PY'
 import sys
 p = sys.argv[1]; t = open(p).read()
 open(p, "w").write(t.replace("| UI-01 | `TopActionBar`, `NoteCard` |", "| UI-01 | `TopActionBar` |"))
 PY
-expect_fail "UI plan stage UI-01 reused components differ from UI_contract.md" feature-delivery implementation-plan .scratch/2026-11-09-share-expiry
+expect_fail "UI plan stage UI-01 reused components differ from UI_contract.md" harness-planning implementation-plan .scratch/2026-11-09-share-expiry
 
 write_feature_plans
 python3 - "$W/test-plan.md" <<'PY'
@@ -254,10 +256,10 @@ import sys
 p = sys.argv[1]; t = open(p).read()
 open(p, "w").write(t.replace("example/review/ShareInviteReviewCaptureTest.kt", "example/ShareInviteCaptureTest.kt"))
 PY
-expect_fail "review capture must be app/src/test/java/<package>/review/" feature-delivery implementation-plan .scratch/2026-11-09-share-expiry
+expect_fail "review capture must be app/src/test/java/<package>/review/" harness-planning implementation-plan .scratch/2026-11-09-share-expiry
 
 write_feature_plans
-expect_pass feature-delivery testing .scratch/2026-11-09-share-expiry
+expect_pass single-lane-generator testing .scratch/2026-11-09-share-expiry
 
 # ------------------------------------------------------------ UI conformance review
 mkdir -p "$ROOT/app/src/main/java/example" "$ROOT/app/src/test/java/example/review" "$W/evidence/ui"
@@ -286,19 +288,19 @@ write_report() {  # $1 decision
 JSON
 }
 write_report approved
-expect_pass feature-delivery ui-verification .scratch/2026-11-09-share-expiry
+expect_pass single-lane-generator ui-verification .scratch/2026-11-09-share-expiry
 
 write_report changes-requested
-expect_fail "cannot PASS without an approved review" feature-delivery ui-verification .scratch/2026-11-09-share-expiry
+expect_fail "cannot PASS without an approved review" single-lane-generator ui-verification .scratch/2026-11-09-share-expiry
 
 write_report approved
 png "$W/evidence/ui/invite-expiry-selected.png" 1080 1080
-expect_fail "was not rendered at the contract viewport 390x844" feature-delivery ui-verification .scratch/2026-11-09-share-expiry
+expect_fail "was not rendered at the contract viewport 390x844" single-lane-generator ui-verification .scratch/2026-11-09-share-expiry
 png "$W/evidence/ui/invite-expiry-selected.png" 780 1688
 
 printf 'package example\n\n@Composable\nfun ShareInviteScreen() {\n    TopActionBar(title = "Share")\n}\n' \
   > "$ROOT/app/src/main/java/example/ShareInviteScreen.kt"
-expect_fail "lists NoteCard, but no UI file in the plan's Project Structure calls it" feature-delivery ui-verification .scratch/2026-11-09-share-expiry
+expect_fail "lists NoteCard, but no UI file in the plan's Project Structure calls it" single-lane-generator ui-verification .scratch/2026-11-09-share-expiry
 
 # ------------------------------------------------------------ bug lane
 cat > "$B/implementation-plan.md" <<MD

@@ -68,7 +68,7 @@ write_plan() {  # $1 = lane
 # Implementation Plan — Expiring share invitations
 
 **Feature ID**: \`$FEATURE_ID\`
-**Workflow**: feature-delivery
+**Workflow**: harness-planning
 **Lane**: $1
 
 ## Product Requirements

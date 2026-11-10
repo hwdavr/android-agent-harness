@@ -112,7 +112,7 @@ eligible_rows=$(awk -v start="$START_MARKER" -v end="$END_MARKER" '
 ' "$PRODUCT_FILE")
 
 # Only the sliced lane hands off to the generator. Single-lane workspaces
-# (no feature_list.json) are delivered inside feature-delivery itself.
+# (no feature_list.json) are delivered by the single-lane-generator workflow.
 sliced_rows=""
 while IFS= read -r row; do
   [ -n "$row" ] || continue
@@ -123,7 +123,7 @@ while IFS= read -r row; do
 "
   else
     row_id=$(printf '%s' "$row" | cut -f1)
-    info "SKIP '$row_id' — single-lane workspace (no feature_list.json); feature-delivery owns it."
+    info "SKIP '$row_id' — single-lane workspace (no feature_list.json); single-lane-generator owns it."
   fi
 done <<ROWS_END
 $eligible_rows
@@ -286,7 +286,7 @@ elif [ "$FIX_MODE" -eq 1 ]; then
   PROMPT="${PROMPT//__FEATURE_DIR__/$FEATURE_DIR}"
 else
   # --- 6b. build generator prompt ---------------------------------------------
-  PROMPT_TEMPLATE="$(cat "$ROOT_DIR/.agents/prompts/harness-generator.md")"
+  PROMPT_TEMPLATE="$(cat "$ROOT_DIR/.agents/prompts/sliced-lane-generator.md")"
 
   PROMPT="$PROMPT_TEMPLATE"
   PROMPT="${PROMPT//__AGENT_NAME__/$AGENT_NAME}"

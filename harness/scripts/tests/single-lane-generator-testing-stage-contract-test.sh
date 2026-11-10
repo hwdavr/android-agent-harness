@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Contract test for the feature-delivery Testing stage artifact gate.
+# Contract test for the single-lane-generator Testing stage artifact gate.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 STAGE_CHECKER="$REPO_ROOT/harness/scripts/check-stage-artifacts.sh"
-FIXTURE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/feature-delivery-testing-stage-contract.XXXXXX")"
+FIXTURE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/single-lane-generator-testing-stage-contract.XXXXXX")"
 trap 'rm -rf "$FIXTURE_ROOT"' EXIT
 
 fail_test() {
@@ -20,7 +20,7 @@ expect_failure() {
   local exit_code
   set +e
   output=$(HARNESS_PROJECT_ROOT="$fixture" bash "$STAGE_CHECKER" \
-    feature-delivery testing "$fixture/.scratch/2026-11-09-fixture" 2>&1)
+    single-lane-generator testing "$fixture/.scratch/2026-11-09-fixture" 2>&1)
   exit_code=$?
   set -e
   [ "$exit_code" -ne 0 ] || fail_test "invalid fixture unexpectedly passed: $fixture"
@@ -83,8 +83,8 @@ EOF
 
 VALID="$FIXTURE_ROOT/valid"
 create_fixture "$VALID" "Not applicable — logic-only fixture." "Not applicable — no navigation."
-HARNESS_PROJECT_ROOT="$VALID" bash "$STAGE_CHECKER" feature-delivery testing "$VALID/.scratch/2026-11-09-fixture" >/dev/null ||
-  fail_test "valid logic-only feature-delivery Testing artifacts did not pass"
+HARNESS_PROJECT_ROOT="$VALID" bash "$STAGE_CHECKER" single-lane-generator testing "$VALID/.scratch/2026-11-09-fixture" >/dev/null ||
+  fail_test "valid logic-only single-lane-generator Testing artifacts did not pass"
 
 MISSING_TEST_MAPPING="$FIXTURE_ROOT/missing-test-mapping"
 create_fixture "$MISSING_TEST_MAPPING" "Not applicable — logic-only fixture." "Not applicable — no navigation."
@@ -109,4 +109,4 @@ MISSING_NAV_BOUNDARY="$FIXTURE_ROOT/missing-nav-boundary"
 create_fixture "$MISSING_NAV_BOUNDARY" "Not applicable — logic-only fixture." "Required"
 expect_failure "$MISSING_NAV_BOUNDARY" "requires a '## Production Journey Boundary' section"
 
-echo "PASS: feature-delivery Testing requires its test plan, matching rule mappings, UI contract when UI applies, and production journey details when navigation applies."
+echo "PASS: single-lane-generator Testing requires its test plan, matching rule mappings, UI contract when UI applies, and production journey details when navigation applies."

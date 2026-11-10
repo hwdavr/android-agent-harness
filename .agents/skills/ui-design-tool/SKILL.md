@@ -40,7 +40,7 @@ Whatever the tool, the run must:
 
 ## 3. Feature delivery
 
-When invoked by `ux-design` (feature-delivery Stage 2), require the `UI_contract.md` inventory gate
+When invoked by `ux-design` (harness-planning Stage 2), require the `UI_contract.md` inventory gate
 to pass first. For each contract state, create one top-level screen frame at the state's Viewport
 from the design system's registered components, then fill the row: `Design source` (the configured
 `source`), `Design node ID`, `Design node role` = `screen-frame`, and `Design image` (the PNG export

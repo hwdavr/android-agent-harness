@@ -11,7 +11,9 @@ Write one `summary.md` per workspace (no `_v<N>`). The sliced lane adds one
 
 ## Stage Progress
 
-Insert exactly one table from `harness/templates/summary-profiles/<workflow>.md`. Do not load or
+Insert exactly one table from `harness/templates/summary-profiles/<workflow>.md`. A feature uses
+the `harness-planning` profile; a single-lane feature appends the `single-lane-generator` rows to
+that table, and a sliced-lane slice summary uses `sliced-lane-generator`. Do not load or
 copy inactive workflow profiles. A stage is complete only when its concise evidence appears below.
 Update this record at stage boundaries, approval, or a blocker. During UX visual iteration, keep
 the requirement block and summary stable and update only design artifacts.

@@ -13,7 +13,8 @@ RULE="$REPO_ROOT/.agents/rules/testing-runtime-evidence.md"
 UIV="$REPO_ROOT/.agents/skills/ui-verification/SKILL.md"
 UX="$REPO_ROOT/.agents/skills/ux-design/SKILL.md"
 UIL="$REPO_ROOT/.agents/skills/android-ui-layer/SKILL.md"
-FD="$REPO_ROOT/.agents/workflows/feature-delivery.md"
+FD="$REPO_ROOT/.agents/workflows/harness-planning.md"
+SLG="$REPO_ROOT/.agents/workflows/single-lane-generator.md"
 CONTRACT_T="$REPO_ROOT/harness/templates/UI_contract-template.md"
 REPORT_T="$REPO_ROOT/harness/templates/ui-verification-template.json"
 TEST_PLAN_T="$REPO_ROOT/harness/templates/test-plan-template.md"
@@ -22,7 +23,7 @@ TASKS_T="$REPO_ROOT/harness/templates/tasks-template.md"
 # Removed pixel-golden machinery stays removed.
 for retired in harness/scripts/compare-visual-evidence.sh harness/scripts/check-existing-screen-baseline-contract.sh \
   harness/templates/visual-reference-anchor-verification-template.md .agents/workflows/create-ui-and-verify.md \
-  .agents/workflows/harness-planning.md; do
+  .agents/workflows/feature-delivery.md .agents/workflows/harness-generator.md; do
   [ ! -e "$REPO_ROOT/$retired" ] || fail_test "$retired must not exist"
 done
 
@@ -38,8 +39,8 @@ has "$UX" "Build every state from design-tool component instances that"
 has "$UX" "Do not create, version, or edit the requirement block or summary during visual iteration"
 has "$UIL" "## Direct lane — entry check"
 has "$UIL" "run the \`ui-verification\` skill"
-has "$FD" "### Stage 6 — UI Verification"
-has "$FD" "No screenshot golden is recorded or compared"
+has "$SLG" "### Stage 6 — UI Verification"
+has "$SLG" "No screenshot golden is recorded or compared"
 has "$FD" "### Stage 1 — Specify & Clarify"
 has "$FD" "### Stage 3 — Implementation Plan & Analyze"
 

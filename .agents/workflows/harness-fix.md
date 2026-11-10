@@ -14,7 +14,7 @@ Read and follow [Product documentation flow](../rules/product-documentation.md).
 - The active feature's tracker status is `To be fixed`. This status is set by the Evaluator ([`harness-evaluation.md`](harness-evaluation.md)) when the overall score is below `5.0 / 5`.
 - The Evaluator wrote `$FEATURE_DIR/code_review_{feature_id}.md` and `$FEATURE_DIR/test_review_{feature_id}.md`. Your job is to resolve **every** finding in those reports, re-verify against the test-plan acceptance gates, and transition the feature to `To be human reviewed`.
 
-> Do **NOT** run the `harness-generator.md` Stages 1–9 here — there is no new slice to implement and every slice is already `passing`. Do **NOT** flip any slice to `in_progress`, do **NOT** re-run lifecycle transition logic, and do **NOT** regenerate an implementation plan.
+> Do **NOT** run the `sliced-lane-generator.md` Stages 1–9 here — there is no new slice to implement and every slice is already `passing`. Do **NOT** flip any slice to `in_progress`, do **NOT** re-run lifecycle transition logic, and do **NOT** regenerate an implementation plan.
 
 ---
 

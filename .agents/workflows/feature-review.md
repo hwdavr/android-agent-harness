@@ -12,7 +12,7 @@ Read and follow [Product documentation flow](../rules/product-documentation.md).
 ## When to use
 
 - Use this workflow when you are acting as the **Evaluator** agent.
-- A change has been implemented by feature-delivery workflow
+- A change has been implemented by the single-lane-generator workflow
 - Post-implementation self-review before presenting to the user
 
 ---
@@ -32,7 +32,7 @@ unapproved exception is a blocking finding.
 When a feature is submitted for review, execute these steps in order:
 
 ### Stage 1: Read the Baselines
-Read all four baselines produced by the `/feature-delivery` workflow in the dated workspace `$FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-id>/` before touching any source code or running any checks. These are the single source of truth the review is evaluated against.
+Read all four baselines produced by the `harness-planning` and `single-lane-generator` workflows in the dated workspace `$FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-id>/` before touching any source code or running any checks. These are the single source of truth the review is evaluated against.
 
 | Document | Location | What to extract |
 |---|---|---|

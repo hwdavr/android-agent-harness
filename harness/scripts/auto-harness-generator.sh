@@ -4,7 +4,7 @@
 # Picks the next available harness task and launches an AI agent to handle it.
 # The mode is auto-selected from the feature's tracker status in product.md:
 #   - "In Progress" / "Awaiting implementation approval" -> implement a slice
-#     via the harness-generator workflow (Stages 1..9).
+#     via the sliced-lane-generator workflow (Stages 1..9).
 #   - "To be reviewed" -> evaluate via the harness-evaluation workflow
 #     (Stages 1..5). The Evaluator then applies a score-based transition:
 #       overall 5.0/5  -> "To be human reviewed"

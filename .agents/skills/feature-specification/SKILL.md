@@ -42,7 +42,7 @@ screens, entry points, roles, copy, non-goals. Save supplied screenshots or mock
   `product-requirements-template.md` and an entry in `requirements/README.md`.
 - Choose a lowercase kebab-case `<feature-id>`. Create `.scratch/<YYYY-MM-DD>-<feature-id>/`
   (local date) with `summary.md` from `harness/templates/summary-template.md` and the
-  `feature-delivery` stage profile.
+  `harness-planning` stage profile.
 - Add the Harness Feature Tracker row in `docs/product/product.md` (status `Planning`, link label
   = the workspace path) and run `bash harness/scripts/check-feature-lifecycle.sh`.
 
@@ -80,7 +80,7 @@ Set **Status** to `Clarified`.
 ### 5. Gate
 
 ```bash
-bash harness/scripts/check-stage-artifacts.sh feature-delivery specify .scratch/<YYYY-MM-DD>-<feature-id>
+bash harness/scripts/check-stage-artifacts.sh harness-planning specify .scratch/<YYYY-MM-DD>-<feature-id>
 ```
 
 Record the stage in `summary.md` with the block location and a one-line excerpt.

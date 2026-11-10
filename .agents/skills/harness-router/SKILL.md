@@ -99,11 +99,12 @@ requires a handoff. Apply the root `AGENTS.md` if this map becomes stale.
 | Intent | Workflow or direct skill to read in full |
 |---|---|
 | App bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
-| New feature or bounded enhancement | `.agents/workflows/feature-delivery.md` |
+| New feature or bounded enhancement | `.agents/workflows/harness-planning.md` |
 | Appearance-only adjustment to an existing screen that passes the direct-lane entry check | `.agents/skills/android-ui-layer/SKILL.md` (direct lane; ends with the `ui-verification` conformance review) |
-| UI implementation from a screenshot/mockup, or any UI change with new states or behavior | `.agents/workflows/feature-delivery.md` (the mockup is the UX Design input) |
-| Large feature with independently deliverable stories | `.agents/workflows/feature-delivery.md` (Specify selects the sliced lane) |
-| Implement the next slice of an approved sliced-lane feature | `.agents/workflows/harness-generator.md` |
+| UI implementation from a screenshot/mockup, or any UI change with new states or behavior | `.agents/workflows/harness-planning.md` (the mockup is the UX Design input) |
+| Large feature with independently deliverable stories | `.agents/workflows/harness-planning.md` (Specify selects the sliced lane) |
+| Implement an approved single-lane feature | `.agents/workflows/single-lane-generator.md` |
+| Implement the next slice of an approved sliced-lane feature | `.agents/workflows/sliced-lane-generator.md` |
 | Resolve sliced-lane evaluator findings; tracker status `To be fixed` | `.agents/workflows/harness-fix.md` |
 | Independent review of a single-lane change | `.agents/workflows/feature-review.md` |
 | Independent review of an implemented sliced-lane slice | `.agents/workflows/harness-evaluation.md` |

@@ -96,7 +96,7 @@ procedures only — results go to the summary.
 ### 4. Analyze
 
 ```bash
-bash harness/scripts/check-stage-artifacts.sh feature-delivery analyze .scratch/<YYYY-MM-DD>-<feature-id>
+bash harness/scripts/check-stage-artifacts.sh harness-planning analyze .scratch/<YYYY-MM-DD>-<feature-id>
 ```
 
 (`bug-fixing analyze` for bugs.) Fix every inconsistency at its source: a requirement gap returns to
@@ -128,4 +128,4 @@ On approval:
 
 **APPROVED →** single lane continues to Implementation. Sliced lane ends the session: tell the user
 to start the generator (`bash harness/scripts/<agent>-harness-generator.sh`, the scheduled
-launcher, or "Read `.agents/workflows/harness-generator.md`").
+launcher, or "Read `.agents/workflows/sliced-lane-generator.md`").

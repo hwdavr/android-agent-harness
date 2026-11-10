@@ -2,7 +2,7 @@
 # harness/scripts/agy-harness-generator.sh
 #
 # Picks the next available harness task and launches Antigravity CLI (agy)
-# to implement it via the harness-generator workflow.
+# to implement it via the sliced-lane-generator workflow.
 #
 # Usage:
 #   bash harness/scripts/agy-harness-generator.sh            # auto-pick + launch agy (interactive TUI, YOLO mode)

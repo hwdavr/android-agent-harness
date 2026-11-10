@@ -3,7 +3,8 @@
 #
 # Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> <workspace> [feature-id]
 #   workspace: .scratch/<YYYY-MM-DD>-<feature-id>/ (every lane; docs/current/ is retired)
-#   feature-delivery:  specify | ui-contract | ux-design | analyze | implementation-plan | ui-verification | testing
+#   harness-planning:      specify | ui-contract | ux-design | analyze | implementation-plan
+#   single-lane-generator: testing | ui-verification
 #   bug-fixing:        bug-context | bug-reproduction | analyze | implementation-plan | ui-verification | testing
 #
 # analyze             = every planning check before the package is presented for approval
@@ -13,8 +14,9 @@
 # implementation-plan.md owns how the code changes and the Rule Applicability matrix; test-plan.md
 # owns all test material (bug Reproduction Test and QA handoff, Spec Coverage Matrix, acceptance
 # test cases, Production Journey contracts, UI state verification).
-#   harness-generator: orient (requires the slice feature-id)
-#   api-contract-update is an alias of feature-delivery.
+#   sliced-lane-generator: orient (requires the slice feature-id)
+#   api-contract-update maps to harness-planning for planning stages and to
+#   single-lane-generator for testing and ui-verification.
 #
 # The specification is the approved feature block(s) in docs/product/requirements/*.md plus the
 # implementation plan's Rule Applicability; compose-feature-spec.py assembles that view.
@@ -33,16 +35,22 @@ FEATURE_ID="${4:-}"
 
 usage() {
   echo "Usage: $0 <workflow> <stage> <workspace> [feature-id]" >&2
-  echo "  feature-delivery:  specify | ui-contract | ux-design | analyze | implementation-plan | ui-verification | testing" >&2
+  echo "  harness-planning:      specify | ui-contract | ux-design | analyze | implementation-plan" >&2
+  echo "  single-lane-generator: testing | ui-verification" >&2
   echo "  bug-fixing:        bug-context | bug-reproduction | analyze | implementation-plan | ui-verification | testing" >&2
-  echo "  harness-generator: orient <workspace> <feature-id>" >&2
+  echo "  sliced-lane-generator: orient <workspace> <feature-id>" >&2
 }
 
 if [ -z "$WORKFLOW" ] || [ -z "$STAGE" ] || [ -z "$DOCS_DIR" ]; then
   usage
   exit 2
 fi
-[ "$WORKFLOW" = "api-contract-update" ] && WORKFLOW="feature-delivery"
+if [ "$WORKFLOW" = "api-contract-update" ]; then
+  case "$STAGE" in
+    testing|ui-verification) WORKFLOW="single-lane-generator" ;;
+    *) WORKFLOW="harness-planning" ;;
+  esac
+fi
 
 if ! PROJECT_ROOT="$(cd "$PROJECT_ROOT" 2>/dev/null && pwd -P)"; then
   echo "FAIL: project root does not exist: $PROJECT_ROOT" >&2
@@ -434,20 +442,20 @@ require_production_journey() {
 }
 
 case "$WORKFLOW/$STAGE" in
-  harness-generator/orient)
+  sliced-lane-generator/orient)
     if [ -z "$FEATURE_ID" ]; then
-      echo "FAIL: harness-generator/orient requires the selected slice id to validate its summary." >&2
+      echo "FAIL: sliced-lane-generator/orient requires the selected slice id to validate its summary." >&2
       exit 2
     fi
     require_file "summary_${FEATURE_ID}.md" "slice evidence record"
     ;;
-  feature-delivery/specify)
+  harness-planning/specify)
     require_tracker_row
     require_file "summary.md" "stage evidence record"
     compose_spec
     require_specified_blocks
     ;;
-  feature-delivery/ui-contract|feature-delivery/ux-design)
+  harness-planning/ui-contract|harness-planning/ux-design)
     compose_spec
     require_specified_blocks
     if spec_has_ui "$COMPOSED_SPEC"; then
@@ -460,18 +468,18 @@ case "$WORKFLOW/$STAGE" in
       echo "N/A: the feature block has no Screen States (no UI scope)."
     fi
     ;;
-  feature-delivery/analyze|bug-fixing/analyze|feature-delivery/implementation-plan|bug-fixing/implementation-plan)
+  harness-planning/analyze|bug-fixing/analyze|harness-planning/implementation-plan|bug-fixing/implementation-plan)
     require_tracker_row
     require_plan_rules "$WORKFLOW implementation plan"
     compose_spec
-    if [ "$WORKFLOW" = "feature-delivery" ]; then
+    if [ "$WORKFLOW" = "harness-planning" ]; then
       require_specified_blocks
     fi
     require_file "test-plan.md" "test plan"
     require_test_plan_mapping "$WORKFLOW test plan"
     require_planning_contracts
     ;;
-  feature-delivery/ui-verification|bug-fixing/ui-verification)
+  single-lane-generator/ui-verification|bug-fixing/ui-verification)
     require_file "implementation-plan.md" "implementation plan (Rule Applicability validated at the implementation-plan stage)"
     compose_spec
     if spec_has_ui "$COMPOSED_SPEC"; then
@@ -480,7 +488,7 @@ case "$WORKFLOW/$STAGE" in
       echo "N/A: no UI scope; UI verification does not apply."
     fi
     ;;
-  feature-delivery/testing|bug-fixing/testing)
+  single-lane-generator/testing|bug-fixing/testing)
     require_file "implementation-plan.md" "implementation plan (Rule Applicability validated at the implementation-plan stage)"
     compose_spec
     require_testing_evidence "$WORKFLOW testing"

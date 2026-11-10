@@ -10,7 +10,7 @@ Implement UI layer changes: ViewModels, UiState, UI models, UI mappers, Composab
 
 Used in two ways:
 
-- **Within a workflow** (`feature-delivery` Stage 4, `bug-fixing`, `harness-generator`): implement the
+- **Within a workflow** (`single-lane-generator` Stage 4, `bug-fixing`, `sliced-lane-generator`): implement the
   approved plan's UI State Stages.
 - **Direct lane** for a small appearance-only adjustment to an existing screen (spacing, color,
   icon, copy wording, reordering existing elements, aligning with the design system). No spec block,
@@ -18,7 +18,7 @@ Used in two ways:
 
 ## Direct lane — entry check
 
-Use the direct lane only when **every** item holds; otherwise stop and route to `feature-delivery`
+Use the direct lane only when **every** item holds; otherwise stop and route to `harness-planning`
 (or `bug-fixing` for a defect):
 
 - [ ] No new or changed UI state, interaction, gesture, navigation, data, persistence, or API.

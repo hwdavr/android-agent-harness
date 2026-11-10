@@ -42,10 +42,11 @@ Codex uses `.codex/agents/`; other clients use equivalent roles. Workflows own a
 
 | Task type | Read this file first |
 |-----------|----------------------|
-| New feature or enhancement, any size (Specify selects the single or sliced lane) | `.agents/workflows/feature-delivery.md` |
+| New feature or enhancement, any size (Specify selects the single or sliced lane) | `.agents/workflows/harness-planning.md` |
 | Bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
 | Appearance-only tweak an approved design or the design system already defines | `.agents/skills/android-ui-layer/SKILL.md` (direct lane; entry check + conformance review) |
-| Next slice of an approved sliced-lane feature | `.agents/workflows/harness-generator.md` |
+| Implement an approved single-lane feature | `.agents/workflows/single-lane-generator.md` |
+| Next slice of an approved sliced-lane feature | `.agents/workflows/sliced-lane-generator.md` |
 | Sliced-lane evaluator findings (`To be fixed`) | `.agents/workflows/harness-fix.md` |
 | Independent review: single lane / sliced-lane slice | `.agents/workflows/feature-review.md` / `.agents/workflows/harness-evaluation.md` |
 | Plan, approve, and execute post-merge feature acceptance | `.agents/workflows/feature-acceptance.md` (invokes `exploratory-qa` after approval) |
@@ -74,8 +75,8 @@ Key skills under `.agents/skills/`:
 - **Every new feature must have tests**
 - **Platform-bound features must include a platform capability matrix and a real instrumented boundary test** — fake/JVM-only tests are supplemental; missing runtimes, devices, models, locales, permissions, or services fail loudly and cannot be recorded as passing evidence
 - **No dummy code in production** — every function, branch, and callback must implement the actual requirement logic; no `TODO()`, `NotImplementedError`, stub return values, no-op handlers, or `// dummy implementation` comments. See `.agents/rules/implementation-rules.md`
-- **Implementation authorization must be approved by the user before code is written** — every lane requires the approved `implementation-plan.md` and `test-plan.md` (block SHA-256 recorded); the sliced lane adds `tasks.md` and `feature_list.json`, and `harness-generator` must not generate a duplicate plan
-- **Direct UI lane is appearance-only** — `android-ui-layer` may change an existing screen's appearance without a plan only when it passes the skill's entry check (no new state, interaction, navigation, data, or API; target defined by an approved design or the design system) and ends with the `ui-verification` conformance review; anything else uses `feature-delivery` (or `bug-fixing` for a defect)
+- **Implementation authorization must be approved by the user before code is written** — every lane requires the approved `implementation-plan.md` and `test-plan.md` (block SHA-256 recorded); the sliced lane adds `tasks.md` and `feature_list.json`, and `sliced-lane-generator` must not generate a duplicate plan
+- **Direct UI lane is appearance-only** — `android-ui-layer` may change an existing screen's appearance without a plan only when it passes the skill's entry check (no new state, interaction, navigation, data, or API; target defined by an approved design or the design system) and ends with the `ui-verification` conformance review; anything else uses `harness-planning` (or `bug-fixing` for a defect)
 - **UI appearance is approved by a conformance review, never a screenshot golden** — review captures at the Pen frame size, structural checks, registered design-system components, and user approval
 - **Every stage gate must pass before advancing** — do not skip gates
 - **Every stage skill must be invoked through the available skill mechanism** — use the Skill tool when it is exposed. If this environment does not expose it, read the repository's matching `SKILL.md`, follow its workflow, and record the unavailable invocation interface in the stage evidence. An unavailable interface never permits skipping an executable stage gate or verification command named by the skill.

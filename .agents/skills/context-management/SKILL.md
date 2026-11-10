@@ -41,9 +41,9 @@ documents. During testing/review load `rules/testing-practices.md`; add
 
 | Task type | File to load |
 |-----------|-------------|
-| New feature or enhancement | `workflows/feature-delivery.md` |
+| New feature or enhancement | `workflows/harness-planning.md` |
 | Bug, crash, or regression | `workflows/bug-fixing.md` |
-| UI behavior, state, or new screen | `workflows/feature-delivery.md` |
+| UI behavior, state, or new screen | `workflows/harness-planning.md` |
 | Appearance-only UI change (no behavior, state, or data change) | `skills/android-ui-layer/SKILL.md` (direct lane, entry check) |
 | API contract change | `workflows/api-contract-update.md` |
 

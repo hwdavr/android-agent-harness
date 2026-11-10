@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 MAX_DESCRIPTION_CHARS=120
 MAX_TOTAL_CHARS=3600
-EXPECTED_DESCRIPTION_COUNT=43
+EXPECTED_DESCRIPTION_COUNT=44
 
 fail() {
   echo "FAIL: $1" >&2
@@ -64,10 +64,11 @@ EOF
 [ "$TOTAL_CHARS" -le "$MAX_TOTAL_CHARS" ] \
   || fail "description total is $TOTAL_CHARS characters (limit $MAX_TOTAL_CHARS)"
 
-assert_contains .agents/workflows/feature-delivery.md 'feature.*end-to-end'
+assert_contains .agents/workflows/harness-planning.md 'feature.*plan'
+assert_contains .agents/workflows/single-lane-generator.md 'single-lane.*feature'
 assert_contains .agents/workflows/bug-fixing.md 'bug'
 assert_contains .agents/workflows/feature-review.md 'ad-hoc.*review'
-assert_contains .agents/workflows/harness-generator.md 'complex.*slice'
+assert_contains .agents/workflows/sliced-lane-generator.md 'complex.*slice'
 assert_contains .agents/workflows/harness-evaluation.md 'complex.*code.*test.*review'
 assert_contains .agents/workflows/harness-fix.md 'evaluator.*finding'
 assert_contains .agents/skills/context-management/SKILL.md 'session.*context'
@@ -80,8 +81,8 @@ assert_file_contains .agents/workflows/bug-fixing.md 'Fix Plan'
 assert_file_not_contains .agents/skills/context-management/SKILL.md 'Small UI Patch Triage'
 assert_file_not_contains .agents/skills/context-management/SKILL.md 'direct skill lane'
 # One feature entry; appearance-only UI changes use the android-ui-layer direct lane.
-for removed in .agents/workflows/create-ui-and-verify.md .agents/workflows/harness-planning.md; do
-  [ ! -e "$removed" ] || fail "$removed should be deleted (feature-delivery is the single entry)"
+for removed in .agents/workflows/create-ui-and-verify.md .agents/workflows/feature-delivery.md .agents/workflows/harness-generator.md; do
+  [ ! -e "$removed" ] || fail "$removed should be deleted (harness-planning is the single entry)"
 done
 assert_file_contains .agents/skills/context-management/SKILL.md 'Appearance-only'
 assert_file_contains .agents/skills/context-management/SKILL.md 'android-ui-layer'

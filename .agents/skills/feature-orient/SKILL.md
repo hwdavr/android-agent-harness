@@ -47,7 +47,7 @@ Before making any changes or planning code, gather complete session and git cont
    - Review `$FEATURE_DIR/feature_list.json` and select the highest-priority incomplete task (status `not_started`). Do not work on multiple tasks in parallel.
    - Update its status in `$FEATURE_DIR/feature_list.json` to `in_progress`, update the tracker row to `In Progress`, and run `bash harness/scripts/check-feature-lifecycle.sh` again before continuing.
    - Generate `$FEATURE_DIR/summary_{feature_id}.md` from `harness/templates/summary-template.md`
-     plus only `harness/templates/summary-profiles/harness-generator.md`. Its **Context
+     plus only `harness/templates/summary-profiles/sliced-lane-generator.md`. Its **Context
      Provenance** section cites the approved `implementation-plan.md`, `test-plan.md`, `feature_list.json`, selected
      slice, and generated index hashes. Do not repeat Rule Applicability, scope, acceptance
      criteria, or feature-list metadata.

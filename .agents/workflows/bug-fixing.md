@@ -32,7 +32,7 @@ Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan & Ana
 `summary.md` (bug-fixing stage profile) and a Harness Feature Tracker row (status `Planning`). A bug
 that restores already-specified behavior adds no requirement block: `implementation-plan.md` cites the
 violated `<capability>.md#FR-###`. A bug that reveals an unspecified or wrong requirement is a
-behavior change — route that part through `feature-delivery`.
+behavior change — route that part through `harness-planning`.
 
 | File | Bug content |
 |---|---|

@@ -14,7 +14,7 @@ RULES = ("ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC
 
 
 def run_gate(project, stage, workspace, expected=None):
-    result = subprocess.run(["bash", str(GATE), "feature-delivery", stage, str(workspace)], cwd=project,
+    result = subprocess.run(["bash", str(GATE), "harness-planning", stage, str(workspace)], cwd=project,
                             env={**os.environ, "HARNESS_PROJECT_ROOT": str(project)}, text=True, capture_output=True)
     output = result.stdout + result.stderr
     if expected is None:

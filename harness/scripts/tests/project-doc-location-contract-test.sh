@@ -16,7 +16,7 @@ fail() {
 
 expect_rejected() {  # directory, expected diagnostic, label
   local output
-  if output="$(HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$STAGE_GATE" harness-generator orient "$1" US-1 2>&1)"; then
+  if output="$(HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$STAGE_GATE" sliced-lane-generator orient "$1" US-1 2>&1)"; then
     fail "$3 was accepted"
   fi
   printf '%s\n' "$output" | grep -Fq "$2" || fail "$3 failed without the expected diagnostic: $output"
@@ -32,7 +32,7 @@ for dir in "$WORKSPACE" "$FIXTURE_ROOT/docs/current" "$FIXTURE_ROOT/.harness/.sc
   printf '%s\n' '# Summary' > "$dir/summary_US-1.md"
 done
 
-HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$STAGE_GATE" harness-generator orient "$WORKSPACE" US-1 >/dev/null ||
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$STAGE_GATE" sliced-lane-generator orient "$WORKSPACE" US-1 >/dev/null ||
   fail "a dated workspace under the consumer project's .scratch/ was rejected"
 
 expect_rejected "$FIXTURE_ROOT/docs/current" "docs/current/ is retired" "the retired docs/current/ directory"
