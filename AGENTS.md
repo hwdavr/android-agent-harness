@@ -33,6 +33,7 @@ Load no unrelated context. Reconcile all ten triggers in requirements/planning/r
 ## Agent Roles
 Planner, Implementer, Tester, Evaluator; workflows own assignment, stages, approvals, and gates.
 Codex uses role profiles in `.codex/agents/`; other clients use equivalent roles.
+Claude Code: `.claude/agents/`.
 ## Workflow Routing — Mandatory Step Before Any Task
 Before any task, identify its type, read the matching workflow or direct skill **in full**, and follow every stage before writing code.
 

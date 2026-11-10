@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Check Codex agent adapter names, model assignments, and role profiles."""
+"""Check Codex and Claude Code agent adapter names, descriptions, and role profile references.
+
+Models are deliberately not enforced: each user configures the model they want.
+"""
 
 from __future__ import annotations
 
@@ -102,10 +105,10 @@ except ModuleNotFoundError:  # pragma: no cover - exercised on older interpreter
             return data
 
 EXPECTED = {
-    "planner": ("gpt-6.1-sol", ".agents/agents/planner.md"),
-    "implementer": ("gpt-6.1-terra", ".agents/agents/generator.md"),
-    "tester": ("gpt-6-luna", ".agents/agents/tester.md"),
-    "evaluator": ("gpt-6.1-sol", ".agents/agents/evaluator.md"),
+    "planner": ".agents/agents/planner.md",
+    "implementer": ".agents/agents/generator.md",
+    "tester": ".agents/agents/tester.md",
+    "evaluator": ".agents/agents/evaluator.md",
 }
 PROFILE_REFERENCE = re.compile(r"(?<![A-Za-z0-9_./-])\.agents/[A-Za-z0-9_./-]+\.md")
 
@@ -113,7 +116,7 @@ PROFILE_REFERENCE = re.compile(r"(?<![A-Za-z0-9_./-])\.agents/[A-Za-z0-9_./-]+\.
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     adapter_dir = root / ".codex" / "agents"
-    for role, (model, profile) in EXPECTED.items():
+    for role, profile in EXPECTED.items():
         adapter = adapter_dir / f"{role}.toml"
         if not adapter.is_file():
             errors.append(f"missing adapter: {adapter.relative_to(root)}")
@@ -128,8 +131,8 @@ def validate(root: Path) -> list[str]:
         description = data.get("description")
         if not isinstance(description, str) or not description.strip():
             errors.append(f"{role}: description must be non-empty text")
-        if data.get("model") != model:
-            errors.append(f"{role}: model must be {model!r}")
+        if "model" in data and (not isinstance(data["model"], str) or not data["model"].strip()):
+            errors.append(f"{role}: model, when set, must be non-empty text")
         instructions = data.get("developer_instructions")
         if not isinstance(instructions, str) or not instructions.strip():
             errors.append(f"{role}: developer_instructions must be non-empty text")
@@ -146,16 +149,64 @@ def validate(root: Path) -> list[str]:
     return errors
 
 
+def parse_frontmatter(text: str) -> tuple[dict[str, str], str] | None:
+    match = re.match(r"---\n(.*?)\n---\n(.*)", text, re.DOTALL)
+    if not match:
+        return None
+    meta: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        key, sep, value = line.partition(":")
+        if sep and key.strip() and not line.startswith((" ", "\t")):
+            meta[key.strip()] = value.strip()
+    return meta, match.group(2)
+
+
+def validate_claude(root: Path) -> list[str]:
+    errors: list[str] = []
+    adapter_dir = root / ".claude" / "agents"
+    for role, profile in EXPECTED.items():
+        adapter = adapter_dir / f"{role}.md"
+        rel = adapter.relative_to(root)
+        if not adapter.is_file():
+            errors.append(f"missing adapter: {rel}")
+            continue
+        parsed = parse_frontmatter(adapter.read_text(encoding="utf-8"))
+        if parsed is None:
+            errors.append(f"invalid frontmatter in {rel}")
+            continue
+        meta, body = parsed
+        if meta.get("name") != role:
+            errors.append(f"claude {role}: name must be {role!r}")
+        if not meta.get("description"):
+            errors.append(f"claude {role}: description must be non-empty text")
+        if "model" in meta and not meta["model"]:
+            errors.append(f"claude {role}: model, when set, must be non-empty text")
+        if not body.strip():
+            errors.append(f"claude {role}: instructions must be non-empty text")
+            continue
+        refs = PROFILE_REFERENCE.findall(body)
+        if profile not in refs:
+            errors.append(f"claude {role}: instructions must reference {profile}")
+        for ref in refs:
+            relative = PurePosixPath(ref)
+            if relative.is_absolute() or ".." in relative.parts:
+                errors.append(f"claude {role}: profile reference is not portable: {ref}")
+            elif not (root / Path(*relative.parts)).is_file():
+                errors.append(f"claude {role}: referenced profile does not exist: {ref}")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", nargs="?", type=Path, default=Path(os.path.abspath(__file__)).parents[2])
     args = parser.parse_args()
-    errors = validate(args.root.resolve())
+    root = args.root.resolve()
+    errors = validate(root) + validate_claude(root)
     if errors:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print("PASS: four adapter TOMLs match required names, non-empty descriptions, models, and portable role profile references.")
+    print("PASS: Codex TOMLs and Claude Code agent files match required names, non-empty descriptions, and portable role profile references (models are not checked).")
     return 0
 
 
