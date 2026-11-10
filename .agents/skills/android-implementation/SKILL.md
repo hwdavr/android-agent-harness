@@ -35,7 +35,8 @@ Do not load or execute a Data, Domain, or UI section merely because another laye
 
 **Sliced lane** (`sliced-lane-generator`):
 - Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` and use its hashes and source pointers.
-- Read only the selected story's `tasks.md` phase, its mapped requirement rows in the feature block, and its `### US-n` acceptance rows in `test-plan.md`. Read the selected `feature_list.json` entry for execution flags and verification IDs.
+- Read only the selected story's `tasks.md` section, its mapped requirement rows in the feature block, and its `### US-n` acceptance rows in `test-plan.md`. Read the selected `feature_list.json` entry for execution flags and verification IDs.
+- Work the slice's tasks in order (Prerequisites, Implementation, Tests, Final checks). When a task is finished, set `done: true` in the slice's `tasks` in `feature_list.json` and tick its checkbox in `tasks.md`; a slice cannot be `passing` while any of its tasks is not done.
 - Read the summary only for execution-stage evidence, blockers, and decisions made after approval; never treat it as a second requirement source.
 
 ---

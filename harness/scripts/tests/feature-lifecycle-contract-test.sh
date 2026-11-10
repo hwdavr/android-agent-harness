@@ -80,6 +80,19 @@ write_tracker "$fixture_dir/complete-with-incomplete-slices.md" \
   "| feature-a | Feature A | $incomplete_feature_path | Complete | 2026-08-04 | Fixture |"
 expect_failure "$fixture_dir/complete-with-incomplete-slices.md" "contains non-passing feature slices"
 
+# A passing slice must have every task done; tasks use `done`, so they never look like slice statuses.
+mkdir -p "$fixture_dir/.scratch/tasks-open" "$fixture_dir/.scratch/tasks-done"
+printf '%s\n' '{"features":[{"id":"US-1","status":"passing","tasks":[{"id":"T001","done":true},{"id":"T002","done":false}]}]}' \
+  > "$fixture_dir/.scratch/tasks-open/feature_list.json"
+printf '%s\n' '{"features":[{"id":"US-1","status":"passing","tasks":[{"id":"T001","done":true},{"id":"T002","done":true}]}]}' \
+  > "$fixture_dir/.scratch/tasks-done/feature_list.json"
+write_tracker "$fixture_dir/passing-with-open-tasks.md" \
+  "| feature-a | Feature A | [.scratch/tasks-open/](../../.scratch/tasks-open/) | In Progress | 2026-08-04 | Fixture |"
+expect_failure "$fixture_dir/passing-with-open-tasks.md" "passing slice(s) with unfinished tasks: US-1"
+write_tracker "$fixture_dir/passing-with-done-tasks.md" \
+  "| feature-a | Feature A | [.scratch/tasks-done/](../../.scratch/tasks-done/) | To be reviewed | 2026-08-04 | Fixture |"
+(cd "$fixture_dir" && bash "$VALIDATOR" "$fixture_dir/passing-with-done-tasks.md" >/dev/null)
+
 mkdir -p "$fixture_dir/docs/product/legacy-feature"
 write_tracker "$fixture_dir/legacy-path.md" \
   "| feature-a | Feature A | [docs/product/legacy-feature/](legacy-feature/) | Planning | 2026-08-04 | Fixture |"

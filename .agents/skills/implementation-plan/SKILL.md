@@ -82,14 +82,19 @@ procedures only — results go to the summary.
   observe <delta> through the existing entry point <screen or action already in the app>."
   Merge any horizontal slice into the story that first makes it user-visible. Order by priority;
   put the riskiest foundation first only when it is itself vertical.
-- `tasks.md`: `T### [P] [US-n] description in exact/path.kt`, phases Setup → Foundational → one
-  phase per story (`**Slice**: \`US-n\``, its acceptance test IDs) → Polish.
+- `tasks.md`: a `## Slices` overview table (what each slice delivers, requirements, task IDs, depends
+  on, acceptance tests), then one `## US-n:` section per slice (`**Slice**: \`US-n\``, its
+  acceptance test IDs) with `### Implementation` and `### Tests`. Every task is
+  `T### [P] [US-n] description in exact/path.kt` and belongs to exactly one slice. Shared setup goes
+  under `### Prerequisites` in the **first** slice only; the closing quality, product-doc, and
+  install tasks go under `### Final checks` in the **last** slice only. There are no separate phases.
 - `feature_list.json`: one entry per story with `id` = `US-n`, `priority`, `area`, `title`,
   `description` (execution directions, not the story text), `ui_design`, `user_visible_behavior`,
   `affects_ui`, `requires_visual_verification` (true only for the final UI slice, which owns the
   conformance review), `production_journey` (mirrors the journey contract), `status`
   `not_started`, `acceptance_test_ids` (exactly that story's TC IDs), `verification`,
-  `evidence: []`, `notes`. The root declares `platform_validation`
+  `evidence: []`, `notes`, and `tasks` (`{id, title, file, done}` for every task of that slice —
+  the same T### set as its `tasks.md` section; use `done`, never `status`). The root declares `platform_validation`
   (`required`, `unsupported_environment_policy: "fail_loudly"`, and a reason or capability
   matrix). Platform-bound work adds `platform-capability-matrix.md`.
 

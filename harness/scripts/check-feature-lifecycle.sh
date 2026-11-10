@@ -105,6 +105,18 @@ while IFS='|' read -r _ raw_id raw_feature raw_workspace raw_status raw_updated 
   [ "$workspace_target" = "$expected_target" ] ||
     fail "Tracker row '$feature_id' link target must be '$expected_target'."
 
+  # A slice is `passing` only when every one of its tasks is done (tasks use `done`, not `status`).
+  if [ -f "$workspace/feature_list.json" ]; then
+    command -v jq >/dev/null 2>&1 || fail "jq is required to validate slice tasks in $workspace/feature_list.json."
+    unfinished_slices=$(jq -r '
+      .features[]? | select(.status == "passing")
+      | select(((.tasks // []) | map(select(.done != true)) | length) > 0) | .id
+    ' "$workspace/feature_list.json") ||
+      fail "Tracker row '$feature_id' has an unreadable $workspace/feature_list.json."
+    [ -z "$unfinished_slices" ] ||
+      fail "Tracker row '$feature_id' has passing slice(s) with unfinished tasks: $(printf '%s' "$unfinished_slices" | tr '\n' ' ')."
+  fi
+
   if [ "$status" = "In Progress" ]; then
     in_progress_count=$((in_progress_count + 1))
   fi

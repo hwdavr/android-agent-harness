@@ -6,7 +6,8 @@
     "passing_requires_evidence": true,
     "passing_requires_acceptance_test_evidence": true,
     "passing_requires_noncontradictory_evidence": true,
-    "do_not_skip_verification": true
+    "do_not_skip_verification": true,
+    "passing_requires_all_tasks_done": true
   },
   "status_legend": {
     "not_started": "Work has not begun.",
@@ -42,6 +43,26 @@
         "post_return_assertion": "The resulting item is visible in the originating screen."
       },
       "status": "not_started",
+      "tasks": [
+        {
+          "id": "T001",
+          "title": "<shared prerequisite — first slice only>",
+          "file": "<path>",
+          "done": false
+        },
+        {
+          "id": "T004",
+          "title": "<domain use case>",
+          "file": "app/src/main/java/.../<UseCase>.kt",
+          "done": false
+        },
+        {
+          "id": "T007",
+          "title": "<ViewModel unit test>",
+          "file": "app/src/test/java/.../<Feature>ViewModelTest.kt",
+          "done": false
+        }
+      ],
       "acceptance_test_ids": [
         "TC-US-1-01"
       ],
@@ -73,6 +94,20 @@
         "post_return_assertion": null
       },
       "status": "not_started",
+      "tasks": [
+        {
+          "id": "T009",
+          "title": "<…>",
+          "file": "<path>",
+          "done": false
+        },
+        {
+          "id": "T010",
+          "title": "<…>",
+          "file": "<path>",
+          "done": false
+        }
+      ],
       "acceptance_test_ids": [
         "TC-US-2-01"
       ],

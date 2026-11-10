@@ -5,7 +5,8 @@ Single lane (no user stories): the approved feature block(s), implementation-pla
 test-plan.md agree — every AC-### has a primary acceptance test, Rule Applicability is complete.
 
 Sliced lane (two or more user stories): additionally tasks.md and feature_list.json agree with the
-stories, the Spec Coverage Matrix, the per-story acceptance tests, and the journey contract.
+stories, the Spec Coverage Matrix, the per-story acceptance tests, and the journey contract; every
+task belongs to exactly one slice, and each slice's tasks match in both files.
 
 --pre-approval runs every check except the approval fields (block **Status** Approved and the
 recorded block SHA-256), so the package can be analyzed before it is presented for approval.
@@ -30,7 +31,6 @@ AC_DEF = re.compile(r"\*\*(AC-\d{3})\*\*")
 SC_DEF = re.compile(r"\*\*(SC-\d{3})\*\*")
 US_DEF = re.compile(r"^#{3,6}\s+(US-\d+)\b", re.M)
 TC_ID = re.compile(r"^TC-[A-Z0-9-]+$")
-TASK_LINE = re.compile(r"^- \[[ xX]\] (T\d{3})\b(.*)$", re.M)
 SHA = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -271,34 +271,89 @@ def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path) -> None
     for story in sorted(stories - set(journeys)):
         r.fail(f"test-plan.md Production Journey Planning Contract has no row for {story}")
 
-    # tasks.md
+    tasks_by_story = check_tasks_md(r, stories, workspace)
+    check_feature_list(r, stories, tc_story, journeys, workspace, tasks_by_story)
+
+
+STORY_SECTION = re.compile(r"^## (US-\d+):[^\n]*\n(.*?)(?=^## |\Z)", re.M | re.S)
+TASK_ROW = re.compile(r"^- \[([ xX])\] (T\d{3})\b(.*)$", re.M)
+
+
+def expand_task_ids(cell: str) -> set[str]:
+    """T001, T001-T004, T001–T004, comma lists -> a set of task IDs."""
+    ids: set[str] = set()
+    for first, last in re.findall(r"T(\d{3})\s*[–—-]\s*T(\d{3})", cell):
+        ids.update(f"T{n:03d}" for n in range(int(first), int(last) + 1))
+    ids.update(re.findall(r"T\d{3}", re.sub(r"T\d{3}\s*[–—-]\s*T\d{3}", "", cell)))
+    return ids
+
+
+def check_tasks_md(r: Report, stories: set[str], workspace: Path) -> dict[str, dict[str, bool]]:
+    """tasks.md: a Slices table, then one '## US-n:' section per slice owning every task.
+
+    Returns {story: {task id: checked}} for the feature_list.json comparison.
+    """
     tasks_path = workspace / "tasks.md"
     if not tasks_path.is_file():
         r.fail(f"missing {tasks_path} (required in the sliced lane)")
-    else:
-        tasks = tasks_path.read_text(encoding="utf-8")
-        phases = re.findall(r"^## Phase \d+ — (US-\d+):.*$", tasks, re.M)
-        for dup in duplicates(phases):
-            r.fail(f"tasks.md has more than one phase for {dup}")
-        for story in sorted(stories - set(phases)):
-            r.fail(f"tasks.md has no phase for {story}")
-        for story in sorted(set(phases) - stories):
-            r.fail(f"tasks.md phase {story} is not a user story in any approved feature block")
-        for story in phases:
-            body = re.search(rf"^## Phase \d+ — {story}:.*?(?=^## |\Z)", tasks, re.M | re.S).group(0)
-            if not re.search(rf"^\*\*Slice\*\*:\s*`{story}`", body, re.M):
-                r.fail(f"tasks.md phase {story} must declare '**Slice**: `{story}`'")
-        task_ids = [m.group(1) for m in TASK_LINE.finditer(tasks)]
-        if not task_ids:
-            r.fail("tasks.md has no '- [ ] T### …' tasks")
-        for dup in duplicates(task_ids):
-            r.fail(f"tasks.md reuses task ID {dup}")
-        for m in TASK_LINE.finditer(tasks):
-            for label in re.findall(r"\[(US-\d+)\]", m.group(2)):
-                if label not in stories:
-                    r.fail(f"tasks.md {m.group(1)} is labelled {label}, which is not a user story")
+        return {}
+    tasks = tasks_path.read_text(encoding="utf-8")
+    sections = [(m.group(1), m.group(2), m.span()) for m in STORY_SECTION.finditer(tasks)]
+    order = [story for story, _, _ in sections]
+    for dup in duplicates(order):
+        r.fail(f"tasks.md has more than one section for {dup}")
+    for story in sorted(stories - set(order)):
+        r.fail(f"tasks.md has no '## {story}:' section")
+    for story in sorted(set(order) - stories):
+        r.fail(f"tasks.md section {story} is not a user story in any approved feature block")
 
-    # feature_list.json
+    by_story: dict[str, dict[str, bool]] = {}
+    for index, (story, body, _) in enumerate(sections):
+        if not re.search(rf"^\*\*Slice\*\*:\s*`{story}`", body, re.M):
+            r.fail(f"tasks.md section {story} must declare '**Slice**: `{story}`'")
+        if index != 0 and re.search(r"^### Prerequisites\b", body, re.M):
+            r.fail(f"tasks.md section {story} has '### Prerequisites'; only the first slice ({order[0]}) may")
+        if index != len(sections) - 1 and re.search(r"^### Final checks\b", body, re.M):
+            r.fail(f"tasks.md section {story} has '### Final checks'; only the last slice ({order[-1]}) may")
+        by_story.setdefault(story, {})
+        for m in TASK_ROW.finditer(body):
+            task_id, rest = m.group(2), m.group(3)
+            labels = re.findall(r"\[(US-\d+)\]", rest)
+            if not labels:
+                r.fail(f"tasks.md {task_id} has no [US-n] label; every task belongs to a slice")
+            elif labels != [story]:
+                r.fail(f"tasks.md {task_id} is in the {story} section but labelled {', '.join(labels)}")
+            by_story[story][task_id] = m.group(1) in "xX"
+
+    spans = [span for _, _, span in sections]
+    all_ids = [m.group(2) for m in TASK_ROW.finditer(tasks)]
+    if not all_ids:
+        r.fail("tasks.md has no '- [ ] T### …' tasks")
+    for dup in duplicates(all_ids):
+        r.fail(f"tasks.md reuses task ID {dup}")
+    for m in TASK_ROW.finditer(tasks):
+        if not any(a <= m.start() < b for a, b in spans):
+            r.fail(f"tasks.md {m.group(2)} is outside every slice section")
+
+    overview = {unquote(row[0]): row for row in table_rows(section(tasks, "Slices"))
+                if row and re.match(r"^US-\d+$", unquote(row[0]))}
+    for story in sorted(stories - set(overview)):
+        r.fail(f"tasks.md Slices table has no row for {story}")
+    for story in sorted(set(overview) - stories):
+        r.fail(f"tasks.md Slices table lists {story}, which is not a user story")
+    for story, row in overview.items():
+        if story not in by_story:
+            continue
+        listed = expand_task_ids(row[3]) if len(row) > 3 else set()
+        actual = set(by_story[story])
+        if listed != actual:
+            r.fail(f"tasks.md Slices table tasks for {story} ({', '.join(sorted(listed)) or 'none'}) "
+                   f"do not match its section ({', '.join(sorted(actual)) or 'none'})")
+    return by_story
+
+
+def check_feature_list(r: Report, stories: set[str], tc_story: dict[str, str], journeys: dict,
+                       workspace: Path, tasks_by_story: dict[str, dict[str, bool]]) -> None:
     list_path = workspace / "feature_list.json"
     if not list_path.is_file():
         r.fail(f"missing {list_path} (required in the sliced lane)")
@@ -330,6 +385,37 @@ def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path) -> None
         if row and isinstance(pj, dict) and len(row) > 1:
             if bool(pj.get("required")) != row[1].strip().lower().startswith("yes"):
                 r.fail(f"feature_list.json {sid} production_journey.required disagrees with test-plan.md")
+        check_slice_tasks(r, sid, feature.get("tasks"), tasks_by_story.get(sid))
+
+
+def check_slice_tasks(r: Report, sid: str, listed, md_tasks: dict[str, bool] | None) -> None:
+    """The slice's `tasks` array lists the same tasks as its tasks.md section, with matching progress."""
+    if not isinstance(listed, list) or not listed:
+        r.fail(f"feature_list.json {sid} needs a non-empty 'tasks' array (id, title, file, done)")
+        return
+    ids = []
+    for task in listed:
+        if not isinstance(task, dict) or not re.fullmatch(r"T\d{3}", str(task.get("id", ""))):
+            r.fail(f"feature_list.json {sid} has a task without a T### id")
+            continue
+        ids.append(task["id"])
+        if not isinstance(task.get("done"), bool):
+            r.fail(f"feature_list.json {sid} {task['id']} needs a boolean 'done'")
+        if not task.get("title") or not task.get("file"):
+            r.fail(f"feature_list.json {sid} {task['id']} needs 'title' and 'file'")
+    for dup in duplicates(ids):
+        r.fail(f"feature_list.json {sid} repeats task {dup}")
+    if md_tasks is None:
+        return
+    for task_id in sorted(set(md_tasks) - set(ids)):
+        r.fail(f"feature_list.json {sid} is missing task {task_id} from tasks.md")
+    for task_id in sorted(set(ids) - set(md_tasks)):
+        r.fail(f"feature_list.json {sid} lists {task_id}, which is not in its tasks.md section")
+    for task in listed:
+        if isinstance(task, dict) and task.get("id") in md_tasks and isinstance(task.get("done"), bool):
+            if task["done"] != md_tasks[task["id"]]:
+                r.fail(f"{task['id']} is {'done' if task['done'] else 'not done'} in feature_list.json "
+                       f"but {'checked' if md_tasks[task['id']] else 'unchecked'} in tasks.md")
 
 
 def check(workspace: Path, root: Path, pre_approval: bool = False) -> Report:

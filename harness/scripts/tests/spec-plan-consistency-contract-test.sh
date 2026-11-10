@@ -200,28 +200,53 @@ MD
   cat > "$FEATURE_DIR/tasks.md" <<'MD'
 # Tasks — Expiring share invitations
 
-## Phase 1 — Setup
+## Slices
 
-- [ ] T001 Add expiry strings in `app/src/main/res/values/strings.xml`
+| Slice | Delivers | Requirements | Tasks | Depends on | Acceptance tests |
+|---|---|---|---|---|---|
+| US-1 | Owner sets an expiry | `note-sharing.md#FR-002` | T001–T003 | none | `TC-US-1-01` |
+| US-2 | Owner sees expired invitations | `note-sharing.md#FR-003` | T004, T005 | US-1 | `TC-US-2-01` |
 
-## Phase 2 — US-1: Owner sets an expiry (Priority: P1)
+## US-1: Owner sets an expiry (Priority: P1)
 
 **Slice**: `US-1` in `feature_list.json`
 
+### Prerequisites
+
+- [ ] T001 [US-1] Add expiry strings in `app/src/main/res/values/strings.xml`
+
+### Implementation
+
 - [ ] T002 [US-1] Add expiry to invite state in `ShareInviteViewModel.kt`
+
+### Tests
+
 - [ ] T003 [P] [US-1] Test expiry state in `ShareInviteViewModelTest.kt`
 
-## Phase 3 — US-2: Owner sees expired invitations (Priority: P2)
+## US-2: Owner sees expired invitations (Priority: P2)
 
 **Slice**: `US-2` in `feature_list.json`
 
+### Implementation
+
 - [ ] T004 [US-2] Map expired status in `ShareUiModels.kt`
+
+### Final checks
+
+- [ ] T005 [US-2] Run ktlintCheck and detekt
 MD
   cat > "$FEATURE_DIR/feature_list.json" <<'JSON'
 {
   "features": [
-    {"id": "US-1", "acceptance_test_ids": ["TC-US-1-01"], "production_journey": {"required": false}},
-    {"id": "US-2", "acceptance_test_ids": ["TC-US-2-01"], "production_journey": {"required": false}}
+    {"id": "US-1", "acceptance_test_ids": ["TC-US-1-01"], "production_journey": {"required": false},
+     "tasks": [
+       {"id": "T001", "title": "Expiry strings", "file": "app/src/main/res/values/strings.xml", "done": false},
+       {"id": "T002", "title": "Invite state", "file": "ShareInviteViewModel.kt", "done": false},
+       {"id": "T003", "title": "State test", "file": "ShareInviteViewModelTest.kt", "done": false}]},
+    {"id": "US-2", "acceptance_test_ids": ["TC-US-2-01"], "production_journey": {"required": false},
+     "tasks": [
+       {"id": "T004", "title": "Expired status", "file": "ShareUiModels.kt", "done": false},
+       {"id": "T005", "title": "Quality checks", "file": "app/build.gradle.kts", "done": false}]}
   ]
 }
 JSON
@@ -322,12 +347,12 @@ replace "$FEATURE_DIR/feature_list.json" '"acceptance_test_ids": ["TC-US-2-01"]'
 expect_failure "US-2 is missing acceptance test TC-US-2-01"
 
 write_sliced
-replace "$FEATURE_DIR/feature_list.json" '"production_journey": {"required": false}}' '"production_journey": {"required": true}}'
+replace "$FEATURE_DIR/feature_list.json" '"acceptance_test_ids": ["TC-US-1-01"], "production_journey": {"required": false}' '"acceptance_test_ids": ["TC-US-1-01"], "production_journey": {"required": true}'
 expect_failure "production_journey.required disagrees with test-plan.md"
 
 write_sliced
 replace "$FEATURE_DIR/tasks.md" "- [ ] T003 [P] [US-1]" "- [ ] T003 [P] [US-3]"
-expect_failure "T003 is labelled US-3, which is not a user story"
+expect_failure "T003 is in the US-1 section but labelled US-3"
 
 write_sliced
 replace "$FEATURE_DIR/tasks.md" "- [ ] T003 [P]" "- [ ] T002 [P]"
@@ -336,6 +361,65 @@ expect_failure "tasks.md reuses task ID T002"
 write_sliced
 replace "$FEATURE_DIR/tasks.md" '**Slice**: `US-2` in `feature_list.json`' ''
 expect_failure "must declare '**Slice**: \`US-2\`'"
+
+# Tasks belong to exactly one slice; Prerequisites / Final checks sit in one slice each.
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "- [ ] T004 [US-2] Map" "- [ ] T004 Map"
+expect_failure "T004 has no [US-n] label"
+
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "### Implementation
+
+- [ ] T004" "### Prerequisites
+
+- [ ] T004"
+expect_failure "section US-2 has '### Prerequisites'; only the first slice (US-1) may"
+
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "### Tests
+
+- [ ] T003" "### Final checks
+
+- [ ] T003"
+expect_failure "section US-1 has '### Final checks'; only the last slice (US-2) may"
+
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "| T001–T003 |" "| T001–T002 |"
+expect_failure "Slices table tasks for US-1 (T001, T002) do not match its section (T001, T002, T003)"
+
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "## US-1: Owner sets an expiry (Priority: P1)" "- [ ] T009 [US-1] Stray task in \`Stray.kt\`
+
+## US-1: Owner sets an expiry (Priority: P1)"
+expect_failure "T009 is outside every slice section"
+
+write_sliced
+python3 - "$FEATURE_DIR/feature_list.json" <<'PY4'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+d["features"][0]["tasks"] = [t for t in d["features"][0]["tasks"] if t["id"] != "T003"]
+json.dump(d, open(p, "w"))
+PY4
+expect_failure "feature_list.json US-1 is missing task T003 from tasks.md"
+
+write_sliced
+replace "$FEATURE_DIR/feature_list.json" '"id": "T004", "title": "Expired status", "file": "ShareUiModels.kt", "done": false' '"id": "T004", "title": "Expired status", "file": "ShareUiModels.kt", "done": true'
+expect_failure "T004 is done in feature_list.json but unchecked in tasks.md"
+
+write_sliced
+replace "$FEATURE_DIR/tasks.md" "- [ ] T004 [US-2]" "- [x] T004 [US-2]"
+expect_failure "T004 is not done in feature_list.json but checked in tasks.md"
+
+write_sliced
+python3 - "$FEATURE_DIR/feature_list.json" <<'PY3'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+del d["features"][1]["tasks"]
+json.dump(d, open(p, "w"))
+PY3
+expect_failure "feature_list.json US-2 needs a non-empty 'tasks' array"
 
 write_sliced
 rm "$FEATURE_DIR/tasks.md"
