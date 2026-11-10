@@ -1,6 +1,6 @@
 ---
 name: harness-router
-description: Route work in this Android notes project to its existing harness workflow or direct skill. Use for fixes, enhancements, UI changes, requirements, reviews, QA, regression checks, harness maintenance, or requests to resume work or choose the next step. Apply the consuming project's AGENTS.md and on-disk approval evidence; leave stage execution to the selected workflow. Skip unrelated general questions.
+description: Route work in this Android notes project (fixes, enhancements, UI changes, reviews, QA, harness upkeep, resuming, next step) to its harness workflow or direct skill. Skip general questions.
 ---
 
 # Harness Router

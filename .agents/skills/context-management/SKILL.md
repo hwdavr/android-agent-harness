@@ -47,6 +47,14 @@ documents. During testing/review load `rules/testing-practices.md`; add
 | Appearance-only UI change (no behavior, state, or data change) | `skills/android-ui-layer/SKILL.md` (direct lane, entry check) |
 | API contract change | `workflows/api-contract-update.md` |
 
+## UI Request Routing
+
+Follow the consuming project's `AGENTS.md` routing and explicit user overrides.
+Inspect current-state evidence before classifying a UI request. An unexpected
+defect uses `bug-fixing`; new UI behavior, state, or screens use `harness-planning`.
+An Appearance-only change uses `android-ui-layer` only after its entry check passes,
+and ends with the `ui-verification` conformance review.
+
 
 ---
 

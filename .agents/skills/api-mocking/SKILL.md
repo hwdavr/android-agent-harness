@@ -1,6 +1,6 @@
 ---
 name: api-mocking
-description: Control REST and GraphQL backend responses during Android or iOS QA using session-owned WireMock fixtures, passthrough, request verification, and cleanup. Use when a test needs backend conditions; keep device automation and analytics collection in their existing skills.
+description: Control REST and GraphQL backend responses during Android or iOS QA with session-owned WireMock fixtures, passthrough, verification, and cleanup. Device automation and analytics stay in their skills.
 ---
 
 # API mocking

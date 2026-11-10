@@ -1,6 +1,6 @@
 ---
 name: implementation-plan
-description: Plan an approved or clarified change (Spec Kit /plan + /tasks + /analyze) — implementation-plan.md and test-plan.md for every lane, plus tasks.md and feature_list.json in the sliced lane — and stop for approval before any code.
+description: Plan an approved or clarified change (Spec Kit /plan + /tasks + /analyze): implementation-plan.md and test-plan.md, plus tasks.md and feature_list.json in the sliced lane; stop for approval.
 ---
 
 # Skill — Implementation Plan (Plan + Tasks + Analyze)

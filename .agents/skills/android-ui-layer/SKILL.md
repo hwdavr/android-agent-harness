@@ -1,6 +1,6 @@
 ---
 name: android-ui-layer
-description: Implement Compose UI with unidirectional state flow — as the UI step of a planned change, or as the direct lane for an appearance-only tweak that an existing approved design or the design system already defines.
+description: Implement Compose UI with unidirectional state flow — the UI step of a planned change, or the direct lane for an appearance-only tweak an approved design or the design system already defines.
 ---
 
 # Skill — Android UI Layer

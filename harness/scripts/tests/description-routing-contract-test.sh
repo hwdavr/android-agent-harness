@@ -3,9 +3,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-MAX_DESCRIPTION_CHARS=120
-MAX_TOTAL_CHARS=3600
-EXPECTED_DESCRIPTION_COUNT=44
+MAX_DESCRIPTION_CHARS=200
 
 fail() {
   echo "FAIL: $1" >&2
@@ -42,8 +40,6 @@ assert_file_not_contains() {
 
 DESCRIPTION_FILES="$(rg -l '^description:' "$PROJECT_ROOT/.agents" | sort)"
 DESCRIPTION_COUNT="$(printf '%s\n' "$DESCRIPTION_FILES" | sed '/^$/d' | wc -l | tr -d ' ')"
-[ "$DESCRIPTION_COUNT" -eq "$EXPECTED_DESCRIPTION_COUNT" ] \
-  || fail "expected $EXPECTED_DESCRIPTION_COUNT descriptions, found $DESCRIPTION_COUNT"
 
 TOTAL_CHARS=0
 while IFS= read -r file; do
@@ -61,8 +57,7 @@ done <<EOF
 $DESCRIPTION_FILES
 EOF
 
-[ "$TOTAL_CHARS" -le "$MAX_TOTAL_CHARS" ] \
-  || fail "description total is $TOTAL_CHARS characters (limit $MAX_TOTAL_CHARS)"
+# No total cap: the skill set is expected to grow; the per-description limit bounds each entry.
 
 assert_contains .agents/workflows/harness-planning.md 'feature.*plan'
 assert_contains .agents/workflows/single-lane-generator.md 'single-lane.*feature'

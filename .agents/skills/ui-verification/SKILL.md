@@ -1,6 +1,6 @@
 ---
 name: ui-verification
-description: Verify implemented UI against the approved design through a conformance review — review captures at the Pen frame size, structural semantics checks, registered-component reuse, and user approval. No screenshot goldens.
+description: Verify implemented UI visual conformance to the approved design — Pen-frame-size captures, structural semantics, registered-component reuse, and user approval. No screenshot goldens.
 ---
 
 # Skill — UI Verification (Conformance Review)
