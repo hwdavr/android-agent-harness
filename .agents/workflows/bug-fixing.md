@@ -26,7 +26,7 @@ Do not fix symptoms first. Do not guess — prove it with a failing test.
 **The reproduction test must be RED before the Fix Plan is written.**
 **The Fix Plan must be approved before any fix code is written.**
 
-Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan & Analyze → [User Approval] → Implementation → [UI Verification] → Testing → Code Quality Fix → Install App To Device
+Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan & Analyze → [User Approval] → Implementation → [UI Verification] → Testing → Code Quality Fix → Install App To Device → [User Approval] → Independent Review
 
 **Workspace**: `FEATURE_DIR=.scratch/<YYYY-MM-DD>-fix-<short-name>/`, created in Stage 1 with
 `summary.md` (bug-fixing stage profile) and a Harness Feature Tracker row (status `Planning`). A bug
@@ -244,11 +244,16 @@ its expected visible result; failure or no connected device is blocked. Otherwis
 feature-specific N/A rationale completes the stage.
 ---
 
+### Stage 8 — Independent Review ⛔ STOP
+
+After the preceding applicable gates pass, present the fix and verification results to the user and ask whether to start independent review. Wait for explicit approval before invoking the evaluator or starting review. Record the decision in `summary.md`; if approval is not given, leave review pending. After approval, follow the applicable independent review workflow and its report handoff.
+
 ## Human-in-the-Loop Confirmation Points
 
 1. **After Bug Context, Localization & Root Cause** — if root cause is uncertain, ask user
 2. **After Bug Reproduction** — if the bug cannot be reproduced by a test, surface to user *(mandatory stop)*
 3. **After Fix Plan** — user approves fix plan *(mandatory always)*
+4. **Before Independent Review** — user approves starting review *(mandatory always)*
 
 ## Product Requirements Reconciliation
 
