@@ -76,7 +76,9 @@ bash harness/scripts/check-feature-lifecycle.sh
 bash harness/scripts/check-harness-metrics.sh --validate "$FEATURE_DIR/summary.md"
 ```
 
-Set the tracker row to `Complete` only after these pass.
+Set the tracker row to `Complete` only after these pass. Then apply [artifact retention](../rules/artifact-retention.md) with
+`python3 harness/scripts/prune-harness-artifacts.py --apply`; record the results its logs backed in `summary.md` before that.
+A prune failure is reported, not blocking.
 
 ### Stage 9 — Install App To Device
 

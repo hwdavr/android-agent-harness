@@ -83,6 +83,9 @@ workflow retains the ad-hoc rule that the user decides whether findings are acce
 **⛔ STOP — present all review reports and the evaluator rubric to the user.**
 The user decides whether findings are acceptable or fixes are required.
 
+After the user's decision (and any tracker update it requires, followed by
+`bash harness/scripts/check-feature-lifecycle.sh`), finish the review. Then apply [artifact retention](../rules/artifact-retention.md): run `python3 harness/scripts/prune-harness-artifacts.py --apply`. It prunes only raw output of `Complete` workspaces and stale QA runs no open workspace cites, never the workspace under review. Report what it deleted; a prune failure is reported, not blocking.
+
 ---
 
 ## Human-in-the-Loop Confirmation Points

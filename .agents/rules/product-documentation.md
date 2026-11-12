@@ -1,6 +1,6 @@
 # Product documentation flow
 
-Keep consumer documentation under the consumer repository root. Product capability requirements live in `docs/product/requirements/<capability>.md`; every feature and bug fix has one dated workspace in `.scratch/<YYYY-MM-DD>-<feature-id>/` for its plans, summaries, and evidence. Keep `.scratch/` version controlled and retain records throughout their lifecycle. `docs/current/` is retired. Never write consumer records into a nested shared harness checkout.
+Keep consumer documentation under the consumer repository root. Product capability requirements live in `docs/product/requirements/<capability>.md`; every feature and bug fix has one dated workspace in `.scratch/<YYYY-MM-DD>-<feature-id>/` for its plans, summaries, and evidence. Keep `.scratch/` version controlled and retain records throughout their lifecycle; raw runtime output follows [artifact retention](artifact-retention.md). `docs/current/` is retired. Never write consumer records into a nested shared harness checkout.
 
 Before Specify & Clarify, bug context, or orientation, read the full affected living capability file(s). Identify the existing statements and planned changes that the approved delta touches; trace each against the approved scope, current source, and verification evidence. `docs/product/product.md` is a navigation overview and the sole work-package lifecycle tracker. Detailed product behavior belongs in capability files. Keep implementation decisions and reusable pitfalls in `docs/knowledge/`.
 

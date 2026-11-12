@@ -12,7 +12,7 @@ The agent writes run-specific JSON; the reporter evaluates it and never scans so
 8. Dogfood must verify real entry actions and runtime selectors. Test callbacks such as `onImageImported` are not device actions: use the real picker route. Compose tags may not be externally exposed. IME scenarios need a real keyboard; check current agent-device open options.
 9. Derive internal state checkpoint contracts and analytics expectations from the same approved requirements using [HarnessLens](harnesslens.md). Discover exported scopes/fields from the installed build or source, but do not treat implementation values as expected behavior. Link each checkpoint to a real action and UI check; include all relevant initial/success/error/restoration states. Missing expected behavior or hooks is an evidence gap and prevents PASS.
 
-The generated scenario stays beside its report. Source inventory is not a runtime observation: start with empty observed checks, null crash count, and `proxy_verified: false`. Screenshots supplement existing instrumented/Roborazzi acceptance evidence.
+The generated scenario stays beside its report. Source inventory is not a runtime observation: start with empty observed checks, null crash count, and `proxy_verified: false`. Screenshots supplement existing JVM/instrumented acceptance evidence; they are never a screenshot golden.
 
 ## JSON fields
 

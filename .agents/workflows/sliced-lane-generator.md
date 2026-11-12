@@ -100,7 +100,7 @@ Run all static check suites, lint rules, and custom compliance rules, and resolv
 Update repository history, project task logs, and product documentation to reflect completion.
 
 > [!IMPORTANT]
-> **Strict Verification Gate**: A slice transitions to `passing` **only** after every acceptance-test command from the slice's `### US-n` section of `$FEATURE_DIR/test-plan.md` exits `0`, with evidence attached per Test ID. Up to 3 fix retries per failing command; unresolved after 3 → `blocked`. Reuse Test-stage evidence only when `bash harness/scripts/check-evidence-receipt.sh` validates unchanged source/config/command/runtime hashes. Platform-boundary owners require `check-platform-evidence.sh --evaluate --slice "$FEATURE_ID"` exit 0. Visual-verification owners require `check-visual-evidence-contract.sh --evaluate` exit 0 with direct approved state references and passing Roborazzi/reference-anchor proof.
+> **Strict Verification Gate**: A slice transitions to `passing` **only** after every acceptance-test command from the slice's `### US-n` section of `$FEATURE_DIR/test-plan.md` exits `0`, with evidence attached per Test ID. Up to 3 fix retries per failing command; unresolved after 3 → `blocked`. Reuse Test-stage evidence only when `bash harness/scripts/check-evidence-receipt.sh` validates unchanged source/config/command/runtime hashes. Platform-boundary owners require `check-platform-evidence.sh --evaluate --slice "$FEATURE_ID"` exit 0. Visual-verification owners require `check-visual-evidence-contract.sh --evaluate` exit 0, meaning `$FEATURE_DIR/ui_verification.json` records an approved conformance review and a passing structural check for every `UI_contract.md` state. Never record, verify, or compare a screenshot golden.
 
 *   **Action**:
     1. Once verification passes and evidence is attached, update `$FEATURE_DIR/feature_list.json`, the slice summary, and the slice's row in `$FEATURE_DIR/summary.md`.
@@ -130,6 +130,7 @@ Ensure that the final repository state is clean, verified, and fully prepared fo
 *   **Action**:
     1. Verify all checklist criteria, reference fresh Test and Code Quality evidence, and write `$FEATURE_DIR/session-handoff.md`. Re-run only a verification command invalidated by a later relevant change.
     2. **Update `$FEATURE_DIR/summary_{feature_id}.md`** to mark the **Clean Exit** stage status to completed (✅), transition the selected slice summary to Complete, and document key outcomes, open items, and handoff decisions.
+    3. Apply [artifact retention](../rules/artifact-retention.md): run `python3 harness/scripts/prune-harness-artifacts.py --apply`. Cite every run this slice relies on by its full `.qa-artifacts/<run>` path in the summary first. A prune failure is reported in the handoff; it does not block the stage.
 *   **Objective**: Leave the repository in a completely green, stable, and self-documenting state that a fresh session can immediately pick up and resume.
 
 ### Stage 9 — Install App To Device

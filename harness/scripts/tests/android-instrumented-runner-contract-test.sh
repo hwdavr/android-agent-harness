@@ -99,6 +99,31 @@ if grep -Eiq '(^|[[:space:]])uninstall([[:space:]]|$)|connectedDebugAndroidTest'
   exit 1
 fi
 
+# Grouped journeys can exceed the filesystem's per-component filename limit.
+# The full selector list must still be passed to AndroidJUnitRunner.
+long_args=()
+for index in $(seq 1 12); do
+  long_args+=(--class "com.example.notesapp.deeply.nested.Journey${index}InstrumentedTest#returnsToDestination")
+done
+long_output="$FIXTURE_ROOT/long-selectors"
+bash "$RUNNER" "${long_args[@]}" --output-dir "$long_output" > "$FIXTURE_ROOT/long.out"
+grep -Fq 'PASS: 2 instrumented test(s)' "$FIXTURE_ROOT/long.out" \
+  || { echo 'FAIL: grouped selectors did not complete' >&2; exit 1; }
+grep -Fq 'Journey12InstrumentedTest#returnsToDestination' "$FAKE_ADB_LOG" \
+  || { echo 'FAIL: grouped selectors were truncated in the runner invocation' >&2; exit 1; }
+long_xml=$(find "$long_output" -name 'TEST-*.xml' -print)
+[ -f "$long_xml" ] || { echo 'FAIL: grouped run did not produce JUnit XML' >&2; exit 1; }
+grep -Fq 'tests="2" failures="0"' "$long_xml" \
+  || { echo 'FAIL: grouped run XML does not contain its test results' >&2; exit 1; }
+grep -Fq 'Journey1InstrumentedTest#returnsToDestination' "$long_output"/*.log \
+  || { echo 'FAIL: grouped log omitted the first selector' >&2; exit 1; }
+grep -Fq 'Journey12InstrumentedTest#returnsToDestination' "$long_output"/*.log \
+  || { echo 'FAIL: grouped log omitted the last selector' >&2; exit 1; }
+long_args+=(--class 'com.example.notesapp.ExtraJourneyTest#anotherDestination')
+bash "$RUNNER" "${long_args[@]}" --output-dir "$long_output" > "$FIXTURE_ROOT/long-second.out"
+[ "$(find "$long_output" -name 'TEST-*.xml' | wc -l | tr -d ' ')" = 2 ] \
+  || { echo 'FAIL: different long selector lists produced the same evidence filename' >&2; exit 1; }
+
 failure_log="$FIXTURE_ROOT/failure"
 if FAKE_TEST_FAILURE=true bash "$RUNNER" --class com.example.notesapp.ExampleTest --output-dir "$failure_log" \
   > "$FIXTURE_ROOT/failure.out" 2>&1; then

@@ -110,6 +110,7 @@ After presenting the evaluation results, update the Harness Feature Tracker in `
 *   **If the overall score is less than `5.0 / 5` (not perfect)** → transition the feature status from `To be reviewed` → `To be fixed`. This routes the feature to the **harness-fix workflow** (`.agents/workflows/harness-fix.md`): the Generator resolves every finding in `$FEATURE_DIR/code_review_{feature_id}.md` and `$FEATURE_DIR/test_review_{feature_id}.md`, updates the per-finding status inside those reports, and then transitions to `To be human reviewed`.
 *   Update the date to today and add the evaluation verdict (`Accept` / `Revise` / `Block`) and overall score to the notes column.
 *   Run `bash harness/scripts/check-feature-lifecycle.sh` after the tracker update. Do not claim completion if it fails.
+*   Then apply [artifact retention](../rules/artifact-retention.md): run `python3 harness/scripts/prune-harness-artifacts.py --apply`. It prunes only raw output of `Complete` workspaces and stale QA runs no open workspace cites, never the workspace under review. Report what it deleted; a prune failure is reported, not blocking.
 
 ---
 

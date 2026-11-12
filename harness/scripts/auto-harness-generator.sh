@@ -291,6 +291,19 @@ if [ "$IS_CHECK" -eq 0 ]; then
   acquire_lock
 fi
 
+# --- housekeeping: artifact retention + scheduler log rotation ---------------
+# Applies .agents/rules/artifact-retention.md under the lock so no session is
+# writing evidence meanwhile. Never blocks the run.
+
+if [ "$IS_CHECK" -eq 0 ] && command -v python3 >/dev/null 2>&1; then
+  prune_args=(--root "$ROOT_DIR" --apply)
+  [ -n "${HARNESS_GENERATOR_LOG:-}" ] && prune_args+=(--rotate-log "$HARNESS_GENERATOR_LOG")
+  prune_output=$(python3 "$SCRIPT_DIR/prune-harness-artifacts.py" "${prune_args[@]}" 2>&1) ||
+    info "WARN artifact retention failed (continuing): $(printf '%s' "$prune_output" | tail -1)"
+  printf '%s\n' "$prune_output" | grep -E '^(DELETE|ROTATE|WARN)' || true
+  printf '%s\n' "$prune_output" | tail -1
+fi
+
 check_agent_quota() {
   local agent="$1"
   if [ "$agent" != "codex" ]; then

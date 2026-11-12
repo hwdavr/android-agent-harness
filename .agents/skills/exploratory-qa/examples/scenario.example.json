@@ -114,7 +114,7 @@
   "evidence_limits": [
     "HarnessLens state checkpoints and analytics contracts must be filled from approved requirements and actual exported fields; this incomplete example cannot PASS.",
     "This draft has no runtime observations and is not a passing result.",
-    "Exploratory screenshots supplement the existing instrumented and Roborazzi acceptance evidence.",
+    "Exploratory screenshots supplement the existing JVM and instrumented acceptance evidence; they are never a screenshot golden.",
     "No network request expectation is inferred from UI states or source code."
   ],
   "target": {
