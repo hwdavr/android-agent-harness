@@ -79,7 +79,7 @@ MD
 
 setup_project() {
   rm -rf "$ROOT"/{docs,.scratch,app,UX}
-  mkdir -p "$ROOT/docs/product/requirements" "$ROOT/.scratch" "$ROOT/app/src/test/java/example/review"
+  mkdir -p "$ROOT/docs/product/requirements" "$ROOT/.scratch" "$ROOT/app/src/test/java/example/roborazzi"
   cat > "$ROOT/docs/product/design_system.md" <<'MD'
 # Design System
 
@@ -191,7 +191,7 @@ $(rule_mapping)
 
 | Stage ID | Review capture (test#method) | Structural check (test#method) | Command |
 |---|---|---|---|
-| UI-01 | \`app/src/test/java/example/review/ShareInviteReviewCaptureTest.kt#expirySelected\` | \`app/src/test/java/example/ShareInviteStructureTest.kt#expirySelected\` | \`./gradlew testDebugUnitTest --tests "example.ShareInviteStructureTest" --tests "example.review.ShareInviteReviewCaptureTest"\` |
+| UI-01 | \`app/src/test/java/example/roborazzi/ShareInviteReviewCaptureTest.kt#expirySelected\` | \`app/src/test/java/example/ShareInviteStructureTest.kt#expirySelected\` | \`./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests "example.ShareInviteStructureTest" --tests "example.roborazzi.ShareInviteReviewCaptureTest"\` |
 MD
 }
 
@@ -254,20 +254,24 @@ write_feature_plans
 python3 - "$W/test-plan.md" <<'PY'
 import sys
 p = sys.argv[1]; t = open(p).read()
-open(p, "w").write(t.replace("example/review/ShareInviteReviewCaptureTest.kt", "example/ShareInviteCaptureTest.kt"))
+open(p, "w").write(t.replace("example/roborazzi/ShareInviteReviewCaptureTest.kt", "example/ShareInviteCaptureTest.kt"))
 PY
-expect_fail "review capture must be app/src/test/java/<package>/review/" harness-planning implementation-plan .scratch/2026-11-09-share-expiry
+expect_fail "review capture must be app/src/test/java/<package>/roborazzi/" harness-planning implementation-plan .scratch/2026-11-09-share-expiry
 
 write_feature_plans
 expect_pass single-lane-generator testing .scratch/2026-11-09-share-expiry
 
 # ------------------------------------------------------------ UI conformance review
-mkdir -p "$ROOT/app/src/main/java/example" "$ROOT/app/src/test/java/example/review" "$W/evidence/ui"
+mkdir -p "$ROOT/app/src/main/java/example" "$ROOT/app/src/test/java/example/roborazzi" "$W/evidence/ui"
 printf 'package example\n\n@Composable\nfun ShareInviteScreen() {\n    TopActionBar(title = "Share")\n    NoteCard(note)\n}\n' \
   > "$ROOT/app/src/main/java/example/ShareInviteScreen.kt"
-printf 'package example.review\n\nclass ShareInviteReviewCaptureTest\n' > "$ROOT/app/src/test/java/example/review/ShareInviteReviewCaptureTest.kt"
+printf 'package example.roborazzi\n\nclass ShareInviteReviewCaptureTest\n' > "$ROOT/app/src/test/java/example/roborazzi/ShareInviteReviewCaptureTest.kt"
 printf 'package example\n\nclass ShareInviteStructureTest\n' > "$ROOT/app/src/test/java/example/ShareInviteStructureTest.kt"
 png "$W/evidence/ui/invite-expiry-selected.png" 780 1688
+mkdir -p "$W/evidence/ui/compare"
+png "$W/evidence/ui/compare/invite-expiry-selected.png" 1600 1688
+touch -t 203001010000 "$W/evidence/ui/compare/invite-expiry-selected.png"  # future mtime: never older than its inputs
+printf '### invite-expiry-selected\n\nNone\n' > "$W/evidence/ui/compare/findings.md"
 write_report() {  # $1 decision
   cat > "$W/ui_verification.json" <<JSON
 {
@@ -278,7 +282,8 @@ write_report() {  # $1 decision
     "screen": "Share Invite", "state_id": "invite-expiry-selected",
     "design_image": "design/share-invite.png",
     "review_capture": "evidence/ui/invite-expiry-selected.png",
-    "review_capture_test": "app/src/test/java/example/review/ShareInviteReviewCaptureTest.kt#expirySelected",
+    "comparison_image": "evidence/ui/compare/invite-expiry-selected.png",
+    "review_capture_test": "app/src/test/java/example/roborazzi/ShareInviteReviewCaptureTest.kt#expirySelected",
     "structural_check": "app/src/test/java/example/ShareInviteStructureTest.kt#expirySelected",
     "structural_result": "PASS", "reused_components": ["TopActionBar", "NoteCard"],
     "review_decision": "$1", "approved_by": "user", "approved_on": "2026-11-09",

@@ -54,6 +54,8 @@ states at the same full-window viewport. Declare resize/pan/overlay and the keyb
 `screen-no-toolbar`, `screen-toolbar-dismissed`, or `sheet-stays-open`. Show the focused field,
 required controls, and real IME together; a bottom sheet remains open while typing and a screen's
 bottom toolbar is dismissed. Use authentic keyboard assets for the target device/appearance.
+When a real-IME state has no design (approved 2026-11-13), write `instrumented-only` in its open or dismissed
+column; the IME Production Boundary test must then cover that input, and the closed state still needs a design.
 
 Classify supplied images as approved references or defect evidence. Preserve approved inputs
 unchanged and keep defect evidence separate. Existing approved references can fill completed rows.

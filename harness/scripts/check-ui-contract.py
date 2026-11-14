@@ -29,6 +29,7 @@ SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
 PLAN_COLUMNS = ["Stage ID", "Reused registered components", "Implementation"]
 VERIFY_COLUMNS = ["Stage ID", "Review capture (test#method)", "Structural check (test#method)", "Command"]
 REGISTRY_COLUMNS = ["Component", "Pen component", "Composable", "Required testTag", "Wraps Material"]
+INSTRUMENTED_ONLY = "instrumented-only"
 IME_COLUMNS = [
     "Screen", "Input tag", "Window viewport", "Keyboard closed state", "Keyboard open state",
     "Dismissed state", "Layout policy", "Keyboard behavior", "Required visible tags",
@@ -41,9 +42,10 @@ EDITABLE_INPUT = re.compile(
     r"text[ -]*(?:box|field|input)|input[ -]*field|editable)\b", re.I,
 )
 INSTRUMENTED_TARGET = re.compile(r"app/src/androidTest/[A-Za-z0-9_./]+Test\.kt#[A-Za-z_][A-Za-z0-9_]*$")
-JVM_TARGET = re.compile(r"app/src/test/java/[A-Za-z0-9_./]+Test\.kt#[A-Za-z_][A-Za-z0-9_]*$")
+# `testDebug` holds JVM tests that need the debug-only Compose test manifest (the release variant cannot run them).
+JVM_TARGET = re.compile(r"app/src/test(?:Debug)?/java/[A-Za-z0-9_./]+Test\.kt#[A-Za-z_][A-Za-z0-9_]*$")
 REVIEW_TARGET = re.compile(
-    r"app/src/test/java/[A-Za-z0-9_./]+/review/[A-Za-z0-9_]+ReviewCaptureTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
+    r"app/src/test/java/[A-Za-z0-9_./]+/roborazzi/[A-Za-z0-9_]+ReviewCaptureTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
 )
 NONE_WITH_REASON = re.compile(r"^None — \S.{4,}$")
 
@@ -175,6 +177,11 @@ def ime_states(contract, rows):
         dimensions = viewport(item["Window viewport"], item["Input tag"])
         for label, column in (("keyboard-closed", "Keyboard closed state"),
                               ("keyboard-open", "Keyboard open state"), ("dismissed", "Dismissed state")):
+            if item[column] == INSTRUMENTED_ONLY:
+                # Real-IME states without designs: verified only by the IME Production Boundary test.
+                if label == "keyboard-closed":
+                    fail("keyboard-closed state needs a design; only open and dismissed may be instrumented-only")
+                continue
             state = by_state.get((item["Screen"], item[column]))
             if state is None:
                 fail(f"unknown {label} state: {item[column]}")
@@ -185,7 +192,9 @@ def ime_states(contract, rows):
                 fail(f"keyboard-open design {item[column]} must include system-ime")
             if label != "keyboard-open" and has_ime:
                 fail(f"IME {label} design must not include system-ime")
-        if item["Keyboard open state"] in (item["Keyboard closed state"], item["Dismissed state"]):
+        if item["Keyboard open state"] != INSTRUMENTED_ONLY and item["Keyboard open state"] in (
+            item["Keyboard closed state"], item["Dismissed state"]
+        ):
             fail("keyboard-open design must be distinct from the closed and dismissed states")
         if item["Layout policy"] not in {"resize", "pan", "overlay"}:
             fail("IME Layout policy must be resize, pan, or overlay")
@@ -403,7 +412,9 @@ def verification_targets(test_plan, stages):
         review, structural, command = (row["Review capture (test#method)"], row["Structural check (test#method)"],
                                        row["Command"])
         if not REVIEW_TARGET.fullmatch(review):
-            fail(f"UI state {stage} review capture must be app/src/test/java/<package>/review/<Feature>ReviewCaptureTest.kt#<method>")
+            fail(f"UI state {stage} review capture must be app/src/test/java/<package>/roborazzi/<Feature>ReviewCaptureTest.kt#<method>")
+        if not re.search(r"(?:^|\s)-Proborazzi\.test\.record=true(?:\s|$)", command.replace("`", "")):
+            fail(f"UI state {stage} review capture command must enable -Proborazzi.test.record=true")
         if not (JVM_TARGET.fullmatch(structural) or INSTRUMENTED_TARGET.fullmatch(structural)):
             fail(f"UI state {stage} structural check must be a JVM or instrumented Test.kt#method target")
         for target in (review, structural):
@@ -419,6 +430,78 @@ def verification_targets(test_plan, stages):
     return targets
 
 
+FUNCTION_DEF = re.compile(
+    r"^[ \t]*(?:@[A-Za-z0-9_.]+(?:\([^)]*\))?[ \t]*)*(?:(?:private|internal|public|override|suspend)[ \t]+)*"
+    r"fun[ \t]+(?:[A-Za-z0-9_<>]+\.)?([A-Za-z_][A-Za-z0-9_]*)[ \t]*\(", re.M)
+CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)[ \t]*\(")
+SCREEN_NAME = re.compile(r"(?:Screen|ScreenContent)$")
+OVERLAY_STATE = re.compile(r"bottom[ -]*sheet|modal|dialog|popup|snackbar", re.I)
+SCRIM_STATE = re.compile(r"bottom[ -]*sheet|modal|dialog", re.I)
+INSET_APPLIED = re.compile(r"contentWindowInsets|statusBarsPadding|systemBarsPadding|windowInsetsPadding|WindowInsets\(")
+STATUS_BAR_CHROME = re.compile(r"status[ _]?bar", re.I)
+SCRIM_CHROME = re.compile(r"scrim", re.I)
+
+
+def function_bodies(text):
+    """Map each function name to its source text, up to the next function declaration."""
+    matches = list(FUNCTION_DEF.finditer(text))
+    bodies = {}
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        bodies.setdefault(match.group(1), text[match.start():end])
+    return bodies
+
+
+def source_functions(project_root, relative):
+    bodies = {}
+    for path in sorted((project_root / relative).rglob("*.kt")):
+        for name, body in function_bodies(path.read_text(encoding="utf-8")).items():
+            bodies.setdefault(name, body)
+    return bodies
+
+
+def validate_screen_frame_capture(project_root, review_target, state_id, state_controls):
+    """A screen-frame design is a whole screen: its capture must render a production screen.
+
+    Applies only when the review file declares the target method, so placeholder files keep the
+    existing existence check. Padding a component to the viewport is not a screen.
+    """
+    path, _, method = review_target.partition("#")
+    review_file = project_root / path
+    bodies = function_bodies(review_file.read_text(encoding="utf-8"))
+    if method not in bodies:
+        return
+    main_screens = {name for name in source_functions(project_root, "app/src/main") if SCREEN_NAME.search(name)}
+    helpers = source_functions(project_root, "app/src/test")
+    pending, seen, reached, text = [bodies[method]], {method}, False, ""
+    while pending:
+        body = pending.pop()
+        text += body
+        for name in CALL.findall(body):
+            if name in main_screens:
+                reached = True
+            elif name in helpers and name not in seen:
+                seen.add(name)
+                pending.append(helpers[name])
+    if not reached:
+        fail(f"UI state {state_id} is a screen-frame, but its review capture {method} renders no production screen "
+             "(a *Screen or *ScreenContent function from app/src/main, directly or through a test frame helper); "
+             "a padded component is not a screen")
+    if OVERLAY_STATE.search(state_controls) and "captureScreenRoboImage" not in text:
+        fail(f"UI state {state_id} shows a sheet or dialog, so its review capture must use captureScreenRoboImage "
+             "to include every window")
+    if not INSET_APPLIED.search(text):
+        fail(f"UI state {state_id} review capture applies no system-bar inset (contentWindowInsets, "
+             "statusBarsPadding, systemBarsPadding or windowInsetsPadding); the app draws edge to edge, so the "
+             "frame must give the screen the status bar inset the way production does")
+    if not STATUS_BAR_CHROME.search(text):
+        fail(f"UI state {state_id} review capture draws no status bar; a design frame includes the system "
+             "status bar, so the capture frame must render review-only status bar chrome")
+    if SCRIM_STATE.search(state_controls) and not SCRIM_CHROME.search(text):
+        fail(f"UI state {state_id} shows a dialog or sheet, so its review capture frame must draw the dim "
+             "scrim behind it (Robolectric does not render window dimming)")
+
+
 def validate_report(report, rows, targets, runtime, project_root):
     if not report.is_file():
         fail(f"missing {report}")
@@ -430,10 +513,16 @@ def validate_report(report, rows, targets, runtime, project_root):
     result_keys = {(item.get("screen"), item.get("state_id")) for item in results}
     if len(result_keys) != len(results) or result_keys != set(by_key):
         fail(f"UI verification states differ from contract: missing {set(by_key) - result_keys}, extra {result_keys - set(by_key)}")
+    findings = report.parent / "evidence/ui/compare/findings.md"
+    if not findings.is_file():
+        fail(f"missing {findings} (record the pre-review findings for every state before user approval)")
+    findings_text = findings.read_text(encoding="utf-8")
     captures = set()
     for item in results:
         key = (item["screen"], item["state_id"])
         row, stage = by_key[key], by_key[key]["Plan stage"]
+        if not re.search(rf"^### {re.escape(key[1])}\s*$", findings_text, re.M):
+            fail(f"UI state {key[1]} has no '### {key[1]}' entry in {findings}")
         if item.get("design_image") != row["Design image"]:
             fail(f"UI verification design image differs for {key[1]}")
         capture_ref = item.get("review_capture", "")
@@ -453,6 +542,15 @@ def validate_report(report, rows, targets, runtime, project_root):
             fail(f"UI state {key[1]} review_capture_test must be {targets[stage]['review']}")
         if item.get("structural_check") != targets[stage]["structural"] or item.get("structural_result") != "PASS":
             fail(f"UI state {key[1]} needs a passing structural_check {targets[stage]['structural']}")
+        comparison_ref = item.get("comparison_image", "")
+        if comparison_ref != f"evidence/ui/compare/{key[1]}.png":
+            fail(f"UI state {key[1]} comparison_image must be evidence/ui/compare/{key[1]}.png")
+        comparison = report.parent / comparison_ref
+        if not comparison.is_file():
+            fail(f"missing side-by-side comparison for {key[1]}: {comparison} (run compose-ui-comparison.py)")
+        inputs = (report.parent / row["Design image"], capture)
+        if any(comparison.stat().st_mtime < source.stat().st_mtime for source in inputs if source.is_file()):
+            fail(f"UI state {key[1]} comparison is older than its design or capture; rerun compose-ui-comparison.py")
         if item.get("review_decision") != "approved" or not item.get("approved_by") or \
                 not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(item.get("approved_on", ""))):
             fail(f"UI state {key[1]} needs review_decision 'approved' with approved_by and approved_on (YYYY-MM-DD)")
@@ -462,6 +560,8 @@ def validate_report(report, rows, targets, runtime, project_root):
             for target in (targets[stage]["review"], targets[stage]["structural"]):
                 if not (project_root / target.split("#")[0]).is_file():
                     fail(f"UI state {key[1]} test source does not exist: {target}")
+            if row["Design node role"] == "screen-frame":
+                validate_screen_frame_capture(project_root, targets[stage]["review"], key[1], row["State controls"])
 
 
 if __name__ == "__main__":

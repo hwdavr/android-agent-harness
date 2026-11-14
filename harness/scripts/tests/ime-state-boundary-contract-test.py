@@ -132,6 +132,21 @@ class SearchImeTest {
         result = self.check()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_instrumented_only_open_and_dismissed_pass(self):
+        self.write_contract(open_state=False)
+        text = self.contract.read_text().replace(
+            "| closed | open | closed | resize |", "| closed | instrumented-only | instrumented-only | resize |")
+        self.contract.write_text(text)
+        result = self.check()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_instrumented_only_closed_rejected(self):
+        self.write_contract(open_state=False)
+        text = self.contract.read_text().replace(
+            "| closed | open | closed | resize |", "| instrumented-only | instrumented-only | closed | resize |")
+        self.contract.write_text(text)
+        self.rejected(self.check(), "keyboard-closed state needs a design")
+
     def test_missing_open_design_rejected(self):
         self.write_contract(open_state=False)
         self.rejected(self.check(), "unknown keyboard-open state")
@@ -252,10 +267,10 @@ class SearchImeTest {
             "Setup and action | Required assertions | Exact command |\n|---|---|---|---|---|---|---|---|\n"
             f"| TC-01 | AC-001 | Instrumented UI | `{self.test_file}#opensAboveIme` | N/A — no API | Open IME | Results above IME | `bash run` |\n"
             "\n## UI State Verification\n\n| Stage ID | Review capture (test#method) | Structural check (test#method) | Command |\n|---|---|---|---|\n"
-            "| UI-01 | `app/src/test/java/example/review/SearchReviewCaptureTest.kt#closed` | `app/src/test/java/example/SearchStructureTest.kt#closed` | "
-            "`./gradlew testDebugUnitTest --tests example.SearchStructureTest --tests example.review.SearchReviewCaptureTest` |\n"
-            "| UI-02 | `app/src/test/java/example/review/SearchReviewCaptureTest.kt#open` | `app/src/test/java/example/SearchStructureTest.kt#open` | "
-            "`./gradlew testDebugUnitTest --tests example.SearchStructureTest --tests example.review.SearchReviewCaptureTest` |\n"))
+            "| UI-01 | `app/src/test/java/example/roborazzi/SearchReviewCaptureTest.kt#closed` | `app/src/test/java/example/SearchStructureTest.kt#closed` | "
+            "`./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests example.SearchStructureTest --tests example.roborazzi.SearchReviewCaptureTest` |\n"
+            "| UI-02 | `app/src/test/java/example/roborazzi/SearchReviewCaptureTest.kt#open` | `app/src/test/java/example/SearchStructureTest.kt#open` | "
+            "`./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests example.SearchStructureTest --tests example.roborazzi.SearchReviewCaptureTest` |\n"))
 
     def stage(self, stage):
         return subprocess.run(["bash", str(GATE), "bug-fixing", stage, str(self.workspace)],

@@ -202,7 +202,7 @@ tree — required `testTag`s present, in order, with bounds within the contract 
 
 | Stage ID | Review capture (test#method) | Structural check (test#method) | Command |
 |---|---|---|---|
-| UI-01 | `app/src/test/java/<package>/review/<Feature>ReviewCaptureTest.kt#<state>` | `app/src/test/java/<package>/<Feature>StructureTest.kt#<state>` | `./gradlew testDebugUnitTest --tests "<package>.<Feature>StructureTest" --tests "<package>.review.<Feature>ReviewCaptureTest"` |
+| UI-01 | `app/src/test/java/<package>/roborazzi/<Feature>ReviewCaptureTest.kt#<state>` | `app/src/test/java/<package>/<Feature>StructureTest.kt#<state>` | `./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests "<package>.<Feature>StructureTest" --tests "<package>.roborazzi.<Feature>ReviewCaptureTest"` |
 
 ## Test Cases
 

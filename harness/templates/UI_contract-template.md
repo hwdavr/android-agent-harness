@@ -39,6 +39,15 @@ approved exception. It may stay `Pending` only at the inventory gate.
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | <screen> | <screen-state> | Pending | Pending | Pending | Pending | 390x844 | primary-content; state-controls; persistent-controls | <named controls, selection/disabled status, toolbar or sheet when present> | `TopActionBar`, `NoteCard` | <fixture ID> | UI-01 |
 
+## System Chrome
+
+State the status bar height measured from the design frames (dp) and whether any state shows a dialog or
+sheet that dims the screen. The review captures simulate both, apply the status-bar inset through the app
+Scaffold, and label the chrome as review-only. Screens must consume the inset (`parentPadding`).
+
+- Status bar height: <dp, measured from the first content row of the design frames>
+- Dim scrim states: <state IDs, or None>
+
 ## IME State Coverage
 
 Required for each editable input on an in-scope screen, including unchanged inputs. Omit this
@@ -48,6 +57,9 @@ alone is not editable input.
 Closed, open, and dismissed states use the same full-window viewport. Add `system-ime` to the
 open state's Required regions. Dismissed may reuse closed when identical. Required visible tags
 includes the focused input and all content/actions that must remain reachable above the IME.
+
+A real-IME open or dismissed state without a design uses `instrumented-only` in its column. The IME
+Production Boundary test must cover that input (approved 2026-11-13).
 
 Keyboard behavior is exactly one of:
 - `screen-no-toolbar`: screen input with no bottom toolbar.
