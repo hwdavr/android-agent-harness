@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Validates that offline assets declared in spec.md or sprint-contract.md
+# Validates that offline assets declared in implementation-plan.md or test-plan.md
 # actually exist on disk under app/src/main/assets/.
 #
 # Usage: bash harness/scripts/check-declared-assets.sh <docs-directory>
@@ -29,7 +29,7 @@ ASSETS_ROOT="$REPO_ROOT/app/src/main/assets"
 
 # Collect all file:///android_asset/ references from spec and contract docs
 DECLARED_ASSETS=""
-for doc in "$DOCS_DIR/spec.md" "$DOCS_DIR/sprint-contract.md" "$DOCS_DIR/spec_v"*.md; do
+for doc in "$DOCS_DIR/implementation-plan.md" "$DOCS_DIR/test-plan.md"; do
   [ -f "$doc" ] || continue
   # Extract paths like file:///android_asset/mermaid/mermaid.min.js
   found=$(grep -oE 'file:///android_asset/[^)"'"'"'` >]+' "$doc" 2>/dev/null || true)

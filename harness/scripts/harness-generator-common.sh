@@ -111,6 +111,25 @@ eligible_rows=$(awk -v start="$START_MARKER" -v end="$END_MARKER" '
   }
 ' "$PRODUCT_FILE")
 
+# Only the sliced lane hands off to the generator. Single-lane workspaces
+# (no feature_list.json) are delivered by the single-lane-generator workflow.
+sliced_rows=""
+while IFS= read -r row; do
+  [ -n "$row" ] || continue
+  row_dir=$(printf '%s' "$row" | cut -f2)
+  row_dir="${row_dir%/}"
+  if [ -f "$ROOT_DIR/$row_dir/feature_list.json" ]; then
+    sliced_rows="${sliced_rows}${row}
+"
+  else
+    row_id=$(printf '%s' "$row" | cut -f1)
+    info "SKIP '$row_id' — single-lane workspace (no feature_list.json); single-lane-generator owns it."
+  fi
+done <<ROWS_END
+$eligible_rows
+ROWS_END
+eligible_rows=$(printf '%s' "$sliced_rows")
+
 if [ -z "$eligible_rows" ]; then
   info "No pending harness tasks (no In Progress, Awaiting implementation approval, To be reviewed, or To be fixed features in tracker)."
   exit 2
@@ -257,7 +276,7 @@ elif [ "$FIX_MODE" -eq 1 ]; then
   # --- 6c. build fix-mode prompt ---------------------------------------------
   # The feature was evaluated but did NOT score 5.0/5, so its tracker status is
   # "To be fixed". The Generator must resolve every code_review / test_review
-  # finding, re-verify against the sprint-contract gates, and transition to
+  # finding, re-verify against the test-plan acceptance gates, and transition to
   # "To be human reviewed".
   PROMPT_TEMPLATE="$(cat "$ROOT_DIR/.agents/prompts/harness-fix.md")"
 
@@ -267,7 +286,7 @@ elif [ "$FIX_MODE" -eq 1 ]; then
   PROMPT="${PROMPT//__FEATURE_DIR__/$FEATURE_DIR}"
 else
   # --- 6b. build generator prompt ---------------------------------------------
-  PROMPT_TEMPLATE="$(cat "$ROOT_DIR/.agents/prompts/harness-generator.md")"
+  PROMPT_TEMPLATE="$(cat "$ROOT_DIR/.agents/prompts/sliced-lane-generator.md")"
 
   PROMPT="$PROMPT_TEMPLATE"
   PROMPT="${PROMPT//__AGENT_NAME__/$AGENT_NAME}"

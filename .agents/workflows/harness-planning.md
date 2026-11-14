@@ -1,102 +1,105 @@
 ---
-description: Plan a complex Android feature into approved vertical slices and sprint-contract artifacts.
+description: Plan any new feature or enhancement — specify, design, plan, and approve; then hand off to exactly one generator workflow for the selected lane.
 ---
 
 # Workflow: Harness Planning
 
-Use the `planner` for planning.
+Use `planner` for Specify, UX Design, and Implementation Plan.
 If required delegation or a requested model is unavailable or unsupported, block the affected stage and report it; never silently substitute. Record requested and actual models in stage evidence when available.
 
-Read and follow [Product documentation flow](../rules/product-documentation.md). Load affected living capability requirements before scoping or reviewing this change. Dated complex-change contracts and evidence belong under `.scratch/`.
+Read and follow [Product documentation flow](../rules/product-documentation.md). The living
+requirement file is the specification; plans and evidence live in the dated workspace.
 
 ## When to use
-- A feature is complex enough to touch multiple areas of the codebase.
-- The requirement is large and needs to be scoped and broken down into smaller, independently deliverable features before implementation begins.
-- You want to define the feature order, verification steps, and scope boundaries **before** implementation.
-- The user has a broad product idea (new screen, enhancement, or logic change) that needs clarification before slicing.
 
----
+Every new feature, enhancement, or backend/API integration. Bugs use `bug-fixing`; an
+appearance-only tweak defined by an existing approved design uses the `android-ui-layer` direct lane.
 
-## Core Principle
+This workflow writes no application code. It ends at approval and hands off to one generator.
 
-Do not guess at scope. Clarify and approve requirements, complete and approve UX design for UI
-scope, then decompose into structured features and implement later.
-Every open question must be answered and approved by the user before slice planning begins.
-Each planned feature in the list must represent a clean, end-to-end user-visible behavior with specific verification steps.
+## Core principle
 
-## Feature Workspace
+No code before an approved plan. Every stage skill is invoked through the available skill
+mechanism; if the Skill tool is unavailable, read the complete `SKILL.md`, follow it, and record
+that once in stage evidence. Approval evidence lives on disk, never in memory.
 
-At the start of planning, create one dated feature workspace:
+**Workspace**: `FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-id>/` — one per feature, never versioned.
 
 ```text
-.scratch/<YYYY-MM-DD>-<feature-short-name>/
+Specify & Clarify → [UX Design] → Implementation Plan & Analyze → ⛔ Approval
+   single lane → single-lane-generator
+   sliced lane → sliced-lane-generator (one slice per user story)
 ```
 
-Use lowercase kebab case for `<feature-short-name>` and the local planning date for the prefix. This stable directory retains the approved change contract and delivery evidence throughout planning, implementation, and completion. Product behavior is maintained in the linked living capability requirements. Do not use `docs/current/` for harness artifacts; it remains reserved for ad-hoc workflows.
+| | Single lane (no user stories) | Sliced lane (two or more stories) |
+|---|---|---|
+| Approvals | One: block + design + both plans | Block; design (UI); plans + slices |
+| Artifacts | `implementation-plan.md`, `test-plan.md`, `summary.md` (+ `UI_contract.md`) | adds `tasks.md`, `feature_list.json`, `summary_<slice>.md` |
+| Execution | [`single-lane-generator`](single-lane-generator.md) | [`sliced-lane-generator`](sliced-lane-generator.md) / `harness-evaluation` / `harness-fix` |
 
-Immediately add a row to the **Harness Feature Tracker** in `docs/product/product.md` using a stable lowercase-kebab-case ID, status `Planning`, and a link labelled with the exact `.scratch/` workspace. Run `bash harness/scripts/check-feature-lifecycle.sh` after creating or changing the row. The controlled lifecycle is `Planning` → `Awaiting specification approval` → `Awaiting implementation approval` → `In Progress` / `Blocked` → `Complete`.
-
-Workspace location never represents lifecycle status. Planning must never create a second lifecycle file or infer active work by scanning directories.
-
----
-
-## Stage Execution
-
-### Stage 1 — Clarify & Specify ⛔ STOP FOR APPROVAL
-**INVOKE** the `feature-specification` skill via the Skill tool (name: `feature-specification`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-
-Objective:
-Record the complete Rule Applicability matrix in the feature specification; every row
-needs a supported decision, trigger or rationale, and planned evidence before slicing.
-- Classify the task type (new screen, enhancement, or logic-only change).
-- Ask targeted clarifying questions in chat until every material ambiguity is resolved.
-- Create `FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-short-name>` before writing artifacts.
-- Write `$FEATURE_DIR/spec.md` with behavior, scope, data, navigation, acceptance criteria, and
-  the required screen/state inventory. Preserve supplied visual inputs for Stage 2. Do not
-  generate visual layouts or mockups inside feature specification.
-
-Output: `$FEATURE_DIR/spec.md` only, plus preserved user inputs when supplied.
-Gate: Update the tracker status to `Awaiting specification approval`, then run
-`bash harness/scripts/check-stage-artifacts.sh harness-planning feature-specification "$FEATURE_DIR"`.
-The gate validates the requirements and lifecycle; it requires no visual artifacts.
-**STOP — present the clarified specification for explicit user approval before UX begins.**
-
-### Stage 2 — UX Design ⛔ STOP FOR DESIGN APPROVAL
-For new screens or UI enhancements, **INVOKE** `ux-design` through the available skill mechanism.
-If the Skill tool is unavailable, read its repository `SKILL.md` and record that once in evidence.
-Input: the approved `$FEATURE_DIR/spec.md`, supplied visual inputs, and `docs/product/design_system.md`.
-Logic-only scope records UX Design N/A and proceeds to Stage 3.
-
-First create `$FEATURE_DIR/UI_contract.md`. Define every state, viewport, content/control inventory,
-fixture, and IME behavior; only its four design-reference fields may be `Pending`. Run
-`bash harness/scripts/check-stage-artifacts.sh harness-planning ui-contract "$FEATURE_DIR"`.
-Resolve inventory gaps before invoking `pen-design-editor` with that contract as its input.
-
-Output: the completed `UI_contract.md`, canonical Pen design and verified review exports, plus
-`visual_evidence/visual-target.json` derived from the same state IDs, viewports, and image paths.
-The Pen file contains the actual visual design. No separate design.md is produced.
-Do not create or require an implementation screenshot baseline during planning.
-
-Gate: run `bash harness/scripts/check-stage-artifacts.sh harness-planning ux-design "$FEATURE_DIR"`.
-**STOP — present the design and verified references for explicit user approval before slicing.**
-Retain the existing `Awaiting specification approval` tracker status through this separate UX
-review; no lifecycle status is added. After approval, apply the Pen skill's finalization contract.
-
-During visual iteration, update only design artifacts. Keep `spec.md` stable unless behavior,
-scope, data, navigation, or the required state inventory changes. Such changes return to Stage 1
-for clarification and approval before UX resumes. Record stage completion, approval, or a blocker
-once in the existing progress/summary record; do not rewrite it for every design edit.
-
-### Stage 3 — Slice Planning ⛔ STOP FOR APPROVAL
-**INVOKE** the `slice-planning` skill via the Skill tool (name: `slice-planning`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
-Input: approved `$FEATURE_DIR/spec.md` and approved `$FEATURE_DIR/UI_contract.md` with canonical Pen references for UI scope.
-Output: `$FEATURE_DIR/feature_list.json`, `$FEATURE_DIR/progress.md`, and `$FEATURE_DIR/sprint-contract.md` — plus `$FEATURE_DIR/platform-capability-matrix.md` only when the feature is platform-bound (`platform_validation.required: true`). Each feature entry must also contain a `production_journey` classification mirrored by the sprint contract's Production Journey Planning Contract. Artifact requirements — including the root `platform_validation` contract, production-journey ownership, and the platform capability matrix — are defined in the `slice-planning` skill's Output section.
-Gate: Update the tracker status to `Awaiting implementation approval`, then run `bash harness/scripts/check-stage-artifacts.sh harness-planning slice-planning "$FEATURE_DIR"` and `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --planning` — both validate the artifacts and must exit 0. The slice-planning gate runs `bash harness/scripts/check-journey-planning-contract.sh "$FEATURE_DIR"`; it fails when navigation/lifecycle signals are only covered by a JVM or Content-only row, when `NAV` is required without a journey owner, or when a required journey lacks a production entry point, real actions, return boundary, or visible post-return assertion. **STOP — present `feature_list.json` and `sprint-contract.md` to user (plus `platform-capability-matrix.md` when platform-bound). Do not proceed until user explicitly approves the task breakdown, platform contract, journey ownership, and sprint contract.**
+`summary.md` uses the [`harness-planning` stage profile](../../harness/templates/summary-profiles/harness-planning.md)
+for Stages 1–3 in both lanes. Execution stages are added only by the selected generator.
 
 ---
 
-## Human-in-the-Loop Confirmation Points
+### Stage 1 — Specify & Clarify
 
-1. **After Clarify & Specify** — User approves `spec.md`; all material product questions are answered.
-2. **After UX Design** — User approves `UI_contract.md` and its Pen references for UI scope.
-3. **After Slice Planning** — User approves the sliced features list, priorities, and `sprint-contract.md` before any implementation work begins.
+**INVOKE** `feature-specification`. It writes the feature block under `## Planned changes` of the
+affected capability file(s), resolves every `[NEEDS CLARIFICATION]`, decides the lane, and creates
+the workspace, `summary.md`, and the tracker row.
+
+Gate: `bash harness/scripts/check-stage-artifacts.sh harness-planning specify "$FEATURE_DIR"`.
+Sliced lane: ⛔ STOP for block approval. Single lane: continue; approval comes at Stage 3.
+
+### Stage 2 — UX Design *(UI scope; otherwise record N/A)*
+
+**INVOKE** `ux-design`. Input: the block's Screen States and Navigation, supplied visual inputs, and
+`docs/product/design_system.md` with its Component Registry.
+
+1. Write `$FEATURE_DIR/UI_contract.md` (every state, viewport = design frame size, controls, fixtures,
+   IME behavior; design references and reused components may be `Pending`). Gate:
+   `check-stage-artifacts.sh harness-planning ui-contract "$FEATURE_DIR"`.
+2. **INVOKE** `ui-design-tool` with that contract; it drives the tool set in `UX/design-tool.json`
+   (pen.dev or OpenPencil). Design from registered components; record each state's design node,
+   export, and reused components. Gate:
+   `check-stage-artifacts.sh harness-planning ux-design "$FEATURE_DIR"`.
+
+Sliced lane: ⛔ STOP for design approval. Single lane: continue; the design is approved with the
+plans. Visual feedback updates only design artifacts; a behavior or state-inventory change returns
+to Stage 1.
+
+### Stage 3 — Implementation Plan & Analyze ⛔ STOP FOR APPROVAL
+
+**INVOKE** `implementation-plan`. It writes `implementation-plan.md` and `test-plan.md` (plus
+`tasks.md` and `feature_list.json` in the sliced lane), runs the `analyze` gate, presents the
+package, and on approval records the block SHA-256, sets Status, moves the tracker, and runs:
+
+```bash
+bash harness/scripts/check-stage-artifacts.sh harness-planning implementation-plan "$FEATURE_DIR"
+```
+
+Mark the `Approval` row complete in `summary.md` only after this command exits 0.
+
+---
+
+## Hand-off
+
+Planning is complete only when the Stage 3 gate exits 0. Then continue in exactly one workflow:
+
+| Lane | Next workflow |
+|---|---|
+| Single lane | [`single-lane-generator`](single-lane-generator.md) |
+| Sliced lane | [`sliced-lane-generator`](sliced-lane-generator.md); the tracker stays at `Awaiting implementation approval` and the generator executes the slices |
+
+## Rollback routes
+
+| Failure | Return to |
+|---|---|
+| Behavior, scope, data, navigation, or state-inventory change | Stage 1 (re-approval; the block hash changes) |
+| Visual design feedback | Stage 2 |
+| Plan-only feedback or analyze inconsistency | Stage 3 |
+
+## Human-in-the-loop confirmation points
+
+1. **Single lane**: one approval after Stage 3 (block + design + plans).
+2. **Sliced lane**: block after Stage 1, design after Stage 2, plans and slices after Stage 3.

@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
-# Ensures visual acceptance is a deterministic JVM Roborazzi comparison against
-# an approved Pen export. Instrumented tests remain behavior evidence only.
+# Visual evidence contract: UI appearance is approved by a conformance review (review capture at the
+# Pen frame size beside the approved design, plus a structural semantics check), never by a
+# screenshot golden. Usage:
+#   bash harness/scripts/check-visual-evidence-contract.sh <workspace> [--planning|--evaluate]
+#   --planning  no retired pixel-golden rows; sliced lane: exactly one final UI slice owns the review
+#   --evaluate  ui_verification.json records an approved, passing review for every UI_contract state
+# Designed for macOS /bin/bash (Bash 3.2).
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FEATURE_DIR="${1:-}"
 MODE="${2:---evaluate}"
-ROOT_DIR="${HARNESS_PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+ROOT_DIR="${HARNESS_PROJECT_ROOT:-$(pwd)}"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -15,175 +20,57 @@ fail() {
 }
 
 if [ -z "$FEATURE_DIR" ]; then
-  echo "Usage: bash harness/scripts/check-visual-evidence-contract.sh <feature-directory> [--planning|--evaluate]" >&2
+  echo "Usage: bash harness/scripts/check-visual-evidence-contract.sh <workspace> [--planning|--evaluate]" >&2
   exit 2
 fi
 [ "$MODE" = "--planning" ] || [ "$MODE" = "--evaluate" ] || fail "mode must be --planning or --evaluate"
 
+CONTRACT="$FEATURE_DIR/UI_contract.md"
+TEST_PLAN="$FEATURE_DIR/test-plan.md"
 FEATURE_JSON="$FEATURE_DIR/feature_list.json"
-CONTRACT="$FEATURE_DIR/sprint-contract.md"
-[ -f "$FEATURE_JSON" ] || fail "missing $FEATURE_JSON"
-[ -f "$CONTRACT" ] || fail "missing $CONTRACT"
 
-VISUAL_OWNER_COUNT=$(jq '[.features[]? | select(.requires_visual_verification == true)] | length' "$FEATURE_JSON")
-if [ "$VISUAL_OWNER_COUNT" -eq 0 ]; then
-  echo "PASS: no visual-verification owner is declared."
+if [ ! -f "$CONTRACT" ]; then
+  echo "N/A: no UI_contract.md; the change has no UI scope."
   exit 0
 fi
-[ "$VISUAL_OWNER_COUNT" -eq 1 ] || fail "feature_list.json must declare exactly one visual-verification owner"
+[ -f "$TEST_PLAN" ] || fail "missing $TEST_PLAN"
 
-VISUAL_OWNER=$(jq -r '.features[] | select(.requires_visual_verification == true) | .id' "$FEATURE_JSON")
-CONTRACT_ROWS=$(grep -E "^\\|[[:space:]]*TC-${VISUAL_OWNER}-VIS-[^|[:space:]]+[[:space:]]*\\|" "$CONTRACT" || true)
-[ -n "$CONTRACT_ROWS" ] || fail "visual-verification owner $VISUAL_OWNER has no visual rows in sprint-contract.md"
-
-CONTRACT_IDS=$(printf '%s\n' "$CONTRACT_ROWS" | sed -n 's/^|[[:space:]]*\(TC-[^|[:space:]]*-VIS-[^|[:space:]]*\)[[:space:]]*|.*/\1/p')
-[ -n "$CONTRACT_IDS" ] || fail "visual rows for $VISUAL_OWNER have no parseable Test IDs"
-
-extract_target() {
-  local row="$1"
-  local target
-  target=$(printf '%s\n' "$row" | sed -n -E 's/.*`(app\/src\/test\/java\/[^`|[:space:]]*\/roborazzi\/[^`|[:space:]]*RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*)`.*/\1/p' | head -n 1)
-  if [ -z "$target" ]; then
-    target=$(printf '%s\n' "$row" | sed -n -E 's/.*(app\/src\/test\/java\/[^|[:space:]]*\/roborazzi\/[^|[:space:]]*RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*).*/\1/p' | head -n 1)
+for planned in "$TEST_PLAN" "$FEATURE_DIR/tasks.md"; do
+  [ -f "$planned" ] || continue
+  if grep -Eq '\|[[:space:]]*TC-[A-Z0-9-]*-VIS' "$planned"; then
+    fail "$planned declares TC-*-VIS pixel rows; screenshot goldens are retired — plan review captures under ## UI State Verification."
   fi
-  printf '%s' "$target"
-}
-
-for test_id in $CONTRACT_IDS; do
-  CONTRACT_ROW=$(printf '%s\n' "$CONTRACT_ROWS" | grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" || true)
-  TARGET=$(extract_target "$CONTRACT_ROW")
-  [ -n "$TARGET" ] || fail "$test_id must name a dedicated app/src/test/java/**/roborazzi/*RoborazziTest.kt#method target"
-  printf '%s\n' "$CONTRACT_ROW" | grep -Fq 'verifyRoborazziDebug' \
-    || fail "$test_id must declare a verifyRoborazziDebug command"
-  printf '%s\n' "$CONTRACT_ROW" | grep -Fq -- '--tests' \
-    || fail "$test_id Roborazzi command must scope the named method with --tests"
+  if grep -Eq '(verify|record|verifyAndRecord)RoborazziDebug' "$planned"; then
+    fail "$planned plans a Roborazzi golden command; visual approval is the conformance review, not a pixel gate."
+  fi
 done
-
-FEATURE_IDS=$(jq -r --arg owner "$VISUAL_OWNER" '
-  .features[]
-  | select(.id == $owner)
-  | (.acceptance_test_ids // [])[]
-  | select(test("-VIS-"))
-' "$FEATURE_JSON")
-
-for test_id in $CONTRACT_IDS; do
-  printf '%s\n' "$FEATURE_IDS" | grep -Fxq "$test_id" \
-    || fail "$test_id is declared in sprint-contract.md but missing from feature_list.json acceptance_test_ids"
-done
-for test_id in $FEATURE_IDS; do
-  printf '%s\n' "$CONTRACT_IDS" | grep -Fxq "$test_id" \
-    || fail "$test_id is in feature_list.json but missing from sprint-contract.md"
-done
-
-VISUAL_COMMANDS=$(jq -r --arg owner "$VISUAL_OWNER" '
-  .features[]
-  | select(.id == $owner)
-  | (.verification // [])[]
-  | select(test("verifyRoborazzi(Debug)?"))
-' "$FEATURE_JSON")
-[ -n "$VISUAL_COMMANDS" ] || fail "visual owner $VISUAL_OWNER has no verifyRoborazziDebug verification command"
-while IFS= read -r visual_command; do
-  [ -n "$visual_command" ] || continue
-  printf '%s\n' "$visual_command" | grep -Fq 'verifyRoborazziDebug' \
-    || fail "Roborazzi visual verification commands must run verifyRoborazziDebug"
-  printf '%s\n' "$visual_command" | grep -Eq 'recordRoborazziDebug|verifyAndRecordRoborazziDebug' \
-    && fail "implementation-recording Roborazzi commands are not acceptance evidence"
-done <<EOF
-$VISUAL_COMMANDS
-EOF
 
 if [ "$MODE" = "--planning" ]; then
-  echo "PASS: Roborazzi visual methods and contract rows are aligned for planning."
+  if [ -f "$FEATURE_JSON" ]; then
+    jq -e '.features | type == "array" and all(
+      (.affects_ui | type == "boolean") and (.requires_visual_verification | type == "boolean"))' \
+      "$FEATURE_JSON" >/dev/null ||
+      fail "every slice must declare boolean affects_ui and requires_visual_verification fields."
+    ui_count=$(jq '[.features[] | select(.affects_ui)] | length' "$FEATURE_JSON")
+    owners=$(jq -r '[.features[] | select(.requires_visual_verification) | .id] | join(" ")' "$FEATURE_JSON")
+    owner_count=$(jq '[.features[] | select(.requires_visual_verification)] | length' "$FEATURE_JSON")
+    if [ "$ui_count" -gt 0 ] && [ "$owner_count" -ne 1 ]; then
+      fail "a UI feature must name exactly one slice that owns the conformance review (requires_visual_verification); found: ${owners:-none}"
+    fi
+    if [ "$owner_count" -eq 1 ]; then
+      last=$(jq -r '[.features[] | select(.affects_ui)] | max_by(.priority) | .id' "$FEATURE_JSON")
+      [ "$owners" = "$last" ] || fail "conformance review owner $owners must be the final UI slice $last."
+    fi
+  fi
+  echo "PASS: visual verification is planned as a conformance review."
   exit 0
 fi
 
-TARGET_MANIFEST="$FEATURE_DIR/visual_evidence/visual-target.json"
-ANCHOR_REPORT="$FEATURE_DIR/visual_evidence/reference-anchor-verification.md"
-[ -f "$TARGET_MANIFEST" ] || fail "every visual feature requires visual_evidence/visual-target.json"
-[ -f "$ANCHOR_REPORT" ] || fail "missing $ANCHOR_REPORT; visual evidence needs reference-anchor verification"
-
-jq -e '.comparison.engine == "roborazzi"' "$TARGET_MANIFEST" >/dev/null \
-  || fail "visual target comparison must use roborazzi engine"
-jq -e '.comparison.content_alignment == "exact"' "$TARGET_MANIFEST" >/dev/null \
-  || fail "Roborazzi comparison requires exact content within the declared scope"
-jq -e '.comparison.scope == "screen" or .comparison.scope == "component"' "$TARGET_MANIFEST" >/dev/null \
-  || fail "Roborazzi comparison must declare comparison.scope as screen or component"
-
-PEN_SOURCE=$(jq -r '.pen_source // empty' "$TARGET_MANIFEST")
-PEN_NODE_ID=$(jq -r '.pen_node_id // empty' "$TARGET_MANIFEST")
-[ -n "$PEN_SOURCE" ] || fail "Pen visual targets must declare pen_source in visual-target.json"
-[ -n "$PEN_NODE_ID" ] || fail "Pen visual targets must declare pen_node_id in visual-target.json"
-case "$PEN_SOURCE" in
-  /*|*..*/*..*) fail "pen_source must stay under the project or sibling UI_design folder: $PEN_SOURCE" ;;
-esac
-[ -s "$ROOT_DIR/$PEN_SOURCE" ] || fail "pen_source does not exist: $PEN_SOURCE"
-
-grep -Fq "## Reference Anchor Verification" "$ANCHOR_REPORT" \
-  || fail "$ANCHOR_REPORT has no '## Reference Anchor Verification' section"
-grep -Fq "| Visual Test ID | Reference anchor | JVM proof | Measured relationship | Reference PNG | Result |" "$ANCHOR_REPORT" \
-  || fail "$ANCHOR_REPORT has no required Roborazzi reference-anchor table header"
-
-for test_id in $CONTRACT_IDS; do
-  CONTRACT_ROW=$(printf '%s\n' "$CONTRACT_ROWS" | grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" || true)
-  TARGET=$(extract_target "$CONTRACT_ROW")
-  TEST_FILE="${TARGET%%#*}"
-  TEST_METHOD="${TARGET#*#}"
-  case "$TEST_FILE" in
-    app/src/test/java/*/roborazzi/*RoborazziTest.kt) ;;
-    *) fail "$test_id must name a dedicated app/src/test/java/**/roborazzi/*RoborazziTest.kt#method target" ;;
-  esac
-  SOURCE_FILE="$ROOT_DIR/$TEST_FILE"
-  [ -f "$SOURCE_FILE" ] || fail "$test_id Roborazzi source is missing: $TEST_FILE"
-  grep -Eq "^[[:space:]]*((public|private|protected|internal|suspend|inline|operator|infix|override|final|open)[[:space:]]+)*fun[[:space:]]+$TEST_METHOD[[:space:]]*\\(" "$SOURCE_FILE" \
-    || fail "$test_id declared Roborazzi method is missing: $TEST_FILE#$TEST_METHOD"
-  grep -Fq 'captureRoboImage' "$SOURCE_FILE" \
-    || fail "$test_id Roborazzi method source must call captureRoboImage()"
-
-  CONTENT_STATE=$(printf '%s\n' "$CONTRACT_ROW" | sed -n -E 's/.*contentState:[[:space:]]*`([^`]+)`.*/\1/p' | head -n 1)
-  [ -n "$CONTENT_STATE" ] || fail "$test_id must declare contentState: \`<state_id>\`"
-  STATE_JSON=$(jq -c --arg state "$CONTENT_STATE" '.states[$state] // empty' "$TARGET_MANIFEST")
-  [ -n "$STATE_JSON" ] && [ "$STATE_JSON" != "null" ] \
-    || fail "$test_id contentState $CONTENT_STATE is not declared in visual-target.json"
-  REFERENCE_ASSET=$(printf '%s' "$STATE_JSON" | jq -r '.reference // empty')
-  case "$REFERENCE_ASSET" in
-    design/mockup_*.png) ;;
-    *) fail "$test_id content state must reference an approved design/mockup_*.png asset" ;;
-  esac
-  [ -s "$FEATURE_DIR/$REFERENCE_ASSET" ] \
-    || fail "$test_id references missing or empty Pen export $REFERENCE_ASSET"
-
-  REPORT_ROWS=$(grep -E "^\\|[[:space:]]*$test_id[[:space:]]*\\|" "$ANCHOR_REPORT" || true)
-  REPORT_ROW_COUNT=$(printf '%s\n' "$REPORT_ROWS" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')
-  [ "$REPORT_ROW_COUNT" -eq 1 ] \
-    || fail "$ANCHOR_REPORT must contain exactly one reference-anchor row for $test_id"
-  REPORT_ROW=$(printf '%s\n' "$REPORT_ROWS" | sed '/^[[:space:]]*$/d')
-  printf '%s\n' "$REPORT_ROW" | grep -Eq 'testTag:[[:space:]]*`[^`]+`' \
-    || fail "$test_id reference-anchor row must name a visual bounds testTag"
-  printf '%s\n' "$REPORT_ROW" | grep -Fq "#$TEST_METHOD" \
-    || fail "$test_id reference-anchor row must name $TEST_METHOD"
-  printf '%s\n' "$REPORT_ROW" | grep -Eq '[A-Za-z]+Bounds(\.[A-Za-z]+)?[[:space:]]*(==|>=|<=|>|<)' \
-    || fail "$test_id reference-anchor row must record a concrete bounds relationship"
-  printf '%s\n' "$REPORT_ROW" | grep -Fq "$REFERENCE_ASSET" \
-    || fail "$test_id reference-anchor row must cite $REFERENCE_ASSET"
-  printf '%s\n' "$REPORT_ROW" | grep -Eq '\|[[:space:]]*PASS[[:space:]]*\|[[:space:]]*$' \
-    || fail "$test_id reference-anchor row must end with PASS"
-
-  EVIDENCE_COUNT=$(jq --arg owner "$VISUAL_OWNER" --arg id "$test_id" '
-    [
-      .features[]
-      | select(.id == $owner)
-      | (.evidence // [])[]
-      | select(.test_id == $id and .exit_status == 0 and ((.executed_command // "") | contains("verifyRoborazziDebug")))
-    ] | length
-  ' "$FEATURE_JSON")
-  [ "$EVIDENCE_COUNT" -gt 0 ] \
-    || fail "$test_id has no successful verifyRoborazziDebug evidence in feature_list.json"
-
-  bash "$SCRIPT_DIR/check-rendered-output-contract.sh" \
-    --project-root "$ROOT_DIR" \
-    --test-file "$TEST_FILE" \
-    --test-method "$TEST_METHOD" \
-    --claim "$CONTRACT_ROW"
-done
-
-echo "PASS: Roborazzi visual methods, Pen exports, successful evidence, and reference-anchor proof are aligned."
+REPORT="$FEATURE_DIR/ui_verification.json"
+[ -f "$REPORT" ] || fail "missing $REPORT (record the conformance review before the slice can pass)"
+args=("$CONTRACT" --test-plan "$TEST_PLAN" --report "$REPORT" --runtime --project-root "$ROOT_DIR")
+if [ -f "$ROOT_DIR/docs/product/design_system.md" ]; then
+  args+=(--design-system "$ROOT_DIR/docs/product/design_system.md")
+fi
+python3 "$SCRIPT_DIR/check-ui-contract.py" "${args[@]}"
+echo "PASS: every UI state has an approved conformance review."

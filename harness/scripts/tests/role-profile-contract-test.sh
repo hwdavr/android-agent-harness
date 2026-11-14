@@ -29,7 +29,7 @@ forbid_text() {
 
 # Profiles point to the stage contracts instead of copying their details.
 require_link planner.md "../workflows/harness-planning.md"
-require_link generator.md "../workflows/harness-generator.md"
+require_link generator.md "../workflows/sliced-lane-generator.md"
 require_link generator.md "../workflows/harness-fix.md"
 require_link generator.md "tester.md"
 require_link tester.md "../workflows/bug-fixing.md"

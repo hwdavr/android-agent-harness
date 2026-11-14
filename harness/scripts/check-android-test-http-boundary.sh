@@ -67,12 +67,56 @@ for file in "${fixture_files[@]}"; do
         || fail "loopback server is not started in the MockWebServer test: $file"
     rg -q '\.(shutdown|close)\(' "$file" \
         || fail "loopback server is not stopped in the MockWebServer test: $file"
-    rg -q 'takeRequest\(' "$file" \
+    rg -q 'takeRequest\(|receipts\.add\(' "$file" \
         || fail "MockWebServer test does not record a request receipt: $file"
     rg -q '(request|receipt)\.(method|path)|redact(ed)?' "$file" \
         || fail "MockWebServer receipt is not asserted with method/path or redaction: $file"
-    rg -q 'server\.url\(|127\.0\.0\.1|10\.0\.2\.2' "$file" \
+    rg -q 'server\.url\(|127\.0\.0\.1|10\.0\.2\.2|server\.start\([[:space:]]*[0-9]+[[:space:]]*\)' "$file" \
         || fail "MockWebServer test does not use an allow-listed local endpoint: $file"
+
+    # A JUnit ExternalResource may own server lifecycle while its consuming
+    # test owns app launch and receipt assertions. Only accept an explicitly
+    # ordered rule in the same package, tied to this exact fixture class. A
+    # HiltTestActivity may mount the source-backed production AppNavigationHost.
+    if rg -q 'class[[:space:]]+[A-Za-z_][A-Za-z_0-9]*[[:space:]]*:[[:space:]]*ExternalResource' "$file"; then
+        class_name=$(sed -nE 's/.*class[[:space:]]+([A-Za-z_][A-Za-z_0-9]*)[[:space:]]*:[[:space:]]*ExternalResource.*/\1/p' "$file" | head -1)
+        found_owner=0
+        while IFS= read -r owner; do
+            graph_owner=0
+            if rg -q 'createAndroidComposeRule<HiltTestActivity>' "$owner" &&
+                rg -q 'AppNavigationHost\(' "$owner" &&
+                [[ -f "$MAIN_ROOT/java/com/example/notesapp/navigation/AppNavigationHost.kt" ]] &&
+                rg -q 'fun[[:space:]]+AppNavigationHost\(' "$MAIN_ROOT/java/com/example/notesapp/navigation/AppNavigationHost.kt"; then
+                graph_owner=1
+            fi
+            rule_name=$(awk -v fixture="$class_name" '
+                /@get:Rule\(order[[:space:]]*=[[:space:]]*[0-9]+\)/ {
+                    order=$0; sub(/^.*order[[:space:]]*=[[:space:]]*/, "", order); sub(/[^0-9].*$/, "", order)
+                    getline declaration
+                    if (declaration ~ ("val[[:space:]]+[A-Za-z_][A-Za-z_0-9]*[[:space:]]*=[[:space:]]*" fixture "\\(\\)")) {
+                        resource=order+0
+                        name=declaration; sub(/^.*val[[:space:]]+/, "", name); sub(/[^A-Za-z_0-9].*$/, "", name)
+                    }
+                    if (declaration ~ /createAndroidComposeRule<(MainActivity|HiltTestActivity)>/) launch=order+0
+                }
+                END { if (name != "" && launch > resource) print name }
+            ' "$owner")
+            if [[ -n "$rule_name" ]] &&
+                { rg -q 'createAndroidComposeRule<MainActivity>' "$owner" || [[ "$graph_owner" -eq 1 ]]; } &&
+                rg -q 'assert(Equals|True|That)\(' "$owner" &&
+                { { rg -q "${rule_name}\\.takeRequest\\(" "$owner" &&
+                    rg -q 'request\.method' "$owner" && rg -q 'request\.path' "$owner"; } ||
+                  { rg -q "${rule_name}\\.receipts\\.any" "$owner" &&
+                    rg -q '"(GET|POST|PUT|PATCH|DELETE) /' "$owner" &&
+                    rg -q 'receipts\.add\(' "$file"; }; }; then
+                found_owner=1
+                break
+            fi
+        done < <(rg -l --glob '*.kt' -F "$class_name()" "$(dirname "$file")" || true)
+        [[ "$found_owner" -eq 1 ]] || fail "loopback rule has no ordered app-launching owner asserting method and path: $file"
+        continue
+    fi
+
     rg -q 'createAndroidComposeRule|AndroidComposeTestRule|ActivityScenario\.launch|launchActivity|startActivity' "$file" \
         || fail "MockWebServer test does not launch the shipped Android entry point: $file"
 

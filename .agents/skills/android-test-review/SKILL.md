@@ -13,9 +13,9 @@ An adversarial evaluator pass covering requirement-to-test traceability, test qu
 
 Identify the active workflow first. The test-review report is an **output**, never an input.
 
-- **Ad-hoc review**: `docs/current/spec_v<N>.md`, `implementation_plan_v<N>.md`, `test_plan_v<N>.md`, `summary_v<N>.md`, and any testing-stage evidence such as `test_report_v<N>.md`.
-- **Harness evaluation**: `$FEATURE_DIR/spec.md`, `$FEATURE_DIR/sprint-contract.md`, `$FEATURE_DIR/feature_list.json`, the active slice summary, and testing-stage evidence recorded in `$FEATURE_DIR/progress.md` or the slice summary.
-- All test files mapped by the active plan or sprint contract, plus the production files that implement the mapped behavior.
+- **Single-lane review**: the approved feature block(s), `$FEATURE_DIR/implementation-plan.md`, `test-plan.md`, `summary.md`, and any testing-stage evidence.
+- **Harness evaluation**: the approved feature block(s), `$FEATURE_DIR/implementation-plan.md`, the slice's `test-plan.md` section, `$FEATURE_DIR/feature_list.json`, the active slice summary, and testing-stage evidence recorded in `$FEATURE_DIR/summary.md` or the slice summary.
+- All test files mapped by the active test plan, plus the production files that implement the mapped behavior.
 - `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read. Also load `rules/testing-practices.md`,
   `harness/templates/test-review-template.md`, and
   `harness/templates/rule-applicability-template.md`.
@@ -58,7 +58,7 @@ Kotlin method, a suite-scoped command, its declared scenario, and successful evi
 
 ### B2. Build complete requirement-to-test traceability
 
-List every functional requirement, acceptance criterion, and documented edge case from the active `spec.md` and `sprint-contract.md`. Add one row per requirement to the review report with:
+List every functional requirement, acceptance criterion, and documented edge case from the approved feature block(s) and `test-plan.md`. Add one row per requirement to the review report with:
 
 | Source ID | Required behavior | Test file + method | Production trigger exercised | Observable assertion | Evidence status | Result |
 |---|---|---|---|---|---|---|
@@ -111,7 +111,7 @@ For bug fixes, confirm that the reproduction test was red before the fix, is gre
 
 Produce a report from `harness/templates/test-review-template.md`:
 
-- **Ad-hoc workflows**: `docs/current/test_review_v<N>.md`
+- **Single lane**: `$FEATURE_DIR/test_review.md`
 - **Harness evaluation**: `$FEATURE_DIR/test_review_{feature_id}.md`
 
 The report must include evidence provenance, the complete traceability matrix, test-quality findings, coverage distribution, and an overall verdict. Update the active summary only after both test and code review verdicts are known.

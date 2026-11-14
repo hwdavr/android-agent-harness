@@ -53,7 +53,7 @@ in window coordinates against the real keyboard top. Dismiss the keyboard, wait 
 insets, and assert restoration. Record the selected open/dismiss methods and runner XML in the
 test plan's `IME Production Boundary` table. A configuration assertion alone is supplemental.
 
-Static Gboard images and component Roborazzi tests prove deterministic appearance only. Clearing
+Static Gboard images and JVM review captures prove deterministic appearance only. Clearing
 focus before capture, a prefilled query, or a generic Activity fixture cannot establish the
 shipped IME boundary or justify skipping a production replay. The gate checks source structure
 and selected executed JUnit cases; it does not infer correctness from method names alone.
@@ -69,46 +69,38 @@ For navigation, saved-state, back-stack, destination recreation, or post-return 
 
 Direct ViewModel calls, internal state mutation, manually invoked callbacks, and Content-only tests
 are supplemental. Register shipped required journeys in `docs/product/journey-registry.yaml`.
-During an ad-hoc Testing stage, run each affected registered journey with
+During a single-lane Testing stage, run each affected registered journey with
 `bash harness/scripts/check-journey-registry.sh --run-one <journey-id>`. Run `--run-all`
 when the active harness or review workflow requires the full journey regression gate.
 
-## Visual Evidence Capture
+## UI Conformance Evidence
 
-When `requires_visual_verification` is true, a dedicated JVM `*RoborazziTest.kt` must render every
-contract state with deterministic fixtures and call `captureRoboImage()` against the approved Pen
-export. Each visual Test ID requires `./gradlew app:verifyRoborazziDebug` evidence and a
-reference-anchor row tied to a visual-bounds `testTag`, JVM method, measured relationship, and
-tolerance.
+UI appearance is approved by a conformance review, never by a screenshot golden. A design-tool export
+and a Compose render differ in text rasterization, hinting, anti-aliasing, and stroke rounding, so a
+pixel comparison between them is not a fair or passable gate. For every `UI_contract.md` state:
 
-Instrumented tests prove interaction, navigation, and platform behavior. They do not capture or
-provide visual-comparison acceptance evidence. `UiAutomation.takeScreenshot()`, `captureToImage()`,
-and ADB screencaps are not substitutes for a passing Roborazzi comparison.
+- **Review capture**: a JVM `*ReviewCaptureTest` under `app/src/test/java/<package>/roborazzi/` renders the
+  production Composable at the state's Viewport (the Pen frame's dp size and density, via `@Config`
+  qualifiers) with its deterministic fixture, theme, locale, and font scale. Never resize a capture or
+  an export to make them match. Capture tests run only with `-Proborazzi.test.record=true`; normal
+  unit-test and CI runs exclude the `roborazzi` package. Structural tests stay outside that package.
+- **Structural check**: a JVM semantics or instrumented test asserts that required `testTag`s are
+  present, ordered, visible, unclipped, and within the contract tolerance (default 4dp
+  position/spacing, 5% size).
+- **Registered components**: the state's reused design-system components are called from the planned
+  UI files, and no wrapped Material primitive is called outside its wrapper.
+- **Approval**: the user reviews the capture beside the approved design; the decision is recorded per
+  state in `ui_verification.json`.
+
+`recordRoborazziDebug`, `verifyRoborazziDebug`, and `verifyAndRecordRoborazziDebug` are not acceptance
+evidence, and an implementation-recorded screenshot is never promoted to a golden. Instrumented tests
+prove interaction, navigation, and platform behavior; `UiAutomation.takeScreenshot()`,
+`captureToImage()`, and ADB screencaps may support a review but are not the review capture of record.
 
 ## Rendered Rich-Text Evidence
 
 Claims that bold, italic, underline, strikethrough, code, monospace, or another inline style is
-visibly rendered require a Roborazzi comparison of the named deterministic state. The reference
-must contain the approved formatted appearance and the JVM test must call `captureRoboImage()`.
-
-Model marks, `AnnotatedString` contents, toolbar state, text content, and a non-empty PNG are
-supplemental and do not prove rendered appearance. Run
-`bash harness/scripts/check-rendered-output-contract.sh` for the named method.
-
-## Visual Comparison Contract
-
-- Roborazzi is the binding visual-comparison engine. Every target declares
-  `comparison.engine: roborazzi`, `content_alignment: exact`, and a `scope` of `screen` or
-  `component`.
-- A whole-screen comparison requires the Pen export and deterministic JVM fixture to contain the
-  same visible content. When surrounding content differs, export the approved static component
-  from the Pen design and compare that component in isolation; do not replace the comparison with
-  an instrumented screenshot or an implementation-recorded golden.
-- The approved reference is a PNG exported from the canonical `.pen` source named by `pen_source` and `pen_node_id` in `visual_evidence/visual-target.json`. A screenshot recorded from the implementation is never promoted as a golden.
-- `visual_evidence/visual-target.json` is the canonical feature-owned target manifest. It defines
-  appearance, logical size, locale, named deterministic content states, the approved Pen source,
-  and the comparison scope. Each contract row names one stable state ID directly; a runtime
-  screenshot map is not used.
-- Time, user content, identifiers, and keyboard variation must each be explicitly fixed, cropped, absent, or narrowly masked with an approval rationale. Masks may exclude only genuinely variable content; they cannot make fundamentally different design and runtime screens count as the same pixel target.
-- Missing, ambiguous, or mismatched references fail; they are never silently skipped.
-- Preserve Roborazzi compare/actual artifacts when verification finds a difference.
+visibly rendered require a test that asserts the rendered node's `AnnotatedString` span styles through
+`SemanticsProperties.Text`, plus the state's review capture. Model marks, toolbar state, text content,
+and a non-empty PNG alone are supplemental. Run `bash harness/scripts/check-rendered-output-contract.sh`
+for the named method.

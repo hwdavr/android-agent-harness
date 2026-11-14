@@ -1155,6 +1155,37 @@ def _is_named_color_reference(source_file: KotlinFile, index: int) -> bool:
     )
 
 
+REGISTRY_HEADER = ["Component", "Pen component", "Composable", "Required testTag", "Wraps Material"]
+
+
+def load_component_registry(project_root: Path) -> list[tuple[str, str, set[str]]]:
+    """(component, wrapper path, wrapped Material primitives) from the design-system Component Registry."""
+    design_system = project_root / "docs" / "product" / "design_system.md"
+    if not design_system.is_file():
+        return []
+    lines = design_system.read_text(encoding="utf-8").splitlines()
+    start = next((i for i, line in enumerate(lines) if re.match(r"^#{2,3} Component Registry(\s|$)", line)), None)
+    if start is None:
+        return []
+    level = len(lines[start].split(" ", 1)[0])
+    rows: list[list[str]] = []
+    for line in lines[start + 1:]:
+        if re.match(rf"^#{{1,{level}}} ", line):
+            break
+        if line.startswith("|") and line.endswith("|"):
+            cells = [cell.strip().strip("`").strip() for cell in line[1:-1].split("|")]
+            if not all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+                rows.append(cells)
+    if not rows or rows[0] != REGISTRY_HEADER:
+        raise ValueError(f"{design_system} Component Registry needs columns: {', '.join(REGISTRY_HEADER)}")
+    registry = []
+    for row in rows[1:]:
+        primitives = {name.strip().strip("`") for name in re.split(r"[,;]", row[4]) if name.strip().strip("`")}
+        primitives.discard("None")
+        registry.append((row[0], row[2], primitives))
+    return registry
+
+
 def run_compose(args: argparse.Namespace) -> int:
     project_root, source_root, files = parse_common_files(args)
     result = Result(project_root)
@@ -1176,6 +1207,22 @@ def run_compose(args: argparse.Namespace) -> int:
                     result.add(source_file, index, "Named Color constant outside AppColors.kt")
 
     visit_rule(result, "Hardcoded colors", check_colors)
+
+    registry = load_component_registry(project_root)
+
+    def check_registered_components() -> None:
+        for source_file in files:
+            relative = source_file.path.resolve().as_posix()
+            for component, wrapper_path, primitives in registry:
+                if not primitives or relative.endswith("/" + wrapper_path.lstrip("/")):
+                    continue
+                for call in source_file.calls:
+                    if call.name in primitives:
+                        result.add(source_file, call.name_index,
+                                   f"{call.name} has a registered design-system wrapper; use {component} ({wrapper_path})")
+
+    if registry:
+        visit_rule(result, "Registered design-system components", check_registered_components)
 
     def check_interactive_tags() -> None:
         for source_file in files:
@@ -2072,7 +2119,7 @@ RENDERED_RICH_TEXT_CLAIM_PATTERN = re.compile(
 
 
 def run_rendered_output(args: argparse.Namespace) -> int:
-    """Verify source-fed pixel evidence for explicit rich-text appearance claims."""
+    """Verify that explicit rich-text appearance claims assert the rendered span styles."""
 
     project_root = (args.project_root or repository_root()).resolve()
     claim = args.claim or ""
@@ -2124,12 +2171,16 @@ def run_rendered_output(args: argparse.Namespace) -> int:
                     if target.body_start < call.open_index < target.body_end
                 ]
                 if has_rendered_claim:
-                    roborazzi_calls = [call for call in body_calls if call.name == "captureRoboImage"]
-                    if not roborazzi_calls:
+                    body_text = {token.text for token in source_file.tokens[target.body_start:target.body_end]}
+                    asserts = [call for call in body_calls
+                               if call.name.startswith("assert") or call.name in {"assertThat", "check", "require"}]
+                    span_evidence = body_text & {"SpanStyle", "spanStyles", "AnnotatedString", "SemanticsProperties"}
+                    if not asserts or not span_evidence:
                         result.add(
                             source_file,
                             target.name_index,
-                            "rendered appearance claims must call captureRoboImage() in a Roborazzi JVM test",
+                            "rendered appearance claims must assert the rendered node's AnnotatedString span styles "
+                            "(SpanStyle / spanStyles via SemanticsProperties); pixel goldens are retired",
                         )
 
     print_rule("Rendered rich-text appearance evidence", result.violations)

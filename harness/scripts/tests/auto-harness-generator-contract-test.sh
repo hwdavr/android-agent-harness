@@ -4,6 +4,9 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 TEST_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/auto-harness-contract.XXXXXX")
+# Keep generator locks inside the test root so sandboxed runs never need /tmp.
+export HARNESS_LOCK_ROOT="$TEST_ROOT/locks"
+mkdir -p "$HARNESS_LOCK_ROOT"
 ACTIVE_FIXTURE=""
 
 cleanup() {
@@ -32,7 +35,7 @@ lock_path() {
   root=$(cd "$1" && pwd)
   local key
   key=$(printf '%s' "$root" | cksum | awk '{print $1}')
-  printf '/tmp/android-harness-%s.lock' "$key"
+  printf '%s/android-harness-%s.lock' "$HARNESS_LOCK_ROOT" "$key"
 }
 
 write_fake_codex() {
@@ -364,6 +367,39 @@ test_lock_contention
 test_completed_task_lock_handoff
 test_stale_lock_reclaimed
 test_failure_cleans_lock
+test_unwritable_lock_root_fails_fast() {
+  create_fixture "unwritable-lock-root"
+  local saved_root="$HARNESS_LOCK_ROOT"
+  export HARNESS_LOCK_ROOT="$TEST_ROOT/missing-lock-root"
+  local generator="$ACTIVE_FIXTURE/harness/scripts/auto-harness-generator.sh"
+  local started=$SECONDS
+  set +e
+  HOME="$ACTIVE_FIXTURE/home" FAKE_MODE="advance" \
+    bash "$generator" --headless > "$ACTIVE_FIXTURE/run.log" 2>&1 &
+  local pid=$!
+  local waited=0
+  while kill -0 "$pid" 2>/dev/null && [ "$waited" -lt 50 ]; do
+    sleep 0.2
+    waited=$((waited + 1))
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    set -e
+    export HARNESS_LOCK_ROOT="$saved_root"
+    fail_test "generator spun on an uncreatable lock directory instead of failing"
+  fi
+  wait "$pid"
+  LAST_STATUS=$?
+  set -e
+  export HARNESS_LOCK_ROOT="$saved_root"
+  [ "$LAST_STATUS" -eq 1 ] || fail_test "uncreatable lock root should exit 1 (got $LAST_STATUS after $((SECONDS - started))s)"
+  grep -Fq 'Cannot create harness lock' "$ACTIVE_FIXTURE/run.log" ||
+    fail_test "uncreatable lock root was not reported"
+  assert_file_line_count "$ACTIVE_FIXTURE/codex.count" 0
+}
+
 test_quota_fallback
+test_unwritable_lock_root_fails_fast
 
 echo "PASS: auto harness generator lock, headless drain, fallback, and cleanup contracts."

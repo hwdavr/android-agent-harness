@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "tool": "pen.dev",
+  "source": "UX/<App>.pen",
+  "notes": "tool is one of: pen.dev (source *.pen) or openpencil (source *.fig). The ui-design-tool skill reads this file from UX/design-tool.json and loads only the matching adapter."
+}

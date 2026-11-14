@@ -24,7 +24,7 @@ write_contract() {
   {
     printf '%s\n' '# Sprint Contract' '' '## US-1: Platform behavior' '' '| Test ID | Covers AC | Test layer | Test file and method | Setup and action | Required assertions | Exact command |'
     printf '%s\n' '| TC-US-REAL | AC-US-1-01 | Instrumented UI | app/src/androidTest/java/example/PlatformTest.kt#realBoundary | fixture | real result | ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.PlatformTest#realBoundary |'
-  } > "$feature_dir/sprint-contract.md"
+  } > "$feature_dir/test-plan.md"
 }
 
 write_feature_list() {
@@ -166,8 +166,8 @@ printf '%s\n' 'class PlatformTest { val recognizer = SpeechRecognizer.createSpee
 legacy_runner="$fixture_root/legacy-runner"
 cp -R "$valid" "$legacy_runner"
 sed 's|ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.PlatformTest#|./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=example.PlatformTest#|' \
-  "$legacy_runner/sprint-contract.md" > "$legacy_runner/sprint-contract.tmp"
-mv "$legacy_runner/sprint-contract.tmp" "$legacy_runner/sprint-contract.md"
+  "$legacy_runner/test-plan.md" > "$legacy_runner/sprint-contract.tmp"
+mv "$legacy_runner/sprint-contract.tmp" "$legacy_runner/test-plan.md"
 jq '.features[0].evidence[0].executed_command = "ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest"' \
   "$legacy_runner/feature_list.json" > "$legacy_runner/feature_list.json.tmp"
 mv "$legacy_runner/feature_list.json.tmp" "$legacy_runner/feature_list.json"

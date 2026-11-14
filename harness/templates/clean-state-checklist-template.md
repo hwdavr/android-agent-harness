@@ -16,7 +16,7 @@ runtime fingerprints are unchanged. Do not rerun a valid gate merely to copy its
 - [ ] Required tests run with non-zero test counts and applicable coverage thresholds pass.
 - [ ] No new suppression, baseline, exclusion, placeholder, dummy, no-op, or secret is introduced.
 - [ ] Changed files stay within approved scope and architectural boundaries.
-- [ ] Required artifacts, lifecycle state, progress, and handoff evidence are current.
+- [ ] Required artifacts, lifecycle state, summaries, and handoff evidence are current.
 - [ ] No stale or orphan artifact created by this change remains.
 
 ## Conditional: API
@@ -47,9 +47,9 @@ back-stack, deep links, or post-return behavior.
 Include when SUI/L10N is Required/excepted, `affects_ui` is true, or a Composable/resource changes.
 
 - [ ] Design-system, state, accessibility, semantics/test-tag, localization, and interaction checks pass.
-- [ ] When visual verification is required, visual artifact, direct approved state mapping,
-  dynamic-region handling, deterministic Roborazzi screen or component scope, reference-anchor,
-  and applicable rendered-output validators exit 0 with `verifyRoborazziDebug` evidence.
+- [ ] For UI scope, the conformance review is recorded: review captures at each state's Viewport,
+  passing structural checks, user approval, registered-component reuse, and applicable
+  rendered-output (span-style) validators exit 0. No screenshot golden is recorded.
 
 ## Conditional: PLATFORM
 

@@ -6,7 +6,7 @@
 |---|---|
 | Feature / slice | |
 | Current commit | |
-| Baselines reviewed | `spec.md`, `sprint-contract.md`, implementation/test plan, and Rule Applicability matrix |
+| Baselines reviewed | Approved requirement block(s), `implementation-plan.md` (Rule Applicability), `test-plan.md`, and `tasks.md` (sliced lane) |
 | Changed production files reviewed | |
 | Changed test files reviewed | |
 
@@ -44,7 +44,7 @@ do not invent logging or analytics tests when the trigger is absent.
 
 ## Requirement-to-Test Traceability
 
-List every FR, AC, and documented edge case from the active specification and sprint contract.
+List every FR, AC, and documented edge case from the approved requirement block(s) and `test-plan.md`.
 
 | Source ID | Acceptance Test ID | Required behavior | Test file + method | Production trigger exercised | Observable assertion | Evidence status | Result |
 |---|---|---|---|---|---|---|---|
@@ -71,7 +71,7 @@ List every FR, AC, and documented edge case from the active specification and sp
 | Lifecycle and navigation cleanup | | | PASS / REVISION REQUIRED / N/A |
 | Error and retry behavior | | | PASS / REVISION REQUIRED / N/A |
 | API/data error matrix | | | PASS / REVISION REQUIRED / N/A |
-| Dedicated Roborazzi visual comparison (`*RoborazziTest.kt`) | | When `requires_visual_verification == true`: verify every state with `captureRoboImage()` and `verifyRoborazziDebug` | PASS / REVISION REQUIRED / N/A |
+| UI conformance review | | For UI scope: every state has a review capture at its Viewport, a passing structural check, and user approval in `ui_verification.json`; no screenshot golden | PASS / REVISION REQUIRED / N/A |
 
 ## Coverage Distribution
 

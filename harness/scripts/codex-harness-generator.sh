@@ -2,7 +2,7 @@
 # harness/scripts/codex-harness-generator.sh
 #
 # Picks the next available harness task and launches OpenAI Codex CLI (codex)
-# to implement it via the harness-generator workflow.
+# to implement it via the sliced-lane-generator workflow.
 #
 # Usage:
 #   bash harness/scripts/codex-harness-generator.sh            # auto-pick + launch codex (interactive TUI, YOLO mode)

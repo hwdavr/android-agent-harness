@@ -1,6 +1,6 @@
 ---
 name: analytics-event-validator
-description: Independently validate app-side analytics events against approved tracking requirements and produce analytics reports. Use for missing or duplicate events, parameter checks, and event sequence verification with a compatible Android debug recorder or supplied captures. Exploratory-QA can optionally invoke this skill.
+description: Validate app analytics events against tracking requirements: missing/duplicate events, parameters, and event sequences.
 ---
 
 # Analytics event validator

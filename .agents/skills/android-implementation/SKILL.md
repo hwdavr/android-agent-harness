@@ -9,7 +9,7 @@ description: Implement an Android feature across affected data, domain, and UI l
 Implement only the layers affected by the approved change, in small verified increments.
 Do not load or execute a Data, Domain, or UI section merely because another layer is in scope.
 
-> This is the **compact implementation stage** used by `feature-delivery` and `bug-fixing` workflows.
+> This is the **compact implementation stage** used by `single-lane-generator` and `bug-fixing` workflows.
 > For granular layer-by-layer control, use the individual stages `android-data-layer/SKILL.md`, `android-domain-layer/SKILL.md`, and `android-ui-layer/SKILL.md`.
 
 ---
@@ -27,15 +27,16 @@ Do not load or execute a Data, Domain, or UI section merely because another laye
 - `rules/navigation-rules.md`, `rules/analytics-rules.md`, and `rules/observability.md` only when their Rule Applicability decision is `Required` or excepted
 - `rules/android-security.md` when `SEC` is Required or excepted, or the slice newly triggers authentication, sensitive storage, URI/IPC, exported components, networking/TLS, WebView, AI/model, SDK, or release-security scope
 
-**Adhoc workflows** (`feature-delivery`, `bug-fixing`):
-- `docs/current/implementation_plan_v<N>.md` — implementation plan approved by user
-- `docs/current/spec_v<N>.md` — requirement summary, impact analysis, UiState & navigation design
-- `docs/current/UI_contract.md` — state behavior, controls, copy, fixtures, and canonical Pen/reference mappings (if UI changes involved)
-- `docs/current/design/` — user-provided screenshots or AI-generated `mockup_*.png` images (view these for visual layout reference before implementing UI)
+**Single lane** (`single-lane-generator`, `bug-fixing`), all in `$FEATURE_DIR`:
+- `implementation-plan.md` — the approved plan: Rule Applicability, file list, UiState, UI State Stages and their reused registered components
+- The approved feature block(s) in `docs/product/requirements/` — requirements, acceptance criteria, Screen States, Navigation (bugs: the plan's Root Cause section)
+- `UI_contract.md` — state behavior, controls, copy, fixtures, reused components, and Pen/reference mappings (if UI changes involved)
+- `design/` — approved Pen exports and user-provided references (view these before implementing UI)
 
-**Harness workflow** (`harness-generator`):
+**Sliced lane** (`sliced-lane-generator`):
 - Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` and use its hashes and source pointers.
-- Read only the selected sprint-contract user story, mapped requirement rows, and acceptance rows. Read the selected `feature_list.json` entry for execution flags and verification IDs.
+- Read only the selected story's `tasks.md` section, its mapped requirement rows in the feature block, and its `### US-n` acceptance rows in `test-plan.md`. Read the selected `feature_list.json` entry for execution flags and verification IDs.
+- Work the slice's tasks in order (Prerequisites, Implementation, Tests, Final checks). When a task is finished, set `done: true` in the slice's `tasks` in `feature_list.json` and tick its checkbox in `tasks.md`; a slice cannot be `passing` while any of its tasks is not done.
 - Read the summary only for execution-stage evidence, blockers, and decisions made after approval; never treat it as a second requirement source.
 
 ---
@@ -70,7 +71,7 @@ unaffected sections and their checklist rows; a skipped layer must be recorded a
 
 ## Output
 
-Update `summary_{feature_id}.md` (or `summary_v<N>.md` depending on the active workflow): mark the Implementation (Data + Domain + UI) stage complete.
+Update the active summary (`$FEATURE_DIR/summary.md`, or `summary_{feature_id}.md` in the sliced lane): mark the Implementation (Data + Domain + UI) stage complete.
 
 ---
 

@@ -123,6 +123,14 @@ selector_slug="all"
 if [ "${#SELECTORS[@]}" -gt 0 ]; then
   selector_slug=$(printf '%s_' "${SELECTORS[@]}" | tr -cs 'A-Za-z0-9._-' '_')
   selector_slug="${selector_slug%_}"
+  # Filesystems commonly limit each filename component to 255 bytes. Preserve
+  # readable names for short runs; bind long names to the complete selector
+  # list without truncating the AndroidJUnitRunner arguments or log command.
+  if [ "${#selector_slug}" -gt 180 ]; then
+    selector_hash=$(printf '%s\0' "${SELECTORS[@]}" | python3 -c \
+      'import hashlib, sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:16])')
+    selector_slug="${selector_slug:0:100}-sha256-${selector_hash}"
+  fi
 fi
 RUN_LOG="$OUTPUT_DIR/${selector_slug}.log"
 RUN_XML="$OUTPUT_DIR/TEST-${selector_slug}.xml"

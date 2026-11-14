@@ -20,7 +20,7 @@ class QaBugHandoffContractTest(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="qa-bug-handoff-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.docs = self.root / "docs/current"
+        self.docs = self.root / ".scratch/2026-11-09-qa-bug"
         self.run = self.root / ".qa-artifacts/qa-run"
         self.docs.mkdir(parents=True)
         (self.run / "evidence").mkdir(parents=True)
@@ -40,15 +40,24 @@ class QaBugHandoffContractTest(unittest.TestCase):
         }
         self.scenario["generation"] = self.report["generation"]
         self.write_run()
-        self.spec = self.docs / "spec_v1.md"
-        self.spec.write_text(
-            "# Bug context\n\n## Exploratory QA Handoff\n\n"
-            "- Report: `.qa-artifacts/qa-run/report.json`\n- Finding: `F-001`\n\n"
+        (self.root / "docs/product").mkdir(parents=True)
+        (self.root / "docs/product/product.md").write_text(
+            "<!-- HARNESS_TRACKER_START -->\n| ID | Feature | Workspace | Status | Updated | Notes |\n|---|---|---|---|---|---|\n"
+            "| qa-bug | QA bug | [.scratch/2026-11-09-qa-bug/](../../.scratch/2026-11-09-qa-bug/) | Planning | 2026-11-09 | bug |\n"
+            "<!-- HARNESS_TRACKER_END -->\n")
+        (self.docs / "implementation-plan.md").write_text(
+            "# Implementation Plan\n\n## Root Cause & Reproduction\n\n- **Root cause**: picker query drops results.\n\n"
             "## Rule Applicability\n\n| Rule ID | Decision |\n|---|---|\n" +
             "".join("| %s | Not applicable — fixture only |\n" % rule
                     for rule in ("ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC"))
         )
-        (self.docs / "summary_v1.md").write_text("# Summary\n")
+        # The QA handoff is test material: it lives in test-plan.md.
+        self.spec = self.docs / "test-plan.md"
+        self.spec.write_text(
+            "# Test Plan\n\n## Exploratory QA Handoff\n\n"
+            "- Report: `.qa-artifacts/qa-run/report.json`\n- Finding: `F-001`\n"
+        )
+        (self.docs / "summary.md").write_text("# Summary\n")
 
     def write_run(self):
         scenario_bytes = (json.dumps(self.scenario) + "\n").encode()
@@ -57,7 +66,7 @@ class QaBugHandoffContractTest(unittest.TestCase):
         (self.run / "observations.json").write_text(json.dumps({"findings": [self.finding]}))
         (self.run / "report.json").write_text(json.dumps(self.report))
 
-    def gate(self, stage="requirement-analysis"):
+    def gate(self, stage="bug-context"):
         env = dict(os.environ, HARNESS_PROJECT_ROOT=str(self.root))
         return subprocess.run(
             ["bash", str(STAGE_GATE), "bug-fixing", stage, str(self.docs)],
@@ -177,8 +186,7 @@ class QaBugHandoffContractTest(unittest.TestCase):
         self.assertIn("Reproduction Test", result.stdout + result.stderr)
 
     def test_non_qa_bug_keeps_the_existing_context_path(self):
-        text = self.spec.read_text()
-        self.spec.write_text(text[text.index("## Rule Applicability"):])
+        self.spec.write_text("# Test Plan\n")
         result = self.gate()
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 

@@ -3,22 +3,27 @@
 **Type**: feature / bugfix / api / refactor
 **Started**: YYYY-MM-DD HH:MM
 **Status**: In Progress / Complete
-**Feature ID**: <US-X / Task ID>
-**Workspace**: `<active workspace>`
+**Feature ID**: <feature-id; sliced lane slice summaries add the slice ID, e.g. US-2>
+**Workspace**: `.scratch/<YYYY-MM-DD>-<feature-id>/`
+
+Write one `summary.md` per workspace (no `_v<N>`). The sliced lane adds one
+`summary_<FEATURE_ID>.md` per slice; `summary.md` then links them.
 
 ## Stage Progress
 
-Insert exactly one table from `harness/templates/summary-profiles/<workflow>.md`. Do not load or
+Insert exactly one table from `harness/templates/summary-profiles/<workflow>.md`. A feature uses
+the `harness-planning` profile; a single-lane feature appends the `single-lane-generator` rows to
+that table, and a sliced-lane slice summary uses `sliced-lane-generator`. Do not load or
 copy inactive workflow profiles. A stage is complete only when its concise evidence appears below.
 Update this record at stage boundaries, approval, or a blocker. During UX visual iteration, keep
-the spec and summary stable and update only design artifacts; do not allocate a new delivery
-version for each design revision.
+the requirement block and summary stable and update only design artifacts.
 
 ## Context Provenance
 
-- Canonical requirements and Rule Applicability: `<path and section>`
-- Canonical execution metadata: `<feature_list path and slice ID, or N/A>`
-- Source hashes at stage start: `<requirements hash>`; `<execution metadata hash>`
+- Requirement block(s): `docs/product/requirements/<capability>.md` → `<feature-id>` (approved block SHA-256 in `implementation-plan.md`)
+- Rule Applicability: `implementation-plan.md#rule-applicability`
+- Slice metadata: `feature_list.json` → `<slice ID>` (sliced lane), or `N/A — single lane`
+- Source hashes at stage start: `<implementation-plan.md hash>`; `<test-plan.md hash>`
 - Rule decisions: unchanged unless an approved canonical update is linked.
 
 Do not copy Rule Applicability, acceptance criteria, user-story scope, or feature metadata here.

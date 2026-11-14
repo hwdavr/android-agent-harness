@@ -258,4 +258,49 @@ KOTLIN
 expect_failure "envelope-only assertions" \
   bash "$ASSERTIONS_CHECKER" "$actual_assertions"
 
+# Registered design-system components: a wrapped Material primitive may only be called by its wrapper.
+registry_project="$fixture_root/registry-project"
+registry_src="$registry_project/app/src/main/java/com/example/notesapp/ui"
+mkdir -p "$registry_src/components" "$registry_src/home" "$registry_project/docs/product"
+# The dynamic test-tag rule is out of scope here; reuse the project registry.
+export DOCUMENTED_DYNAMIC_TAGS_REGISTRY="$REPO_ROOT/docs/harness/documented-dynamic-test-tags.json"
+cat > "$registry_project/docs/product/design_system.md" <<'MD'
+# Design System
+
+### Component Registry
+
+| Component | Pen component | Composable | Required testTag | Wraps Material |
+|---|---|---|---|---|
+| TopActionBar | comp/top-bar | ui/components/TopActionBar.kt | top_action_bar | TopAppBar, CenterAlignedTopAppBar |
+MD
+cat > "$registry_src/components/TopActionBar.kt" <<'KOTLIN'
+package com.example.notesapp.ui.components
+
+@Composable
+fun TopActionBar(title: String) {
+    TopAppBar(title = { Text(title) }, modifier = Modifier.testTag("top_action_bar"))
+}
+KOTLIN
+cat > "$registry_src/home/HomeScreen.kt" <<'KOTLIN'
+package com.example.notesapp.ui.home
+
+@Composable
+fun HomeScreen() {
+    TopActionBar(title = stringResource(R.string.home))
+}
+KOTLIN
+expect_pass "screens that reuse the registered wrapper" \
+  bash "$COMPOSE_CHECKER" --project-root "$registry_project" --all "$registry_src"
+cat > "$registry_src/home/SettingsScreen.kt" <<'KOTLIN'
+package com.example.notesapp.ui.home
+
+@Composable
+fun SettingsScreen() {
+    CenterAlignedTopAppBar(title = { Text(stringResource(R.string.settings)) }, modifier = Modifier.testTag("settings_bar"))
+}
+KOTLIN
+expect_failure "CenterAlignedTopAppBar has a registered design-system wrapper; use TopActionBar" \
+  bash "$COMPOSE_CHECKER" --project-root "$registry_project" --all "$registry_src"
+
+unset DOCUMENTED_DYNAMIC_TAGS_REGISTRY
 echo "PASS: Kotlin AST checker ignores rule-shaped comments/literals and rejects actual violations."

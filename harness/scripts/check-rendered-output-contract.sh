@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verifies that a rich-text appearance claim is backed by a Roborazzi JVM
-# comparison, rather than a model/state assertion or device screenshot.
+# Verifies that a rich-text appearance claim is backed by a test asserting the
+# rendered AnnotatedString span styles, not only model or toolbar state.
 
 set -euo pipefail
 

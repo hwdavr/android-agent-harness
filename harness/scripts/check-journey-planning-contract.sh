@@ -43,7 +43,7 @@ case "$FEATURE_DIR" in
 esac
 
 FEATURE_JSON="$FEATURE_DIR/feature_list.json"
-CONTRACT="$FEATURE_DIR/sprint-contract.md"
+CONTRACT="$FEATURE_DIR/test-plan.md"
 [ -f "$FEATURE_JSON" ] || fail "missing $FEATURE_JSON"
 [ -f "$CONTRACT" ] || fail "missing $CONTRACT"
 
@@ -51,11 +51,11 @@ JOURNEY_HEADER='| User story | Journey required | Journey reason | Journey accep
 ACCEPTANCE_HEADER='| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |'
 
 grep -Eq '^## Production Journey Planning Contract([[:space:]]|$)' "$CONTRACT" \
-  || fail "sprint-contract.md is missing the '## Production Journey Planning Contract' section"
+  || fail "test-plan.md is missing the '## Production Journey Planning Contract' section"
 grep -Fq "$JOURNEY_HEADER" "$CONTRACT" \
-  || fail "sprint-contract.md must use the production journey planning table"
+  || fail "test-plan.md must use the production journey planning table"
 grep -Fq "$ACCEPTANCE_HEADER" "$CONTRACT" \
-  || fail "sprint-contract.md must use the acceptance test traceability table"
+  || fail "test-plan.md must use the acceptance test traceability table"
 
 trim() {
   value="$1"
@@ -112,7 +112,7 @@ acceptance_rows=$(
     in_table { in_table = 0 }
   ' "$CONTRACT"
 )
-[ -n "$acceptance_rows" ] || fail "sprint-contract.md has no parseable acceptance Test ID rows"
+[ -n "$acceptance_rows" ] || fail "test-plan.md has no parseable acceptance Test ID rows"
 
 if ! jq -e '
   (.features | type == "array" and length > 0) and
@@ -189,7 +189,7 @@ EOF
   esac
 
   [ "$journey_reason" = "$reason" ] \
-    || fail "$feature_id journey reason differs between feature_list.json and sprint-contract.md"
+    || fail "$feature_id journey reason differs between feature_list.json and test-plan.md"
   [ -n "$journey_reason" ] && ! is_placeholder "$journey_reason" \
     || fail "$feature_id needs a feature-specific production journey reason"
 
@@ -209,13 +209,13 @@ EOF
       && fail "$feature_id requires journey_assertion in the production journey planning row"
 
     [ "$journey_entry" = "$json_entry" ] \
-      || fail "$feature_id production entry differs between feature_list.json and sprint-contract.md"
+      || fail "$feature_id production entry differs between feature_list.json and test-plan.md"
     [ "$journey_actions" = "$json_actions" ] \
-      || fail "$feature_id user actions differ between feature_list.json and sprint-contract.md"
+      || fail "$feature_id user actions differ between feature_list.json and test-plan.md"
     [ "$journey_boundary" = "$json_boundary" ] \
-      || fail "$feature_id return boundary differs between feature_list.json and sprint-contract.md"
+      || fail "$feature_id return boundary differs between feature_list.json and test-plan.md"
     [ "$journey_assertion" = "$json_assertion" ] \
-      || fail "$feature_id post-return assertion differs between feature_list.json and sprint-contract.md"
+      || fail "$feature_id post-return assertion differs between feature_list.json and test-plan.md"
 
     planned_target=$(strip_backticks "$(trim "$journey_target")")
     json_target="$json_file#$json_method"
@@ -233,7 +233,7 @@ EOF
       || fail "$feature_id has an invalid production journey test method '$json_method'"
 
     [ "$journey_acceptance_id" = "$json_acceptance_id" ] \
-      || fail "$feature_id journey acceptance test ID differs between feature_list.json and sprint-contract.md"
+      || fail "$feature_id journey acceptance test ID differs between feature_list.json and test-plan.md"
     [ -n "$json_acceptance_id" ] \
       || fail "$feature_id must declare production_journey.acceptance_test_id"
     jq -e --arg feature_id "$feature_id" --arg test_id "$json_acceptance_id" '

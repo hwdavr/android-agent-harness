@@ -28,7 +28,7 @@ expect_failure() {
 no_assets="$fixture_root/no-assets"
 mkdir -p "$no_assets"
 printf '%s\n' '# Spec' '## Overview' 'A simple feature with no offline assets.' \
-  > "$no_assets/spec.md"
+  > "$no_assets/implementation-plan.md"
 (cd "$REPO_ROOT" && bash "$VALIDATOR" "$no_assets")
 
 # --- Positive case: asset reference + file exists → PASS ---
@@ -36,7 +36,7 @@ present_asset="$fixture_root/present-asset"
 mkdir -p "$present_asset"
 printf '%s\n' '# Spec' '## Overview' \
   'The WebView loads `file:///android_asset/mermaid/mermaid.min.js` offline.' \
-  > "$present_asset/spec.md"
+  > "$present_asset/implementation-plan.md"
 # The actual asset should already exist from the bug fix
 if [ -f "$REPO_ROOT/app/src/main/assets/mermaid/mermaid.min.js" ]; then
   (cd "$REPO_ROOT" && bash "$VALIDATOR" "$present_asset")
@@ -49,17 +49,17 @@ missing_asset="$fixture_root/missing-asset"
 mkdir -p "$missing_asset"
 printf '%s\n' '# Spec' '## Overview' \
   'The WebView loads `file:///android_asset/nonexistent/engine.js` offline.' \
-  > "$missing_asset/spec.md"
+  > "$missing_asset/implementation-plan.md"
 expect_failure "declared asset" \
   bash "$VALIDATOR" "$missing_asset"
 
-# --- Negative case: asset reference in sprint-contract.md + missing → FAIL ---
+# --- Negative case: asset reference in test-plan.md + missing → FAIL ---
 missing_contract_asset="$fixture_root/missing-contract-asset"
 mkdir -p "$missing_contract_asset"
 printf '%s\n' '# Sprint Contract' '## Overview' \
   'Uses `file:///android_asset/charts/chart-engine.js` for rendering.' \
-  > "$missing_contract_asset/sprint-contract.md"
-printf '%s\n' '# Spec' > "$missing_contract_asset/spec.md"
+  > "$missing_contract_asset/test-plan.md"
+printf '%s\n' '# Spec' > "$missing_contract_asset/implementation-plan.md"
 expect_failure "declared asset" \
   bash "$VALIDATOR" "$missing_contract_asset"
 

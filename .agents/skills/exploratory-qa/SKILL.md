@@ -190,7 +190,7 @@ to the report command below; it re-verifies live mappings through the adapter.
 
 Use dogfood for the scoped journey. Start/mark logs when relevant, save their path while the session is active, and correlate findings with the proxy timeline. `agent-device network dump` parses app logs; empty output does not establish no traffic. Code testTags are selector hints until confirmed in fresh runtime snapshots.
 
-Populate `observations.json` from `examples/observations.example.json` with actual checks, crash count, visited states, findings, and evidence paths. Update `harnesslens/run.json` with checkpoint sequence boundaries from that same live session. Record unreachable states and missing expectations/oracles. Exploration supplements the project's deterministic Android and Roborazzi gates.
+Populate `observations.json` from `examples/observations.example.json` with actual checks, crash count, visited states, findings, and evidence paths. Update `harnesslens/run.json` with checkpoint sequence boundaries from that same live session. Record unreachable states and missing expectations/oracles. Exploration supplements the project's deterministic JVM and instrumented test gates and the ui-verification conformance review.
 
 ### Dogfood report reconciliation
 

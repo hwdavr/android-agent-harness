@@ -12,7 +12,7 @@ Read and follow [Product documentation flow](../rules/product-documentation.md).
 ## When to use
 
 - Use this workflow when you are acting as the **Evaluator** agent.
-- A change has been implemented by feature-delivery workflow
+- A change has been implemented by the single-lane-generator workflow
 - Post-implementation self-review before presenting to the user
 
 ---
@@ -32,14 +32,14 @@ unapproved exception is a blocking finding.
 When a feature is submitted for review, execute these steps in order:
 
 ### Stage 1: Read the Baselines
-Read all four baseline documents produced by the `/feature-delivery` workflow before touching any source code or running any checks. These are the single source of truth the review is evaluated against.
+Read all four baselines produced by the `harness-planning` and `single-lane-generator` workflows in the dated workspace `$FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-id>/` before touching any source code or running any checks. These are the single source of truth the review is evaluated against.
 
 | Document | Location | What to extract |
 |---|---|---|
-| summary_v<N>.md | docs/current/ | Stage evidence and approved-artifact versions |
-| `spec_v<N>.md` | `docs/current/` | Acceptance Criteria · Scope · Exclusions |
-| `implementation_plan_v<N>.md` | `docs/current/` | Approved architecture · layer breakdown · file list |
-| `test_plan_v<N>.md` | `docs/current/` | Approved test strategy · scenarios · coverage targets |
+| `summary.md` | `$FEATURE_DIR` | Stage evidence and approvals |
+| Feature block `<feature-id>` | `docs/product/requirements/<capability>.md` | Requirements · acceptance criteria · out of scope (approved SHA-256 in the plan) |
+| `implementation-plan.md` | `$FEATURE_DIR` | Rule Applicability · approved design · file list |
+| `test-plan.md` | `$FEATURE_DIR` | Acceptance tests · scenarios · coverage targets · UI state verification |
 
 > [!IMPORTANT]
 > If any of these files are missing, **immediately flag it as a blocking gap** in the Stage 5 rubric (`Handoff readiness` category). Do not silently skip a missing baseline — absent plans mean the review has no ground truth to compare against.
@@ -52,7 +52,7 @@ After reading, summarise the key constraints and all ten rule decisions you will
 The test review report must include the Rule Applicability Test Reconciliation table.
 **INVOKE** the `android-test-review` skill via the Skill tool (name: `android-test-review`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Evaluate test coverage, assertions, and shared JSON scenario completeness. Do not stop after this stage — proceed immediately to Stage 3.
 
-- Test review report: `docs/current/test_review_v<N>.md`
+- Test review report: `$FEATURE_DIR/test_review.md`
 
 ---
 
@@ -60,14 +60,14 @@ The test review report must include the Rule Applicability Test Reconciliation t
 The code review report must include the Rule Applicability Reconciliation table.
 **INVOKE** the `android-code-review` skill via the Skill tool (name: `android-code-review`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Perform static analysis and identify logic/architectural flaws. Do not stop after this stage — proceed immediately to Stage 4.
 
-- Code review report: `docs/current/code_review_v<N>.md`
+- Code review report: `$FEATURE_DIR/code_review.md`
 
 ---
 
 ### Stage 4: Execute Runtime Verification
 - Execute local unit and integration tests to verify correctness: `./gradlew testDebugUnitTest`.
-- Run the declared instrumented Compose UI tests with `harness/scripts/run-android-instrumented-tests.sh` as documented by the `android-testing` skill. Use the Roborazzi gate for visual comparison.
-- **If the feature touches the UI**, **INVOKE** the `ui-verification` skill via the Skill tool (name: `ui-verification`) to verify the implemented UI matches the approved mockup/design. Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Compare runtime screenshots against the design assets in `docs/current/design/` and `docs/product/design_system.md`; any Critical or unresolved Major deviation (wrong layout, spacing, typography, color, clipped text) is a review finding. Record the outcome in `docs/current/ui_verification.json`.
+- Run the declared instrumented Compose UI tests with `harness/scripts/run-android-instrumented-tests.sh` as documented by the `android-testing` skill. Visual approval is the conformance review recorded in `ui_verification.json`, never a screenshot golden.
+- **If the feature touches the UI**, **INVOKE** the `ui-verification` skill via the Skill tool (name: `ui-verification`) to verify the implemented UI matches the approved mockup/design. Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism. Compare review captures against the approved design assets in `$FEATURE_DIR/design/` and `docs/product/design_system.md`; any Critical or unresolved Major deviation (wrong layout, spacing, typography, color, clipped text) is a review finding. Record the outcome in `$FEATURE_DIR/ui_verification.json`.
 
 ---
 
@@ -82,6 +82,9 @@ workflow retains the ad-hoc rule that the user decides whether findings are acce
 
 **⛔ STOP — present all review reports and the evaluator rubric to the user.**
 The user decides whether findings are acceptable or fixes are required.
+
+After the user's decision (and any tracker update it requires, followed by
+`bash harness/scripts/check-feature-lifecycle.sh`), finish the review. Then apply [artifact retention](../rules/artifact-retention.md): run `python3 harness/scripts/prune-harness-artifacts.py --apply`. It prunes only raw output of `Complete` workspaces and stale QA runs no open workspace cites, never the workspace under review. Report what it deleted; a prune failure is reported, not blocking.
 
 ---
 

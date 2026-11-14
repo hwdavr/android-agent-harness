@@ -27,7 +27,7 @@ grep -Fq '$ErrorActionPreference = "Continue"' "${BUNDLE%.sh}.ps1" \
 
 for required_file in \
   "$REPO_ROOT/AGENTS.md" \
-  "$REPO_ROOT/.agents/workflows/harness-generator.md" \
+  "$REPO_ROOT/.agents/workflows/sliced-lane-generator.md" \
   "$REPO_ROOT/.agents/workflows/harness-evaluation.md" \
   "$REPO_ROOT/.agents/workflows/harness-fix.md" \
   "$REPO_ROOT/.agents/skills/code-quality-fix/SKILL.md" \

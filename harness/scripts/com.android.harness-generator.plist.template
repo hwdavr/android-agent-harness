@@ -58,6 +58,9 @@
 
     <key>EnvironmentVariables</key>
     <dict>
+        <!-- The generator rotates this log (artifact-retention rule). Keep it equal to StandardOutPath. -->
+        <key>HARNESS_GENERATOR_LOG</key>
+        <string>__HOME__/Library/Logs/com.android.__PROJECT_SLUG__.harness-generator.log</string>
         <key>PATH</key>
         <string>__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>

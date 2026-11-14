@@ -1,11 +1,26 @@
 #!/usr/bin/env bash
-# Verifies required stage artifacts exist on disk before advancing a workflow stage.
+# Verifies required stage artifacts exist in a dated feature workspace before a workflow stage advances.
 #
-# Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> [artifact-directory] [feature-id]
-#   workflow: feature-delivery | bug-fixing | api-contract-update | harness-generator | harness-planning | create-ui-and-verify
-#   stage:    orient | requirement-analysis | ui-contract | ux-design | bug-reproduction | implementation-plan | testing | feature-specification | slice-planning | ui-verification
+# Usage: bash harness/scripts/check-stage-artifacts.sh <workflow> <stage> <workspace> [feature-id]
+#   workspace: .scratch/<YYYY-MM-DD>-<feature-id>/ (every lane; docs/current/ is retired)
+#   harness-planning:      specify | ui-contract | ux-design | analyze | implementation-plan
+#   single-lane-generator: testing | ui-verification
+#   bug-fixing:        bug-context | bug-reproduction | analyze | implementation-plan | ui-verification | testing
 #
-# Exits 0 if required artifacts are present, 1 otherwise.
+# analyze             = every planning check before the package is presented for approval
+#                       (block Status and recorded SHA-256 not yet required)
+# implementation-plan = the same checks after approval, including the approval fields
+#
+# implementation-plan.md owns how the code changes and the Rule Applicability matrix; test-plan.md
+# owns all test material (bug Reproduction Test and QA handoff, Spec Coverage Matrix, acceptance
+# test cases, Production Journey contracts, UI state verification).
+#   sliced-lane-generator: orient (requires the slice feature-id)
+#   api-contract-update maps to harness-planning for planning stages and to
+#   single-lane-generator for testing and ui-verification.
+#
+# The specification is the approved feature block(s) in docs/product/requirements/*.md plus the
+# implementation plan's Rule Applicability; compose-feature-spec.py assembles that view.
+# Exits 0 when the stage's artifacts are present and valid, 1 otherwise, 2 on usage errors.
 # Designed to run on macOS /bin/bash (Bash 3.2) — no mapfile, no arrays with set -u.
 
 set -e
@@ -15,14 +30,26 @@ PROJECT_ROOT="${HARNESS_PROJECT_ROOT:-$(pwd)}"
 
 WORKFLOW="${1:-}"
 STAGE="${2:-}"
-DOCS_DIR="${3:-docs/current}"
+DOCS_DIR="${3:-}"
 FEATURE_ID="${4:-}"
 
-if [ -z "$WORKFLOW" ] || [ -z "$STAGE" ]; then
-  echo "Usage: $0 <workflow> <stage> [artifact-directory] [feature-id]" >&2
-  echo "Workflows: feature-delivery, bug-fixing, api-contract-update, harness-generator, harness-planning, create-ui-and-verify" >&2
-  echo "Stages: orient, requirement-analysis, ui-contract, ux-design, bug-reproduction, implementation-plan, testing, feature-specification, slice-planning, ui-verification" >&2
+usage() {
+  echo "Usage: $0 <workflow> <stage> <workspace> [feature-id]" >&2
+  echo "  harness-planning:      specify | ui-contract | ux-design | analyze | implementation-plan" >&2
+  echo "  single-lane-generator: testing | ui-verification" >&2
+  echo "  bug-fixing:        bug-context | bug-reproduction | analyze | implementation-plan | ui-verification | testing" >&2
+  echo "  sliced-lane-generator: orient <workspace> <feature-id>" >&2
+}
+
+if [ -z "$WORKFLOW" ] || [ -z "$STAGE" ] || [ -z "$DOCS_DIR" ]; then
+  usage
   exit 2
+fi
+if [ "$WORKFLOW" = "api-contract-update" ]; then
+  case "$STAGE" in
+    testing|ui-verification) WORKFLOW="single-lane-generator" ;;
+    *) WORKFLOW="harness-planning" ;;
+  esac
 fi
 
 if ! PROJECT_ROOT="$(cd "$PROJECT_ROOT" 2>/dev/null && pwd -P)"; then
@@ -41,49 +68,161 @@ if [ ! -d "$DOCS_DIR" ]; then
 fi
 
 DOCS_DIR="$(cd "$DOCS_DIR" && pwd -P)"
-NESTED_HARNESS_ROOT="$PROJECT_ROOT/android-agent-harness"
-if [ -d "$NESTED_HARNESS_ROOT" ]; then
-  NESTED_HARNESS_ROOT="$(cd "$NESTED_HARNESS_ROOT" && pwd -P)"
-  case "$DOCS_DIR" in
-    "$NESTED_HARNESS_ROOT"|"$NESTED_HARNESS_ROOT"/*)
-      echo "FAIL: stage artifacts must be under the consuming project's root docs/ or .scratch/; $DOCS_DIR is owned by the shared android-agent-harness submodule." >&2
-      exit 1
-      ;;
-  esac
+for nested in "$PROJECT_ROOT/android-agent-harness" "$PROJECT_ROOT/.harness"; do
+  if [ -d "$nested" ]; then
+    nested="$(cd "$nested" && pwd -P)"
+    case "$DOCS_DIR" in
+      "$nested"|"$nested"/*)
+        echo "FAIL: stage artifacts must be under the consuming project's .scratch/; $DOCS_DIR is owned by the shared harness submodule." >&2
+        exit 1
+        ;;
+    esac
+  fi
+done
+
+WORKSPACE_NAME="$(basename "$DOCS_DIR")"
+case "$(basename "$(dirname "$DOCS_DIR")")" in
+  .scratch) ;;
+  *)
+    echo "FAIL: $DOCS_DIR is not a dated feature workspace under .scratch/ (docs/current/ is retired)." >&2
+    exit 1
+    ;;
+esac
+if ! printf '%s\n' "$WORKSPACE_NAME" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]*$'; then
+  echo "FAIL: workspace '$WORKSPACE_NAME' must be named <YYYY-MM-DD>-<feature-id> in lowercase kebab case." >&2
+  exit 1
 fi
 
-if [ "$WORKFLOW" = "harness-planning" ]; then
-  bash "$SCRIPT_DIR/check-feature-lifecycle.sh"
-fi
+PLAN="$DOCS_DIR/implementation-plan.md"
+TEST_PLAN="$DOCS_DIR/test-plan.md"
+SUMMARY="$DOCS_DIR/summary.md"
+COMPOSED_SPEC="$(mktemp "${TMPDIR:-/tmp}/composed-spec.XXXXXX")"
+trap 'rm -f "$COMPOSED_SPEC"' EXIT
 
 require_file() {
-  local pattern="$1"
+  local name="$1"
   local label="$2"
-  local found
-  if [[ "$pattern" == *"*"* ]]; then
-    found=$(latest_versioned_file "$pattern")
-  elif [ -f "$DOCS_DIR/$pattern" ]; then
-    found="$DOCS_DIR/$pattern"
-  fi
-  if [ -z "$found" ]; then
-    echo "FAIL: no file matching '$pattern' in $DOCS_DIR ($label)." >&2
+  if [ ! -f "$DOCS_DIR/$name" ]; then
+    echo "FAIL: no '$name' in $DOCS_DIR ($label)." >&2
     exit 1
   fi
-  echo "OK: $found"
+  echo "OK: $DOCS_DIR/$name"
 }
 
 warn_if_missing() {
-  local pattern="$1"
-  local label="$2"
-  local found
-  if [[ "$pattern" == *"*"* ]]; then
-    found=$(latest_versioned_file "$pattern")
-  elif [ -f "$DOCS_DIR/$pattern" ]; then
-    found="$DOCS_DIR/$pattern"
+  if [ ! -f "$DOCS_DIR/$1" ]; then
+    echo "WARN: no '$1' in $DOCS_DIR ($2) — recommended but not required here." >&2
   fi
-  if [ -z "$found" ]; then
-    echo "WARN: no file matching '$pattern' in $DOCS_DIR ($label) — recommended but not required for this workflow." >&2
+}
+
+require_tracker_row() {
+  (cd "$PROJECT_ROOT" && bash "$SCRIPT_DIR/check-feature-lifecycle.sh")
+  if ! grep -Fq ".scratch/$WORKSPACE_NAME" "$PROJECT_ROOT/docs/product/product.md" 2>/dev/null; then
+    echo "FAIL: docs/product/product.md Harness Feature Tracker has no row linking .scratch/$WORKSPACE_NAME." >&2
+    exit 1
   fi
+  echo "OK: tracker row links .scratch/$WORKSPACE_NAME"
+}
+
+compose_spec() {
+  if ! python3 "$SCRIPT_DIR/compose-feature-spec.py" "$DOCS_DIR" --project-root "$PROJECT_ROOT" --out "$COMPOSED_SPEC"; then
+    exit 1
+  fi
+}
+
+require_specified_blocks() {
+  local blocks
+  blocks="$(python3 "$SCRIPT_DIR/compose-feature-spec.py" "$DOCS_DIR" --project-root "$PROJECT_ROOT" --list-blocks)"
+  if [ -z "$blocks" ]; then
+    echo "FAIL: no feature block for $WORKSPACE_NAME under '## Planned changes' in docs/product/requirements/." >&2
+    exit 1
+  fi
+  if grep -Fq "[NEEDS CLARIFICATION" "$COMPOSED_SPEC"; then
+    echo "FAIL: the feature block still contains [NEEDS CLARIFICATION] markers; resolve them in the Clarifications log." >&2
+    exit 1
+  fi
+  if ! grep -Eq '^#{2,4}[[:space:]]+FR-[0-9]{3}' "$COMPOSED_SPEC"; then
+    echo "FAIL: the feature block defines no FR-### requirement." >&2
+    exit 1
+  fi
+  echo "OK: feature block(s) specified in: $(printf '%s' "$blocks" | tr '\n' ' ')"
+}
+
+spec_has_ui() {
+  sui_is_active "$1" || grep -q '^## Screen States' "$1"
+}
+
+require_ui_contract() {
+  local specification="$1"
+  shift
+  require_file "UI_contract.md" "UI state contract"
+  if [ ! -f "$PROJECT_ROOT/docs/product/design_system.md" ]; then
+    echo "FAIL: docs/product/design_system.md is required for UX design." >&2
+    exit 1
+  fi
+  if ! grep -Fq "docs/product/design_system.md" "$DOCS_DIR/UI_contract.md"; then
+    echo "FAIL: $DOCS_DIR/UI_contract.md must reference docs/product/design_system.md." >&2
+    exit 1
+  fi
+  python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" \
+    --design-system "$PROJECT_ROOT/docs/product/design_system.md" "$@"
+}
+
+require_plan_rules() {
+  require_file "implementation-plan.md" "implementation plan with the canonical Rule Applicability matrix"
+  require_rule_applicability "$PLAN" "$1"
+}
+
+require_test_plan_mapping() {
+  require_canonical_rule_reference "$TEST_PLAN" "$PLAN" "$1"
+  require_required_rule_mappings "$TEST_PLAN" "$PLAN" "$1"
+}
+
+plan_lane() {
+  sed -n -E 's/^\*\*Lane\*\*:[[:space:]]*`?(single|sliced)`?.*/\1/p' "$PLAN" | head -n 1
+}
+
+require_planning_contracts() {
+  if [ "$STAGE" = "analyze" ]; then
+    bash "$SCRIPT_DIR/check-spec-plan-consistency.sh" "$DOCS_DIR" --project-root "$PROJECT_ROOT" --pre-approval
+  else
+    bash "$SCRIPT_DIR/check-spec-plan-consistency.sh" "$DOCS_DIR" --project-root "$PROJECT_ROOT"
+  fi
+  if [ "$(plan_lane)" = "sliced" ]; then
+    # Slice contracts exist only in the sliced lane (feature_list.json, tasks.md, per-story tests).
+    bash "$SCRIPT_DIR/check-platform-evidence.sh" "$DOCS_DIR" --planning
+    bash "$SCRIPT_DIR/check-journey-planning-contract.sh" "$DOCS_DIR"
+    bash "$SCRIPT_DIR/check-acceptance-test-traceability.sh" "$DOCS_DIR" --planning
+  fi
+  if spec_has_ui "$COMPOSED_SPEC"; then
+    require_ui_contract "$COMPOSED_SPEC" --plan "$PLAN" --test-plan "$TEST_PLAN"
+    bash "$SCRIPT_DIR/check-visual-evidence-contract.sh" "$DOCS_DIR" --planning
+  fi
+}
+
+require_testing_evidence() {
+  require_file "summary.md" "stage evidence record"
+  require_file "test-plan.md" "test plan"
+  require_test_plan_mapping "$1"
+  if sui_is_active "$COMPOSED_SPEC" || ime_is_active "$COMPOSED_SPEC"; then
+    require_file "UI_contract.md" "per-state UI and IME design contract"
+    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$COMPOSED_SPEC" \
+      --test-plan "$TEST_PLAN" --runtime --project-root "$PROJECT_ROOT"
+  fi
+  nav_row="$(grep -E "^[[:space:]]*\|[[:space:]]*NAV[[:space:]]*\|" "$PLAN" | head -n 1 || true)"
+  case "$nav_row" in
+    *"| Required |"*) require_production_journey "$TEST_PLAN" ;;
+  esac
+}
+
+require_ui_verification() {
+  require_file "UI_contract.md" "per-state UI design contract"
+  require_file "ui_verification.json" "UI conformance review report"
+  bash "$SCRIPT_DIR/check-ui-verification-artifact.sh" "$DOCS_DIR"
+  python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$COMPOSED_SPEC" \
+    --design-system "$PROJECT_ROOT/docs/product/design_system.md" \
+    --plan "$PLAN" --report "$DOCS_DIR/ui_verification.json" --test-plan "$TEST_PLAN" \
+    --runtime --project-root "$PROJECT_ROOT"
 }
 
 require_rule_applicability() {
@@ -153,55 +292,10 @@ require_required_rule_mappings() {
   echo "OK: $artifact maps every required Rule Applicability row."
 }
 
-require_rule_applicability_mapping() {
-  local artifact="$1"
-  local specification="$2"
-  local label="$3"
-
-  require_canonical_rule_reference "$artifact" "$specification" "$label"
-  require_required_rule_mappings "$artifact" "$specification" "$label"
-}
-
 sui_is_active() {
   local specification="$1"
   grep -E '^[[:space:]]*\|[[:space:]]*SUI[[:space:]]*\|' "$specification" |
     grep -Eq '\|[[:space:]]*(Required|Exception — approved by)[^|]*\|'
-}
-
-spec_has_ui() {
-  sui_is_active "$1" || grep -q '^## Screen States' "$1"
-}
-
-require_ui_contract() {
-  local specification="$1"
-  shift
-  require_file "UI_contract.md" "UI state contract"
-  if [ ! -f "$PROJECT_ROOT/docs/product/design_system.md" ]; then
-    echo "FAIL: docs/product/design_system.md is required for UX design." >&2
-    exit 1
-  fi
-  if ! grep -Fq "docs/product/design_system.md" "$DOCS_DIR/UI_contract.md"; then
-    echo "FAIL: $DOCS_DIR/UI_contract.md must reference docs/product/design_system.md." >&2
-    exit 1
-  fi
-  if [ -n "$specification" ]; then
-    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" "$@"
-  else
-    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" "$@"
-  fi
-}
-
-require_harness_ux_design() {
-  require_ui_contract "$DOCS_DIR/spec.md"
-  require_file "visual_evidence/visual-target.json" "UX visual target manifest"
-  local manifest="$DOCS_DIR/visual_evidence/visual-target.json"
-  local state
-  python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --target-manifest "$manifest"
-  while IFS= read -r state; do
-    bash "$SCRIPT_DIR/visual-target-prompt.sh" --target "$manifest" --state "$state" >/dev/null
-  done <<EOF
-$(jq -r '.states | keys[]' "$manifest")
-EOF
 }
 
 ime_is_active() {
@@ -347,305 +441,80 @@ require_production_journey() {
     --production-entry "$production_entry"
 }
 
-latest_versioned_file() {
-  local pattern="$1"
-  find "$DOCS_DIR" -maxdepth 1 -name "$pattern" -print 2>/dev/null |
-    while IFS= read -r file; do
-      version=$(basename "$file" | sed -n 's/.*_v\([0-9][0-9]*\)\.md/\1/p')
-      if [ -n "$version" ]; then
-        printf '%s\t%s\n' "$version" "$file"
-      fi
-    done |
-    sort -n |
-    tail -n 1 |
-    cut -f2-
-}
-
 case "$WORKFLOW/$STAGE" in
-  harness-generator/orient)
+  sliced-lane-generator/orient)
     if [ -z "$FEATURE_ID" ]; then
-      echo "FAIL: harness-generator/orient requires the selected feature id to validate its summary." >&2
+      echo "FAIL: sliced-lane-generator/orient requires the selected slice id to validate its summary." >&2
       exit 2
     fi
-    require_file "summary_${FEATURE_ID}.md" "stage progress tracker"
+    require_file "summary_${FEATURE_ID}.md" "slice evidence record"
     ;;
-  feature-delivery/requirement-analysis)
-    require_file "summary_v*.md" "stage progress tracker"
-    require_file "spec_v*.md" "requirement and impact specification"
-    require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "feature-delivery requirement analysis"
-    ;;
-  feature-delivery/ui-contract|feature-delivery/ux-design)
-    require_file "spec_v*.md" "clarified requirement specification"
-    specification=$(latest_versioned_file "spec_v*.md")
-    require_rule_applicability "$specification" "feature-delivery UX input"
-    if spec_has_ui "$specification"; then
-      if [ "$STAGE" = "ui-contract" ]; then
-        require_ui_contract "$specification" --inventory
-      else
-        require_ui_contract "$specification"
-      fi
-    else
-      echo "N/A: the clarified specification has no UI scope."
-    fi
-    ;;
-  feature-delivery/implementation-plan)
-    require_file "spec_v*.md" "canonical requirement/impact/design spec"
-    require_file "implementation_plan_v*.md" "implementation plan"
-    require_file "test_plan_v*.md" "test plan"
-    specification=$(latest_versioned_file "spec_v*.md")
-    require_rule_applicability_mapping "$(latest_versioned_file "implementation_plan_v*.md")" "$specification" "feature-delivery implementation plan"
-    require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$specification" "feature-delivery test plan"
-    if spec_has_ui "$specification"; then
-      require_ui_contract "$specification" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --test-plan "$(latest_versioned_file "test_plan_v*.md")"
-    fi
-    ;;
-  bug-fixing/requirement-analysis)
-    require_file "summary_v*.md" "stage progress tracker"
-    require_file "spec_v*.md" "bug context/root cause spec"
-    require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "bug-fixing requirement analysis"
-    python3 "$SCRIPT_DIR/read-qa-bug-context.py" --project-root "$PROJECT_ROOT" \
-      --spec "$(latest_versioned_file "spec_v*.md")" --check
-    ;;
-  bug-fixing/bug-reproduction)
-    require_file "summary_v*.md" "stage progress tracker"
-    require_file "spec_v*.md" "bug context/root cause spec"
-    require_bug_reproduction_evidence \
-      "$(latest_versioned_file "spec_v*.md")" \
-      "$(latest_versioned_file "summary_v*.md")"
-    ;;
-  bug-fixing/implementation-plan)
-    require_file "spec_v*.md" "canonical bug context/root cause spec"
-    require_file "implementation_plan_v*.md" "fix plan"
-    warn_if_missing "test_plan_v*.md" "test plan (required by feature-delivery, optional for bug-fixing)"
-    specification=$(latest_versioned_file "spec_v*.md")
-    require_rule_applicability_mapping "$(latest_versioned_file "implementation_plan_v*.md")" "$specification" "bug-fixing implementation plan"
-    if [ -n "$(latest_versioned_file "test_plan_v*.md")" ]; then
-      require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$specification" "bug-fixing test plan"
-    fi
-    if sui_is_active "$specification" || ime_is_active "$specification"; then
-      require_file "UI_contract.md" "per-state UI and IME design contract"
-      test_plan_artifact=$(latest_versioned_file "test_plan_v*.md")
-      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" \
-        --plan "$(latest_versioned_file "implementation_plan_v*.md")" \
-        --test-plan "${test_plan_artifact:-$DOCS_DIR/test_plan_v1.md}"
-    fi
-    ;;
-  bug-fixing/testing)
-    require_file "summary_v*.md" "stage progress tracker"
-    require_file "spec_v*.md" "canonical bug context/root cause spec"
-    require_file "test_plan_v*.md" "test plan"
-    require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$(latest_versioned_file "spec_v*.md")" "bug-fixing testing"
-    test_plan_artifact="$(latest_versioned_file "test_plan_v*.md")"
-    specification="$(latest_versioned_file "spec_v*.md")"
-    if sui_is_active "$specification" || ime_is_active "$specification"; then
-      require_file "UI_contract.md" "per-state UI and IME design contract"
-      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" \
-        --test-plan "$test_plan_artifact" --runtime --project-root "$PROJECT_ROOT"
-    fi
-    nav_row="$(grep -E "^[[:space:]]*\|[[:space:]]*NAV[[:space:]]*\|" "$test_plan_artifact" | head -n 1 || true)"
-    case "$nav_row" in
-      *"| Required |"*)
-        require_production_journey "$test_plan_artifact"
-        ;;
-    esac
-    ;;
-  feature-delivery/testing)
-    require_file "summary_v*.md" "stage progress tracker"
-    require_file "spec_v*.md" "canonical requirement/impact specification"
-    require_file "test_plan_v*.md" "approved feature test plan"
-    test_plan_artifact="$(latest_versioned_file "test_plan_v*.md")"
-    specification="$(latest_versioned_file "spec_v*.md")"
-    require_rule_applicability_mapping "$test_plan_artifact" "$specification" "feature-delivery testing"
-    if sui_is_active "$specification" || ime_is_active "$specification"; then
-      require_file "UI_contract.md" "per-state UI and IME design contract"
-      python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --spec "$specification" \
-        --test-plan "$test_plan_artifact" --runtime --project-root "$PROJECT_ROOT"
-    fi
-    nav_row="$(grep -E "^[[:space:]]*\|[[:space:]]*NAV[[:space:]]*\|" "$specification" | head -n 1 || true)"
-    case "$nav_row" in
-      *"| Required |"*)
-        require_production_journey "$test_plan_artifact"
-        ;;
-    esac
-    ;;
-  api-contract-update/requirement-analysis)
-    require_file "summary_v*.md" "stage progress tracker"
-    require_file "spec_v*.md" "requirement/impact/design spec"
-    require_rule_applicability "$(latest_versioned_file "spec_v*.md")" "api-contract-update requirement analysis"
-    ;;
-  api-contract-update/implementation-plan)
-    require_file "spec_v*.md" "canonical requirement/impact/design spec"
-    require_file "implementation_plan_v*.md" "implementation plan"
-    require_file "test_plan_v*.md" "test plan"
-    specification=$(latest_versioned_file "spec_v*.md")
-    require_rule_applicability_mapping "$(latest_versioned_file "implementation_plan_v*.md")" "$specification" "api-contract-update implementation plan"
-    require_rule_applicability_mapping "$(latest_versioned_file "test_plan_v*.md")" "$specification" "api-contract-update test plan"
-    ;;
-  harness-planning/feature-specification)
-    require_file "spec.md" "feature specification"
-    require_rule_applicability "$DOCS_DIR/spec.md" "harness-planning feature specification"
+  harness-planning/specify)
+    require_tracker_row
+    require_file "summary.md" "stage evidence record"
+    compose_spec
+    require_specified_blocks
     ;;
   harness-planning/ui-contract|harness-planning/ux-design)
-    require_file "spec.md" "clarified feature specification"
-    require_rule_applicability "$DOCS_DIR/spec.md" "harness-planning UX input"
-    if spec_has_ui "$DOCS_DIR/spec.md"; then
+    compose_spec
+    require_specified_blocks
+    if spec_has_ui "$COMPOSED_SPEC"; then
       if [ "$STAGE" = "ui-contract" ]; then
-        require_ui_contract "$DOCS_DIR/spec.md" --inventory
+        require_ui_contract "$COMPOSED_SPEC" --inventory
       else
-        require_harness_ux_design
+        require_ui_contract "$COMPOSED_SPEC"
       fi
     else
-      echo "N/A: the clarified specification has no UI scope."
+      echo "N/A: the feature block has no Screen States (no UI scope)."
     fi
     ;;
-  harness-planning/slice-planning)
-    require_file "feature_list.json" "feature list"
-    require_file "sprint-contract.md" "sprint contract"
-    require_file "progress.md" "progress tracker"
-    if jq -e '.platform_validation.required == true' "$DOCS_DIR/feature_list.json" >/dev/null 2>&1; then
-      require_file "platform-capability-matrix.md" "platform capability matrix (platform-bound features only)"
+  harness-planning/analyze|bug-fixing/analyze|harness-planning/implementation-plan|bug-fixing/implementation-plan)
+    require_tracker_row
+    require_plan_rules "$WORKFLOW implementation plan"
+    compose_spec
+    if [ "$WORKFLOW" = "harness-planning" ]; then
+      require_specified_blocks
     fi
-    if { [ -f "$DOCS_DIR/spec.md" ] && spec_has_ui "$DOCS_DIR/spec.md"; } ||
-      jq -e '.features | any(.affects_ui == true)' "$DOCS_DIR/feature_list.json" >/dev/null; then
-      require_harness_ux_design
-    fi
-    if ! grep -q "Acceptance Test Cases" "$DOCS_DIR/sprint-contract.md"; then
-      echo "FAIL: sprint contract has no 'Acceptance Test Cases' matrix." >&2
-      exit 1
-    fi
-    if ! grep -q "| Test ID | Covers AC | Test layer |" "$DOCS_DIR/sprint-contract.md"; then
-      echo "FAIL: sprint contract acceptance tests must use the required traceability table." >&2
-      exit 1
-    fi
-    bash "$SCRIPT_DIR/check-acceptance-test-traceability.sh" "$DOCS_DIR" --planning
-    bash "$SCRIPT_DIR/check-journey-planning-contract.sh" "$DOCS_DIR"
-    if ! grep -q "## Spec Coverage Matrix" "$DOCS_DIR/sprint-contract.md"; then
-      echo "FAIL: sprint contract has no required Spec Coverage Matrix." >&2
-      exit 1
-    fi
-    if [ -f "$DOCS_DIR/spec.md" ]; then
-      coverage_matrix=$(awk '
-        /^## Spec Coverage Matrix/ { in_matrix = 1; next }
-        in_matrix && /^## / { exit }
-        in_matrix { print }
-      ' "$DOCS_DIR/sprint-contract.md")
-      missing_requirements=""
-      for requirement_id in $(grep -oE 'FR-[0-9]+' "$DOCS_DIR/spec.md" | sort -u); do
-        if ! printf '%s\n' "$coverage_matrix" | grep -q "$requirement_id"; then
-          missing_requirements="$missing_requirements $requirement_id"
-        fi
-      done
-      for requirement_id in $(grep -oE 'AC-[0-9]+' "$DOCS_DIR/spec.md" | sort -u); do
-        if ! printf '%s\n' "$coverage_matrix" | grep -q "$requirement_id"; then
-          missing_requirements="$missing_requirements $requirement_id"
-        fi
-      done
-      if [ -n "$missing_requirements" ]; then
-        echo "FAIL: sprint contract is missing source-spec coverage for:$missing_requirements" >&2
-        exit 1
-      fi
-    fi
-    if ! jq -e '
-      .features | type == "array" and
-      all(
-        has("affects_ui") and (.affects_ui | type == "boolean") and
-        has("requires_visual_verification") and
-        (.requires_visual_verification | type == "boolean")
-      )
-    ' "$DOCS_DIR/feature_list.json" >/dev/null; then
-      echo "FAIL: every feature must declare boolean affects_ui and requires_visual_verification fields." >&2
-      exit 1
-    fi
-    bash "$SCRIPT_DIR/check-platform-evidence.sh" "$DOCS_DIR" --planning
-    ui_feature_count=$(jq '[.features[] | select(.affects_ui)] | length' "$DOCS_DIR/feature_list.json")
-    visual_owner_count=$(jq '[.features[] | select(.requires_visual_verification)] | length' "$DOCS_DIR/feature_list.json")
-    if [ "$ui_feature_count" -eq 0 ] && [ "$visual_owner_count" -ne 0 ]; then
-      echo "FAIL: a non-UI feature plan must not declare a visual-verification owner." >&2
-      exit 1
-    fi
-    if [ "$ui_feature_count" -gt 0 ] && [ "$visual_owner_count" -ne 1 ]; then
-      echo "FAIL: a UI feature plan must declare exactly one final visual-verification owner." >&2
-      exit 1
-    fi
-    if [ "$visual_owner_count" -eq 1 ]; then
-      visual_owner=$(jq -r '.features[] | select(.requires_visual_verification) | .id' "$DOCS_DIR/feature_list.json")
-      visual_owner_is_ui=$(jq -r '.features[] | select(.requires_visual_verification) | .affects_ui' "$DOCS_DIR/feature_list.json")
-      last_feature_id=$(jq -r '.features | max_by(.priority) | .id' "$DOCS_DIR/feature_list.json")
-      if [ "$visual_owner_is_ui" != "true" ]; then
-        echo "FAIL: visual-verification owner $visual_owner must affect UI." >&2
-        exit 1
-      fi
-      if [ "$visual_owner" != "$last_feature_id" ]; then
-        echo "FAIL: visual-verification owner $visual_owner must be the final priority slice $last_feature_id." >&2
-        exit 1
-      fi
-    fi
-    while IFS='|' read -r feature_id requires_visual; do
-      story_block=$(awk -v heading="### $feature_id:" '
-        index($0, heading) == 1 { in_story = 1; next }
-        in_story && /^### US-[0-9]+:/ { exit }
-        in_story { print }
-      ' "$DOCS_DIR/sprint-contract.md")
-      visual_row_count=$(printf '%s\n' "$story_block" | grep -c "| TC-${feature_id}-VIS" || true)
-      if [ "$requires_visual" = "true" ] && [ "$visual_row_count" -eq 0 ]; then
-        echo "FAIL: visual-verification owner $feature_id has no TC-${feature_id}-VIS row." >&2
-        exit 1
-      fi
-      if [ "$requires_visual" = "false" ] && [ "$visual_row_count" -ne 0 ]; then
-        echo "FAIL: intermediate slice $feature_id declares TC-${feature_id}-VIS rows; visual verification belongs only to the final owner." >&2
-        exit 1
-      fi
-    done <<EOF
-$(jq -r '.features[] | "\(.id)|\(.requires_visual_verification)"' "$DOCS_DIR/feature_list.json")
-EOF
-    bash "$SCRIPT_DIR/check-visual-evidence-contract.sh" "$DOCS_DIR" --planning
+    require_file "test-plan.md" "test plan"
+    require_test_plan_mapping "$WORKFLOW test plan"
+    require_planning_contracts
     ;;
-  create-ui-and-verify/ui-contract)
-    require_ui_contract "" --inventory
+  single-lane-generator/ui-verification|bug-fixing/ui-verification)
+    require_file "implementation-plan.md" "implementation plan (Rule Applicability validated at the implementation-plan stage)"
+    compose_spec
+    if spec_has_ui "$COMPOSED_SPEC"; then
+      require_ui_verification
+    else
+      echo "N/A: no UI scope; UI verification does not apply."
+    fi
     ;;
-  create-ui-and-verify/reference-design)
-    require_file "UI_contract.md" "per-state UI design contract"
-    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md"
+  single-lane-generator/testing|bug-fixing/testing)
+    require_file "implementation-plan.md" "implementation plan (Rule Applicability validated at the implementation-plan stage)"
+    compose_spec
+    require_testing_evidence "$WORKFLOW testing"
     ;;
-  create-ui-and-verify/implementation-plan)
-    require_file "UI_contract.md" "per-state UI design contract"
-    require_file "implementation_plan_v*.md" "approved UI implementation plan"
-    test_plan_artifact=$(latest_versioned_file "test_plan_v*.md")
-    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")" \
-      --test-plan "${test_plan_artifact:-$DOCS_DIR/test_plan_v1.md}"
+  bug-fixing/bug-context)
+    require_tracker_row
+    require_file "summary.md" "stage evidence record"
+    require_plan_rules "bug-fixing bug context"
+    if ! grep -Eq '^## Root Cause & Reproduction' "$PLAN"; then
+      echo "FAIL: $PLAN is missing '## Root Cause & Reproduction' (bug context)." >&2
+      exit 1
+    fi
+    compose_spec
+    if [ -f "$TEST_PLAN" ]; then
+      python3 "$SCRIPT_DIR/read-qa-bug-context.py" --project-root "$PROJECT_ROOT" --spec "$TEST_PLAN" --check
+    fi
     ;;
-  create-ui-and-verify/ui-verification)
-    require_file "UI_contract.md" "per-state UI design contract"
-    require_file "implementation_plan_v*.md" "approved UI implementation plan"
-    require_file "ui_verification.json" "UI verification report"
-    bash "$SCRIPT_DIR/check-ui-verification-artifact.sh" "$DOCS_DIR"
-    test_plan_artifact=$(latest_versioned_file "test_plan_v*.md")
-    python3 "$SCRIPT_DIR/check-ui-contract.py" "$DOCS_DIR/UI_contract.md" --plan "$(latest_versioned_file "implementation_plan_v*.md")" --report "$DOCS_DIR/ui_verification.json" \
-      --test-plan "${test_plan_artifact:-$DOCS_DIR/test_plan_v1.md}" --runtime --project-root "$PROJECT_ROOT"
+  bug-fixing/bug-reproduction)
+    require_file "summary.md" "stage evidence record"
+    require_file "implementation-plan.md" "bug context (Root Cause & Reproduction)"
+    require_file "test-plan.md" "test plan with the Reproduction Test"
+    require_bug_reproduction_evidence "$TEST_PLAN" "$SUMMARY"
     ;;
   *)
     echo "FAIL: unknown workflow/stage '$WORKFLOW/$STAGE'." >&2
-    echo "Known workflow/stage pairs:" >&2
-    echo "  harness-generator/orient <artifact-directory> <feature-id>" >&2
-    echo "  feature-delivery/requirement-analysis" >&2
-    echo "  feature-delivery/ui-contract" >&2
-    echo "  feature-delivery/ux-design" >&2
-    echo "  feature-delivery/implementation-plan" >&2
-    echo "  feature-delivery/testing" >&2
-    echo "  bug-fixing/requirement-analysis" >&2
-    echo "  bug-fixing/bug-reproduction" >&2
-    echo "  bug-fixing/implementation-plan" >&2
-    echo "  bug-fixing/testing" >&2
-    echo "  api-contract-update/requirement-analysis" >&2
-    echo "  api-contract-update/implementation-plan" >&2
-    echo "  harness-planning/feature-specification" >&2
-    echo "  harness-planning/ui-contract" >&2
-    echo "  harness-planning/ux-design" >&2
-    echo "  harness-planning/slice-planning" >&2
-    echo "  create-ui-and-verify/ui-verification" >&2
-    echo "  create-ui-and-verify/reference-design" >&2
-    echo "  create-ui-and-verify/ui-contract" >&2
-    echo "  create-ui-and-verify/implementation-plan" >&2
+    usage
     exit 2
     ;;
 esac

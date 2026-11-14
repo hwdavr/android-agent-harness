@@ -116,21 +116,25 @@ expect_failure "must render a production graph through setContent" \
     --test-method linkSurvivesReturn \
     --production-entry AppNavigationHost
 
-mkdir -p "$fixture_root/docs/current"
-printf '%s\n' '# Summary' > "$fixture_root/docs/current/summary_v1.md"
+mkdir -p "$fixture_root/.scratch/2026-11-09-journey-fix"
+printf '%s\n' '# Summary' > "$fixture_root/.scratch/2026-11-09-journey-fix/summary.md"
 printf '%s\n' \
-  '# Specification' \
+  '# Implementation Plan' \
+  '' \
+  '## Root Cause & Reproduction' \
+  '' \
+  '- **Root cause**: back stack loses the restored note.' \
   '' \
   '## Rule Applicability' \
   '' \
   '| Rule ID | Rule document | Decision | Evidence |' \
   '|---|---|---|---|' \
   '| NAV | navigation-rules.md | Required | production journey |' \
-  > "$fixture_root/docs/current/spec_v1.md"
+  > "$fixture_root/.scratch/2026-11-09-journey-fix/implementation-plan.md"
 printf '%s\n' \
   '# Test Plan' \
   '' \
-  'Canonical decisions: [`spec_v1.md#rule-applicability`](spec_v1.md#rule-applicability).' \
+  'Canonical decisions: [`implementation-plan.md#rule-applicability`](implementation-plan.md#rule-applicability).' \
   '' \
   '## Rule Applicability Test Reconciliation' \
   '' \
@@ -146,15 +150,15 @@ printf '%s\n' \
   '- User actions: open the link picker and select the target note' \
   '- Return boundary: selecting the target pops the picker destination' \
   '- Post-return assertion: the linked label is visible in the editor' \
-  > "$fixture_root/docs/current/test_plan_v1.md"
+  > "$fixture_root/.scratch/2026-11-09-journey-fix/test-plan.md"
 
-(cd "$fixture_root" && HARNESS_PROJECT_ROOT="$fixture_root" bash "$STAGE_GATE" bug-fixing testing docs/current)
+(cd "$fixture_root" && HARNESS_PROJECT_ROOT="$fixture_root" bash "$STAGE_GATE" bug-fixing testing .scratch/2026-11-09-journey-fix)
 
 sed '/^## Production Journey Boundary/,$d' \
-  "$fixture_root/docs/current/test_plan_v1.md" \
-  > "$fixture_root/docs/current/test_plan_v1.tmp"
-mv "$fixture_root/docs/current/test_plan_v1.tmp" "$fixture_root/docs/current/test_plan_v1.md"
+  "$fixture_root/.scratch/2026-11-09-journey-fix/test-plan.md" \
+  > "$fixture_root/.scratch/2026-11-09-journey-fix/test-plan.tmp"
+mv "$fixture_root/.scratch/2026-11-09-journey-fix/test-plan.tmp" "$fixture_root/.scratch/2026-11-09-journey-fix/test-plan.md"
 expect_failure "requires a '## Production Journey Boundary' section" \
-  bash -c "cd '$fixture_root' && HARNESS_PROJECT_ROOT='$fixture_root' bash '$STAGE_GATE' bug-fixing testing docs/current"
+  bash -c "cd '$fixture_root' && HARNESS_PROJECT_ROOT='$fixture_root' bash '$STAGE_GATE' bug-fixing testing .scratch/2026-11-09-journey-fix"
 
 echo "PASS: production journey contract accepts real entry/gesture/return evidence and rejects direct-ViewModel false passes."

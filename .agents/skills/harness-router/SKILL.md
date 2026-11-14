@@ -1,6 +1,6 @@
 ---
 name: harness-router
-description: Route work in this Android notes project to its existing harness workflow or direct skill. Use for fixes, enhancements, UI changes, requirements, reviews, QA, regression checks, harness maintenance, or requests to resume work or choose the next step. Apply the consuming project's AGENTS.md and on-disk approval evidence; leave stage execution to the selected workflow. Skip unrelated general questions.
+description: Route work in this Android notes project (fixes, enhancements, UI changes, reviews, QA, harness upkeep, resuming, next step) to its harness workflow or direct skill. Skip general questions.
 ---
 
 # Harness Router
@@ -21,20 +21,20 @@ stage order, role assignments, gates, approval stops, and completion criteria.
   `docs/product/requirements/` to understand intent. Follow
   `.agents/rules/product-documentation.md` for requirement changes.
 - For new features, enhancements, or changed scope, complete the scope check below
-  before choosing an ad-hoc or complex route. A clearly worded outcome alone is
+  before choosing between the direct UI lane, Feature Delivery, and Bug Fixing. A clearly worded outcome alone is
   insufficient. A routing decision does not grant implementation or acceptance approval.
 
 ## Check for a continuation
 
-When the request resumes earlier work or asks what comes next, inspect the relevant
-`docs/current/summary_v<N>.md` and the Harness Feature Tracker in
-`docs/product/product.md`. Follow the workspace linked by the tracker, then inspect
-its `feature_list.json`, `sprint-contract.md`, relevant summaries, and review reports.
+When the request resumes earlier work or asks what comes next, inspect the Harness Feature
+Tracker in `docs/product/product.md`. Follow the workspace linked by the tracker, then inspect
+its `summary.md`, `implementation-plan.md` (lane and Status), and — sliced lane —
+`feature_list.json`, `tasks.md`, slice summaries, and review reports.
 Load only the candidate work needed to identify the target.
 
 - Continue the work clearly identified by the request and evidence. Ask which target
   the user means only when several candidates remain plausible.
-- Before selecting a complex feature, run
+- Before selecting tracked work, run
   `bash harness/scripts/check-feature-lifecycle.sh`. Failure blocks selection;
   report the inconsistency and use the harness-maintenance route for diagnosis.
 - Use recorded status and approvals, rather than folder location, timestamps, or
@@ -73,21 +73,22 @@ While awaiting answers, continue relevant read-only investigation. Report
 "Route: undecided — scope clarification" and name the missing decision. Do not
 create a feature workspace, transition the tracker, or launch delivery on a guessed
 classification. If the user wants help defining the scope, select exploration or
-Harness Planning explicitly for that purpose; planning resolves the unknowns.
+Feature Delivery's Specify & Clarify stage explicitly for that purpose; it resolves the unknowns.
 
 After the scope check, choose using the evidence:
 
 | Route | Evidence supporting the choice |
 |---|---|
-| Ad-hoc feature: Feature Delivery | The bounded outcome can be specified, implemented, and verified as one cohesive delivery. Important dependencies are understood; separate slice ordering is unnecessary. |
-| Complex feature: Harness Planning | The scope needs multiple independently deliverable behaviors, dependency ordering, or coordinated changes across capabilities; or the user requests structured planning to resolve substantial scope or boundary questions. |
+| Direct UI lane: `android-ui-layer` | Appearance only (spacing, color, icon, copy wording, reorder, design-system alignment) on an existing screen; no new state, interaction, navigation, data, or API; an approved design or the design system already defines the target. |
+| Feature Delivery | Any new or changed behavior. Its Specify stage fixes the lane: one deliverable change → single lane; two or more independently deliverable stories → sliced lane (harness generator). The router does not pre-decide the lane. |
+| Bug Fixing | Observed behavior contradicts an existing requirement or expectation. |
 
 Do not classify by prompt length, requirement counts, an assumed one-session
 duration, or the user's word "small" alone. A new screen or API is a signal to
 investigate, not an automatic size decision. State the selected route, the concrete
 scope evidence supporting it, and relevant exclusions. If all facts are already
 established, proceed without a redundant clarification or route-confirmation pause.
-Workflow-level requirement analysis still follows; this check only chooses its owner.
+Workflow-level specification still follows; this check only chooses its owner.
 
 ## Select the entry point
 
@@ -98,23 +99,24 @@ requires a handoff. Apply the root `AGENTS.md` if this map becomes stale.
 | Intent | Workflow or direct skill to read in full |
 |---|---|
 | App bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
-| New feature or bounded enhancement | `.agents/workflows/feature-delivery.md` |
-| Small UI-only adjustment to an existing screen, when the root `AGENTS.md` permits the direct lane | `.agents/skills/android-ui-layer/SKILL.md`; retain its spec and approved-plan prerequisites |
-| UI implementation from a screenshot/mockup, or UI work outside the permitted direct lane | `.agents/workflows/create-ui-and-verify.md` |
-| Complex feature requiring clarification and independently deliverable vertical slices | `.agents/workflows/harness-planning.md` |
-| Implement the next slice of an approved complex feature | `.agents/workflows/harness-generator.md` |
-| Resolve complex-feature evaluator findings; tracker status `To be fixed` | `.agents/workflows/harness-fix.md` |
-| Independent review of an ad-hoc change | `.agents/workflows/feature-review.md` |
-| Independent review of an implemented complex feature | `.agents/workflows/harness-evaluation.md` |
+| New feature or bounded enhancement | `.agents/workflows/harness-planning.md` |
+| Appearance-only adjustment to an existing screen that passes the direct-lane entry check | `.agents/skills/android-ui-layer/SKILL.md` (direct lane; ends with the `ui-verification` conformance review) |
+| UI implementation from a screenshot/mockup, or any UI change with new states or behavior | `.agents/workflows/harness-planning.md` (the mockup is the UX Design input) |
+| Large feature with independently deliverable stories | `.agents/workflows/harness-planning.md` (Specify selects the sliced lane) |
+| Implement an approved single-lane feature | `.agents/workflows/single-lane-generator.md` |
+| Implement the next slice of an approved sliced-lane feature | `.agents/workflows/sliced-lane-generator.md` |
+| Resolve sliced-lane evaluator findings; tracker status `To be fixed` | `.agents/workflows/harness-fix.md` |
+| Independent review of a single-lane change | `.agents/workflows/feature-review.md` |
+| Independent review of an implemented sliced-lane slice | `.agents/workflows/harness-evaluation.md` |
 | Plan and execute post-merge feature acceptance | `.agents/workflows/feature-acceptance.md` |
 | Explore an installed mobile app or run temporary QA scenarios/captures | `.agents/skills/exploratory-qa/SKILL.md`; use `.agents/skills/dogfood/SKILL.md` for UI-only exploration |
 | Harness instructions, gates, templates, fixtures, or evidence repair | `.agents/skills/harness-retrospective/SKILL.md` |
 | Product documentation or requirements edits without implementation | `.agents/skills/documentation-and-adrs/SKILL.md` and `.agents/rules/product-documentation.md`; return to the owning planning stage if an approved change contract is affected |
 | Run existing checks without changing source | Use the named checks from `AGENTS.md` or the active contract; for static-analysis checks consult `.agents/skills/android-code-quality-checks/SKILL.md` |
-| Explore an idea or compare options before committing to delivery | Clarify the outcome and discuss options; start `harness-planning.md` only when structured complex-feature planning is requested |
+| Explore an idea or compare options before committing to delivery | Clarify the outcome and discuss options; start Feature Delivery only when the user wants to proceed |
 
 Treat "small" as a scope estimate, not permission to bypass an approval or gate.
-Use the scope check above for the ad-hoc versus complex-feature decision.
+Use the scope check above for the route; the lane is decided at Specify.
 
 Distinguish app defects from desired behavior changes. A QA failure stays a finding
 until fixing it is within the user's scope. Read-only checks and ephemeral QA do not
@@ -134,21 +136,21 @@ Use the existing evidence locations rather than introducing a second status syst
 | Evidence | Location |
 |---|---|
 | Living capability behavior | `docs/product/requirements/<capability>.md` |
-| Complex-feature lifecycle and workspace links | `docs/product/product.md` |
-| Ad-hoc spec, implementation plan, reports, and summary | `docs/current/` |
-| Complex approved contracts, slices, reviews, and evidence | Tracker-linked `.scratch/<YYYY-MM-DD>-<feature-short-name>/` |
+| Lifecycle of every feature and bug fix, and workspace links | `docs/product/product.md` |
+| Specification (feature block) | `## Planned changes` in the capability file |
+| Plans, slices, reviews, summaries, and evidence | Tracker-linked `.scratch/<YYYY-MM-DD>-<feature-id>/` |
 | Temporary QA captures, fixtures, reports, and cleanup | `.qa-artifacts/<run-id>/` |
 | Delivered-change audit and reusable knowledge | `docs/changes/` and `docs/knowledge/` |
 
 Resume only from valid evidence. Missing or stale prerequisites return to their
-owning stage. Ad-hoc implementation requires the approved
-`implementation_plan_v<N>.md`; complex implementation uses approved
-`feature_list.json` and `sprint-contract.md`, without a duplicate plan. The direct
-UI lane also retains its existing approval prerequisites. Keep required stage gates,
+owning stage. Implementation requires the approved `implementation-plan.md` and
+`test-plan.md` (Status Approved, block SHA-256 recorded); the sliced lane adds the approved
+`tasks.md` and `feature_list.json`, without a duplicate plan. The direct UI lane requires
+its entry check and the user's go-ahead. Keep required stage gates,
 runtime boundaries, and independent review non-passing when their prerequisites
 are unavailable. The router does not create substitute approvals or evidence.
 
-After complex-slice selection, generate the context index as required by `AGENTS.md`:
+After sliced-lane slice selection, generate the context index as required by `AGENTS.md`:
 `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"`.
 Load stage-specific rules progressively; reconcile all ten Rule Applicability rows
 in requirements, planning, and review through their existing template and skills.

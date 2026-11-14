@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[3]
 CHECK = ROOT / "harness/scripts/check-ui-contract.py"
 GATE = ROOT / "harness/scripts/check-stage-artifacts.sh"
 
-STATE_HEADER = "| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |"
+STATE_HEADER = "| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Reused components | Runtime fixture | Plan stage |"
+RULES = ("ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC")
 IME_HEADER = "| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Keyboard behavior | Required visible tags |"
 BOUNDARY_HEADER = "| Screen | Input tag | Production activity | Open test | Dismiss test | Command | Result XML |"
 
@@ -22,12 +23,13 @@ class ImeContractTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="ime-state-contract-")
         self.root = Path(self.temp.name)
-        (self.root / "design").mkdir()
-        (self.root / "design/source.pen").write_text("Pen fixture")
+        self.workspace = self.root / ".scratch/2026-11-09-ime-fix"
+        (self.workspace / "design").mkdir(parents=True)
+        (self.workspace / "design/source.pen").write_text("Pen fixture")
         for name in ("closed", "open"):
             self.png(name, 860, 1864)
-        self.contract = self.root / "UI_contract.md"
-        self.plan = self.root / "test_plan_v1.md"
+        self.contract = self.workspace / "UI_contract.md"
+        self.plan = self.workspace / "test-plan.md"
         self.write_contract()
         self.write_runtime()
 
@@ -35,12 +37,12 @@ class ImeContractTest(unittest.TestCase):
         self.temp.cleanup()
 
     def png(self, name, width, height):
-        (self.root / f"design/mockup_{name}.png").write_bytes(
+        (self.workspace / f"design/mockup_{name}.png").write_bytes(
             b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">II", width, height)
         )
 
     def write_contract(self, inventory=True, open_state=True, window="430x932", ime_region=True):
-        rows = [STATE_HEADER, "|" + "---|" * 14]
+        rows = [STATE_HEADER, "|" + "---|" * 12]
         for index, name in enumerate(("closed", "open") if open_state else ("closed",), 1):
             regions = "primary-content; state-controls; persistent-controls"
             if name == "open" and ime_region:
@@ -48,9 +50,10 @@ class ImeContractTest(unittest.TestCase):
             rows.append(
                 f"| Search | {name} | design/source.pen | {name}-node | screen-frame | "
                 f"design/mockup_{name}.png | 430x932 | {regions} | Search field; results; Done | "
-                f"{name}-fixture | roborazzi | none | UI-0{index} |"
+                f"None — fixture screen | {name}-fixture | UI-0{index} |"
             )
-        text = "# UI contract\n\n## Screen States\n\n" + "\n".join(rows) + "\n"
+        text = ("# UI contract\n\nProject design system: `docs/product/design_system.md`\n\n## Screen States\n\n"
+                + "\n".join(rows) + "\n")
         if inventory:
             text += (
                 "\n## IME State Coverage\n\n" + IME_HEADER + "\n|" + "---|" * 9 + "\n"
@@ -107,8 +110,8 @@ class SearchImeTest {
             "harness/scripts/run-android-instrumented-tests.sh --class example.SearchImeTest#opensAboveIme "
             "--class example.SearchImeTest#restoresAfterDismissal | evidence/android-instrumented.xml |\n"
         )
-        (self.root / "evidence").mkdir(exist_ok=True)
-        (self.root / "evidence/android-instrumented.xml").write_text(
+        (self.workspace / "evidence").mkdir(exist_ok=True)
+        (self.workspace / "evidence/android-instrumented.xml").write_text(
             '<testsuite tests="2" failures="0" errors="0" skipped="0">'
             '<testcase classname="example.SearchImeTest" name="opensAboveIme" />'
             '<testcase classname="example.SearchImeTest" name="restoresAfterDismissal" /></testsuite>'
@@ -128,6 +131,21 @@ class SearchImeTest {
     def test_input_state_mapping_passes(self):
         result = self.check()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_instrumented_only_open_and_dismissed_pass(self):
+        self.write_contract(open_state=False)
+        text = self.contract.read_text().replace(
+            "| closed | open | closed | resize |", "| closed | instrumented-only | instrumented-only | resize |")
+        self.contract.write_text(text)
+        result = self.check()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_instrumented_only_closed_rejected(self):
+        self.write_contract(open_state=False)
+        text = self.contract.read_text().replace(
+            "| closed | open | closed | resize |", "| instrumented-only | instrumented-only | closed | resize |")
+        self.contract.write_text(text)
+        self.rejected(self.check(), "keyboard-closed state needs a design")
 
     def test_missing_open_design_rejected(self):
         self.write_contract(open_state=False)
@@ -163,13 +181,13 @@ class SearchImeTest {
                       "must not replace production Activity content")
 
     def test_skipped_runtime_cannot_pass(self):
-        report = self.root / "evidence/android-instrumented.xml"
+        report = self.workspace / "evidence/android-instrumented.xml"
         report.write_text(report.read_text().replace('name="opensAboveIme" />', 'name="opensAboveIme"><skipped /></testcase>'))
         self.rejected(self.check("--test-plan", str(self.plan), "--runtime", "--project-root", str(self.root)),
                       "did not pass")
 
     def test_missing_runtime_cannot_pass(self):
-        (self.root / "evidence/android-instrumented.xml").unlink()
+        (self.workspace / "evidence/android-instrumented.xml").unlink()
         self.rejected(self.check("--test-plan", str(self.plan), "--runtime", "--project-root", str(self.root)),
                       "missing IME result XML")
 
@@ -181,7 +199,7 @@ class SearchImeTest {
                       "does not select example.SearchImeTest")
 
     def test_failed_runtime_cannot_pass(self):
-        report = self.root / "evidence/android-instrumented.xml"
+        report = self.workspace / "evidence/android-instrumented.xml"
         report.write_text(report.read_text().replace('name="opensAboveIme" />', 'name="opensAboveIme"><failure /></testcase>'))
         self.rejected(self.check("--test-plan", str(self.plan), "--runtime", "--project-root", str(self.root)),
                       "did not pass")
@@ -206,34 +224,56 @@ class SearchImeTest {
                       "must poll real IME visibility")
 
     def write_workflow_artifacts(self):
+        ws = self.workspace
+        (self.root / "docs/product/requirements").mkdir(parents=True, exist_ok=True)
+        (self.root / "docs/product/requirements/search.md").write_text(
+            "# Search\n\n## Requirements\n\n### FR-001 — Results stay visible\n\n**Acceptance criteria**\n\n"
+            "- **AC-001**: Given the keyboard is open, when results load, then they stay above the IME.\n")
+        (self.root / "docs/product/design_system.md").write_text(
+            "# Design System\n\n### Component Registry\n\n"
+            "| Component | Pen component | Composable | Required testTag | Wraps Material |\n|---|---|---|---|---|\n"
+            "| SearchField | comp/search | ui/components/SearchField.kt | search_input | TextField |\n")
+        (self.root / "docs/product/product.md").write_text(
+            "<!-- HARNESS_TRACKER_START -->\n| ID | Feature | Workspace | Status | Updated | Notes |\n|---|---|---|---|---|---|\n"
+            "| ime-fix | IME fix | [.scratch/2026-11-09-ime-fix/](../../.scratch/2026-11-09-ime-fix/) | Planning | 2026-11-09 | bug |\n"
+            "<!-- HARNESS_TRACKER_END -->\n")
         mapping = (
-            "\n## Rule Applicability Test Mapping\n\nCanonical: spec_v1.md#rule-applicability\n\n| Rule ID | Evidence |\n|---|---|\n"
+            "\n## Rule Applicability Test Mapping\n\nCanonical: [`implementation-plan.md#rule-applicability`]"
+            "(implementation-plan.md#rule-applicability)\n\n| Rule ID | Evidence |\n|---|---|\n"
             "| ARCH | boundary |\n| IMPL | boundary |\n| TEST | boundary |\n| SUI | boundary |\n"
         )
-        spec = "# IME bug\n\n## Rule Applicability\n\n| Rule ID | Decision | Evidence |\n|---|---|---|\n"
-        for rule in ("ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC"):
+        plan = (
+            "# Implementation Plan\n\n**Feature ID**: `ime-fix`\n**Lane**: single\n\n## Product Requirements\n\n"
+            "| Capability file | Feature block | Requirement IDs | Approved block SHA-256 | Approved by / date |\n|---|---|---|---|---|\n"
+            "| `docs/product/requirements/search.md` | none — restores FR-001 | FR-001 | N/A | N/A |\n\n"
+            "## Root Cause & Reproduction\n\n- **Root cause**: results are laid out under the IME.\n\n"
+            "## Screen States\n\n| Screen | State ID | Requirement | Acceptance Criteria |\n|---|---|---|---|\n"
+            "| Search | closed | FR-001 | AC-001 |\n| Search | open | FR-001 | AC-001 |\n\n"
+            "## Rule Applicability\n\n| Rule ID | Decision | Evidence |\n|---|---|---|\n"
+        )
+        for rule in RULES:
             decision = "Required" if rule in ("ARCH", "IMPL", "TEST", "SUI") else "Not applicable — no boundary change"
-            spec += f"| {rule} | {decision} | fixture |\n"
-        spec += (
-            "\n## Screen States\n\n| Screen | State ID | Requirement | Acceptance Criteria |\n|---|---|---|---|\n"
-            "| Search | closed | FR-1 | restored |\n| Search | open | FR-1 | above IME |\n"
+            plan += f"| {rule} | {decision} | fixture |\n"
+        plan += ("\n## Phase 1 — Design\n\n### UI State Stages\n\n"
+                 "| Stage ID | Reused registered components | Implementation |\n|---|---|---|\n"
+                 "| UI-01 | None — fixture screen | Render closed |\n| UI-02 | None — fixture screen | Render open |\n")
+        (ws / "implementation-plan.md").write_text(plan)
+        (ws / "summary.md").write_text("| Bug Reproduction | Complete RED | fixture |\n")
+        self.plan.write_text(self.plan.read_text() + mapping + (
             "\n## Reproduction Test\n\n- Reproducing the IME boundary: the Search results must stay visible while the keyboard is open.\n"
             "- Test name: `opensAboveIme`\n- Production activity: `MainActivity`\n"
             f"- File: `{self.test_file}`\n- Run result: RED (expected geometry failure)\n"
-        )
-        (self.root / "spec_v1.md").write_text(spec)
-        (self.root / "summary_v1.md").write_text("| Bug Reproduction | Complete RED | fixture |\n")
-        implementation = "# Plan\n" + mapping + "\n## UI State Stages\n\n| Stage ID | Implementation | Verification target | Verification |\n|---|---|---|---|\n"
-        for index, name in enumerate(("closed", "open"), 1):
-            implementation += (
-                f"| UI-0{index} | Render {name} | app/src/test/java/example/roborazzi/PickerRoborazziTest.kt#{name} | "
-                f"design/mockup_{name}.png: ./gradlew app:verifyRoborazziDebug --tests example.PickerRoborazziTest.{name} |\n"
-            )
-        (self.root / "implementation_plan_v1.md").write_text(implementation)
-        self.plan.write_text(self.plan.read_text() + mapping)
+            "\n## Acceptance Test Cases\n\n| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | "
+            "Setup and action | Required assertions | Exact command |\n|---|---|---|---|---|---|---|---|\n"
+            f"| TC-01 | AC-001 | Instrumented UI | `{self.test_file}#opensAboveIme` | N/A — no API | Open IME | Results above IME | `bash run` |\n"
+            "\n## UI State Verification\n\n| Stage ID | Review capture (test#method) | Structural check (test#method) | Command |\n|---|---|---|---|\n"
+            "| UI-01 | `app/src/test/java/example/roborazzi/SearchReviewCaptureTest.kt#closed` | `app/src/test/java/example/SearchStructureTest.kt#closed` | "
+            "`./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests example.SearchStructureTest --tests example.roborazzi.SearchReviewCaptureTest` |\n"
+            "| UI-02 | `app/src/test/java/example/roborazzi/SearchReviewCaptureTest.kt#open` | `app/src/test/java/example/SearchStructureTest.kt#open` | "
+            "`./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests example.SearchStructureTest --tests example.roborazzi.SearchReviewCaptureTest` |\n"))
 
     def stage(self, stage):
-        return subprocess.run(["bash", str(GATE), "bug-fixing", stage, str(self.root)],
+        return subprocess.run(["bash", str(GATE), "bug-fixing", stage, str(self.workspace)],
                               env={**os.environ, "HARNESS_PROJECT_ROOT": str(self.root)}, text=True, capture_output=True)
 
     def test_bugfix_plan_gate_checks_ime_design(self):
@@ -263,7 +303,7 @@ class SearchImeTest {
 
     def test_toolbarless_text_screen_requires_keyboard_mockup(self):
         self.write_contract(inventory=False, open_state=False)
-        result = subprocess.run(["bash", str(ROOT / "harness/scripts/check-keyboard-mockup-contract.sh"), str(self.root)],
+        result = subprocess.run(["bash", str(ROOT / "harness/scripts/check-keyboard-mockup-contract.sh"), str(self.workspace)],
                                 text=True, capture_output=True)
         self.rejected(result, "requires ## IME State Coverage")
 
@@ -273,7 +313,7 @@ class SearchImeTest {
             text = text.replace(f"design/source.pen | {name}-node | screen-frame | design/mockup_{name}.png",
                                 "Pending | Pending | Pending | Pending")
         self.contract.write_text(text)
-        for asset in (self.root / "design").iterdir():
+        for asset in (self.workspace / "design").iterdir():
             asset.unlink()
         result = self.check("--inventory")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

@@ -10,7 +10,7 @@ fail_test() {
   exit 1
 }
 
-for workflow in harness-generator.md harness-fix.md; do
+for workflow in sliced-lane-generator.md harness-fix.md; do
   workflow_path="$WORKFLOW_DIR/$workflow"
   [ -f "$workflow_path" ] || fail_test "missing workflow: $workflow_path"
   if rg -n -i "do not stop the pipeline|continue to the next item|proceed to the next stage" "$workflow_path"; then
@@ -29,22 +29,22 @@ require_before() {
     || fail_test "$workflow must place '$earlier' before '$later'"
 }
 
-rg -Fq 'Every required stage gate is a hard stop.' "$WORKFLOW_DIR/harness-generator.md" \
+rg -Fq 'Every required stage gate is a hard stop.' "$WORKFLOW_DIR/sliced-lane-generator.md" \
   || fail_test "generator workflow does not define hard-stop gate semantics"
-rg -q -e 'workflow must stop (before the next stage|the pipeline)' "$WORKFLOW_DIR/harness-generator.md" \
+rg -q -e 'workflow must stop (before the next stage|the pipeline)' "$WORKFLOW_DIR/sliced-lane-generator.md" \
   || fail_test "generator workflow does not stop after failed verification"
 rg -Fq 'Every required fix-mode gate is a hard stop.' "$WORKFLOW_DIR/harness-fix.md" \
   || fail_test "fix workflow does not define hard-stop gate semantics"
 rg -Fq 'keep the feature non-passing and stop the pipeline' "$WORKFLOW_DIR/harness-fix.md" \
   || fail_test "fix workflow does not stop after failed verification"
 
-require_before harness-generator.md "### Stage 3 — Verify Baseline" "### Stage 4 — Implement"
-require_before harness-generator.md "### Stage 4 — Implement" "### Stage 5 — Test"
-require_before harness-generator.md "check-acceptance-test-traceability.sh" "### Stage 7 — Update State"
-rg -Fq 'bash harness/scripts/check-stage-artifacts.sh harness-generator orient "$FEATURE_DIR" "$FEATURE_ID"' "$WORKFLOW_DIR/harness-generator.md" \
+require_before sliced-lane-generator.md "### Stage 3 — Verify Baseline" "### Stage 4 — Implement"
+require_before sliced-lane-generator.md "### Stage 4 — Implement" "### Stage 5 — Test"
+require_before sliced-lane-generator.md "check-acceptance-test-traceability.sh" "### Stage 7 — Update State"
+rg -Fq 'bash harness/scripts/check-stage-artifacts.sh sliced-lane-generator orient "$FEATURE_DIR" "$FEATURE_ID"' "$WORKFLOW_DIR/sliced-lane-generator.md" \
   || fail_test "generator Stage 1 does not validate the selected slice summary"
 require_before harness-fix.md "check-acceptance-test-traceability.sh" "### Fix-Stage 5 — Finalize"
-require_before feature-delivery.md "### Stage 4 — Implementation" "### Stage 5 — Testing"
+require_before single-lane-generator.md "### Stage 4 — Implementation" "### Stage 5 — Testing"
 require_before bug-fixing.md "### Stage 2 — Bug Reproduction" "### Stage 4 — Implementation"
 
 TESTING_SKILL="$PROJECT_ROOT/.agents/skills/android-testing/SKILL.md"

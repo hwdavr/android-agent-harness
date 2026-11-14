@@ -196,6 +196,18 @@ Avoid `remember` in tests by keeping stateless content Composables as the primar
 
 ---
 
+## Edge-to-Edge Insets
+
+`MainActivity` draws edge to edge, so system bars overlap content unless a layer consumes their insets.
+The app Scaffold in `AppNavGraph` reports them only through its inner padding.
+
+- Every public `*Screen` composable under a `screen/` directory must take `parentPadding` (the Scaffold
+  inner padding passed by `AppNavigationHost`) and apply it to its root, or apply
+  `statusBarsPadding()`/`systemBarsPadding()` itself. This holds for routes without the bottom bar too.
+- JVM tests, structural checks, and journeys run without system bars and cannot detect a missing inset.
+  `check-edge-to-edge-insets.sh` (part of `check-full-source-rules.sh`) enforces the rule, and
+  `ui-verification` review captures must apply the inset so an overlap is visible.
+
 ## Keyboard / IME Behavior
 
 **When screen content (or a bottom sheet) contains text input, the bottom toolbar must dismiss while the keyboard (IME) is visible.**

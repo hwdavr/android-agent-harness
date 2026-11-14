@@ -59,6 +59,18 @@ foreach ($check in $checks) {
 }
 
 Write-Host ""
+Write-Host ">> Edge-to-edge insets (full source)"
+$insetChecker = Join-Path $PSScriptRoot "check-edge-to-edge-insets.py"
+& $python.Source $insetChecker --project-root $projectRoot
+$status = $LASTEXITCODE
+if ($status -eq 0) {
+    Write-Host "PASS: Edge-to-edge insets (full source)"
+} else {
+    Write-Host "FAIL: Edge-to-edge insets (full source) (exit $status)"
+    $failed = $true
+}
+
+Write-Host ""
 Write-Host ">> AI security rules"
 $aiSecurityChecker = Join-Path $PSScriptRoot "check-ai-security-rules.py"
 & $python.Source $aiSecurityChecker --root $projectRoot

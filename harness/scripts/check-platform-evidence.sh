@@ -31,7 +31,7 @@ if [ -n "$SLICE_FLAG" ] && { [ "$SLICE_FLAG" != "--slice" ] || [ -z "$SLICE_ID" 
 fi
 
 FEATURE_JSON="$FEATURE_DIR/feature_list.json"
-CONTRACT="$FEATURE_DIR/sprint-contract.md"
+CONTRACT="$FEATURE_DIR/test-plan.md"
 
 [ -f "$FEATURE_JSON" ] || fail "missing $FEATURE_JSON"
 [ -f "$CONTRACT" ] || fail "missing $CONTRACT"
@@ -136,7 +136,7 @@ while IFS= read -r test_id; do
   [ -n "$test_id" ] || continue
 
   CONTRACT_ROW=$(grep -F "| $test_id |" "$CONTRACT" || true)
-  [ -n "$CONTRACT_ROW" ] || fail "real platform test $test_id is not declared in sprint-contract.md"
+  [ -n "$CONTRACT_ROW" ] || fail "real platform test $test_id is not declared in test-plan.md"
   printf '%s\n' "$CONTRACT_ROW" | grep -Eiq 'instrumented|androidTest|android test' \
     || fail "real platform test $test_id must be instrumented"
   printf '%s\n' "$CONTRACT_ROW" | grep -Fq 'harness/scripts/run-android-instrumented-tests.sh' \

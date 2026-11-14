@@ -17,7 +17,7 @@ Do not implement any fix in this stage.
 
 ## Load
 
-Load `docs/current/spec_v<N>.md` first. `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read. After
+Load `$FEATURE_DIR/implementation-plan.md` (Root Cause & Reproduction) first. `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read. After
 selecting the lowest sufficient reproduction layer, load only its guidance:
 
 - `skills/android-unit-test/SKILL.md` for a unit or JVM integration reproduction
@@ -41,7 +41,7 @@ Pick the **lowest** layer that is sufficient to reproduce the bug (per `testing-
 |---|---|
 | Logic / calculation error | Unit test (`app/src/test/`) |
 | Data-flow / API mapping / error state | Integration test (`app/src/test/`) |
-| Rendered visual mismatch | JVM Roborazzi test (`app/src/test/java/<package>/roborazzi/`) |
+| Rendered visual mismatch | Structural semantics test (bounds, order, visibility) or span-style assertion for rich text; the fix is then confirmed by the `ui-verification` conformance review |
 | Unresponsive element | Instrumented UI test (`app/src/androidTest/`) |
 | Navigation crash / deep-link issue | Instrumented UI test (`app/src/androidTest/`) |
 
@@ -51,7 +51,7 @@ Write a failing test that reproduces the defect before attempting a fix:
 
 1. **Write the test first**: Do not write the fix first. Do not touch application code.
 2. **Name the test descriptively**: Pattern: `"given <precondition>, when <action>, then <expected outcome>"`
-3. **Write the minimal test** that targets the root cause statement in `spec_v<N>.md`.
+3. **Write the minimal test** that targets the root cause statement in `implementation-plan.md`.
 4. **Do not write the fix**. Do not adjust application code to make the test pass.
 5. **Use shared JSON scenarios** if an API response is involved — do not inline mock data.
 6. **Add `@Ignore("BUG: <short description> — remove when fixed")`** if the test would block CI before the fix lands; remove the annotation in the Implementation stage.
@@ -80,7 +80,7 @@ Do not advance until you have observed a RED result.
 
 The new (failing) reproduction test file, committed with `@Ignore` if needed.
 
-Append to `docs/current/spec_v<N>.md`:
+Write the `## Reproduction Test` section of `$FEATURE_DIR/test-plan.md`:
 
 ```
 ## Reproduction Test
@@ -93,7 +93,7 @@ Append to `docs/current/spec_v<N>.md`:
 - Failure message: <paste the key assertion failure line>
 ```
 
-Update `summary_v<N>.md`: mark this stage complete.
+Update `$FEATURE_DIR/summary.md`: mark the `Bug Reproduction` row RED (stage complete).
 
 ---
 
@@ -101,10 +101,10 @@ Update `summary_v<N>.md`: mark this stage complete.
 
 **This stage is complete when all of the following are true — all must be mechanically verifiable:**
 
-- [ ] A reproduction test exists that targets the root cause statement in `spec_v<N>.md`
+- [ ] A reproduction test exists that targets the root cause statement in `implementation-plan.md`
 - [ ] The selected JVM test command or `harness/scripts/run-android-instrumented-tests.sh` exits **non-zero** for the new test, confirming RED
 - [ ] The failure message matches the root cause — not a compilation error or unrelated assertion
 - [ ] No application source code has been modified in this stage
-- [ ] `spec_v<N>.md` is updated with the Reproduction Test section
+- [ ] `test-plan.md` contains the Reproduction Test section
 
 **APPROVED →** Return to the active workflow file and proceed to the Fix Plan stage.

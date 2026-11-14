@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Validate one-to-one UI state design and plan mappings."""
+"""Validate the per-state UI contract and its plan, test-plan, and conformance-review mappings.
+
+Visual appearance is approved by a conformance review: each state is rendered at its contract
+viewport (the Pen frame's dp size and density), shown beside the approved design, and approved by
+the user, plus a structural check on the semantics tree. No screenshot golden is compared.
+Every state names the registered design-system components it reuses.
+"""
 
 import argparse
 import json
@@ -15,12 +21,15 @@ from kotlin_ast_checker import KotlinFile
 
 STATE_COLUMNS = [
     "Screen", "State ID", "Design source", "Design node ID", "Design node role",
-    "Design image", "Viewport", "Required regions", "State controls", "Runtime fixture",
-    "Comparison", "Content difference", "Plan stage",
+    "Design image", "Viewport", "Required regions", "State controls", "Reused components",
+    "Runtime fixture", "Plan stage",
 ]
 DESIGN_COLUMNS = ["Design source", "Design node ID", "Design node role", "Design image"]
 SPEC_COLUMNS = ["Screen", "State ID", "Requirement", "Acceptance Criteria"]
-PLAN_COLUMNS = ["Stage ID", "Implementation", "Verification target", "Verification"]
+PLAN_COLUMNS = ["Stage ID", "Reused registered components", "Implementation"]
+VERIFY_COLUMNS = ["Stage ID", "Review capture (test#method)", "Structural check (test#method)", "Command"]
+REGISTRY_COLUMNS = ["Component", "Pen component", "Composable", "Required testTag", "Wraps Material"]
+INSTRUMENTED_ONLY = "instrumented-only"
 IME_COLUMNS = [
     "Screen", "Input tag", "Window viewport", "Keyboard closed state", "Keyboard open state",
     "Dismissed state", "Layout policy", "Keyboard behavior", "Required visible tags",
@@ -33,9 +42,12 @@ EDITABLE_INPUT = re.compile(
     r"text[ -]*(?:box|field|input)|input[ -]*field|editable)\b", re.I,
 )
 INSTRUMENTED_TARGET = re.compile(r"app/src/androidTest/[A-Za-z0-9_./]+Test\.kt#[A-Za-z_][A-Za-z0-9_]*$")
-ROBORAZZI_TARGET = re.compile(
-    r"app/src/test/java/[A-Za-z0-9_./]+/roborazzi/[A-Za-z0-9_./]+RoborazziTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
+# `testDebug` holds JVM tests that need the debug-only Compose test manifest (the release variant cannot run them).
+JVM_TARGET = re.compile(r"app/src/test(?:Debug)?/java/[A-Za-z0-9_./]+Test\.kt#[A-Za-z_][A-Za-z0-9_]*$")
+REVIEW_TARGET = re.compile(
+    r"app/src/test/java/[A-Za-z0-9_./]+/roborazzi/[A-Za-z0-9_]+ReviewCaptureTest\.kt#[A-Za-z_][A-Za-z0-9_]*$"
 )
+NONE_WITH_REASON = re.compile(r"^None — \S.{4,}$")
 
 
 def fail(message):
@@ -46,17 +58,26 @@ def clean(value):
     return value.strip().strip("`").strip()
 
 
+def heading_index(lines, heading):
+    """Index of the level-2/3 heading line titled `heading` (a trailing note is allowed)."""
+    pattern = re.compile(rf"^(#{{2,3}}) {re.escape(heading)}(\s|$)")
+    for index, line in enumerate(lines):
+        if pattern.match(line):
+            return index
+    return None
+
+
 def table(path, heading, columns):
     if not path.is_file():
         fail(f"missing {path}")
     lines = path.read_text(encoding="utf-8").splitlines()
-    try:
-        start = lines.index(f"## {heading}") + 1
-    except ValueError:
+    start = heading_index(lines, heading)
+    if start is None:
         fail(f"{path} is missing ## {heading}")
+    level = len(lines[start].split(" ", 1)[0])
     rows = []
-    for line in lines[start:]:
-        if line.startswith("## "):
+    for line in lines[start + 1:]:
+        if re.match(rf"^#{{1,{level}}} ", line):
             break
         if not line.startswith("|") or not line.endswith("|"):
             continue
@@ -74,10 +95,35 @@ def table(path, heading, columns):
     return [dict(zip(columns, row)) for row in rows[1:]]
 
 
+def component_names(value):
+    """Registered component names in a cell, or an empty set for `None — <reason>`."""
+    value = value.strip()
+    if NONE_WITH_REASON.match(value):
+        return set()
+    names = {clean(part) for part in re.split(r"[,;]", value) if clean(part)}
+    if not names:
+        fail(f"reused components cell is empty: '{value}'")
+    return names
+
+
+def registry(design_system):
+    rows = table(design_system, "Component Registry", REGISTRY_COLUMNS)
+    names = set()
+    for row in rows:
+        names.add(row["Component"])
+        names.add(row["Composable"].split("/")[-1].split("#")[-1].removesuffix(".kt"))
+    return names
+
+
+# Native design-tool sources (UX/design-tool.json): pen.dev `.pen`, OpenPencil `.fig`.
+DESIGN_SOURCE_SUFFIXES = (".pen", ".fig")
+
+
 def existing_path(contract, value):
     parts = Path(value).parts
-    sibling_pen = len(parts) == 3 and parts[0] == ".." and parts[1] == "UI_design" and parts[2].endswith(".pen")
-    if Path(value).is_absolute() or (".." in parts and not sibling_pen):
+    sibling_source = (len(parts) == 3 and parts[0] == ".." and parts[1] == "UI_design"
+                      and parts[2].endswith(DESIGN_SOURCE_SUFFIXES))
+    if Path(value).is_absolute() or (".." in parts and not sibling_source):
         fail(f"unsafe design path: {value}")
     candidates = [contract.parent / value, Path.cwd() / value]
     return next((path for path in candidates if path.is_file() and path.stat().st_size > 0), None)
@@ -115,7 +161,7 @@ def ime_states(contract, rows):
         if EDITABLE_INPUT.search(row["State controls"])
         and not re.search(r"\bread[ -]*only\b|\bno text input\b", row["State controls"], re.I)
     }
-    has_inventory = "## IME State Coverage" in contract.read_text(encoding="utf-8").splitlines()
+    has_inventory = heading_index(contract.read_text(encoding="utf-8").splitlines(), "IME State Coverage") is not None
     if not has_inventory:
         if input_screens:
             fail("editable text input requires ## IME State Coverage with closed, open, and dismissed designs")
@@ -131,6 +177,11 @@ def ime_states(contract, rows):
         dimensions = viewport(item["Window viewport"], item["Input tag"])
         for label, column in (("keyboard-closed", "Keyboard closed state"),
                               ("keyboard-open", "Keyboard open state"), ("dismissed", "Dismissed state")):
+            if item[column] == INSTRUMENTED_ONLY:
+                # Real-IME states without designs: verified only by the IME Production Boundary test.
+                if label == "keyboard-closed":
+                    fail("keyboard-closed state needs a design; only open and dismissed may be instrumented-only")
+                continue
             state = by_state.get((item["Screen"], item[column]))
             if state is None:
                 fail(f"unknown {label} state: {item[column]}")
@@ -141,7 +192,9 @@ def ime_states(contract, rows):
                 fail(f"keyboard-open design {item[column]} must include system-ime")
             if label != "keyboard-open" and has_ime:
                 fail(f"IME {label} design must not include system-ime")
-        if item["Keyboard open state"] in (item["Keyboard closed state"], item["Dismissed state"]):
+        if item["Keyboard open state"] != INSTRUMENTED_ONLY and item["Keyboard open state"] in (
+            item["Keyboard closed state"], item["Dismissed state"]
+        ):
             fail("keyboard-open design must be distinct from the closed and dismissed states")
         if item["Layout policy"] not in {"resize", "pan", "overlay"}:
             fail("IME Layout policy must be resize, pan, or overlay")
@@ -221,23 +274,22 @@ def ime_runtime(inventory, test_plan, runtime, project_root):
 
 
 def validate(contract, spec, plan, report, test_plan=None, runtime=False, project_root=None,
-             inventory_only=False, target_manifest=None):
-    if inventory_only and (plan or report or test_plan or runtime or target_manifest):
+             inventory_only=False, design_system=None):
+    if inventory_only and (plan or report or runtime):
         fail("--inventory cannot validate planning or runtime evidence")
+    project_root = (project_root or Path.cwd()).resolve()
     rows = table(contract, "Screen States", STATE_COLUMNS)
-    states = set()
-    nodes = set()
-    images = set()
-    fixtures = set()
-    stages = set()
+    known_components = registry(design_system) if design_system else None
+    states, nodes, images, fixtures, stages = set(), set(), set(), set(), set()
+    reused_by_stage = {}
     for row in rows:
         key = (row["Screen"], row["State ID"])
         if key in states:
             fail(f"duplicate screen/state: {key[0]} / {key[1]}")
         states.add(key)
+        deferrable = DESIGN_COLUMNS + ["Screen", "State ID"] + (["Reused components"] if inventory_only else [])
         unresolved = [column for column in STATE_COLUMNS
-                      if column not in DESIGN_COLUMNS + ["Screen", "State ID"]
-                      and row[column].lower() in {"pending", "tbd", "todo"}]
+                      if column not in deferrable and row[column].lower() in {"pending", "tbd", "todo"}]
         if unresolved:
             fail(f"state {key[1]} has unresolved state inventory: {', '.join(unresolved)}")
         viewport_width, viewport_height = viewport(row["Viewport"], key[1])
@@ -245,181 +297,288 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
         if any(pending) and not all(pending):
             fail(f"state {key[1]} must complete all design reference fields or mark all four Pending")
         if all(pending) and not inventory_only:
-            fail(f"state {key[1]} has pending design references; complete Pen design before UX approval or planning")
-        source = row["Design source"]
-        node = row["Design node ID"]
-        role = row["Design node role"]
+            fail(f"state {key[1]} has pending design references; complete the design before UX approval or planning")
+        source, node, role = row["Design source"], row["Design node ID"], row["Design node role"]
         if not all(pending) and not existing_path(contract, source):
             fail(f"missing or empty design source: {source}")
-        if not all(pending) and source.endswith(".pen"):
+        if not all(pending) and source.endswith(DESIGN_SOURCE_SUFFIXES):
             if node.lower() == "external" or role != "screen-frame":
-                fail(f"Pen state {key[1]} needs a top-level screen-frame node")
+                fail(f"design-tool state {key[1]} needs a top-level screen-frame node")
         elif not all(pending) and (node.lower() != "external" or role != "external-screen"):
             fail(f"external design state {key[1]} must use node ID external and role external-screen")
-        node_key = (source, node)
-        if not all(pending) and node_key in nodes:
-            fail(f"design node reused across states: {source} / {node}")
         if not all(pending):
-            nodes.add(node_key)
-        image = row["Design image"]
-        if not all(pending):
+            if (source, node) in nodes:
+                fail(f"design node reused across states: {source} / {node}")
+            nodes.add((source, node))
+            image = row["Design image"]
             image_path = existing_path(contract, image)
             if not image.startswith("design/") or not image.endswith(".png") or not image_path:
                 fail(f"missing or empty design PNG: {image}")
             image_width, image_height = png_dimensions(image_path)
             expected_ratio = viewport_width / viewport_height
-            actual_ratio = image_width / image_height
-            if abs(actual_ratio - expected_ratio) / expected_ratio > 0.015:
-                fail(
-                    f"state {key[1]} design PNG aspect ratio {image_width}x{image_height} "
-                    f"does not match viewport {viewport_width}x{viewport_height}"
-                )
+            if abs(image_width / image_height - expected_ratio) / expected_ratio > 0.015:
+                fail(f"state {key[1]} design PNG aspect ratio {image_width}x{image_height} "
+                     f"does not match viewport {viewport_width}x{viewport_height}")
+            if image in images:
+                fail(f"design image reused across states: {image}")
+            images.add(image)
         complete_regions(row["Required regions"], key[1])
         controls = row["State controls"].strip().lower()
         if controls in ("none", "n/a") or len(controls) < 8:
             fail(f"state {key[1]} needs named state-specific controls")
-        if not all(pending) and image in images:
-            fail(f"design image reused across states: {image}")
-        if not all(pending):
-            images.add(image)
+        if row["Reused components"] != "Pending":
+            reused = component_names(row["Reused components"])
+            if known_components is not None:
+                unknown = sorted(reused - known_components)
+                if unknown:
+                    fail(f"state {key[1]} reuses unregistered components {unknown}; add them to the "
+                         f"design-system Component Registry with approval, or record `None — <reason>`")
+            reused_by_stage[row["Plan stage"]] = reused
         fixture = row["Runtime fixture"]
         if fixture in fixtures:
             fail(f"runtime fixture reused across states: {fixture}")
         fixtures.add(fixture)
-        if row["Comparison"] not in ("exact", "structural", "roborazzi"):
-            fail(f"invalid comparison for {key[1]}: {row['Comparison']}")
-        difference = row["Content difference"]
-        if row["Comparison"] == "structural" and (difference.lower() in ("none", "n/a") or len(difference) < 12):
-            fail(f"structural state {key[1]} needs a concrete content difference")
-        if row["Comparison"] == "exact" and difference.lower() not in ("none", "n/a"):
-            fail(f"exact state {key[1]} cannot declare differing visible content")
         stage = row["Plan stage"]
         if not re.fullmatch(r"UI-[0-9]+", stage) or stage in stages:
             fail(f"invalid or duplicate plan stage: {stage}")
         stages.add(stage)
 
     inventory = ime_states(contract, rows)
-    ime_runtime(inventory, test_plan, runtime, (project_root or Path.cwd()).resolve())
+    ime_runtime(inventory, test_plan, runtime, project_root)
     if spec:
         spec_rows = table(spec, "Screen States", SPEC_COLUMNS)
         spec_states = {(row["Screen"], row["State ID"]) for row in spec_rows}
         if len(spec_states) != len(spec_rows) or states != spec_states:
             fail(f"UI contract states differ from spec: missing {sorted(spec_states - states)}, extra {sorted(states - spec_states)}")
-    if target_manifest:
-        if not target_manifest.is_file():
-            fail(f"missing visual target manifest: {target_manifest}")
-        target = json.loads(target_manifest.read_text(encoding="utf-8"))
-        if not isinstance(target, dict):
-            fail("visual target manifest must be an object")
-        target_states = target.get("states", {})
-        state_ids = {row["State ID"] for row in rows}
-        if not isinstance(target_states, dict) or len(state_ids) != len(rows) or state_ids != set(target_states):
-            fail("visual target states differ from UI contract; use unique state IDs across screens")
-        size = target.get("logical_size_dp") or target.get("logical_size_pt") or {}
-        if not isinstance(size, dict):
-            fail("visual target viewport must contain width and height")
-        for row in rows:
-            target_state = target_states[row["State ID"]]
-            if not isinstance(target_state, dict) or target_state.get("reference") != row["Design image"]:
-                fail(f"visual target reference differs from UI contract: {row['State ID']}")
-            if (size.get("width"), size.get("height")) != viewport(row["Viewport"], row["State ID"]):
-                fail(f"visual target viewport differs from UI contract: {row['State ID']}")
     if plan:
         plan_rows = table(plan, "UI State Stages", PLAN_COLUMNS)
         plan_stages = {row["Stage ID"] for row in plan_rows}
         if len(plan_stages) != len(plan_rows) or stages != plan_stages:
             fail(f"UI plan stages differ from contract: missing {sorted(stages - plan_stages)}, extra {sorted(plan_stages - stages)}")
-        states_by_stage = {row["Plan stage"]: row for row in rows}
-        verification_targets = set()
         for plan_row in plan_rows:
             stage = plan_row["Stage ID"]
-            target = plan_row["Verification target"]
-            verification = plan_row["Verification"]
-            comparison = states_by_stage[stage]["Comparison"]
-            if comparison in ("exact", "roborazzi"):
-                if not ROBORAZZI_TARGET.fullmatch(target):
-                    fail(f"UI state {stage} needs a valid Roborazzi target under app/src/test/java/**/roborazzi/ ending in RoborazziTest.kt#method")
-                if "./gradlew app:verifyRoborazziDebug" not in verification:
-                    fail(f"UI state {stage} needs a method-scoped verifyRoborazziDebug command")
-                design_image = states_by_stage[stage]["Design image"]
-                if design_image not in verification:
-                    fail(f"UI state {stage} verification must cite its approved design image: {design_image}")
-            else:
-                if not INSTRUMENTED_TARGET.fullmatch(target):
-                    fail(f"UI state {stage} needs a valid instrumented target under app/src/androidTest/ ending in Test.kt#method")
-                if "harness/scripts/run-android-instrumented-tests.sh" not in verification:
-                    fail(f"UI state {stage} needs the direct AndroidJUnitRunner wrapper for its instrumented target")
-                test_file, test_method = target.split("#", 1)
-                test_class = Path(test_file).stem
-                selectors = [value.rstrip("`.,;") for value in re.findall(r"--class\s+([^\s]+)", verification)]
-                if not any(selector.endswith(f"{test_class}#{test_method}") for selector in selectors):
-                    fail(f"UI state {stage} command must select {test_class}#{test_method}")
-            if target in verification_targets:
-                fail(f"verification target reused across UI plan stages: {target}")
-            verification_targets.add(target)
+            if component_names(plan_row["Reused registered components"]) != reused_by_stage.get(stage, set()):
+                fail(f"UI plan stage {stage} reused components differ from UI_contract.md")
+    verification = {}
+    if plan and test_plan:
+        verification = verification_targets(test_plan, stages)
+    if plan and runtime:
+        validate_component_usage(plan, reused_by_stage, project_root)
     if report:
-        if not report.is_file():
-            fail(f"missing {report}")
-        data = json.loads(report.read_text(encoding="utf-8"))
-        results = data.get("state_results", [])
-        if not isinstance(results, list) or any(not isinstance(item, dict) for item in results):
-            fail("state_results must be an array of objects")
-        result_keys = {(item.get("screen"), item.get("state_id")) for item in results if isinstance(item, dict)}
-        if len(result_keys) != len(results) or result_keys != states:
-            fail(f"UI verification states differ from contract: missing {states - result_keys}, extra {result_keys - states}")
-        evidence_ref = data.get("runtime_evidence", "")
-        if not isinstance(evidence_ref, str) or not evidence_ref.startswith("evidence/") or ".." in Path(evidence_ref).parts:
-            fail("runtime evidence path must stay under evidence/")
-        evidence_path = report.parent / evidence_ref
-        if not evidence_path.is_file():
-            fail(f"missing runtime evidence: {evidence_path}")
-        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-        is_roborazzi = evidence.get("producer", {}).get("kind") == "RoborazziTest"
-        runtime_screens = {
-            item.get("name"): item.get("reference")
-            for item in evidence.get("states", [])
-        } if is_roborazzi else {
-            item.get("name"): item.get("screenshot")
-            for item in evidence.get("screens", [])
-        }
-        used_runtime = set()
-        by_key = {(row["Screen"], row["State ID"]): row for row in rows}
-        for item in results:
-            key = (item["screen"], item["state_id"])
-            row = by_key[key]
-            expected_comparison = "roborazzi" if is_roborazzi else row["Comparison"]
-            if item.get("design_image") != row["Design image"] or item.get("comparison") != expected_comparison:
-                fail(f"UI verification reference or comparison differs for {key[0]} / {key[1]}")
-            runtime = item.get("runtime_screen")
-            if not runtime or runtime not in runtime_screens or runtime in used_runtime:
-                fail(f"UI state {key[1]} needs a unique runtime evidence screen")
-            used_runtime.add(runtime)
-            if item.get("result") != "PASS" or len(item.get("assertion", "")) < 12:
-                fail(f"UI state {key[1]} needs a passing concrete assertion")
-            parity = "verified" if is_roborazzi or row["Comparison"] == "exact" else "not-claimed"
-            if item.get("pixel_parity") != parity:
-                fail(f"UI state {key[1]} needs pixel_parity: {parity}")
+        if not test_plan:
+            fail("conformance review validation requires --test-plan")
+        verification = verification or verification_targets(test_plan, stages)
+        validate_report(report, rows, verification, runtime, project_root)
     if inventory_only:
         print(f"PASS: {len(states)} UI state(s) defined before Pen design; only design references may be Pending.")
     else:
-        print(f"PASS: {len(states)} complete UI state(s) have unique screen-frame, viewport, coverage, fixture, comparison, and plan mappings.")
+        print(f"PASS: {len(states)} complete UI state(s) have unique screen-frame, viewport, regions, "
+              f"registered components, fixture, and plan mappings.")
+
+
+def validate_component_usage(plan, reused_by_stage, project_root):
+    """Each reused registered component is called from a UI-layer file the plan changes."""
+    lines = plan.read_text(encoding="utf-8").splitlines()
+    start = heading_index(lines, "Project Structure")
+    ui_files = []
+    if start is not None:
+        for line in lines[start + 1:]:
+            if re.match(r"^#{1,3} ", line):
+                break
+            cells = [clean(cell) for cell in line.strip().strip("|").split("|")] if line.startswith("|") else []
+            if len(cells) >= 2 and cells[0] == "UI":
+                ui_files += [clean(part) for part in cells[1].split(",") if clean(part)]
+    sources = ""
+    for name in ui_files:
+        candidates = [project_root / name] + list((project_root / "app" / "src" / "main").rglob(Path(name).name))
+        path = next((c for c in candidates if c.is_file()), None)
+        if path is None:
+            fail(f"UI file named in the plan's Project Structure does not exist: {name}")
+        sources += path.read_text(encoding="utf-8")
+    for stage, components in sorted(reused_by_stage.items()):
+        for component in sorted(components):
+            if not re.search(rf"\b{re.escape(component)}\s*\(", sources):
+                fail(f"UI state {stage} lists {component}, but no UI file in the plan's Project Structure calls it")
+
+
+def verification_targets(test_plan, stages):
+    rows = table(test_plan, "UI State Verification", VERIFY_COLUMNS)
+    found = {row["Stage ID"] for row in rows}
+    if len(found) != len(rows) or found != stages:
+        fail(f"test-plan UI State Verification differs from contract: missing {sorted(stages - found)}, extra {sorted(found - stages)}")
+    seen, targets = set(), {}
+    for row in rows:
+        stage = row["Stage ID"]
+        review, structural, command = (row["Review capture (test#method)"], row["Structural check (test#method)"],
+                                       row["Command"])
+        if not REVIEW_TARGET.fullmatch(review):
+            fail(f"UI state {stage} review capture must be app/src/test/java/<package>/roborazzi/<Feature>ReviewCaptureTest.kt#<method>")
+        if not re.search(r"(?:^|\s)-Proborazzi\.test\.record=true(?:\s|$)", command.replace("`", "")):
+            fail(f"UI state {stage} review capture command must enable -Proborazzi.test.record=true")
+        if not (JVM_TARGET.fullmatch(structural) or INSTRUMENTED_TARGET.fullmatch(structural)):
+            fail(f"UI state {stage} structural check must be a JVM or instrumented Test.kt#method target")
+        for target in (review, structural):
+            if target in seen:
+                fail(f"verification target reused across UI states: {target}")
+            seen.add(target)
+            test_class = Path(target.split("#")[0]).stem
+            if test_class not in command:
+                fail(f"UI state {stage} command must run {test_class}")
+        if INSTRUMENTED_TARGET.fullmatch(structural) and "harness/scripts/run-android-instrumented-tests.sh" not in command:
+            fail(f"UI state {stage} needs the direct AndroidJUnitRunner wrapper for its instrumented structural check")
+        targets[stage] = {"review": review, "structural": structural}
+    return targets
+
+
+FUNCTION_DEF = re.compile(
+    r"^[ \t]*(?:@[A-Za-z0-9_.]+(?:\([^)]*\))?[ \t]*)*(?:(?:private|internal|public|override|suspend)[ \t]+)*"
+    r"fun[ \t]+(?:[A-Za-z0-9_<>]+\.)?([A-Za-z_][A-Za-z0-9_]*)[ \t]*\(", re.M)
+CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)[ \t]*\(")
+SCREEN_NAME = re.compile(r"(?:Screen|ScreenContent)$")
+OVERLAY_STATE = re.compile(r"bottom[ -]*sheet|modal|dialog|popup|snackbar", re.I)
+SCRIM_STATE = re.compile(r"bottom[ -]*sheet|modal|dialog", re.I)
+INSET_APPLIED = re.compile(r"contentWindowInsets|statusBarsPadding|systemBarsPadding|windowInsetsPadding|WindowInsets\(")
+STATUS_BAR_CHROME = re.compile(r"status[ _]?bar", re.I)
+SCRIM_CHROME = re.compile(r"scrim", re.I)
+
+
+def function_bodies(text):
+    """Map each function name to its source text, up to the next function declaration."""
+    matches = list(FUNCTION_DEF.finditer(text))
+    bodies = {}
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        bodies.setdefault(match.group(1), text[match.start():end])
+    return bodies
+
+
+def source_functions(project_root, relative):
+    bodies = {}
+    for path in sorted((project_root / relative).rglob("*.kt")):
+        for name, body in function_bodies(path.read_text(encoding="utf-8")).items():
+            bodies.setdefault(name, body)
+    return bodies
+
+
+def validate_screen_frame_capture(project_root, review_target, state_id, state_controls):
+    """A screen-frame design is a whole screen: its capture must render a production screen.
+
+    Applies only when the review file declares the target method, so placeholder files keep the
+    existing existence check. Padding a component to the viewport is not a screen.
+    """
+    path, _, method = review_target.partition("#")
+    review_file = project_root / path
+    bodies = function_bodies(review_file.read_text(encoding="utf-8"))
+    if method not in bodies:
+        return
+    main_screens = {name for name in source_functions(project_root, "app/src/main") if SCREEN_NAME.search(name)}
+    helpers = source_functions(project_root, "app/src/test")
+    pending, seen, reached, text = [bodies[method]], {method}, False, ""
+    while pending:
+        body = pending.pop()
+        text += body
+        for name in CALL.findall(body):
+            if name in main_screens:
+                reached = True
+            elif name in helpers and name not in seen:
+                seen.add(name)
+                pending.append(helpers[name])
+    if not reached:
+        fail(f"UI state {state_id} is a screen-frame, but its review capture {method} renders no production screen "
+             "(a *Screen or *ScreenContent function from app/src/main, directly or through a test frame helper); "
+             "a padded component is not a screen")
+    if OVERLAY_STATE.search(state_controls) and "captureScreenRoboImage" not in text:
+        fail(f"UI state {state_id} shows a sheet or dialog, so its review capture must use captureScreenRoboImage "
+             "to include every window")
+    if not INSET_APPLIED.search(text):
+        fail(f"UI state {state_id} review capture applies no system-bar inset (contentWindowInsets, "
+             "statusBarsPadding, systemBarsPadding or windowInsetsPadding); the app draws edge to edge, so the "
+             "frame must give the screen the status bar inset the way production does")
+    if not STATUS_BAR_CHROME.search(text):
+        fail(f"UI state {state_id} review capture draws no status bar; a design frame includes the system "
+             "status bar, so the capture frame must render review-only status bar chrome")
+    if SCRIM_STATE.search(state_controls) and not SCRIM_CHROME.search(text):
+        fail(f"UI state {state_id} shows a dialog or sheet, so its review capture frame must draw the dim "
+             "scrim behind it (Robolectric does not render window dimming)")
+
+
+def validate_report(report, rows, targets, runtime, project_root):
+    if not report.is_file():
+        fail(f"missing {report}")
+    data = json.loads(report.read_text(encoding="utf-8"))
+    results = data.get("state_results", [])
+    if not isinstance(results, list) or any(not isinstance(item, dict) for item in results):
+        fail("state_results must be an array of objects")
+    by_key = {(row["Screen"], row["State ID"]): row for row in rows}
+    result_keys = {(item.get("screen"), item.get("state_id")) for item in results}
+    if len(result_keys) != len(results) or result_keys != set(by_key):
+        fail(f"UI verification states differ from contract: missing {set(by_key) - result_keys}, extra {result_keys - set(by_key)}")
+    findings = report.parent / "evidence/ui/compare/findings.md"
+    if not findings.is_file():
+        fail(f"missing {findings} (record the pre-review findings for every state before user approval)")
+    findings_text = findings.read_text(encoding="utf-8")
+    captures = set()
+    for item in results:
+        key = (item["screen"], item["state_id"])
+        row, stage = by_key[key], by_key[key]["Plan stage"]
+        if not re.search(rf"^### {re.escape(key[1])}\s*$", findings_text, re.M):
+            fail(f"UI state {key[1]} has no '### {key[1]}' entry in {findings}")
+        if item.get("design_image") != row["Design image"]:
+            fail(f"UI verification design image differs for {key[1]}")
+        capture_ref = item.get("review_capture", "")
+        if not isinstance(capture_ref, str) or not capture_ref.startswith("evidence/") or ".." in Path(capture_ref).parts:
+            fail(f"UI state {key[1]} review_capture must stay under evidence/")
+        capture = report.parent / capture_ref
+        if not capture.is_file():
+            fail(f"missing review capture for {key[1]}: {capture}")
+        if capture_ref in captures:
+            fail(f"review capture reused across states: {capture_ref}")
+        captures.add(capture_ref)
+        width, height = png_dimensions(capture)
+        vw, vh = viewport(row["Viewport"], key[1])
+        if abs(width / height - vw / vh) / (vw / vh) > 0.015:
+            fail(f"UI state {key[1]} review capture {width}x{height} was not rendered at the contract viewport {row['Viewport']}")
+        if item.get("review_capture_test") != targets[stage]["review"]:
+            fail(f"UI state {key[1]} review_capture_test must be {targets[stage]['review']}")
+        if item.get("structural_check") != targets[stage]["structural"] or item.get("structural_result") != "PASS":
+            fail(f"UI state {key[1]} needs a passing structural_check {targets[stage]['structural']}")
+        comparison_ref = item.get("comparison_image", "")
+        if comparison_ref != f"evidence/ui/compare/{key[1]}.png":
+            fail(f"UI state {key[1]} comparison_image must be evidence/ui/compare/{key[1]}.png")
+        comparison = report.parent / comparison_ref
+        if not comparison.is_file():
+            fail(f"missing side-by-side comparison for {key[1]}: {comparison} (run compose-ui-comparison.py)")
+        inputs = (report.parent / row["Design image"], capture)
+        if any(comparison.stat().st_mtime < source.stat().st_mtime for source in inputs if source.is_file()):
+            fail(f"UI state {key[1]} comparison is older than its design or capture; rerun compose-ui-comparison.py")
+        if item.get("review_decision") != "approved" or not item.get("approved_by") or \
+                not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(item.get("approved_on", ""))):
+            fail(f"UI state {key[1]} needs review_decision 'approved' with approved_by and approved_on (YYYY-MM-DD)")
+        if item.get("result") != "PASS":
+            fail(f"UI state {key[1]} result must be PASS")
+        if runtime:
+            for target in (targets[stage]["review"], targets[stage]["structural"]):
+                if not (project_root / target.split("#")[0]).is_file():
+                    fail(f"UI state {key[1]} test source does not exist: {target}")
+            if row["Design node role"] == "screen-frame":
+                validate_screen_frame_capture(project_root, targets[stage]["review"], key[1], row["State controls"])
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("contract", type=Path)
     parser.add_argument("--spec", type=Path)
     parser.add_argument("--plan", type=Path)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--test-plan", type=Path)
+    parser.add_argument("--design-system", type=Path, help="Validate reused components against its Component Registry")
     parser.add_argument("--runtime", action="store_true")
     parser.add_argument("--project-root", type=Path)
     parser.add_argument("--inventory", action="store_true", help="Validate complete state behavior before Pen assets exist")
-    parser.add_argument("--target-manifest", type=Path, help="Require the runtime target to mirror the UI contract")
     args = parser.parse_args()
     try:
         validate(args.contract, args.spec, args.plan, args.report, args.test_plan, args.runtime,
-                 args.project_root, args.inventory, args.target_manifest)
+                 args.project_root, args.inventory, args.design_system)
     except (ValueError, json.JSONDecodeError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
         sys.exit(1)

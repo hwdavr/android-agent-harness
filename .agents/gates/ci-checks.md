@@ -17,8 +17,9 @@ Defines the minimum set of checks that must pass before a change is considered r
 ```bash
 ./gradlew testDebugUnitTest
 ```
-**Must pass.** All non-Roborazzi tests in `app/src/test/` must be green. Roborazzi tests
-live under `app/src/test/java/**/roborazzi/` and run through `verifyRoborazziDebug`.
+**Must pass.** Unit, integration, and JVM structural tests run normally. Roborazzi capture tests live
+under `app/src/test/java/<package>/roborazzi/` and run only with `-Proborazzi.test.record=true`; the
+default unit-test run excludes them. 
 
 ### 3. Coverage
 ```bash
@@ -70,6 +71,8 @@ harness\scripts\check-compose-rules.cmd --all
 - Repository / UseCase calls inside Composables
 - Unstable `testTag` values (string interpolation)
 - `Column` + `forEach` instead of `LazyColumn`
+- A Material primitive called outside the registered design-system wrapper that wraps it
+  (design-system Component Registry, "Wraps Material" column)
 
 ### 7a. Full Source Rules Bundle
 ```bash
@@ -129,16 +132,25 @@ when an earlier checker fails, and fails on an untouched source violation.
 ```bash
 bash harness/scripts/tests/rule-applicability-contract-test.sh
 ```
-**Must pass.** Ensures requirement artifacts carry all ten rule decisions and that the
-stage gate rejects incomplete matrices.
+**Must pass.** Ensures `implementation-plan.md` carries all ten rule decisions, `test-plan.md`
+maps every Required row, and the stage gate rejects incomplete matrices.
 
 ### 9a. Separate UX Design Stage Contract
 ```bash
 python3 harness/scripts/tests/ux-design-stage-contract-test.py
 ```
-**Must pass.** Requirements lead to a complete UI_contract inventory before Pen generation.
-Inventory gates allow only design-reference fields to be Pending; full UX/planning gates require
-completed references and matching runtime target metadata. No design.md is required.
+**Must pass.** The feature block's Screen States lead to a complete UI_contract inventory before Pen
+generation. Inventory gates allow only design-reference fields and Reused components to be Pending;
+full UX/planning gates require completed references and registered components. No design.md is required.
+
+### 9b. Dated Workspace and Analyze Gates
+```bash
+bash harness/scripts/tests/stage-artifacts-lanes-contract-test.sh
+bash harness/scripts/tests/spec-plan-consistency-contract-test.sh
+```
+**Must pass.** Every lane works in one `.scratch/<YYYY-MM-DD>-<feature-id>/` workspace; the analyze
+gate keeps the approved feature block(s), `implementation-plan.md`, `test-plan.md`, and (sliced lane)
+`tasks.md` and `feature_list.json` consistent.
 
 ### 10. Acceptance-Test Traceability Contract
 bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
@@ -148,20 +160,20 @@ bash harness/scripts/tests/acceptance-test-traceability-contract-test.sh
 each acceptance Test ID maps to one declared Kotlin test method, a suite-scoped Gradle
 or instrumented selector, its declared shared JSON scenario(s), and successful
 evidence. When the row explicitly claims rich-text or inline-formatting appearance,
-the same gate invokes the rendered-output contract for the named JVM Roborazzi method.
+the same gate invokes the rendered-output contract for the named span-style test.
 
 ### 10.0 Rendered Output Evidence Contract
 ```bash
 bash harness/scripts/check-rendered-output-contract.sh \
   --project-root "$PWD" \
-  --test-file app/src/test/java/<package>/roborazzi/<Feature>RoborazziTest.kt \
+  --test-file app/src/test/java/<package>/<Feature>RenderedTextTest.kt \
   --test-method <method> \
   --claim "Following text visibly inherits Bold"
 bash harness/scripts/tests/rendered-output-contract-test.sh
 ```
 **Must pass** for any acceptance, reproduction, or visual row that claims formatted
-text is visibly rendered. The named `*RoborazziTest` method must call
-`captureRoboImage()` against the approved Pen export. ViewModel marks, toolbar state,
+text is visibly rendered. The named test method must assert the rendered node's
+`AnnotatedString` span styles through `SemanticsProperties.Text`. ViewModel marks, toolbar state,
 text content, and device screenshots are supplemental only. The acceptance,
 visual-evidence, and bug-reproduction gates invoke this contract automatically where
 the claim is explicit.
@@ -197,9 +209,9 @@ fails or its prerequisite is unavailable.
 ```bash
 bash harness/scripts/tests/project-doc-location-contract-test.sh
 ```
-**Must pass** when stage artifact location handling changes. Consumer project artifacts are
-accepted under the consumer repository's root `docs/` and rejected under the nested shared
-`android-agent-harness/docs/` tree.
+**Must pass** when stage artifact location handling changes. Stage artifacts are accepted only
+in dated `.scratch/<YYYY-MM-DD>-<feature-id>/` workspaces of the consumer repository; `docs/current/`
+and workspaces inside the shared harness checkout are rejected.
 
 ### 10d. Production Journey Contract
 ```bash
@@ -216,7 +228,7 @@ post-return assertion.
 bash harness/scripts/tests/role-profile-contract-test.sh
 ```
 **Must pass** when role profiles, complex-feature workflows, or named skills change.
-It rejects stale `docs/current` paths, obsolete task-selection instructions, invalid
+It rejects retired `docs/current` paths, obsolete task-selection instructions, invalid
 template paths, and unavailable evaluator skill names in `.agents/agents/`.
 
 ### 11. Platform Capability Evidence (when a platform boundary is in scope)
@@ -229,11 +241,16 @@ bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate
 ```
 **Must pass.** A non-owning slice validates the declared contract without waiting for a later slice's boundary test. The boundary-owning slice and final feature evaluation reject missing capability matrices, pending/unavailable/skipped runtime evidence, and fake-only platform-boundary tests.
 
-### 12. Visual Evidence Contract (when visual verification is required)
+### 12. UI Conformance Review Contract (when the change has UI scope)
 ```bash
-bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"
+bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --planning   # at planning
+bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate   # before passing
 ```
-**Must pass.** Every visual verification method in the final owner's `feature_list.json` must have a matching `TC-*-VIS-*` row in `sprint-contract.md`, an acceptance-test ID, successful `verifyRoborazziDebug` evidence, and one matching reference-anchor row in `visual_evidence/reference-anchor-verification.md`. Each row names the approved Pen export, visual bounds `testTag`, JVM test, and concrete bounds relationship. Rows that claim rich-text or inline-formatting appearance additionally require the named `RoborazziTest` method to pass the source-fed rendered-output contract.
+**Must pass.** Planning rejects retired `TC-*-VIS` rows and Roborazzi golden commands, and (sliced
+lane) requires exactly one final UI slice to own the conformance review. Evaluation requires
+`ui_verification.json` with, for every `UI_contract.md` state, a review capture rendered at its
+Viewport, a passing structural check, its registered components called from the planned UI files,
+and the user's approval.
 
 ### 13. Keyboard State Contract (when a planned screen or bottom sheet has text input)
 ```bash
@@ -254,8 +271,8 @@ bash harness/scripts/tests/ime-state-boundary-contract-test.sh
 **Must pass for harness changes.** The UI/bug-fixing gates require an editable-input inventory,
 same-window closed/open design frames with `system-ime` visible, and production Activity
 open/dismiss tests even when `NAV` is Not applicable. Content replacement, generic test Activities,
-missing/skipped/failed JUnit cases, and a command selecting the wrong class are rejected. Component
-Roborazzi comparisons remain appearance evidence; they do not establish real IME window geometry.
+missing/skipped/failed JUnit cases, and a command selecting the wrong class are rejected. Review
+captures remain appearance evidence; they do not establish real IME window geometry.
 
 ## Conditional Checks
 

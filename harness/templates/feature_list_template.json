@@ -6,7 +6,8 @@
     "passing_requires_evidence": true,
     "passing_requires_acceptance_test_evidence": true,
     "passing_requires_noncontradictory_evidence": true,
-    "do_not_skip_verification": true
+    "do_not_skip_verification": true,
+    "passing_requires_all_tasks_done": true
   },
   "status_legend": {
     "not_started": "Work has not begun.",
@@ -26,7 +27,7 @@
       "area": "editor",
       "title": "Create a new item",
       "description": "Implement domain use case and Room entity/DAO to create and persist items.",
-      "ui_design": "docs/current/design/home_screen.png",
+      "ui_design": "design/home_screen.png",
       "user_visible_behavior": "User can tap add button to create a new item.",
       "affects_ui": true,
       "requires_visual_verification": true,
@@ -42,16 +43,34 @@
         "post_return_assertion": "The resulting item is visible in the originating screen."
       },
       "status": "not_started",
+      "tasks": [
+        {
+          "id": "T001",
+          "title": "<shared prerequisite — first slice only>",
+          "file": "<path>",
+          "done": false
+        },
+        {
+          "id": "T004",
+          "title": "<domain use case>",
+          "file": "app/src/main/java/.../<UseCase>.kt",
+          "done": false
+        },
+        {
+          "id": "T007",
+          "title": "<ViewModel unit test>",
+          "file": "app/src/test/java/.../<Feature>ViewModelTest.kt",
+          "done": false
+        }
+      ],
       "acceptance_test_ids": [
-        "TC-US-1-01",
-        "TC-US-1-VIS-001"
+        "TC-US-1-01"
       ],
       "verification": [
-        "ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class com.example.notesapp.ItemTests",
-        "./gradlew app:verifyRoborazziDebug --tests \"com.example.notesapp.ItemRoborazziTest.captureItemScreen\""
+        "ANDROID_SERIAL=<device> bash harness/scripts/run-android-instrumented-tests.sh --class com.example.notesapp.ItemTests"
       ],
       "evidence": [],
-      "notes": ""
+      "notes": "requires_visual_verification marks the final UI slice that owns the conformance review."
     },
     {
       "id": "US-2",
@@ -59,7 +78,7 @@
       "area": "editor",
       "title": "Edit existing item",
       "description": "Update existing item in Room database and update ViewModel state.",
-      "ui_design": "docs/current/design/editor_screen.png",
+      "ui_design": "design/editor_screen.png",
       "user_visible_behavior": "User can modify item text and changes persist immediately.",
       "affects_ui": true,
       "requires_visual_verification": false,
@@ -75,6 +94,20 @@
         "post_return_assertion": null
       },
       "status": "not_started",
+      "tasks": [
+        {
+          "id": "T009",
+          "title": "<…>",
+          "file": "<path>",
+          "done": false
+        },
+        {
+          "id": "T010",
+          "title": "<…>",
+          "file": "<path>",
+          "done": false
+        }
+      ],
       "acceptance_test_ids": [
         "TC-US-2-01"
       ],
@@ -84,5 +117,6 @@
       "evidence": [],
       "notes": ""
     }
-  ]
+  ],
+  "lane": "sliced — feature_list.json is used only in the sliced lane (two or more user stories)"
 }

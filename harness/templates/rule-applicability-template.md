@@ -1,9 +1,9 @@
 # Rule Applicability Template
 
-Copy this section into the active specification artifact. Keep all ten rows. The
-approved specification is the single source of truth for planning, implementation, and
-review. Downstream implementation and test plans link this `#rule-applicability`
-section and map its `Required` rows; they do not copy the full matrix.
+Decision vocabulary and default triggers for the `## Rule Applicability` section of
+`implementation-plan.md`, the single source of truth for planning, implementation, and review.
+Keep all ten rows. `test-plan.md` links `implementation-plan.md#rule-applicability` and maps its
+`Required` rows; it does not copy the full matrix.
 
 ## Rule Applicability
 

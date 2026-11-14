@@ -41,10 +41,19 @@ documents. During testing/review load `rules/testing-practices.md`; add
 
 | Task type | File to load |
 |-----------|-------------|
-| New feature or enhancement | `workflows/feature-delivery.md` |
+| New feature or enhancement | `workflows/harness-planning.md` |
 | Bug, crash, or regression | `workflows/bug-fixing.md` |
-| Any user-visible UI implementation or update, including a single component or state | `workflows/create-ui-and-verify.md` |
+| UI behavior, state, or new screen | `workflows/harness-planning.md` |
+| Appearance-only UI change (no behavior, state, or data change) | `skills/android-ui-layer/SKILL.md` (direct lane, entry check) |
 | API contract change | `workflows/api-contract-update.md` |
+
+## UI Request Routing
+
+Follow the consuming project's `AGENTS.md` routing and explicit user overrides.
+Inspect current-state evidence before classifying a UI request. An unexpected
+defect uses `bug-fixing`; new UI behavior, state, or screens use `harness-planning`.
+An Appearance-only change uses `android-ui-layer` only after its entry check passes,
+and ends with the `ui-verification` conformance review.
 
 
 ---

@@ -81,9 +81,19 @@ while IFS='|' read -r _ raw_id raw_feature raw_workspace raw_status raw_updated 
 
   case "$status" in
     "Planning"|"Awaiting specification approval"|"Awaiting implementation approval"|"In Progress"|"Blocked") ;;
-    "To be reviewed"|"To be fixed"|"To be human reviewed"|"Complete")
+    "Complete")
+      # Single lane: no slices; completion evidence lives in summary.md.
+      if [ ! -f "$workspace/feature_list.json" ]; then
+        [ -f "$workspace/summary.md" ] || fail "Complete single-lane tracker row '$feature_id' has no summary.md."
+      else
+        non_passing_statuses=$(grep -E '"status"[[:space:]]*:' "$workspace/feature_list.json" |
+          grep -Ev '"status"[[:space:]]*:[[:space:]]*"passing"' || true)
+        [ -z "$non_passing_statuses" ] || fail "Complete tracker row '$feature_id' contains non-passing feature slices."
+      fi
+      ;;
+    "To be reviewed"|"To be fixed"|"To be human reviewed")
       feature_list="$workspace/feature_list.json"
-      [ -f "$feature_list" ] || fail "$status tracker row '$feature_id' has no feature_list.json."
+      [ -f "$feature_list" ] || fail "$status is a sliced-lane status; tracker row '$feature_id' has no feature_list.json."
       feature_statuses=$(grep -E '"status"[[:space:]]*:' "$feature_list" || true)
       [ -n "$feature_statuses" ] || fail "$status tracker row '$feature_id' has no feature statuses."
       non_passing_statuses=$(printf '%s\n' "$feature_statuses" | grep -Ev '"status"[[:space:]]*:[[:space:]]*"passing"' || true)
@@ -94,6 +104,18 @@ while IFS='|' read -r _ raw_id raw_feature raw_workspace raw_status raw_updated 
 
   [ "$workspace_target" = "$expected_target" ] ||
     fail "Tracker row '$feature_id' link target must be '$expected_target'."
+
+  # A slice is `passing` only when every one of its tasks is done (tasks use `done`, not `status`).
+  if [ -f "$workspace/feature_list.json" ]; then
+    command -v jq >/dev/null 2>&1 || fail "jq is required to validate slice tasks in $workspace/feature_list.json."
+    unfinished_slices=$(jq -r '
+      .features[]? | select(.status == "passing")
+      | select(((.tasks // []) | map(select(.done != true)) | length) > 0) | .id
+    ' "$workspace/feature_list.json") ||
+      fail "Tracker row '$feature_id' has an unreadable $workspace/feature_list.json."
+    [ -z "$unfinished_slices" ] ||
+      fail "Tracker row '$feature_id' has passing slice(s) with unfinished tasks: $(printf '%s' "$unfinished_slices" | tr '\n' ' ')."
+  fi
 
   if [ "$status" = "In Progress" ]; then
     in_progress_count=$((in_progress_count + 1))

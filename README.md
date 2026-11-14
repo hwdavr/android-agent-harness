@@ -97,37 +97,43 @@ Keep one living Markdown file per product capability in the consuming project's
 change. Keep the product overview and single Harness Feature Tracker in
 `docs/product/product.md`.
 
-Store dated complex-change specs, approvals, slices, evidence, and reviews together
-in `.scratch/<YYYY-MM-DD>-<change>/`. Retain these workspaces in version control;
-location does not define lifecycle status. Ad-hoc artifacts remain in `docs/current/`.
-New specs link capability requirements and record their approval-time hashes. Later
-living-document edits do not expand an approved change's scope. Follow
+A change's specification is its **feature block** under `## Planned changes` in the affected
+capability file (`harness/templates/requirement-delta-template.md`), with `FR-###`/`AC-###` IDs that
+are never reused. Plans, design, approvals, summaries, and evidence live in one dated workspace per
+feature or bug fix, `.scratch/<YYYY-MM-DD>-<feature-id>/`, retained in version control; location does
+not define lifecycle status (`docs/current/` is retired). `implementation-plan.md` records each
+block's approval-time SHA-256, so a later edit to the block requires re-approval. Follow
 [Product documentation flow](.agents/rules/product-documentation.md), and run
-`python3 harness/scripts/check-product-docs.py --summary <change-summary.md>` before closing a
-behavior change. The summary records each affected prior requirement claim and whether it was
-replaced, retired, retained, or confirmed unchanged; the checker validates that review table's
-structure and capability paths.
+`python3 harness/scripts/check-product-docs.py --change-dir <workspace> --summary <workspace>/summary.md`
+before closing a behavior change. The summary records each affected prior requirement claim and
+whether it was replaced, retired, retained, or confirmed unchanged.
 
-### Project-Based Development (Complex Features)
-Used for multi-slice, significant features requiring systematic requirement analysis and evaluation:
+### Spec-driven delivery (Spec Kit style)
 
-1. **Planning (`.agents/workflows/harness-planning.md`)**
-   - Clarifies requirements and approves `spec.md`, then runs a separate UX Design stage for UI scope.
-   - UX defines `UI_contract.md` before generating Pen/reference assets and conducting visual review; visual revisions preserve the spec and summary.
-   - Decomposes requirements into vertical slices in `feature_list.json` and schedules a `sprint-contract.md`.
-2. **Generation (`.agents/workflows/harness-generator.md`)**
-   - Implements each vertical slice incrementally (Data → Domain → UI), with test-first authoring, verification, and quality gates.
-   - Validates each slice before advancing to the next.
-3. **Evaluation (`.agents/workflows/harness-evaluation.md`)**
-   - Conducts independent code, test, visual, and architectural reviews against evaluation rubrics.
-4. **Fixing (`.agents/workflows/harness-fix.md`)**
-   - Resolves any findings if evaluation score is below 5.0/5.
+Every feature enters through **`harness-planning.md`**:
 
-### Ad-Hoc Development (Simple Tasks & Bug Fixes)
-- **`feature-delivery.md`**: Requirements → UX Design for UI scope → approved implementation plan → delivery.
-- **`bug-fixing.md`**: Reproduction test first → surgical fix → regression verification.
-- **`create-ui-and-verify.md`**: Focused on pixel-perfect Composable styling against design mockups.
-- **`feature-review.md`**: Pre-merge independent review checklist.
+1. **Specify & Clarify** (`feature-specification`) — write the feature block, resolve every
+   `[NEEDS CLARIFICATION]`, and decide the lane: no user stories → **single lane**; two or more
+   independently deliverable stories → **sliced lane**.
+2. **UX Design** (`ux-design`, UI scope) — `UI_contract.md` first, then a Pen design built from the
+   design-system Component Registry.
+3. **Implementation Plan & Analyze** (`implementation-plan`) — `implementation-plan.md` (HOW +
+   Rule Applicability) and `test-plan.md` (all test material); the sliced lane adds `tasks.md` and
+   `feature_list.json`. The analyze gate checks they agree with the approved block.
+4. **Single lane**: one approval (block + design + plans), then `single-lane-generator.md` runs implementation → UI conformance
+   review → testing → quality → product-doc reconciliation → install.
+   **Sliced lane**: `sliced-lane-generator.md` implements one slice per story,
+   `harness-evaluation.md` reviews it, `harness-fix.md` resolves findings below 5.0/5.
+
+Other entries:
+- **`bug-fixing.md`**: bug context → RED reproduction → fix plan → GREEN verification, in its own workspace.
+- **`android-ui-layer` direct lane**: appearance-only tweaks an approved design or the design system
+  already defines; ends with the conformance review.
+- **`feature-review.md`**: pre-merge independent review of single-lane work.
+
+UI appearance is approved by a **conformance review** — review captures rendered at the Pen frame
+size, structural semantics checks, registered-component reuse, and user approval — never by a
+screenshot golden.
 
 ---
 
@@ -142,7 +148,9 @@ The harness includes validation scripts located in `harness/scripts/`:
 | `check-localization-rules.sh` | Detects hardcoded strings in UI composables |
 | `check-feature-lifecycle.sh` | Validates feature tracking state and artifact integrity |
 | `check-product-docs.py` | Validates living capability documents, index coverage, scratch workspace placement, local references, and an optional requirement-reconciliation table in the change summary |
-| `check-visual-evidence-contract.sh` | Enforces visual screenshot verification artifacts |
+| `check-visual-evidence-contract.sh` | Enforces the UI conformance review (no pixel goldens) |
+| `check-spec-plan-consistency.sh` | Analyze gate: feature block ↔ implementation plan ↔ test plan ↔ tasks/slices |
+| `compose-feature-spec.py` | Assembles a workspace's effective spec for the stage gates |
 | `check-acceptance-test-traceability.sh` | Verifies acceptance IDs map to real Kotlin methods, scenarios, scoped commands, and evidence |
 | `check-evaluation-fix-contract.sh` | Enforces deterministic evaluator scoring, evidence, and fix-stage routing |
 | `kotlin_ast_checker.py` | Shared AST-backed Compose, localization, architecture, navigation, and assertion checks |

@@ -32,14 +32,15 @@ Do NOT record:
 - Routine bugs (typos, simple null checks, obvious fixes)
 - Decisions that are self-evident from reading the code
 - Implementation details already visible in source
-- Process steps or summaries that belong in `docs/current/`
+- Process steps or summaries that belong in the workspace `summary.md`
 
 ---
 
 ## Load
-- `docs/current/code_review_v<N>.md` (Code Review stage output)
-- `docs/current/test_review_v<N>.md` (Test Review stage output)
-- `docs/current/summary_v<N>.md` (full change history)
+All in the dated workspace `$FEATURE_DIR=.scratch/<YYYY-MM-DD>-<feature-id>/`:
+- `code_review.md` / `code_review_{feature_id}.md` (Code Review stage output)
+- `test_review.md` / `test_review_{feature_id}.md` (Test Review stage output)
+- `summary.md` and any slice summaries (full change history)
 
 ---
 
@@ -69,8 +70,8 @@ If no → skip.
 If yes → update the relevant `.agents/rules/<rule-file>.md`.
 If no → skip.
 
-### 5. Finalize docs/current/summary_v\<N\>.md
-Update `docs/current/summary_v<N>.md` to mark all stages complete and record the final state:
+### 5. Finalize the workspace summary
+Update `$FEATURE_DIR/summary.md` to mark all stages complete and record the final state:
 ```
 ## Change Summary — <name>
 
@@ -81,10 +82,10 @@ Update `docs/current/summary_v<N>.md` to mark all stages complete and record the
 (or "None — no high-value knowledge artifacts were warranted for this change.")
 ```
 
-### 6. Mark Task Complete in Sliced Plan
-If a sliced plan exists in `docs/current/progress.md`:
-1. Find the task you just completed.
-2. Update its progress status to ✅ Complete and set its completion date.
+### 6. Mark the slice complete (sliced lane)
+In the sliced lane, set the completed slice's `status` in `$FEATURE_DIR/feature_list.json` (with its
+evidence) and tick its tasks in `tasks.md`; the tracker row moves to `Complete` only when every slice
+passes.
 
 ---
 
@@ -95,8 +96,8 @@ Zero or more of (zero is a valid and common outcome):
 - `docs/knowledge/past-bugs/<YYYY-MM-DD>-<slug>.md`
 - `docs/knowledge/pitfalls/<slug>.md`
 - Updated `.agents/rules/<rule-file>.md`
-- Finalized `docs/current/summary_v<N>.md`
-- Updated `docs/current/progress.md` (if a sliced plan is active)
+- Finalized `$FEATURE_DIR/summary.md`
+- Updated `feature_list.json` and `tasks.md` (sliced lane)
 
 ---
 
@@ -108,7 +109,7 @@ Zero or more of (zero is a valid and common outcome):
 - [ ] Any qualifying bug record is written, or explicitly marked N/A
 - [ ] Any qualifying pitfall is recorded, or explicitly marked N/A
 - [ ] Any qualifying rule update is applied, or explicitly marked N/A
-- [ ] `docs/current/summary_v<N>.md` is finalized with all stages marked ✅ Complete
-- [ ] `docs/current/progress.md` updated to ✅ Complete (if a sliced plan is active)
+- [ ] `$FEATURE_DIR/summary.md` is finalized with all stages marked ✅ Complete
+- [ ] Sliced lane: the slice is `passing` in `feature_list.json` and its tasks are ticked
 
 **APPROVED →** Change is complete. Notify the user that the workflow pipeline is done.

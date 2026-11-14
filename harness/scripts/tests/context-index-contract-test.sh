@@ -20,10 +20,11 @@ trap 'rm -rf "$TEMP_ROOT"' EXIT
 FEATURE_DIR="$TEMP_ROOT/feature"
 mkdir -p "$FEATURE_DIR"
 
-cat > "$FEATURE_DIR/sprint-contract.md" <<'EOF'
-# Sprint Contract
+printf '# Test Plan\n' > "$FEATURE_DIR/test-plan.md"
+cat > "$FEATURE_DIR/implementation-plan.md" <<'EOF'
+# Implementation Plan
 
-## Rule Applicability Contract
+## Rule Applicability
 
 | Rule ID | Rule document | Decision | Slice evidence |
 |---|---|---|---|
@@ -75,7 +76,7 @@ printf '%s\n' "$INDEX_OUTPUT" | jq -e '
   .execution_flags.affects_ui == false and
   .execution_flags.platform_validation_required == false and
   .acceptance_test_ids == ["TC-US-1-01"] and
-  (.authority.sprint_contract_sha256 | length == 64) and
+  (.authority.implementation_plan_sha256 | length == 64) and (.authority.test_plan_sha256 | length == 64) and
   (.authority.feature_list_sha256 | length == 64)
 ' >/dev/null || fail "context index did not preserve the authoritative slice metadata"
 
@@ -113,8 +114,8 @@ printf '%s\n' "$DUPLICATE_SLICE_OUTPUT" | grep -Fq "must contain exactly one sli
 jq '.features = [.features[0]]' "$FEATURE_DIR/feature_list.json" > "$FEATURE_DIR/feature_list.json.tmp"
 mv "$FEATURE_DIR/feature_list.json.tmp" "$FEATURE_DIR/feature_list.json"
 
-awk '!/^\| SEC \|/' "$FEATURE_DIR/sprint-contract.md" > "$FEATURE_DIR/sprint-contract.md.tmp"
-mv "$FEATURE_DIR/sprint-contract.md.tmp" "$FEATURE_DIR/sprint-contract.md"
+awk '!/^\| SEC \|/' "$FEATURE_DIR/implementation-plan.md" > "$FEATURE_DIR/implementation-plan.md.tmp"
+mv "$FEATURE_DIR/implementation-plan.md.tmp" "$FEATURE_DIR/implementation-plan.md"
 set +e
 INCOMPLETE_RULE_OUTPUT="$(bash "$INDEX_SCRIPT" --feature-dir "$FEATURE_DIR" --slice US-1 2>&1)"
 INCOMPLETE_RULE_STATUS=$?

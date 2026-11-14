@@ -28,7 +28,7 @@ class ProductDocsContractTest(unittest.TestCase):
         workspace = self.root / ".scratch/2026-10-24-sticker-change"
         workspace.mkdir(parents=True)
         self.index.write_text(self.index.read_text() + "[Change](../../.scratch/2026-10-24-sticker-change/)\n")
-        (workspace / "spec.md").write_text("# Change\n\n## Product Requirements\n[Stickers](docs/product/requirements/stickers.md)\n")
+        (workspace / "implementation-plan.md").write_text("# Change\n\n## Product Requirements\n[Stickers](docs/product/requirements/stickers.md)\n")
         self.assertEqual(module.check(self.root, workspace), 1)
 
     def test_accepts_audited_requirement_reconciliation_summary(self):
@@ -121,7 +121,7 @@ class ProductDocsContractTest(unittest.TestCase):
     def test_new_change_requires_existing_capability(self):
         workspace = self.root / ".scratch/change"
         workspace.mkdir(parents=True)
-        spec = workspace / "spec.md"
+        spec = workspace / "implementation-plan.md"
         spec.write_text("# Change\n")
         with self.assertRaisesRegex(ValueError, "Product Requirements section"):
             module.check(self.root, workspace)

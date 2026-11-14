@@ -65,7 +65,7 @@ JSON
     '| Test ID | Covers AC | Test layer | Test file and method | Shared scenario(s) | Setup and action | Required assertions | Exact command |' \
     '|---|---|---|---|---|---|---|---|' \
     '| TC-US-1-01 | AC-US-1-01 | JVM unit | app/src/test/com/example/fixture/FixtureTest.kt#primaryAcceptance | N/A — no API | Run fixture behavior. | Fixture expectation passes. | ./gradlew testDebugUnitTest --tests com.example.fixture.FixtureTest |' \
-    > "$FEATURE_DIR/sprint-contract.md"
+    > "$FEATURE_DIR/test-plan.md"
   cat > "$FIXTURE_ROOT/app/src/test/com/example/fixture/FixtureTest.kt" <<'EOF'
 package com.example.fixture
 

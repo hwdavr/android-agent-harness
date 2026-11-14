@@ -12,9 +12,9 @@ Read and follow [Product documentation flow](../rules/product-documentation.md).
 ## When to use
 - Use this workflow when you are acting as the **Generator** (Implementer) agent in **Fix Mode**.
 - The active feature's tracker status is `To be fixed`. This status is set by the Evaluator ([`harness-evaluation.md`](harness-evaluation.md)) when the overall score is below `5.0 / 5`.
-- The Evaluator wrote `$FEATURE_DIR/code_review_{feature_id}.md` and `$FEATURE_DIR/test_review_{feature_id}.md`. Your job is to resolve **every** finding in those reports, re-verify against the sprint-contract acceptance gates, and transition the feature to `To be human reviewed`.
+- The Evaluator wrote `$FEATURE_DIR/code_review_{feature_id}.md` and `$FEATURE_DIR/test_review_{feature_id}.md`. Your job is to resolve **every** finding in those reports, re-verify against the test-plan acceptance gates, and transition the feature to `To be human reviewed`.
 
-> Do **NOT** run the `harness-generator.md` Stages 1–9 here — there is no new slice to implement and every slice is already `passing`. Do **NOT** flip any slice to `in_progress`, do **NOT** re-run lifecycle transition logic, and do **NOT** regenerate an implementation plan.
+> Do **NOT** run the `sliced-lane-generator.md` Stages 1–9 here — there is no new slice to implement and every slice is already `passing`. Do **NOT** flip any slice to `in_progress`, do **NOT** re-run lifecycle transition logic, and do **NOT** regenerate an implementation plan.
 
 ---
 
@@ -58,12 +58,12 @@ Never introduce `@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disa
 *   **Action**:
     1. Run `bash harness/scripts/check-feature-lifecycle.sh`; confirm the active feature row is `To be fixed`. Stop if validation fails.
     2. Read, in order:
-        1. `$FEATURE_DIR/sprint-contract.md` — Acceptance Test Cases and verification commands (the gates that must stay green).
+        1. `$FEATURE_DIR/test-plan.md` — the slice's `### US-n` Acceptance Test Cases and verification commands (the gates that must stay green).
         2. `$FEATURE_DIR/platform-capability-matrix.md` — API/runtime contract and unsupported-environment policy (platform-bound features only).
         3. `$FEATURE_DIR/evaluator-rubric.md` — overall score, category scores, verdict, and Required Follow-Up.
         4. `$FEATURE_DIR/code_review_{feature_id}.md` — every `REVISION REQUIRED` / `FAIL` item.
         5. `$FEATURE_DIR/test_review_{feature_id}.md` — every coverage gap, missing assertion, or failing scenario.
-        6. `$FEATURE_DIR/session-handoff.md` and `$FEATURE_DIR/progress.md` — prior context.
+        6. `$FEATURE_DIR/session-handoff.md`, `$FEATURE_DIR/summary.md`, and the slice summary — prior context.
     3. Build a consolidated, deduplicated fix list. Each item must trace to a specific report section (and line). Initialize (or append to) `$FEATURE_DIR/summary_{feature_id}.md` a **Fix Pass** section listing every fix item with status `pending`.
 *   **Objective**: A single source of truth for every review finding that must be resolved.
 
@@ -102,11 +102,11 @@ method, a suite-scoped command, its declared scenario, and successful evidence:
     bash harness/scripts/check-acceptance-test-traceability.sh "$FEATURE_DIR" --evaluate
 
 *   **Action**:
-    1. Validate an existing successful receipt with `bash harness/scripts/check-evidence-receipt.sh <receipt.json> --source <hash> --build-config <hash> --command <hash> --runtime <hash>`. Reuse it only when the validator passes; otherwise re-run, **one by one**, each affected verification command listed in `$FEATURE_DIR/sprint-contract.md` Acceptance Test Cases. If any command fails, record its command, exit status, and raw output; keep the feature non-passing and stop the pipeline.
+    1. Validate an existing successful receipt with `bash harness/scripts/check-evidence-receipt.sh <receipt.json> --source <hash> --build-config <hash> --command <hash> --runtime <hash>`. Reuse it only when the validator passes; otherwise re-run, **one by one**, each affected verification command listed in the slice's `. If any command fails, record its command, exit status, and raw output; keep the feature non-passing and stop the pipeline.
     2. Re-run the global quality gates: `./gradlew ktlintCheck`, `./gradlew detekt`, `./gradlew lint`, `./gradlew koverLog`, and `bash harness/scripts/check-full-source-rules.sh` (coverage ≥ 80% overall; ≥ 90% for ViewModel & Use Case). The full-source bundle is mandatory and must not be replaced by changed-file checker invocations.
     3. Attach objective evidence (command + exit status + fix attempts) to each Test ID's `evidence` field in `$FEATURE_DIR/feature_list.json`. All slices must remain `passing`.
     4. Run `bash harness/scripts/check-platform-evidence.sh "$FEATURE_DIR" --evaluate`. Missing matrices, unavailable/pending/skipped environments, and fake-only platform tests remain hard failures; record them as `Unresolved ⚠️` rather than passing them through.
-    5. Run `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR"` when visual verification is required. Every final visual method must be a JVM `*RoborazziTest` declared in the sprint contract, pass `verifyRoborazziDebug`, and have reference-anchor proof in `visual_evidence/reference-anchor-verification.md` for the approved Pen export. Use the `screen` comparison scope when the fixture matches the frame and `component` when the approved design isolates the changed surface. Device evidence proves behavior and platform boundaries only.
+    5. When the slice owns the conformance review, re-run `ui-verification` for affected states and `bash harness/scripts/check-visual-evidence-contract.sh "$FEATURE_DIR" --evaluate`: captures at each state's Viewport, passing structural checks, registered components, and fresh user approval for any state whose appearance changed. Device evidence proves behavior and platform boundaries only.
     6. Reconcile the in-report statuses with re-verification: any finding whose verification command still fails must read `Unresolved ⚠️` in the report (not `Fixed ✅`).
     7. Reconcile all Rule Applicability rows again. A rule newly triggered by a fix must be recorded in the specification and both review reports before the feature can proceed.
     8. Mark Fix-Stage 4 ✅ in `$FEATURE_DIR/summary_{feature_id}.md` detailing test counts, coverage percentages, and platform/visual evidence.
@@ -123,7 +123,7 @@ acceptance Test IDs without successful evidence.
 
 *   **Action**:
     1. Finalize the in-report status updates in `$FEATURE_DIR/code_review_{feature_id}.md` (per-finding lines + the `## Verdict` `Fix Pass` line) and `$FEATURE_DIR/test_review_{feature_id}.md` (`Fix Status` column + `## Fix Pass Summary`).
-    2. Update `$FEATURE_DIR/progress.md` and `$FEATURE_DIR/feature_list.json` evidence.
+    2. Update the slice summary, `$FEATURE_DIR/summary.md`, and `$FEATURE_DIR/feature_list.json` evidence.
     3. Update `docs/product/product.md`:
         *   Transition the feature status `To be fixed` → `To be human reviewed`.
         *   Update the date to today and append to the notes column: "Fix pass applied; re-verification evidence attached; <N>/<M> findings fixed."

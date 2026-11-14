@@ -41,14 +41,14 @@ printf '%s\n' \
   '}' \
   > "$SOURCE_FILE"
 
-expect_failure "must call captureRoboImage() in a Roborazzi JVM test" \
+expect_failure "must assert the rendered node's AnnotatedString span styles" \
   bash "$VALIDATOR" \
     --project-root "$FIXTURE_ROOT" \
     --test-file "$SOURCE_FILE" \
     --test-method markedTextIsRendered \
     --claim "following text visibly inherits Bold"
 
-expect_failure "must call captureRoboImage() in a Roborazzi JVM test" \
+expect_failure "must assert the rendered node's AnnotatedString span styles" \
   bash "$VALIDATOR" \
     --project-root "$FIXTURE_ROOT" \
     --test-file "$SOURCE_FILE" \
@@ -71,7 +71,7 @@ printf '%s\n' \
   '}' \
   > "$SOURCE_FILE"
 
-expect_failure "must call captureRoboImage() in a Roborazzi JVM test" \
+expect_failure "must assert the rendered node's AnnotatedString span styles" \
   bash "$VALIDATOR" \
     --project-root "$FIXTURE_ROOT" \
     --test-file "$SOURCE_FILE" \
@@ -94,8 +94,28 @@ printf '%s\n' \
   '}' \
   > "$SOURCE_FILE"
 
-expect_failure "must call captureRoboImage() in a Roborazzi JVM test" \
+expect_failure "must assert the rendered node's AnnotatedString span styles" \
   bash "$VALIDATOR" \
+  --project-root "$FIXTURE_ROOT" \
+  --test-file "$SOURCE_FILE" \
+  --test-method markedTextIsRendered \
+  --claim "marked text appearance differs" >/dev/null
+
+printf '%s\n' \
+  'package example' \
+  '' \
+  'import org.junit.Test' \
+  '' \
+  'class RenderedOutputRoborazziTest {' \
+  '  @Test' \
+  '  fun markedTextIsRendered() {' \
+  '    val text = onNodeWithTag("note_body").fetchSemanticsNode().config[SemanticsProperties.Text].first()' \
+  '    assertTrue(text.spanStyles.any { it.item == SpanStyle(fontWeight = FontWeight.Bold) })' \
+  '  }' \
+  '}' \
+  > "$SOURCE_FILE"
+
+bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --test-file "$SOURCE_FILE" \
   --test-method markedTextIsRendered \
@@ -114,11 +134,12 @@ printf '%s\n' \
   '}' \
   > "$SOURCE_FILE"
 
-bash "$VALIDATOR" \
+expect_failure "pixel goldens are retired" \
+  bash "$VALIDATOR" \
   --project-root "$FIXTURE_ROOT" \
   --test-file "$SOURCE_FILE" \
   --test-method markedTextIsRendered \
-  --claim "marked text appearance differs" >/dev/null
+  --claim "marked text appearance differs"
 
 printf '%s\n' \
   'package example' \

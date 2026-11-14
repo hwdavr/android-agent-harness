@@ -49,7 +49,7 @@ esac
 FEATURE_SLUG=$(basename "$DOCS_DIR")
 FEATURE_SLUG=$(printf '%s' "$FEATURE_SLUG" | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//')
 FEATURE_JSON="$DOCS_DIR/feature_list.json"
-CONTRACT="$DOCS_DIR/sprint-contract.md"
+CONTRACT="$DOCS_DIR/test-plan.md"
 RUBRIC="$DOCS_DIR/evaluator-rubric.md"
 CODE_REVIEW="$DOCS_DIR/code_review_$FEATURE_SLUG.md"
 TEST_REVIEW="$DOCS_DIR/test_review_$FEATURE_SLUG.md"
@@ -110,7 +110,7 @@ validate_acceptance_evidence() {
         covered_ac == wanted && test_id ~ /^TC-[A-Za-z0-9-]+$/ { print test_id; exit }
       ' "$CONTRACT")
     fi
-    [ -n "$test_id" ] || fail "$feature_id acceptance ID $acceptance_id has no Test ID in sprint-contract.md"
+    [ -n "$test_id" ] || fail "$feature_id acceptance ID $acceptance_id has no Test ID in test-plan.md"
     jq -e --arg owner "$feature_id" --arg test_id "$test_id" '
       any(.features[]? | select(.id == $owner) | (.evidence // [])[]?;
         .test_id == $test_id and .exit_status == 0)

@@ -17,7 +17,7 @@ assert_rejected() {
   local status
 
   set +e
-  output=$(HARNESS_PROJECT_ROOT="$fixture" bash "$STAGE_CHECKER" bug-fixing bug-reproduction "$fixture" 2>&1)
+  output=$(HARNESS_PROJECT_ROOT="$fixture" bash "$STAGE_CHECKER" bug-fixing bug-reproduction "$fixture/.scratch/2026-11-09-fix-bug" 2>&1)
   status=$?
   set -e
   [ "$status" -ne 0 ] || fail_test "invalid fixture unexpectedly passed: $fixture"
@@ -43,8 +43,15 @@ mkdir -p "$VALID_DOCS/app/src/androidTest/java/example" \
   "$IME_ACCEPTANCE_ONLY_DOCS/app/src/androidTest/java/example" \
   "$IME_REPRODUCTION_DOCS/app/src/androidTest/java/example"
 
+ensure_workspace() {
+  mkdir -p "$(dirname "$1")"
+  [ -f "$(dirname "$1")/implementation-plan.md" ] ||
+    printf '%s\n' '# Implementation Plan' '' '## Root Cause & Reproduction' > "$(dirname "$1")/implementation-plan.md"
+}
+
 create_summary() {
   local output="$1"
+  ensure_workspace "$output"
   printf '%s\n' \
     '# Summary' \
     '' \
@@ -56,10 +63,11 @@ create_summary() {
 
 create_spec() {
   local output="$1"
+  ensure_workspace "$output"
   local result="$2"
   local file="$3"
   printf '%s\n' \
-    '# Spec' \
+    '# Test Plan' \
     '' \
     '## Reproduction Test' \
     '' \
@@ -69,21 +77,22 @@ create_spec() {
     > "$output"
 }
 
-create_summary "$VALID_DOCS/summary_v1.md"
+create_summary "$VALID_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
 printf '%s\n' 'fun reproducesSelectionBug() = Unit' \
   > "$VALID_DOCS/app/src/androidTest/java/example/ReproductionTest.kt"
-create_spec "$VALID_DOCS/spec_v1.md" 'FAILED (expected)' \
+create_spec "$VALID_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md" 'FAILED (expected)' \
   'app/src/androidTest/java/example/ReproductionTest.kt'
 
 HARNESS_PROJECT_ROOT="$VALID_DOCS" bash "$STAGE_CHECKER" \
-  bug-fixing bug-reproduction "$VALID_DOCS" >/dev/null ||
+  bug-fixing bug-reproduction "$VALID_DOCS/.scratch/2026-11-09-fix-bug" >/dev/null ||
   fail_test "valid RED reproduction evidence did not pass"
 
 create_rendered_spec() {
   local output="$1"
+  ensure_workspace "$output"
   local file="$2"
   printf '%s\n' \
-    '# Spec' \
+    '# Test Plan' \
     '' \
     '## Reproduction Test' \
     '' \
@@ -93,8 +102,8 @@ create_rendered_spec() {
     > "$output"
 }
 
-create_summary "$RENDERED_FALSE_PASS_DOCS/summary_v1.md"
-create_rendered_spec "$RENDERED_FALSE_PASS_DOCS/spec_v1.md" \
+create_summary "$RENDERED_FALSE_PASS_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
+create_rendered_spec "$RENDERED_FALSE_PASS_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md" \
   'app/src/androidTest/java/example/ReproductionTest.kt'
 printf '%s\n' \
   'package example' \
@@ -111,10 +120,10 @@ printf '%s\n' \
   '}' \
   > "$RENDERED_FALSE_PASS_DOCS/app/src/androidTest/java/example/ReproductionTest.kt"
 assert_rejected "$RENDERED_FALSE_PASS_DOCS" \
-  "must call captureRoboImage() in a Roborazzi JVM test"
+  "must assert the rendered node's AnnotatedString span styles"
 
-create_summary "$RENDERED_VALID_DOCS/summary_v1.md"
-create_rendered_spec "$RENDERED_VALID_DOCS/spec_v1.md" \
+create_summary "$RENDERED_VALID_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
+create_rendered_spec "$RENDERED_VALID_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md" \
   'app/src/test/java/example/roborazzi/ReproductionRoborazziTest.kt'
 mkdir -p "$RENDERED_VALID_DOCS/app/src/test/java/example/roborazzi"
 printf '%s\n' \
@@ -125,50 +134,51 @@ printf '%s\n' \
   'class ReproductionRoborazziTest {' \
   '  @Test' \
   '  fun markedTextIsRendered() {' \
-  '    captureRoboImage("design/mockup_formatted_text.png")' \
+  '    val text = onNodeWithTag("note_body").fetchSemanticsNode().config[SemanticsProperties.Text].first()' \
+  '    assertTrue(text.spanStyles.any { it.item == SpanStyle(fontWeight = FontWeight.Bold) })' \
   '  }' \
   '}' \
   > "$RENDERED_VALID_DOCS/app/src/test/java/example/roborazzi/ReproductionRoborazziTest.kt"
 HARNESS_PROJECT_ROOT="$RENDERED_VALID_DOCS" bash "$STAGE_CHECKER" \
-  bug-fixing bug-reproduction "$RENDERED_VALID_DOCS" >/dev/null ||
+  bug-fixing bug-reproduction "$RENDERED_VALID_DOCS/.scratch/2026-11-09-fix-bug" >/dev/null ||
   fail_test "valid rendered RED reproduction evidence did not pass"
 
-create_summary "$IME_ACCEPTANCE_ONLY_DOCS/summary_v1.md"
-create_spec "$IME_ACCEPTANCE_ONLY_DOCS/spec_v1.md" 'FAILED (expected)' \
+create_summary "$IME_ACCEPTANCE_ONLY_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
+create_spec "$IME_ACCEPTANCE_ONLY_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md" 'FAILED (expected)' \
   'app/src/androidTest/java/example/ReproductionTest.kt'
 printf '%s\n' \
   '' \
   '## Acceptance Criteria' \
   '' \
   '- The control remains visible while the software keyboard is open.' \
-  >> "$IME_ACCEPTANCE_ONLY_DOCS/spec_v1.md"
+  >> "$IME_ACCEPTANCE_ONLY_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md"
 printf '%s\n' 'fun reproducesSelectionBug() = Unit' \
   > "$IME_ACCEPTANCE_ONLY_DOCS/app/src/androidTest/java/example/ReproductionTest.kt"
 HARNESS_PROJECT_ROOT="$IME_ACCEPTANCE_ONLY_DOCS" bash "$STAGE_CHECKER" \
-  bug-fixing bug-reproduction "$IME_ACCEPTANCE_ONLY_DOCS" >/dev/null ||
+  bug-fixing bug-reproduction "$IME_ACCEPTANCE_ONLY_DOCS/.scratch/2026-11-09-fix-bug" >/dev/null ||
   fail_test "non-IME reproduction was incorrectly classified from an IME acceptance criterion"
 
-create_summary "$IME_REPRODUCTION_DOCS/summary_v1.md"
-create_spec "$IME_REPRODUCTION_DOCS/spec_v1.md" 'FAILED (expected)' \
+create_summary "$IME_REPRODUCTION_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
+create_spec "$IME_REPRODUCTION_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md" 'FAILED (expected)' \
   'app/src/androidTest/java/example/ImeReproductionTest.kt'
 printf '%s\n' '- Defect type: IME keyboard occlusion' \
-  >> "$IME_REPRODUCTION_DOCS/spec_v1.md"
+  >> "$IME_REPRODUCTION_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md"
 printf '%s\n' 'fun reproducesSelectionBug() = Unit' \
   > "$IME_REPRODUCTION_DOCS/app/src/androidTest/java/example/ImeReproductionTest.kt"
 assert_rejected "$IME_REPRODUCTION_DOCS" \
   'IME reproduction must declare Test name and Production activity'
 
-create_summary "$MISSING_SECTION_DOCS/summary_v1.md"
-printf '%s\n' '# Spec' > "$MISSING_SECTION_DOCS/spec_v1.md"
+create_summary "$MISSING_SECTION_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
+printf '%s\n' '# Spec' > "$MISSING_SECTION_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md"
 assert_rejected "$MISSING_SECTION_DOCS" "missing a '## Reproduction Test' section"
 
-create_summary "$PASSING_RESULT_DOCS/summary_v1.md"
-create_spec "$PASSING_RESULT_DOCS/spec_v1.md" 'PASSED' \
+create_summary "$PASSING_RESULT_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
+create_spec "$PASSING_RESULT_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md" 'PASSED' \
   'app/src/androidTest/java/example/ReproductionTest.kt'
 assert_rejected "$PASSING_RESULT_DOCS" "must record FAILED or RED evidence"
 
-create_summary "$MISSING_FILE_DOCS/summary_v1.md"
-create_spec "$MISSING_FILE_DOCS/spec_v1.md" 'RED (expected)' \
+create_summary "$MISSING_FILE_DOCS/.scratch/2026-11-09-fix-bug/summary.md"
+create_spec "$MISSING_FILE_DOCS/.scratch/2026-11-09-fix-bug/test-plan.md" 'RED (expected)' \
   'app/src/androidTest/java/example/MissingTest.kt'
 assert_rejected "$MISSING_FILE_DOCS" "reproduction test file does not exist"
 

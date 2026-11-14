@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Regression: UI planning cannot pass with missing, collapsed, or unmapped states.
+# Regression: UI contract states must be complete, uniquely referenced, mapped to the spec, the
+# implementation plan (reused registered components), the test plan (review capture + structural
+# check), and an approved conformance review.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-GATE="$ROOT/harness/scripts/check-stage-artifacts.sh"
 CHECK="$ROOT/harness/scripts/check-ui-contract.py"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/ui-contract-test.XXXXXX")"
 trap 'rm -rf "$FIXTURE"' EXIT
@@ -24,153 +25,217 @@ expect_failure() {
   }
 }
 
-# This was a false PASS before the retrospective: the wildcard stage printed SKIP.
-expect_failure "no file matching 'UI_contract.md'" \
-  bash "$GATE" create-ui-and-verify reference-design "$FIXTURE"
-
-mkdir -p "$FIXTURE/design"
-printf 'Pen fixture' > "$FIXTURE/design/source.pen"
-write_png_header() {
+png() {
   python3 - "$1" "$2" "$3" <<'PY'
-import struct
-import sys
-
-path, width, height = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
-with open(path, "wb") as output:
-    output.write(b"\x89PNG\r\n\x1a\n")
-    output.write(struct.pack(">I", 13))
-    output.write(b"IHDR")
-    output.write(struct.pack(">II", width, height))
+import struct, sys, zlib
+path, w, h = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+def chunk(kind, data):
+    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xffffffff)
+raw = b"".join(b"\x00" + b"\xff\xff\xff" * w for _ in range(h))
+open(path, "wb").write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+                       + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 PY
 }
-write_png_header "$FIXTURE/design/mockup_crop.png" 860 1864
-write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
-cat > "$FIXTURE/UI_contract.md" <<'EOF'
+
+W="$FIXTURE/.scratch/2026-11-09-transform"
+mkdir -p "$W/design" "$W/evidence/ui" "$FIXTURE/docs/product" "$FIXTURE/app/src/main/java/example" \
+  "$FIXTURE/app/src/test/java/example/roborazzi" "$FIXTURE/app/src/androidTest/java/example"
+printf 'Pen fixture' > "$W/design/source.pen"
+png "$W/design/mockup_crop.png" 430 932
+png "$W/design/mockup_rotate.png" 430 932
+cat > "$FIXTURE/docs/product/design_system.md" <<'MD'
+# Design System
+
+### Component Registry
+
+| Component | Pen component | Composable | Required testTag | Wraps Material |
+|---|---|---|---|---|
+| ToolDial | comp/dial | ui/components/ToolDial.kt | tool_dial | Slider |
+| ActionChip | comp/chip | ui/components/ActionChip.kt | action_chip | AssistChip |
+MD
+cat > "$W/UI_contract.md" <<'MD'
 # UI Contract
 Project design system: `docs/product/design_system.md`
 
 ## Screen States
 
-| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Runtime fixture | Comparison | Content difference | Plan stage |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Transform | crop | `design/source.pen` | crop-node | screen-frame | `design/mockup_crop.png` | 430x932 | primary-content; state-controls; persistent-controls | Straighten dial; aspect buttons | crop-fixture | structural | Pen photo differs from device photo | UI-01 |
-| Transform | rotate | `design/source.pen` | rotate-node | screen-frame | `design/mockup_rotate.png` | 430x932 | primary-content; state-controls; persistent-controls | Rotate Left; Rotate Right buttons | rotate-fixture | exact | None | UI-02 |
-EOF
-cat > "$FIXTURE/spec_v1.md" <<'EOF'
-# Spec
-
-## Rule Applicability
-
-| Rule ID | Rule document | Decision | Evidence |
-|---|---|---|---|
-| ARCH | rule.md | Required | test |
-| IMPL | rule.md | Required | test |
-| TEST | rule.md | Required | test |
-| SUI | rule.md | Required | test |
-| L10N | rule.md | Required | test |
-| NAV | rule.md | Not applicable — no navigation | test |
-| API | rule.md | Not applicable — no API | test |
-| OBS | rule.md | Not applicable — no async work | test |
-| ANL | rule.md | Not applicable — analytics: none | test |
-| SEC | rule.md | Not applicable — no security boundary | test |
+| Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Reused components | Runtime fixture | Plan stage |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Transform | crop | `design/source.pen` | crop-node | screen-frame | `design/mockup_crop.png` | 430x932 | primary-content; state-controls; persistent-controls | Straighten dial; aspect buttons | `ToolDial`, `ActionChip` | crop-fixture | UI-01 |
+| Transform | rotate | `design/source.pen` | rotate-node | screen-frame | `design/mockup_rotate.png` | 430x932 | primary-content; state-controls; persistent-controls | Rotate Left; Rotate Right buttons | `ActionChip` | rotate-fixture | UI-02 |
+MD
+cat > "$FIXTURE/spec.md" <<'MD'
+# Composed spec
 
 ## Screen States
 
 | Screen | State ID | Requirement | Acceptance Criteria |
 |---|---|---|---|
-| Transform | crop | FR-01 | AC-01 |
-| Transform | rotate | FR-02 | AC-02 |
-EOF
-cat > "$FIXTURE/implementation_plan_v1.md" <<'EOF'
-# Plan
+| Transform | crop | FR-001 | AC-001 |
+| Transform | rotate | FR-002 | AC-002 |
+MD
+cat > "$W/implementation-plan.md" <<'MD'
+# Implementation Plan
 
-## UI State Stages
+## Phase 1 — Design
 
-| Stage ID | Implementation | Verification target | Verification |
+### Project Structure
+
+| Layer | Files affected | Change type |
+|---|---|---|
+| UI | `app/src/main/java/example/TransformScreen.kt` | modify |
+
+### UI State Stages *(UI scope; remove otherwise)*
+
+| Stage ID | Reused registered components | Implementation |
+|---|---|---|
+| UI-01 | `ToolDial`, `ActionChip` | Crop controls |
+| UI-02 | `ActionChip` | Rotate controls |
+MD
+cat > "$W/test-plan.md" <<'MD'
+# Test Plan
+
+## UI State Verification *(UI scope; remove otherwise)*
+
+| Stage ID | Review capture (test#method) | Structural check (test#method) | Command |
 |---|---|---|---|
-| UI-01 | Implement crop selected controls | `app/src/androidTest/java/example/TransformTest.kt#cropSelectedMatchesDesign` | Check `design/mockup_crop.png` structure with `ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.TransformTest#cropSelectedMatchesDesign`. |
-| UI-02 | Implement rotate selected controls | `app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign` | Compare `design/mockup_rotate.png` with `./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"`. |
-EOF
-touch "$FIXTURE/summary_v1.md"
+| UI-01 | `app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#crop` | `app/src/test/java/example/TransformStructureTest.kt#crop` | `./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests "example.TransformStructureTest" --tests "example.roborazzi.TransformReviewCaptureTest"` |
+| UI-02 | `app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#rotate` | `app/src/androidTest/java/example/TransformRotateTest.kt#rotate` | `./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests "example.roborazzi.TransformReviewCaptureTest"` and `ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.TransformRotateTest#rotate` |
+MD
+printf 'fun TransformScreen() {\n    ToolDial(value)\n    ActionChip(label)\n}\n' > "$FIXTURE/app/src/main/java/example/TransformScreen.kt"
+touch "$FIXTURE/app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt" \
+  "$FIXTURE/app/src/test/java/example/TransformStructureTest.kt" \
+  "$FIXTURE/app/src/androidTest/java/example/TransformRotateTest.kt"
+png "$W/evidence/ui/crop.png" 860 1864
+png "$W/evidence/ui/rotate.png" 860 1864
+mkdir -p "$W/evidence/ui/compare"
+for state in crop rotate; do
+  png "$W/evidence/ui/compare/$state.png" 1780 1864
+  touch -t 203001010000 "$W/evidence/ui/compare/$state.png"  # future mtime: never older than its inputs
+done
+printf '### crop\n\nNone\n\n### rotate\n\nNone\n' > "$W/evidence/ui/compare/findings.md"
+cat > "$W/ui_verification.json" <<'JSON'
+{"version": 1, "state_results": [
+  {"screen": "Transform", "state_id": "crop", "design_image": "design/mockup_crop.png",
+   "review_capture": "evidence/ui/crop.png",
+   "comparison_image": "evidence/ui/compare/crop.png",
+   "review_capture_test": "app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#crop",
+   "structural_check": "app/src/test/java/example/TransformStructureTest.kt#crop", "structural_result": "PASS",
+   "review_decision": "approved", "approved_by": "user", "approved_on": "2026-11-09", "result": "PASS"},
+  {"screen": "Transform", "state_id": "rotate", "design_image": "design/mockup_rotate.png",
+   "review_capture": "evidence/ui/rotate.png",
+   "comparison_image": "evidence/ui/compare/rotate.png",
+   "review_capture_test": "app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#rotate",
+   "structural_check": "app/src/androidTest/java/example/TransformRotateTest.kt#rotate", "structural_result": "PASS",
+   "review_decision": "approved", "approved_by": "user", "approved_on": "2026-11-09", "result": "PASS"}
+]}
+JSON
 
-bash "$GATE" create-ui-and-verify reference-design "$FIXTURE" >/dev/null
-bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE" >/dev/null
-bash "$GATE" feature-delivery requirement-analysis "$FIXTURE" >/dev/null
-bash "$GATE" feature-delivery ux-design "$FIXTURE" >/dev/null
-
-cp "$FIXTURE/UI_contract.md" "$FIXTURE/original-contract"
-write_png_header "$FIXTURE/design/mockup_crop_rail.png" 860 177
-sed 's/mockup_crop.png/mockup_crop_rail.png/' "$FIXTURE/original-contract" > "$FIXTURE/UI_contract.md"
-expect_failure "design PNG aspect ratio" python3 "$CHECK" "$FIXTURE/UI_contract.md"
-cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
-
-sed 's/rotate-node/crop-node/' "$FIXTURE/original-contract" > "$FIXTURE/UI_contract.md"
-expect_failure "design node reused across states" python3 "$CHECK" "$FIXTURE/UI_contract.md"
-cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
-
-sed 's|design/source.pen|../UI_design/../../design/source.pen|' "$FIXTURE/original-contract" > "$FIXTURE/UI_contract.md"
-expect_failure "unsafe design path" python3 "$CHECK" "$FIXTURE/UI_contract.md"
-cp "$FIXTURE/original-contract" "$FIXTURE/UI_contract.md"
-
-rm "$FIXTURE/design/mockup_rotate.png"
-expect_failure "missing or empty design PNG" python3 "$CHECK" "$FIXTURE/UI_contract.md"
-write_png_header "$FIXTURE/design/mockup_rotate.png" 860 1864
-
-cp "$FIXTURE/spec_v1.md" "$FIXTURE/original-spec"
-sed '/| Transform | rotate | FR-02 | AC-02 |/d' "$FIXTURE/original-spec" > "$FIXTURE/spec_v1.md"
-expect_failure "UI contract states differ from spec" \
-  bash "$GATE" feature-delivery ux-design "$FIXTURE"
-cp "$FIXTURE/original-spec" "$FIXTURE/spec_v1.md"
-
-cp "$FIXTURE/implementation_plan_v1.md" "$FIXTURE/original-plan"
-sed '/| UI-02 | Implement rotate selected controls |/d' "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
-expect_failure "UI plan stages differ from contract" \
-  bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
-cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
-
-sed 's@app/src/test/java/example/roborazzi/TransformRoborazziTest.kt#rotateSelectedMatchesApprovedDesign@app/src/test/java/example/roborazzi/TransformVisualTest.kt#rotateSelectedMatchesApprovedDesign@' \
-  "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
-expect_failure "needs a valid Roborazzi target" \
-  bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
-cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
-
-sed 's#./gradlew app:verifyRoborazziDebug --tests "example.TransformRoborazziTest.rotateSelectedMatchesApprovedDesign"#./gradlew testDebugUnitTest#' \
-  "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
-expect_failure "needs a method-scoped verifyRoborazziDebug command" \
-  bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
-cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
-
-sed 's#design/mockup_rotate.png#design/missing_reference.png#g' \
-  "$FIXTURE/original-plan" > "$FIXTURE/implementation_plan_v1.md"
-expect_failure "verification must cite its approved design image" \
-  bash "$GATE" create-ui-and-verify implementation-plan "$FIXTURE"
-cp "$FIXTURE/original-plan" "$FIXTURE/implementation_plan_v1.md"
-
-mkdir -p "$FIXTURE/evidence"
-cat > "$FIXTURE/evidence/ui_frames.json" <<'EOF'
-{"screens":[{"name":"crop-runtime","screenshot":"evidence/crop.png"},{"name":"rotate-runtime","screenshot":"evidence/rotate.png"}]}
-EOF
-cat > "$FIXTURE/ui_verification.json" <<'EOF'
-{
-  "runtime_evidence":"evidence/ui_frames.json",
-  "state_results":[
-    {"screen":"Transform","state_id":"crop","design_image":"design/mockup_crop.png","runtime_screen":"crop-runtime","comparison":"structural","pixel_parity":"not-claimed","assertion":"Crop icon bounds match the approved reference","result":"PASS"},
-    {"screen":"Transform","state_id":"rotate","design_image":"design/mockup_rotate.png","runtime_screen":"rotate-runtime","comparison":"exact","pixel_parity":"verified","assertion":"Rotate icon and text match the approved export","result":"PASS"}
-  ]
+C="$W/UI_contract.md"
+DS="$FIXTURE/docs/product/design_system.md"
+full() {
+  python3 "$CHECK" "$C" --spec "$FIXTURE/spec.md" --design-system "$DS" --plan "$W/implementation-plan.md" \
+    --test-plan "$W/test-plan.md" --report "$W/ui_verification.json" --runtime --project-root "$FIXTURE"
 }
-EOF
-python3 "$CHECK" "$FIXTURE/UI_contract.md" --report "$FIXTURE/ui_verification.json" >/dev/null
+full >/dev/null
 
-cp "$FIXTURE/ui_verification.json" "$FIXTURE/original-report"
-python3 - "$FIXTURE/ui_verification.json" <<'PY'
+cp "$C" "$FIXTURE/original-contract"
+cp "$W/implementation-plan.md" "$FIXTURE/original-plan"
+cp "$W/test-plan.md" "$FIXTURE/original-test-plan"
+cp "$W/ui_verification.json" "$FIXTURE/original-report"
+
+# Design references
+png "$W/design/mockup_crop_rail.png" 860 177
+sed 's/mockup_crop.png/mockup_crop_rail.png/' "$FIXTURE/original-contract" > "$C"
+expect_failure "design PNG aspect ratio" python3 "$CHECK" "$C"
+sed 's/rotate-node/crop-node/' "$FIXTURE/original-contract" > "$C"
+expect_failure "design node reused across states" python3 "$CHECK" "$C"
+sed 's|design/source.pen|../UI_design/../../design/source.pen|' "$FIXTURE/original-contract" > "$C"
+expect_failure "unsafe design path" python3 "$CHECK" "$C"
+# OpenPencil sources (.fig) are design-tool sources too; a screen-frame node is still required.
+printf 'Fig fixture' > "$W/design/source.fig"
+sed 's|design/source.pen|design/source.fig|g' "$FIXTURE/original-contract" > "$C"
+python3 "$CHECK" "$C" >/dev/null
+sed -e 's|design/source.pen|design/source.fig|g' -e 's/| crop-node | screen-frame |/| crop-node | component |/' "$FIXTURE/original-contract" > "$C"
+expect_failure "design-tool state crop needs a top-level screen-frame node" python3 "$CHECK" "$C"
+rm "$W/design/source.fig"
+cp "$FIXTURE/original-contract" "$C"
+mv "$W/design/mockup_rotate.png" "$FIXTURE/rotate.bak"
+expect_failure "missing or empty design PNG" python3 "$CHECK" "$C"
+mv "$FIXTURE/rotate.bak" "$W/design/mockup_rotate.png"
+
+# Spec and registered components
+sed '/| Transform | rotate | FR-002 | AC-002 |/d' "$FIXTURE/spec.md" > "$FIXTURE/short-spec.md"
+expect_failure "UI contract states differ from spec" python3 "$CHECK" "$C" --spec "$FIXTURE/short-spec.md"
+sed 's/| `ActionChip` | rotate-fixture/| `FancyChip` | rotate-fixture/' "$FIXTURE/original-contract" > "$C"
+expect_failure "reuses unregistered components ['FancyChip']" python3 "$CHECK" "$C" --design-system "$DS"
+sed 's/| `ActionChip` | rotate-fixture/| None — custom canvas only | rotate-fixture/' "$FIXTURE/original-contract" > "$C"
+sed 's/| UI-02 | `ActionChip` |/| UI-02 | None — custom canvas only |/' "$FIXTURE/original-plan" > "$W/implementation-plan.md"
+python3 "$CHECK" "$C" --design-system "$DS" --plan "$W/implementation-plan.md" >/dev/null
+cp "$FIXTURE/original-contract" "$C"
+cp "$FIXTURE/original-plan" "$W/implementation-plan.md"
+
+# Implementation plan
+sed '/| UI-02 | `ActionChip` | Rotate controls |/d' "$FIXTURE/original-plan" > "$W/implementation-plan.md"
+expect_failure "UI plan stages differ from contract" python3 "$CHECK" "$C" --plan "$W/implementation-plan.md"
+sed 's/| UI-01 | `ToolDial`, `ActionChip` |/| UI-01 | `ToolDial` |/' "$FIXTURE/original-plan" > "$W/implementation-plan.md"
+expect_failure "UI plan stage UI-01 reused components differ from UI_contract.md" python3 "$CHECK" "$C" --plan "$W/implementation-plan.md"
+cp "$FIXTURE/original-plan" "$W/implementation-plan.md"
+printf 'fun TransformScreen() {\n    ActionChip(label)\n}\n' > "$FIXTURE/app/src/main/java/example/TransformScreen.kt"
+expect_failure "UI state UI-01 lists ToolDial, but no UI file" full
+printf 'fun TransformScreen() {\n    ToolDial(value)\n    ActionChip(label)\n}\n' > "$FIXTURE/app/src/main/java/example/TransformScreen.kt"
+
+# Test plan verification targets
+sed 's@example/roborazzi/TransformReviewCaptureTest.kt#crop@example/TransformCaptureTest.kt#crop@' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+expect_failure "review capture must be app/src/test/java/<package>/roborazzi/" full
+cp "$FIXTURE/original-test-plan" "$W/test-plan.md"
+
+# Capture commands must actually enable the opted-out capture package.
+for value in false tru; do
+  sed "s/-Proborazzi.test.record=true/-Proborazzi.test.record=$value/g" "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+  expect_failure "review capture command must enable -Proborazzi.test.record=true" full
+done
+sed 's/ -Proborazzi.test.record=true//g' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+expect_failure "review capture command must enable -Proborazzi.test.record=true" full
+# A debug-only JVM structural test (src/testDebug) is a valid JVM target.
+sed 's@app/src/test/java/example/TransformStructureTest.kt@app/src/testDebug/java/example/TransformStructureTest.kt@' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+python3 "$CHECK" "$C" --spec "$FIXTURE/spec.md" --design-system "$DS" --plan "$W/implementation-plan.md" \
+  --test-plan "$W/test-plan.md" --project-root "$FIXTURE" >/dev/null
+sed 's@run-android-instrumented-tests.sh@run-tests.sh@' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+expect_failure "needs the direct AndroidJUnitRunner wrapper" full
+cp "$FIXTURE/original-test-plan" "$W/test-plan.md"
+
+# Conformance review report
+python3 - "$W/ui_verification.json" <<'PY'
 import json, sys
-path = sys.argv[1]
-data = json.load(open(path))
-data["state_results"].pop()
-with open(path, "w") as output:
-    json.dump(data, output)
+p = sys.argv[1]; d = json.load(open(p)); d["state_results"].pop(); json.dump(d, open(p, "w"))
 PY
-expect_failure "UI verification states differ from contract" \
-  python3 "$CHECK" "$FIXTURE/UI_contract.md" --report "$FIXTURE/ui_verification.json"
+expect_failure "UI verification states differ from contract" full
+cp "$FIXTURE/original-report" "$W/ui_verification.json"
+python3 - "$W/ui_verification.json" <<'PY'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["state_results"][0]["review_decision"] = "changes-requested"; json.dump(d, open(p, "w"))
+PY
+expect_failure "needs review_decision 'approved'" full
+cp "$FIXTURE/original-report" "$W/ui_verification.json"
 
-echo "PASS: UI contract gates reject absent, cropped, duplicate, missing-asset, unmapped, and unbound visual screen states."
+# Side-by-side comparison and pre-review findings
+mv "$W/evidence/ui/compare/rotate.png" "$FIXTURE/rotate-compare.bak"
+expect_failure "missing side-by-side comparison for rotate" full
+mv "$FIXTURE/rotate-compare.bak" "$W/evidence/ui/compare/rotate.png"
+touch -t 200001010000 "$W/evidence/ui/compare/crop.png"
+expect_failure "comparison is older than its design or capture" full
+touch -t 203001010000 "$W/evidence/ui/compare/crop.png"
+cp "$W/evidence/ui/compare/findings.md" "$FIXTURE/findings.bak"
+printf '### crop\n\nNone\n' > "$W/evidence/ui/compare/findings.md"
+expect_failure "UI state rotate has no '### rotate' entry" full
+cp "$FIXTURE/findings.bak" "$W/evidence/ui/compare/findings.md"
+rm "$W/evidence/ui/compare/findings.md"
+expect_failure "record the pre-review findings for every state" full
+cp "$FIXTURE/findings.bak" "$W/evidence/ui/compare/findings.md"
+png "$W/evidence/ui/crop.png" 1080 1080
+expect_failure "was not rendered at the contract viewport 430x932" full
+png "$W/evidence/ui/crop.png" 860 1864
+full >/dev/null
+
+echo "PASS: UI contract gates reject incomplete, duplicate, unmapped, unregistered, and unreviewed UI states."
