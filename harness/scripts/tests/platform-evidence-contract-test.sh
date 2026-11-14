@@ -112,6 +112,23 @@ write_matrix "$fake_only" "Verified"
 printf '%s\n' 'class PlatformTest { val recognizer = FakeTranscriptRecognizer() }' > "$fake_only/app/src/androidTest/java/example/PlatformTest.kt"
 expect_failure "no real-platform signal" bash "$VALIDATOR" "$fake_only" --evaluate
 
+# The signal is a grep -E pattern, not prose, and must be a valid pattern
+prose_signal="$fixture_root/prose-signal"
+mkdir -p "$prose_signal/app/src/androidTest/java/example"
+write_contract "$prose_signal"
+write_feature_list "$prose_signal"
+write_matrix "$prose_signal" "Verified"
+printf '%s\n' 'class PlatformTest { val recognizer = SpeechRecognizer.createSpeechRecognizer(context) }' > \
+  "$prose_signal/app/src/androidTest/java/example/PlatformTest.kt"
+jq '.platform_validation.real_boundary_test_signal = "SpeechRecognizer, system Back and destination return"' \
+  "$prose_signal/feature_list.json" > "$prose_signal/feature_list.json.tmp"
+mv "$prose_signal/feature_list.json.tmp" "$prose_signal/feature_list.json"
+expect_failure "looks like prose" bash "$VALIDATOR" "$prose_signal" --evaluate
+jq '.platform_validation.real_boundary_test_signal = "Speech(Recognizer"' \
+  "$prose_signal/feature_list.json" > "$prose_signal/feature_list.json.tmp"
+mv "$prose_signal/feature_list.json.tmp" "$prose_signal/feature_list.json"
+expect_failure "not a valid grep -E pattern" bash "$VALIDATOR" "$prose_signal" --evaluate
+
 # required: false — the common case — needs no matrix artifact; the JSON
 # declaration plus an explicit reason is the whole contract
 not_platform="$fixture_root/not-platform"

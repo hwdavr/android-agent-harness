@@ -95,6 +95,16 @@ REAL_TEST_FILES=$(jq -r '.platform_validation.real_boundary_test_files[]? // emp
 REAL_SIGNAL=$(jq -r '.platform_validation.real_boundary_test_signal // empty' "$FEATURE_JSON")
 [ -n "$REAL_SIGNAL" ] \
   || fail "platform-bound feature must declare real_boundary_test_signal"
+# The signal is a case-insensitive `grep -E` pattern matched against each real-boundary test source,
+# for example "MainActivity|GLOBAL_ACTION_BACK". A sentence never matches test code.
+case "$REAL_SIGNAL" in
+  *", "*|*" and "*|*" or "*)
+    fail "real_boundary_test_signal looks like prose ($REAL_SIGNAL); declare a grep -E pattern of identifiers that appear in the real-boundary test source, e.g. MainActivity|GLOBAL_ACTION_BACK" ;;
+esac
+signal_status=0
+printf '' | grep -Eiq -- "$REAL_SIGNAL" 2>/dev/null || signal_status=$?
+[ "$signal_status" -le 1 ] \
+  || fail "real_boundary_test_signal is not a valid grep -E pattern: $REAL_SIGNAL"
 
 if [ -n "$SLICE_ID" ]; then
   jq -e --arg id "$SLICE_ID" '.features[]? | select(.id == $id)' "$FEATURE_JSON" >/dev/null \

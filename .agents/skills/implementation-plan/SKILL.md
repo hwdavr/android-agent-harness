@@ -98,7 +98,9 @@ procedures only — results go to the summary.
   `evidence: []`, `notes`, and `tasks` (`{id, title, file, done}` for every task of that slice —
   the same T### set as its `tasks.md` section; use `done`, never `status`). The root declares `platform_validation`
   (`required`, `unsupported_environment_policy: "fail_loudly"`, and a reason or capability
-  matrix). Platform-bound work adds `platform-capability-matrix.md`.
+  matrix). Platform-bound work adds `platform-capability-matrix.md` and a `real_boundary_test_signal`: a
+  case-insensitive `grep -E` pattern of identifiers that appear in each real-boundary test source (for example
+  `MainActivity|GLOBAL_ACTION_BACK`), never a sentence.
 
 ### 4. Analyze
 
