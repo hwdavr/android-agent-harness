@@ -86,9 +86,6 @@ if [ "$RUN_ALL" = false ] && [ "${#SELECTORS[@]}" -eq 0 ]; then
   exit 2
 fi
 
-APP_PACKAGE="com.example.notesapp"
-TEST_PACKAGE="com.example.notesapp.test"
-TEST_RUNNER="com.example.notesapp.HiltTestRunner"
 APP_APK="$PROJECT_ROOT/app/build/outputs/apk/debug/app-debug.apk"
 TEST_APK="$PROJECT_ROOT/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
 
@@ -101,6 +98,34 @@ echo "Building app and androidTest APKs without running the connected-test task.
 (cd "$PROJECT_ROOT" && "$GRADLEW" :app:assembleDebug :app:assembleDebugAndroidTest)
 [ -f "$APP_APK" ] || { echo "FAIL: app APK was not produced: $APP_APK" >&2; exit 1; }
 [ -f "$TEST_APK" ] || { echo "FAIL: androidTest APK was not produced: $TEST_APK" >&2; exit 1; }
+
+# Derive identities from this build, never from another consuming app or an
+# already-installed instrumentation. Reject inconsistent or missing metadata.
+identity=$(python3 - "$PROJECT_ROOT" <<'PY'
+import json
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+root = pathlib.Path(sys.argv[1]) / 'app/build'
+try:
+    app = json.loads((root / 'outputs/apk/debug/output-metadata.json').read_text())['applicationId']
+    test = json.loads((root / 'outputs/apk/androidTest/debug/output-metadata.json').read_text())['applicationId']
+    manifest = root / 'intermediates/packaged_manifests/debugAndroidTest/processDebugAndroidTestManifest/AndroidManifest.xml'
+    node = ET.parse(manifest).getroot().find('instrumentation')
+    android = '{http://schemas.android.com/apk/res/android}'
+    runner = node.attrib[android + 'name']
+    target = node.attrib[android + 'targetPackage']
+    if not all((app, test, runner)) or target != app:
+        raise ValueError('instrumentation target does not match app applicationId')
+    print('\n'.join((app, test, runner)))
+except (OSError, ValueError, KeyError, AttributeError, ET.ParseError) as error:
+    raise SystemExit(f'FAIL: cannot determine built APK instrumentation identities: {error}')
+PY
+) || exit 2
+APP_PACKAGE=$(printf '%s\n' "$identity" | sed -n '1p')
+TEST_PACKAGE=$(printf '%s\n' "$identity" | sed -n '2p')
+TEST_RUNNER=$(printf '%s\n' "$identity" | sed -n '3p')
 
 echo "Installing/updating $APP_PACKAGE with adb install -r."
 "$ADB_BIN" -s "$SERIAL" install -r "$APP_APK"

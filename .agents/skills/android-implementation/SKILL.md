@@ -31,7 +31,7 @@ Do not load or execute a Data, Domain, or UI section merely because another laye
 - `implementation-plan.md` — the approved plan: Rule Applicability, file list, UiState, UI State Stages and their reused registered components
 - The approved feature block(s) in `docs/product/requirements/` — requirements, acceptance criteria, Screen States, Navigation (bugs: the plan's Root Cause section)
 - `UI_contract.md` — state behavior, controls, copy, fixtures, reused components, and Pen/reference mappings (if UI changes involved)
-- `design/` — approved Pen exports and user-provided references (view these before implementing UI)
+- `design/` — `*.layout.json` (extracted from the design source: the sizes, gaps, paddings, text sizes, line heights and copy to implement) and the PNG exports (review aid only; view them, never measure them)
 
 **Sliced lane** (`sliced-lane-generator`):
 - Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` and use its hashes and source pointers.
@@ -64,7 +64,7 @@ unaffected sections and their checklist rows; a skipped layer must be recorded a
 ### Layer 3 — UI Layer
 1. **ViewModel**: `StateFlow<UiState>` — one per screen. Handle all states: loading, success, empty, error, retry. Call use cases only (**never call repositories or data sources directly**). Emit one-off events via `Channel<Event>`. Add structured logs only when OBS is `Required`.
 2. **UI Models & Mappers**: Create UI models and Domain → UI mappers in Presentation layer when formatting is needed.
-3. **Composable Screen**: Split into stateless `Content` + stateful `Screen` wrapper. View design mockups before writing UI. All text via `stringResource()` (**no hardcoded strings**). Add `Modifier.testTag("stable_name")` to all interactive elements. Follow `docs/product/design_system.md` semantic tokens. If owning `requires_visual_verification: true`, implement capture per contract.
+3. **Composable Screen**: Split into stateless `Content` + stateful `Screen` wrapper. Read the state's `*.layout.json` and view its mockup before writing UI; take dimensions, gaps, paddings and text metrics from the layout, never from the PNG. All text via `stringResource()` (**no hardcoded strings**). Add `Modifier.testTag("stable_name")` to all interactive elements. Follow `docs/product/design_system.md` semantic tokens. If owning `requires_visual_verification: true`, implement capture per contract.
 4. **Navigation, Analytics & Strings**: Update nav graph with serializable args when NAV is `Required`. Fire analytics from ViewModel (not Composables) when ANL is `Required`; otherwise keep `analytics: none`. Add strings to `res/values/strings.xml`.
 
 ---

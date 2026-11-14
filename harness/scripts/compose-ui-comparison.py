@@ -62,15 +62,22 @@ def compose(feature_dir):
                 raise ValueError(
                     f"{state}: design {design.width}x{design.height} and capture {render.width}x{render.height} "
                     "have different aspect ratios; fix the contract or the capture, do not resize")
+            native = {"design": f"{design.width}x{design.height}", "actual": f"{render.width}x{render.height}"}
+            width = max(design.width, render.width)
+            height = round(width * design.height / design.width)
+            if design.size != (width, height):
+                design = design.resize((width, height), Image.LANCZOS)
+            if render.size != (width, round(width * render.height / render.width)):
+                render = render.resize((width, round(width * render.height / render.width)), Image.LANCZOS)
             height = max(design.height, render.height)
             canvas = Image.new("RGB", (design.width + GUTTER + render.width, height + HEADER_HEIGHT), BACKGROUND)
             canvas.paste(design, (0, HEADER_HEIGHT))
             canvas.paste(render, (design.width + GUTTER, HEADER_HEIGHT))
             draw = ImageDraw.Draw(canvas)
             draw.text((16, 10), f"{row['Plan stage']}  {state}", fill=INK, font=font(34))
-            draw.text((16, 62), f"DESIGN  {row['Design image']}  ({design.width}x{design.height})", fill=INK, font=font(24))
+            draw.text((16, 62), f"DESIGN  {Path(row['Design image']).name}  (native {native['design']})", fill=INK, font=font(24))
             draw.text((design.width + GUTTER + 16, 62),
-                      f"ACTUAL  evidence/ui/{state}.png  ({render.width}x{render.height})", fill=INK, font=font(24))
+                      f"ACTUAL  {state}.png  (native {native['actual']})", fill=INK, font=font(24))
             canvas.save(out_dir / f"{state}.png")
         index.append(f"| {row['Plan stage']} | {state} | `{row['Design image']}` | `evidence/ui/{state}.png` "
                      f"| `evidence/ui/compare/{state}.png` |")

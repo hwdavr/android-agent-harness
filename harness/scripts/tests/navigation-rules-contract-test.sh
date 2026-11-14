@@ -114,4 +114,56 @@ printf '%s\n' "$output" | grep -Fq 'NavigationTest.kt' || {
     exit 1
 }
 
+# State-driven navigation (enum class AppScreen routed by a composable host) must be
+# accepted when every destination has a host branch and a production-entry test mounts
+# the host, and rejected when a destination has no branch.
+write_state_driven_fixture() {
+    local root="$1" missing_branch="$2"
+    mkdir -p \
+        "$root/.agents/rules" \
+        "$root/app/src/main/java/com/example/notesapp/ui/navigation" \
+        "$root/app/src/main/java/com/example/notesapp" \
+        "$root/app/src/androidTest/java/com/example/notesapp/home"
+    printf '%s\n' '# Navigation Rules' > "$root/.agents/rules/navigation-rules.md"
+    printf '%s\n' \
+        'package com.example.notesapp.ui.navigation' \
+        'enum class AppScreen {' \
+        '    Home,' \
+        '    Editor' \
+        '}' > "$root/app/src/main/java/com/example/notesapp/ui/navigation/AppScreen.kt"
+    if [ "$missing_branch" = "yes" ]; then
+        printf '%s\n' \
+            'package com.example.notesapp' \
+            'fun Host(screen: AppScreen) = when (screen) {' \
+            '    AppScreen.Home -> Home()' \
+            '}' > "$root/app/src/main/java/com/example/notesapp/MainActivity.kt"
+    else
+        printf '%s\n' \
+            'package com.example.notesapp' \
+            'fun Host(screen: AppScreen) = when (screen) {' \
+            '    AppScreen.Home -> Home()' \
+            '    AppScreen.Editor -> Editor()' \
+            '}' > "$root/app/src/main/java/com/example/notesapp/MainActivity.kt"
+    fi
+    printf '%s\n' \
+        'package com.example.notesapp.home' \
+        'class HomeFlowTest {' \
+        '    val composeRule = createAndroidComposeRule<MainActivity>()' \
+        '}' > "$root/app/src/androidTest/java/com/example/notesapp/home/HomeFlowTest.kt"
+}
+
+write_state_driven_fixture "$fixture_root/state-compliant" no
+bash "$CHECKER" "$fixture_root/state-compliant" >/dev/null
+
+write_state_driven_fixture "$fixture_root/state-violating" yes
+if output=$(bash "$CHECKER" "$fixture_root/state-violating" 2>&1); then
+    echo "FAIL: checker accepted state-driven host without a branch for every destination" >&2
+    exit 1
+fi
+printf '%s\n' "$output" | grep -Fq 'navigation host file is missing' || {
+    echo "FAIL: checker did not report the missing destination branch" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+}
+
 echo "PASS: navigation-rules checker accepts compliant and rejects violating fixtures."

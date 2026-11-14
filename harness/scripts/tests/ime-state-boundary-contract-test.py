@@ -3,6 +3,7 @@
 
 import os
 import struct
+import sys
 import subprocess
 import tempfile
 import unittest
@@ -17,6 +18,10 @@ STATE_HEADER = "| Screen | State ID | Design source | Design node ID | Design no
 RULES = ("ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC")
 IME_HEADER = "| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Keyboard behavior | Required visible tags |"
 BOUNDARY_HEADER = "| Screen | Input tag | Production activity | Open test | Dismiss test | Command | Result XML |"
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from design_layout_fixture import write_layout  # noqa: E402
 
 
 class ImeContractTest(unittest.TestCase):
@@ -40,6 +45,8 @@ class ImeContractTest(unittest.TestCase):
         (self.workspace / f"design/mockup_{name}.png").write_bytes(
             b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">II", width, height)
         )
+        write_layout(self.workspace / "design/source.pen", f"{name}-node", width // 2, height // 2,
+                     self.workspace / f"design/mockup_{name}.layout.json")
 
     def write_contract(self, inventory=True, open_state=True, window="430x932", ime_region=True):
         rows = [STATE_HEADER, "|" + "---|" * 12]

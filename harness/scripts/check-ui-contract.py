@@ -8,6 +8,7 @@ Every state names the registered design-system components it reuses.
 """
 
 import argparse
+import hashlib
 import json
 import re
 import struct
@@ -127,6 +128,44 @@ def existing_path(contract, value):
         fail(f"unsafe design path: {value}")
     candidates = [contract.parent / value, Path.cwd() / value]
     return next((path for path in candidates if path.is_file() and path.stat().st_size > 0), None)
+
+
+LAYOUT_TOOLS = {".pen": "pen.dev", ".fig": "openpencil"}
+
+
+def validate_layout(contract, state, source, source_path, node, image, viewport_size):
+    """The state's layout file is extracted from the design source by the tool's adapter script.
+
+    The check is tool-neutral: it never runs a design tool. A changed source file (hash) or a node id
+    or frame size that differs from the contract means the layout, and anything built from it, is stale.
+    """
+    layout_ref = image.removesuffix(".png") + ".layout.json"
+    layout_path = existing_path(contract, layout_ref)
+    if not layout_path:
+        fail(f"state {state} needs {layout_ref}, extracted from {source} by the design tool adapter "
+             f"(harness/scripts/design_adapters/); the PNG is a review aid, not the design reference")
+    try:
+        layout = json.loads(layout_path.read_text(encoding="utf-8"))
+        tool, frame = layout["tool"], layout["frame"]
+        nodes, recorded_hash = layout["nodes"], layout["source_sha256"]
+    except (json.JSONDecodeError, KeyError, TypeError) as error:
+        fail(f"{layout_ref} is not a valid design layout (see harness/templates/design-layout-template.json): {error}")
+    suffix = Path(source).suffix
+    if layout.get("version") != 1 or tool != LAYOUT_TOOLS[suffix]:
+        fail(f"{layout_ref} must be version 1 for tool {LAYOUT_TOOLS[suffix]} (source {source})")
+    if not isinstance(nodes, list) or not nodes or not all(
+            isinstance(item, dict) and {"id", "path", "name", "type", "x", "y", "width", "height"} <= item.keys()
+            for item in nodes):
+        fail(f"{layout_ref} needs a nonempty nodes list with id, path, name, type, x, y, width, height")
+    if frame.get("id") != node or nodes[0].get("id") != node:
+        fail(f"{layout_ref} frame {frame.get('id')} differs from design node ID {node} in the contract; "
+             f"fix the contract node ID or re-extract")
+    if (frame.get("width"), frame.get("height")) != viewport_size:
+        fail(f"{layout_ref} frame is {frame.get('width')}x{frame.get('height')}, but the viewport is "
+             f"{viewport_size[0]}x{viewport_size[1]}")
+    if recorded_hash != hashlib.sha256(source_path.read_bytes()).hexdigest():
+        fail(f"{layout_ref} was extracted from an older {source}; re-run the design tool adapter script "
+             f"(harness/scripts/design_adapters/) and review what changed")
 
 
 def png_dimensions(path):
@@ -322,6 +361,9 @@ def validate(contract, spec, plan, report, test_plan=None, runtime=False, projec
             if image in images:
                 fail(f"design image reused across states: {image}")
             images.add(image)
+            if source.endswith(DESIGN_SOURCE_SUFFIXES):
+                validate_layout(contract, key[1], source, existing_path(contract, source), node, image,
+                                (viewport_width, viewport_height))
         complete_regions(row["Required regions"], key[1])
         controls = row["State controls"].strip().lower()
         if controls in ("none", "n/a") or len(controls) < 8:

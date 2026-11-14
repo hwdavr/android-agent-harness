@@ -43,7 +43,15 @@ openpencil eval <candidate.fig> -w -c '<minimal Figma Plugin API change>'
 
 ## Verify
 
-- **Structural**: compare the source and freshly reopened candidate using
+- **Normalize first**: inserting any node makes `eval -w` re-lay out the whole page (a new page:
+  the whole document), so stale stored geometry in the source (e.g. auto-width text stored wider
+  than its characters) changes on the first structural edit. Before editing, copy the source,
+  `eval -w` add a probe frame, `eval -w` remove it, and confirm a second pass reports
+  `changed: false`. If `diff files <source.fig> <baseline.fig>` reports changes, list them as
+  pre-existing source normalization, obtain user approval, and promote the baseline to the source
+  as its own change before building the candidate. Do not try to "repair" these layers in the
+  candidate with `resize` (the next write relays them out again) or by fixing text sizing.
+- **Structural**: compare the (normalized) source and freshly reopened candidate using
   `openpencil diff files <source.fig> <candidate.fig> --json` and persisted source-GUID
   inventories captured from each document. Every pre-existing unrelated saved layer must retain
   its source GUID, name, type, and parent source GUID; the structural diff must show no changes
@@ -58,6 +66,17 @@ openpencil eval <candidate.fig> -w -c '<minimal Figma Plugin API change>'
   Export at scale 1 so the PNG matches the frame's dp size (the Viewport in `UI_contract.md`).
 - Re-read the candidate in a fresh command (for example `openpencil info <candidate.fig>`) to prove
   it still opens.
+
+## Extract layout
+
+```bash
+python3 harness/scripts/design_adapters/openpencil_layout.py --source <source.fig> --node <frame-id> \
+  --out <feature>/design/mockup_<screen_state>.layout.json
+```
+
+Read-only; fails if the CLI is missing or the node is not a top-level frame. Text box widths of
+auto-width text may be stale in the source (see Verify → Normalize first); use text size, line
+height, gaps, and paddings.
 
 ## Promote after approval
 

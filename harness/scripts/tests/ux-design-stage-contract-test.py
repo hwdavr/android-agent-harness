@@ -6,7 +6,11 @@ from pathlib import Path
 import struct
 import subprocess
 import tempfile
+import sys
 import zlib
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from design_layout_fixture import write_layout  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 GATE = ROOT / "harness/scripts/check-stage-artifacts.sh"
@@ -98,6 +102,7 @@ with tempfile.TemporaryDirectory(prefix="ux-design-stage-") as temporary:
     # Pen design complete: registered components required.
     (workspace / "design/editor.pen").write_text("Pen fixture")
     png(workspace / "design/editor-ready.png", 430, 932)
+    write_layout(workspace / "design/editor.pen", "ready-frame", 430, 932, workspace / "design/editor-ready.layout.json")
     complete = "design/editor.pen | ready-frame | screen-frame | design/editor-ready.png"
     (workspace / "UI_contract.md").write_text(contract(complete, components="`FancyButton`"))
     run_gate(project, "ux-design", workspace, "reuses unregistered components ['FancyButton']")

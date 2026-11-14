@@ -43,6 +43,8 @@ mkdir -p "$W/design" "$W/evidence/ui" "$FIXTURE/docs/product" "$FIXTURE/app/src/
 printf 'Pen fixture' > "$W/design/source.pen"
 png "$W/design/mockup_crop.png" 430 932
 png "$W/design/mockup_rotate.png" 430 932
+python3 "$ROOT/harness/scripts/tests/design_layout_fixture.py" "$W/design/source.pen" crop-node 430 932 "$W/design/mockup_crop.layout.json"
+python3 "$ROOT/harness/scripts/tests/design_layout_fixture.py" "$W/design/source.pen" rotate-node 430 932 "$W/design/mockup_rotate.layout.json"
 cat > "$FIXTURE/docs/product/design_system.md" <<'MD'
 # Design System
 
@@ -154,12 +156,31 @@ sed 's|design/source.pen|../UI_design/../../design/source.pen|' "$FIXTURE/origin
 expect_failure "unsafe design path" python3 "$CHECK" "$C"
 # OpenPencil sources (.fig) are design-tool sources too; a screen-frame node is still required.
 printf 'Fig fixture' > "$W/design/source.fig"
+layout() { python3 "$ROOT/harness/scripts/tests/design_layout_fixture.py" "$@"; }
+layout "$W/design/source.fig" crop-node 430 932 "$W/design/mockup_crop.layout.json"
+layout "$W/design/source.fig" rotate-node 430 932 "$W/design/mockup_rotate.layout.json"
 sed 's|design/source.pen|design/source.fig|g' "$FIXTURE/original-contract" > "$C"
 python3 "$CHECK" "$C" >/dev/null
 sed -e 's|design/source.pen|design/source.fig|g' -e 's/| crop-node | screen-frame |/| crop-node | component |/' "$FIXTURE/original-contract" > "$C"
 expect_failure "design-tool state crop needs a top-level screen-frame node" python3 "$CHECK" "$C"
 rm "$W/design/source.fig"
 cp "$FIXTURE/original-contract" "$C"
+# The layout is extracted from the design source (tool-neutral): a layout of another tool's source,
+# a stale source hash, a missing file, another node, or another frame size is rejected.
+expect_failure "must be version 1 for tool pen.dev" python3 "$CHECK" "$C"
+layout "$W/design/source.pen" crop-node 430 932 "$W/design/mockup_crop.layout.json"
+layout "$W/design/source.pen" rotate-node 430 932 "$W/design/mockup_rotate.layout.json"
+python3 "$CHECK" "$C" >/dev/null
+printf 'Pen fixture, edited' > "$W/design/source.pen"
+expect_failure "was extracted from an older design/source.pen" python3 "$CHECK" "$C"
+printf 'Pen fixture' > "$W/design/source.pen"
+layout "$W/design/source.pen" stale-node 430 932 "$W/design/mockup_crop.layout.json"
+expect_failure "differs from design node ID crop-node" python3 "$CHECK" "$C"
+layout "$W/design/source.pen" crop-node 430 900 "$W/design/mockup_crop.layout.json"
+expect_failure "but the viewport is 430x932" python3 "$CHECK" "$C"
+rm "$W/design/mockup_crop.layout.json"
+expect_failure "needs design/mockup_crop.layout.json" python3 "$CHECK" "$C"
+layout "$W/design/source.pen" crop-node 430 932 "$W/design/mockup_crop.layout.json"
 mv "$W/design/mockup_rotate.png" "$FIXTURE/rotate.bak"
 expect_failure "missing or empty design PNG" python3 "$CHECK" "$C"
 mv "$FIXTURE/rotate.bak" "$W/design/mockup_rotate.png"

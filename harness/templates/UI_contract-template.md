@@ -30,6 +30,10 @@ rendered and inspected, replace them with the canonical source, unique top-level
 `screen-frame` role, and full-viewport PNG. A supplied approved image can use `external` and
 `external-screen`. A control-only crop is not a full-screen reference.
 
+The **Design image** is a review aid. Each state's design reference is `<Design image stem>.layout.json`
+(`design-layout-template.json`), extracted from the design source by the tool adapter
+(`ui-design-tool`); `check-ui-contract.py` rejects a missing, stale, or mismatched layout.
+
 **Reused components** lists the design-system Component Registry entries the state uses (taken from
 the component instances in the Pen design), or `None — <reason>`. A design element that matches no
 registry entry is either a new shared component (add it to the registry with approval) or an

@@ -17,7 +17,8 @@ checked by tests:
    screen: render the production `*Screen`/`*ScreenContent` (directly or through a test frame helper
    that mirrors the app's Scaffold and bottom bar), never a component padded to the viewport.
 2. **Structural check** — required `testTag`s present, ordered, visible, unclipped, with bounds
-   within the contract tolerance (default 4dp position/spacing, 5% size).
+   within the contract tolerance (default 4dp position/spacing, 5% size). Expected values come from
+   the state's `*.layout.json`, not from measuring the PNG; use native graphics for text metrics.
 3. **Component reuse** — the state's registered design-system components are the ones called.
 4. **Side-by-side review** — capture beside the approved design; the user approves or requests changes.
 
@@ -27,7 +28,7 @@ Never record, commit, or compare a screenshot golden (`recordRoborazziDebug`,
 ## Load
 
 - `docs/product/design_system.md` (tokens, components, Component Registry).
-- `$FEATURE_DIR/UI_contract.md`, the approved design images, `test-plan.md` → UI State Verification,
+- `$FEATURE_DIR/UI_contract.md`, the approved design images and their `*.layout.json`, `test-plan.md` → UI State Verification,
   and `implementation-plan.md` → UI State Stages.
 - `.agents/rules/testing-runtime-evidence.md`; Compose, localization, navigation, and security
   rules only when Required, excepted, or diff-triggered.
