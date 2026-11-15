@@ -41,7 +41,7 @@ Before any task, identify its type, read the matching workflow or direct skill *
 |-----------|----------------------|
 | New feature or enhancement, any size (Specify picks the lane) | `.agents/workflows/harness-planning.md` |
 | Bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
-| Logic-only change/refactor passing its entry check | `.agents/workflows/quick-change.md` |
+| Logic-only change, refactor, small logic bug fix, or test-only change passing its entry check | `.agents/workflows/quick-change.md` |
 | Appearance-only tweak an approved design or the design system already defines | `.agents/skills/design-to-ui/SKILL.md` (direct lane) |
 | Implement an approved single-lane feature | `.agents/workflows/single-lane-generator.md` |
 | Next slice of an approved sliced-lane feature | `.agents/workflows/sliced-lane-generator.md` |

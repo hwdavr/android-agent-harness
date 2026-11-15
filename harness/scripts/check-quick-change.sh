@@ -21,7 +21,10 @@ ALLOWED = [
     re.compile(r"^\.scratch/"),
     re.compile(r"^docs/product/requirements/[^/]+\.md$"),
 ]
-FORBIDDEN_MAIN = re.compile(r"(^|/)src/main/(.*/)?data/")
+KINDS = ("refactor", "behavior", "bug-fix", "test-only")
+CONTRACT_PATH = re.compile(r"(^|/)dto/|Dto\.kt$")
+CONTRACT_CODE = re.compile(r"@Entity\b|@Dao\b|@Database\b|\bMigration\(|retrofit2\.http")
+AC_ID = re.compile(r"^#### Scenario:\s*(AC-\d+)", re.M)
 
 args = sys.argv[1:]
 change_dir = Path(args.pop(0)).resolve()
@@ -65,6 +68,10 @@ status_m = re.search(r"^\*\*Status\*\*:\s*(.*)$", text, re.M)
 status = status_m.group(1).strip() if status_m else ""
 if not re.match(r"(Approved|Archived)\b", status):
     fail(f"intent.md **Status** must be Approved or Archived (found '{status or 'none'}')")
+kind_m = re.search(r"^\*\*Kind\*\*:\s*(\S+)\s*$", text, re.M)
+kind = kind_m.group(1) if kind_m else ""
+if kind not in KINDS:
+    fail(f"intent.md **Kind** must be one of {', '.join(KINDS)} (found '{kind or 'none'}')")
 for h in HEADINGS:
     if section(text, h) is None:
         fail(f"intent.md is missing '{h}'")
@@ -75,14 +82,27 @@ if re.search(r"^\s*-\s*\[ \]", entry, re.M):
 if len(re.findall(r"^\s*-\s*\[[xX]\]", entry, re.M)) < 5:
     fail("Entry Check must keep all five checked items")
 
+root = Path(subprocess.run(["git", "-C", str(change_dir), "rev-parse", "--show-toplevel"],
+                           capture_output=True, text=True, check=True).stdout.strip())
+
 scenario = section(text, "## Scenario Affected") or ""
 specs = sorted((change_dir / "specs").glob("*.md")) if (change_dir / "specs").is_dir() else []
-if scenario.startswith("<") or not scenario:
+tests = section(text, "## Tests") or ""
+if not scenario or scenario.startswith("<"):
     fail("Scenario Affected is not filled in")
-elif re.match(r"None\b", scenario):
+elif kind in ("refactor", "test-only"):
+    if not re.match(r"None\b", scenario):
+        fail(f"a {kind} must declare 'Scenario Affected: None — {kind}'")
     if specs:
-        fail("a refactor (Scenario Affected: None) must not have specs/ deltas")
-else:
+        fail(f"a {kind} must not have specs/ deltas")
+elif kind in ("behavior", "bug-fix"):
+    if not re.search(r"[\w-]+\.md#AC-\d+", scenario):
+        fail(f"a {kind} must cite '<capability>.md#AC-###' under Scenario Affected")
+    if not (re.search(r"\bRED:", tests) and re.search(r"\bGREEN:", tests)):
+        fail(f"a {kind} must record 'RED:' and 'GREEN:' runs under Tests")
+    if kind == "bug-fix" and specs:
+        fail("a bug-fix restores specified behavior and must not have specs/ deltas")
+if kind == "behavior":
     if len(specs) != 1:
         fail(f"a behavior change needs exactly one specs/<capability>.md delta (found {len(specs)})")
     for p in specs:
@@ -94,6 +114,13 @@ else:
         n = len(re.findall(r"^### Requirement:", d, re.M))
         if n != 1:
             fail(f"specs/{p.name}: must modify exactly one requirement (found {n})")
+        living = root / "docs/product/requirements" / p.name
+        if not living.is_file():
+            fail(f"specs/{p.name}: living capability file {living.relative_to(root)} not found")
+        else:
+            new_acs = set(AC_ID.findall(d)) - set(AC_ID.findall(living.read_text()))
+            if len(new_acs) > 1:
+                fail(f"specs/{p.name}: adds {len(new_acs)} new scenarios ({', '.join(sorted(new_acs))}); limit 1")
 
 if complete:
     result = section(text, "## Result") or ""
@@ -112,8 +139,6 @@ if complete:
             fail("review.md must name the '**Reviewer**:'")
 
 # --- diff scope ---
-root = Path(subprocess.run(["git", "-C", str(change_dir), "rev-parse", "--show-toplevel"],
-                           capture_output=True, text=True, check=True).stdout.strip())
 if base is None:
     for cand in ("origin/HEAD", "origin/main", "main", "origin/master", "master"):
         if git("rev-parse", "--verify", "-q", cand, check=False).returncode == 0:
@@ -132,12 +157,18 @@ for path in sorted(changed):
         fail(f"{path}: outside quick-change scope (only src/main Kotlin, src/test, .scratch, living requirements)")
         continue
     if re.search(r"(^|/)src/main/.*\.kt$", path):
-        if FORBIDDEN_MAIN.search(path):
-            fail(f"{path}: data-layer changes are outside quick-change scope")
+        if CONTRACT_PATH.search(path):
+            fail(f"{path}: DTO/API contract changes are outside quick-change scope")
         prod_kt.append(path)
         f = root / path
-        if f.is_file() and "@Composable" in f.read_text():
+        src = f.read_text() if f.is_file() else ""
+        if "@Composable" in src:
             fail(f"{path}: contains @Composable; UI changes use design-to-ui or harness-planning")
+        m = CONTRACT_CODE.search(src)
+        if m:
+            fail(f"{path}: contains {m.group(0)}; schema/DAO/migration/API changes are outside quick-change scope")
+if kind == "test-only" and prod_kt:
+    fail(f"a test-only change must not modify production code ({len(prod_kt)} file(s))")
 if len(prod_kt) > MAX_PROD_KT:
     fail(f"{len(prod_kt)} production Kotlin files changed (limit {MAX_PROD_KT})")
 
@@ -146,5 +177,5 @@ if errors:
         print(f"FAIL: {e}", file=sys.stderr)
     sys.exit(1)
 mode = "complete" if complete else "scope"
-print(f"PASS: quick-change {change_dir.name} ({mode}; {len(prod_kt)} production Kotlin file(s) vs {base})")
+print(f"PASS: quick-change {change_dir.name} ({kind}, {mode}; {len(prod_kt)} production Kotlin file(s) vs {base})")
 PY

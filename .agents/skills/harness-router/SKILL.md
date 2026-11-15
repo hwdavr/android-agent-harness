@@ -80,9 +80,9 @@ After the scope check, choose using the evidence:
 | Route | Evidence supporting the choice |
 |---|---|
 | Direct UI lane: `design-to-ui` | Appearance only (spacing, color, icon, copy wording, reorder, design-system alignment) on an existing screen; no new state, interaction, navigation, data, or API; an approved design or the design system already defines the target. |
-| Quick change: `quick-change` | Logic-only change or refactor in existing ViewModel/use case/mapper/domain classes; no `@Composable`, screen, navigation, data, API, permission, or analytics change; behavior effect is none or one existing `AC-###`; not a defect; at most 5 production Kotlin files. |
+| Quick change: `quick-change` | Logic-only refactor, behavior change, small logic bug fix, or test-only change in ViewModel/use case/mapper/domain/data-logic classes; no `@Composable`, screen, navigation, schema/DAO/migration, DTO/API, permission, or analytics change; at most one changed or new `AC-###` under one existing requirement; at most 5 production Kotlin files. |
 | Feature Delivery | Any new or changed behavior. Its Specify stage fixes the lane: one deliverable change → single lane; two or more independently deliverable stories → sliced lane (harness generator). The router does not pre-decide the lane. |
-| Bug Fixing | Observed behavior contradicts an existing requirement or expectation. |
+| Bug Fixing | Observed behavior contradicts an existing requirement or expectation. A logic-only defect that a JVM unit test reproduces and that passes the quick-change entry check uses `quick-change` (kind `bug-fix`). |
 
 Do not classify by prompt length, requirement counts, an assumed one-session
 duration, or the user's word "small" alone. A new screen or API is a signal to
@@ -100,7 +100,7 @@ requires a handoff. Apply the root `AGENTS.md` if this map becomes stale.
 | Intent | Workflow or direct skill to read in full |
 |---|---|
 | App bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
-| Logic-only change or refactor that passes the quick-change entry check | `.agents/workflows/quick-change.md` (one record, user go-ahead, fresh diff-only review) |
+| Logic-only change, refactor, small logic bug fix, or test-only change that passes the quick-change entry check | `.agents/workflows/quick-change.md` (one record, user go-ahead, fresh diff-only review) |
 | New feature or bounded enhancement | `.agents/workflows/harness-planning.md` |
 | Appearance-only adjustment to an existing screen that passes the direct-lane entry check | `.agents/skills/android-ui-layer/SKILL.md` (direct lane; ends with the `ui-verification` conformance review) |
 | Match an existing screen to a frame the user names in the configured design source (appearance-only) | `.agents/skills/design-to-ui/SKILL.md` (wraps the `android-ui-layer` direct lane and `ui-verification`) |
