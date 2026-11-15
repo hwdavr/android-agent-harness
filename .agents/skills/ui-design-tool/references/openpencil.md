@@ -26,8 +26,8 @@ openpencil node  <candidate.fig> --id <node-id>            # target details
 openpencil export <candidate.fig> --node <node-id> -o <artifact-dir>/<screen>-before.png
 ```
 
-Map the design system's Component Registry to the file's `COMPONENT` / `COMPONENT_SET` nodes and
-build screens from instances of them.
+Map applicable common components in the design system's Component Registry to the file's
+`COMPONENT` / `COMPONENT_SET` nodes and reuse their instances as specified by `ux-design`.
 
 ## Edit
 

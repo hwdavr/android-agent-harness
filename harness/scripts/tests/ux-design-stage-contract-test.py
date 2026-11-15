@@ -99,11 +99,13 @@ with tempfile.TemporaryDirectory(prefix="ux-design-stage-") as temporary:
     (workspace / "UI_contract.md").write_text(contract(pending, components="Pending", state="saved"))
     run_gate(project, "ui-contract", workspace, "UI contract states differ from spec")
 
-    # Pen design complete: registered components required.
+    # A completed design may use no registered common component, but claimed reuse must be registered.
     (workspace / "design/editor.pen").write_text("Pen fixture")
     png(workspace / "design/editor-ready.png", 430, 932)
     write_layout(workspace / "design/editor.pen", "ready-frame", 430, 932, workspace / "design/editor-ready.layout.json")
     complete = "design/editor.pen | ready-frame | screen-frame | design/editor-ready.png"
+    (workspace / "UI_contract.md").write_text(contract(complete, components="None — screen-specific content only"))
+    run_gate(project, "ux-design", workspace)
     (workspace / "UI_contract.md").write_text(contract(complete, components="`FancyButton`"))
     run_gate(project, "ux-design", workspace, "reuses unregistered components ['FancyButton']")
     (workspace / "UI_contract.md").write_text(contract(complete))

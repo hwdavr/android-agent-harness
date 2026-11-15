@@ -35,9 +35,9 @@ The **Design image** is a review aid. Each state's design reference is `<Design 
 (`ui-design-tool`); `check-ui-contract.py` rejects a missing, stale, or mismatched layout.
 
 **Reused components** lists the design-system Component Registry entries the state uses (taken from
-the component instances in the Pen design), or `None — <reason>`. A design element that matches no
-registry entry is either a new shared component (add it to the registry with approval) or an
-approved exception. It may stay `Pending` only at the inventory gate.
+the component instances in the Pen design), or `None — <reason>` when no registered common component
+applies. Screen-specific elements need no registry entry or exception. Follow the common-component
+reuse rule in `ux-design`. This field may stay `Pending` only at the inventory gate.
 
 | Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Reused components | Runtime fixture | Plan stage |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -98,7 +98,7 @@ and one structural-check method per state).
 ## Verification Quickstart
 
 1. Before Pen: run the `ui-contract` stage gate (`--inventory` checks the state contract).
-2. Generate/edit Pen frames from those rows using registered components, render and inspect them,
+2. Generate/edit Pen frames from those rows following `ux-design` common-component reuse, render and inspect them,
    then complete the reference fields and Reused components.
 3. Run the `ux-design` gate (validates components against the registry) and obtain design approval.
 4. After implementation: render each state at its Viewport, place it beside the approved design,
