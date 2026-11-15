@@ -51,9 +51,10 @@ components are the only deferred fields; user behavior and keyboard coverage can
 
 Inventory every editable input in `## IME State Coverage`, including closed, open, and dismissed
 states at the same full-window viewport. Declare resize/pan/overlay and the keyboard behavior:
-`screen-no-toolbar`, `screen-toolbar-dismissed`, or `sheet-stays-open`. Show the focused field,
-required controls, and real IME together; a bottom sheet remains open while typing and a screen's
-bottom toolbar is dismissed. Use authentic keyboard assets for the target device/appearance.
+`screen-no-toolbar`, `screen-toolbar-dismissed`, `screen-toolbar-stays-visible`, or `sheet-stays-open`.
+Show the focused field, required controls, and real IME together; a bottom sheet remains open while
+typing and a screen's bottom toolbar is dismissed, or, only with a documented reason line
+(`- Toolbar stays visible (<input tag>): <reason>`), stays visible above the keyboard. Use authentic keyboard assets for the target device/appearance.
 
 Classify supplied images as approved references or defect evidence. Preserve approved inputs
 unchanged and keep defect evidence separate. Existing approved references can fill completed rows.

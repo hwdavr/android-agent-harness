@@ -173,4 +173,23 @@ jq '.features[0].evidence[0].executed_command = "ANDROID_SERIAL=emulator-5554 ./
 mv "$legacy_runner/feature_list.json.tmp" "$legacy_runner/feature_list.json"
 expect_failure "must use the direct AndroidJUnitRunner wrapper" bash "$VALIDATOR" "$legacy_runner" --evaluate
 
-echo "PASS: platform evidence validator accepts reason-only non-platform features, defers non-owning slices, and rejects missing matrices, unavailable runtimes, fake-only tests, and boundary owners without evidence."
+# two slices that each own a real boundary test: a slice is judged only on its own test, the
+# full-feature evaluation still requires both, and a slice with no evidence of its own still fails
+two_owners="$fixture_root/two-owners"
+mkdir -p "$two_owners/app/src/androidTest/java/example"
+write_contract "$two_owners"
+write_feature_list "$two_owners"
+write_matrix "$two_owners" "Verified"
+printf '%s\n' 'class PlatformTest { val recognizer = SpeechRecognizer.createSpeechRecognizer(context) }' > \
+  "$two_owners/app/src/androidTest/java/example/PlatformTest.kt"
+printf '%s\n' '| TC-US-2-REAL | AC-US-2-01 | Instrumented UI | app/src/androidTest/java/example/LaterPlatformTest.kt#laterBoundary | fixture | real result | ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.LaterPlatformTest#laterBoundary |' >> "$two_owners/test-plan.md"
+jq '.platform_validation.real_boundary_test_ids += ["TC-US-2-REAL"]
+  | .platform_validation.real_boundary_test_files += ["app/src/androidTest/java/example/LaterPlatformTest.kt"]
+  | .features += [{"id": "US-2", "acceptance_test_ids": ["TC-US-2-REAL"], "evidence": []}]' \
+  "$two_owners/feature_list.json" > "$two_owners/feature_list.json.tmp"
+mv "$two_owners/feature_list.json.tmp" "$two_owners/feature_list.json"
+(cd "$two_owners" && bash "$VALIDATOR" . --evaluate --slice US-1) | grep -Fq "real platform boundary evidence are present"
+expect_failure "TC-US-2-REAL has no successful direct-runner evidence" bash "$VALIDATOR" "$two_owners" --evaluate
+expect_failure "TC-US-2-REAL has no successful direct-runner evidence" bash "$VALIDATOR" "$two_owners" --evaluate --slice US-2
+
+echo "PASS: platform evidence validator accepts reason-only non-platform features, defers non-owning slices, scopes owning slices to their own boundary tests, and rejects missing matrices, unavailable runtimes, fake-only tests, and boundary owners without evidence."

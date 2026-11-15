@@ -107,23 +107,44 @@ if [ "$MODE" = "--planning" ]; then
 fi
 
 if [ -n "$SLICE_ID" ]; then
-  SLICE_OWNS_REAL_BOUNDARY=false
+  # A slice answers only for the real-boundary tests it owns (its acceptance_test_ids). Boundary tests owned
+  # by later slices, and the files that hold them, are evaluated when those slices run and by the
+  # full-feature evaluation (no --slice), which stays strict.
+  OWNED_TEST_IDS=""
   while IFS= read -r test_id; do
     [ -n "$test_id" ] || continue
     if jq -e --arg id "$SLICE_ID" --arg test_id "$test_id" \
       '.features[]? | select(.id == $id) | (.acceptance_test_ids // []) | index($test_id) != null' \
       "$FEATURE_JSON" >/dev/null; then
-      SLICE_OWNS_REAL_BOUNDARY=true
-      break
+      OWNED_TEST_IDS="${OWNED_TEST_IDS}${test_id}"$'\n'
     fi
   done <<EOF
 $REAL_TEST_IDS
 EOF
 
-  if [ "$SLICE_OWNS_REAL_BOUNDARY" = false ]; then
+  if [ -z "$OWNED_TEST_IDS" ]; then
     echo "PASS: slice $SLICE_ID does not own a declared real platform boundary test; full-feature evidence is deferred."
     exit 0
   fi
+
+  # The declared test files that belong to the owned tests are the ones named in their test-plan rows.
+  OWNED_TEST_FILES=""
+  while IFS= read -r test_id; do
+    [ -n "$test_id" ] || continue
+    OWNED_ROW=$(grep -F "| $test_id |" "$CONTRACT" || true)
+    for candidate in $(printf '%s\n' "$OWNED_ROW" | grep -oE 'app/src/androidTest/[A-Za-z0-9_./-]+\.kt' || true); do
+      if printf '%s\n' "$REAL_TEST_FILES" | grep -Fxq "$candidate"; then
+        OWNED_TEST_FILES="${OWNED_TEST_FILES}${candidate}"$'\n'
+      fi
+    done
+  done <<EOF
+$OWNED_TEST_IDS
+EOF
+  [ -n "$OWNED_TEST_FILES" ] \
+    || fail "no declared real_boundary_test_files appear in the test-plan rows of slice $SLICE_ID's real boundary tests"
+
+  REAL_TEST_IDS="$OWNED_TEST_IDS"
+  REAL_TEST_FILES="$OWNED_TEST_FILES"
 fi
 
 # Evaluation is stricter than planning. A required row that has not been
