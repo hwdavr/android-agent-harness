@@ -52,8 +52,7 @@ documents. During testing/review load `rules/testing-practices.md`; add
 Follow the consuming project's `AGENTS.md` routing and explicit user overrides.
 Inspect current-state evidence before classifying a UI request. An unexpected
 defect uses `bug-fixing`; new UI behavior, state, or screens use `harness-planning`.
-An Appearance-only change uses `android-ui-layer` only after its entry check passes,
-and ends with the `ui-verification` conformance review.
+An Appearance-only change uses `design-to-ui` only after its entry check passes.
 
 
 ---
