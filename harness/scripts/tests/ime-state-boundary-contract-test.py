@@ -251,7 +251,7 @@ class SearchImeTest {
         )
         plan = (
             "# Implementation Plan\n\n**Feature ID**: `ime-fix`\n**Lane**: single\n\n## Product Requirements\n\n"
-            "| Capability file | Feature block | Requirement IDs | Approved block SHA-256 | Approved by / date |\n|---|---|---|---|---|\n"
+            "| Capability file | Artifact | Requirement IDs | Approved SHA-256 | Approved by / date |\n|---|---|---|---|---|\n"
             "| `docs/product/requirements/search.md` | none — restores FR-001 | FR-001 | N/A | N/A |\n\n"
             "## Root Cause & Reproduction\n\n- **Root cause**: results are laid out under the IME.\n\n"
             "## Screen States\n\n| Screen | State ID | Requirement | Acceptance Criteria |\n|---|---|---|---|\n"

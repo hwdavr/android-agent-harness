@@ -37,7 +37,7 @@ Read all four baselines produced by the `harness-planning` and `single-lane-gene
 | Document | Location | What to extract |
 |---|---|---|
 | `summary.md` | `$FEATURE_DIR` | Stage evidence and approvals |
-| Feature block `<feature-id>` | `docs/product/requirements/<capability>.md` | Requirements · acceptance criteria · out of scope (approved SHA-256 in the plan) |
+| Change artifacts | `$FEATURE_DIR/intent.md`, `design.md`, `specs/<capability>.md` | Requirements · scenarios · out of scope (approved SHA-256 values in the plan) |
 | `implementation-plan.md` | `$FEATURE_DIR` | Rule Applicability · approved design · file list |
 | `test-plan.md` | `$FEATURE_DIR` | Acceptance tests · scenarios · coverage targets · UI state verification |
 

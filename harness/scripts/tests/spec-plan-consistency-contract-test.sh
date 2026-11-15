@@ -8,6 +8,9 @@ FIXTURE_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/spec-plan-consistency-test.XXXXXX")
 FEATURE_ID="share-expiry"
 FEATURE_DIR="$FIXTURE_ROOT/.scratch/2026-11-09-$FEATURE_ID"
 CAPABILITY="$FIXTURE_ROOT/docs/product/requirements/note-sharing.md"
+INTENT="$FEATURE_DIR/intent.md"
+DESIGN="$FEATURE_DIR/design.md"
+DELTA="$FEATURE_DIR/specs/note-sharing.md"
 trap 'rm -rf "$FIXTURE_ROOT"' EXIT
 
 fail_test() { echo "FAIL: $1" >&2; exit 1; }
@@ -35,12 +38,13 @@ open(path, "w", encoding="utf-8").write(text.replace(old, new, 1))
 PY
 }
 
-block_hash() {
-  python3 - "$CAPABILITY" "$FEATURE_ID" <<'PY'
-import hashlib, sys
-text = open(sys.argv[1], encoding="utf-8").read()
-start, end = f"<!-- feature: {sys.argv[2]} -->", f"<!-- /feature: {sys.argv[2]} -->"
-print(hashlib.sha256(text[text.index(start) + len(start):text.index(end)].encode()).hexdigest())
+artifact_hash() {  # $1 = path; intent.md ignores its **Status** line
+  python3 - "$SCRIPT_DIR/.." "$1" <<'PY'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import spec_change
+print(spec_change.artifact_hash(Path(sys.argv[2])))
 PY
 }
 
@@ -73,59 +77,85 @@ write_plan() {  # $1 = lane
 
 ## Product Requirements
 
-| Capability file | Feature block | Requirement IDs | Approved block SHA-256 | Approved by / date |
+| Artifact | Capability file | Requirement IDs | Approved SHA-256 | Approved by / date |
 |---|---|---|---|---|
-| \`docs/product/requirements/note-sharing.md\` | \`$FEATURE_ID\` | FR-002, FR-003 | \`$(block_hash)\` | user, 2026-11-09 |
+| \`intent.md\` | — | SC-001 | \`$(artifact_hash "$INTENT")\` | user, 2026-11-09 |
+| \`design.md\` | — | — | \`$(artifact_hash "$DESIGN")\` | user, 2026-11-09 |
+| \`specs/note-sharing.md\` | \`docs/product/requirements/note-sharing.md\` | ADDED FR-002, FR-003 | \`$(artifact_hash "$DELTA")\` | user, 2026-11-09 |
 
 $(rule_rows)
 MD
 }
 
-write_capability() {  # $1 = user-scenarios markdown (may be empty)
+write_capability() {  # $1 = user-scenarios markdown (empty = single lane)
   rm -rf "$FIXTURE_ROOT/docs" "$FIXTURE_ROOT/.scratch"
-  mkdir -p "$FEATURE_DIR" "$(dirname "$CAPABILITY")"
-  cat > "$CAPABILITY" <<MD
+  mkdir -p "$FEATURE_DIR/specs" "$(dirname "$CAPABILITY")"
+  local lane=single
+  [ -n "$1" ] && lane=sliced
+  cat > "$CAPABILITY" <<'MD'
 # Note Sharing & Access Control
+
+**Capability ID**: `note-sharing`
 
 ## Requirements
 
-### FR-001 — Open sharing for an editable note
+### Requirement: FR-001 Open sharing for an editable note
+The app SHALL open the Shared Users screen when Share is selected.
 
-Selecting Share opens the Shared Users screen.
+#### Scenario: AC-001 Share an editable note
+- **GIVEN** an editable note
+- **WHEN** Share is selected
+- **THEN** Shared Users opens
+MD
+  cat > "$INTENT" <<'MD'
+# share-expiry — Expiring share invitations
 
-**Acceptance criteria**
-
-- **AC-001**: Given an editable note, when Share is selected, then Shared Users opens.
-
-## Planned changes
-
-<!-- feature: share-expiry -->
-### share-expiry — Expiring share invitations
-
+**Author**: owner
 **Status**: Approved — user, 2026-11-09
-$1
-#### Requirements *(mandatory)*
+**Input**: "Let invitations expire"
 
-##### FR-002 — Invitation expiry (New)
+## Problem
 
-Users MUST be able to choose an invitation expiry of 1, 7, or 30 days.
+Invitations never expire.
 
-**Acceptance criteria**
+## Proposed Outcome
 
-- **AC-002**: Given the invite screen, when the owner picks 7 days and sends, then the pending row shows the expiry.
+- Owners choose an invitation expiry.
 
-##### FR-003 — Expired invitation state (New)
-
-The system MUST show an expired invitation as Expired.
-
-**Acceptance criteria**
-
-- **AC-003**: Given an invitation past its expiry, when Shared Users loads, then the row shows Expired.
-
-#### Success Criteria *(mandatory)*
-
+**Success criteria**
 - **SC-001**: An owner sets an expiry in under 10 seconds.
-<!-- /feature: share-expiry -->
+MD
+  cat > "$DESIGN" <<MD
+# share-expiry — Design
+
+**Lane**: $lane
+$1
+## Product Decisions
+
+| Decision | Chosen | Alternatives considered | Reason |
+|---|---|---|---|
+| Expiry choices | 1, 7, 30 days | free date | fewer taps |
+MD
+  cat > "$DELTA" <<'MD'
+# Note Sharing — delta
+
+## ADDED Requirements
+
+### Requirement: FR-002 Invitation expiry
+The app SHALL let users choose an invitation expiry of 1, 7, or 30 days.
+
+#### Scenario: AC-002 Choose an expiry
+- **GIVEN** the invite screen
+- **WHEN** the owner picks 7 days and sends
+- **THEN** the pending row shows the expiry
+
+### Requirement: FR-003 Expired invitation state
+The app SHALL show an expired invitation as Expired.
+
+#### Scenario: AC-003 Expired row
+- **GIVEN** an invitation past its expiry
+- **WHEN** Shared Users loads
+- **THEN** the row shows Expired
 MD
 }
 
@@ -163,17 +193,17 @@ MD
 
 write_sliced() {
   write_capability "
-#### User Scenarios
+## User Scenarios
 
-##### US-1 — Owner sets an expiry (Priority: P1)
+### US-1 — Owner sets an expiry (Priority: P1)
 
 **Independent Test**: Invite with a 7-day expiry.
-**Requirements**: FR-002
+**Requirements**: note-sharing.md#FR-002
 
-##### US-2 — Owner sees expired invitations (Priority: P2)
+### US-2 — Owner sees expired invitations (Priority: P2)
 
 **Independent Test**: Load an expired invitation.
-**Requirements**: FR-003
+**Requirements**: note-sharing.md#FR-003
 "
   write_plan sliced
   cat > "$FEATURE_DIR/test-plan.md" <<MD
@@ -210,7 +240,7 @@ $acceptance_header
 | AC-002 | \`note-sharing.md\` | Row shows expiry | US-1 | TC-US-1-01 | In scope |
 | FR-003 | \`note-sharing.md\` | Expired state | US-2 | TC-US-2-01 | In scope |
 | AC-003 | \`note-sharing.md\` | Row shows Expired | US-2 | TC-US-2-01 | In scope |
-| SC-001 | \`note-sharing.md\` | Under 10 seconds | US-1 | TC-US-1-01 | In scope |
+| SC-001 | \`intent.md\` | Under 10 seconds | US-1 | TC-US-1-01 | In scope |
 
 ## Production Journey Planning Contract *(sliced lane only)*
 
@@ -279,22 +309,35 @@ write_single
 expect_success "validator rejected a consistent single-lane workspace"
 
 write_single
-replace "$CAPABILITY" "1, 7, or 30 days" "1, 7, 30, or 90 days"
-expect_failure "feature block changed after approval"
+replace "$DELTA" "1, 7, or 30 days" "1, 7, 30, or 90 days"
+expect_failure "specs/note-sharing.md changed after approval"
 
 write_single
-replace "$CAPABILITY" "1, 7, or 30 days." "1, 7, or 30 days [NEEDS CLARIFICATION: custom?]."
+replace "$INTENT" "Invitations never expire." "Invitations never expire, ever."
+expect_failure "intent.md changed after approval"
+
+# Approval and archiving flip intent.md **Status** without changing its recorded hash.
+write_single
+replace "$INTENT" "**Status**: Approved — user, 2026-11-09" "**Status**: Archived — 2026-11-10"
+expect_success "an archived intent must keep its approved hash"
+python3 "$SCRIPT_DIR/../archive-change.py" "$FEATURE_DIR" --project-root "$FIXTURE_ROOT" >/dev/null 2>&1 && fail_test "archive must refuse an already archived intent"
+replace "$INTENT" "**Status**: Archived — 2026-11-10" "**Status**: Approved — user, 2026-11-09"
+python3 "$SCRIPT_DIR/../archive-change.py" "$FEATURE_DIR" --project-root "$FIXTURE_ROOT" >/dev/null || fail_test "archive rejected an approved change"
+expect_success "the analyze gate must still pass after the deltas are archived"
+
+write_single
+replace "$DELTA" "1, 7, or 30 days." "1, 7, or 30 days [NEEDS CLARIFICATION: custom?]."
 write_plan single
 expect_failure "still contains [NEEDS CLARIFICATION] markers"
 
 write_single
-replace "$CAPABILITY" "**Status**: Approved — user, 2026-11-09" "**Status**: Clarified"
+replace "$INTENT" "**Status**: Approved — user, 2026-11-09" "**Status**: Clarified"
 write_plan single
 expect_failure "**Status** is not Approved"
 
 # --pre-approval: a clarified block with no recorded hash can be analyzed before approval.
 write_single
-replace "$CAPABILITY" "**Status**: Approved — user, 2026-11-09" "**Status**: Clarified"
+replace "$INTENT" "**Status**: Approved — user, 2026-11-09" "**Status**: Clarified"
 python3 - "$FEATURE_DIR/implementation-plan.md" <<'PY2'
 import re, sys
 p = sys.argv[1]
@@ -302,17 +345,45 @@ text = open(p, encoding="utf-8").read()
 open(p, "w", encoding="utf-8").write(re.sub(r"`[0-9a-f]{64}`", "`<64 hex characters>`", text))
 PY2
 bash "$VALIDATOR" "$FEATURE_DIR" --project-root "$FIXTURE_ROOT" --pre-approval >/dev/null ||
-  fail_test "pre-approval analysis rejected a clarified, unhashed block"
-expect_failure "approved block SHA-256 is not recorded"
+  fail_test "pre-approval analysis rejected a clarified, unhashed change"
+expect_failure "approved SHA-256 is not recorded"
 replace "$FEATURE_DIR/test-plan.md" "| TC-02 | AC-003 |" "| TC-02 | AC-002 |"
 if bash "$VALIDATOR" "$FEATURE_DIR" --project-root "$FIXTURE_ROOT" --pre-approval >/dev/null 2>&1; then
   fail_test "pre-approval analysis must still enforce acceptance coverage"
 fi
 
 write_single
-replace "$CAPABILITY" "##### FR-002 — Invitation expiry (New)" "##### FR-001 — Invitation expiry (New)"
+replace "$DELTA" "### Requirement: FR-002 Invitation expiry" "### Requirement: FR-001 Invitation expiry"
 write_plan single
-expect_failure "FR-001 is defined more than once"
+expect_failure "ADDED FR-001 already exists in docs/product/requirements/note-sharing.md"
+
+write_single
+replace "$DELTA" "#### Scenario: AC-002 Choose an expiry" "#### Scenario: AC-001 Choose an expiry"
+write_plan single
+expect_failure "ADDED scenario AC-001 already exists"
+
+write_single
+replace "$DELTA" "## ADDED Requirements" "## MODIFIED Requirements"
+write_plan single
+expect_failure "FR-002 is not a '### Requirement:' in docs/product/requirements/note-sharing.md"
+
+write_single
+replace "$DELTA" "The app SHALL show an expired" "The app shows an expired"
+write_plan single
+expect_failure "ADDED FR-003 must state its behavior with SHALL"
+
+write_single
+rm "$DESIGN"
+expect_failure "missing design.md"
+
+write_single
+replace "$FEATURE_DIR/implementation-plan.md" "| \`specs/note-sharing.md\` |" "| \`specs/other.md\` |"
+expect_failure "needs a \`specs/note-sharing.md\` row"
+
+write_single
+replace "$DESIGN" "**Lane**: single" "**Lane**: sliced"
+write_plan single
+expect_failure "design.md **Lane** is sliced, but implementation-plan.md declares single"
 
 write_single
 replace "$FEATURE_DIR/test-plan.md" "| TC-02 | AC-003 |" "| TC-02 | AC-002 |"
@@ -320,7 +391,7 @@ expect_failure "test-plan.md has no acceptance test covering note-sharing.md#AC-
 
 write_single
 replace "$FEATURE_DIR/test-plan.md" "| TC-02 | AC-003 |" "| TC-02 | AC-003, AC-099 |"
-expect_failure "TC-02 cites AC-099, which no listed capability file defines"
+expect_failure "TC-02 cites AC-099, which no listed capability file or delta defines"
 
 write_single
 replace "$FEATURE_DIR/test-plan.md" "| TC-02 | AC-003 |" "| TC-02 | none |"
@@ -357,7 +428,7 @@ replace "$FEATURE_DIR/test-plan.md" "| AC-003 | \`note-sharing.md\` | Row shows 
 expect_failure "test-plan.md Spec Coverage Matrix is missing note-sharing.md#AC-003"
 
 write_sliced
-replace "$FEATURE_DIR/test-plan.md" "| SC-001 | \`note-sharing.md\` | Under 10 seconds | US-1 | TC-US-1-01 |" "| SC-001 | \`note-sharing.md\` | Under 10 seconds | US-1 | TC-US-2-01 |"
+replace "$FEATURE_DIR/test-plan.md" "| SC-001 | \`intent.md\` | Under 10 seconds | US-1 | TC-US-1-01 |" "| SC-001 | \`intent.md\` | Under 10 seconds | US-1 | TC-US-2-01 |"
 expect_failure "test TC-US-2-01 belongs to US-2, not US-1"
 
 write_sliced
@@ -469,9 +540,14 @@ rm "$FEATURE_DIR/tasks.md"
 expect_failure "required in the sliced lane"
 
 write_sliced
-replace "$CAPABILITY" "**Requirements**: FR-003" "**Requirements**: FR-002"
+replace "$DESIGN" "**Requirements**: note-sharing.md#FR-003" "**Requirements**: note-sharing.md#FR-002"
 write_plan sliced
 expect_failure "FR-003 is not owned by any user story"
+
+write_sliced
+replace "$DESIGN" "**Requirements**: note-sharing.md#FR-003" "**Requirements**: note-sharing.md#FR-009"
+write_plan sliced
+expect_failure "US-2 lists note-sharing.md#FR-009, which no ADDED/MODIFIED delta defines"
 
 write_single
 write_plan sliced

@@ -40,7 +40,7 @@ trigger appears.
 
 ## Acceptance Test Cases
 
-Every `AC-###` in the approved feature block has exactly one primary automated test case. A
+Every ADDED or MODIFIED `AC-###` scenario in the approved `specs/` deltas has exactly one primary automated test case. A
 secondary test is allowed only for a distinct layer. A fallback, error, boundary, or compatibility
 outcome needs its own `AC-###` and its own test. Visual appearance is approved through
 `## UI State Verification`, not here.
@@ -61,7 +61,7 @@ outcome needs its own `AC-###` and its own test. Visual appearance is approved t
 
 ## Spec Coverage Matrix *(sliced lane only)*
 
-Map every `FR-###`, `AC-###`, and `SC-###` in the approved feature block(s) to its user story and
+Map every ADDED or MODIFIED `FR-###` and `AC-###` in the approved `specs/` deltas (Capability file = `<capability>.md`) and every `SC-###` in `intent.md` (Capability file = `intent.md`) to its user story and
 primary acceptance test, or give the approved out-of-scope reason. (The single lane needs no
 matrix: its acceptance table already maps every `AC-###` to a test.)
 

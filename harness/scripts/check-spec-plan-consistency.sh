@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Analyze gate (Spec Kit /analyze): requirement blocks ↔ implementation-plan.md ↔ tasks.md ↔ feature_list.json.
+# Analyze gate (Spec Kit /analyze): intent.md/design.md/specs deltas ↔ implementation-plan.md ↔ tasks.md ↔ feature_list.json.
 # Usage: bash harness/scripts/check-spec-plan-consistency.sh <feature-dir> [--project-root <dir>]
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

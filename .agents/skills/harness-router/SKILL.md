@@ -138,14 +138,14 @@ Use the existing evidence locations rather than introducing a second status syst
 |---|---|
 | Living capability behavior | `docs/product/requirements/<capability>.md` |
 | Lifecycle of every feature and bug fix, and workspace links | `docs/product/product.md` |
-| Specification (feature block) | `## Planned changes` in the capability file |
+| Specification of a change | `intent.md`, `design.md`, `specs/<capability>.md` in its `.scratch/` workspace |
 | Plans, slices, reviews, summaries, and evidence | Tracker-linked `.scratch/<YYYY-MM-DD>-<feature-id>/` |
 | Temporary QA captures, fixtures, reports, and cleanup | `.qa-artifacts/<run-id>/` |
 | Delivered-change audit and reusable knowledge | `docs/changes/` and `docs/knowledge/` |
 
 Resume only from valid evidence. Missing or stale prerequisites return to their
 owning stage. Implementation requires the approved `implementation-plan.md` and
-`test-plan.md` (Status Approved, block SHA-256 recorded); the sliced lane adds the approved
+`test-plan.md` (Status Approved, artifact SHA-256 values recorded); the sliced lane adds the approved
 `tasks.md` and `feature_list.json`, without a duplicate plan. The direct UI lane requires
 its entry check and the user's go-ahead. Keep required stage gates,
 runtime boundaries, and independent review non-passing when their prerequisites

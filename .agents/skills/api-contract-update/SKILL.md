@@ -39,7 +39,7 @@ Determine scope before running any stage:
 ### Stage 1 — Specify & Clarify ✅ Always
 **INVOKE** the `feature-specification` skill via the Skill tool (name: `feature-specification`). Reading the SKILL.md manually is not a substitute — the Skill tool is the required mechanism.
 
-The feature block (and, in Stage 2, the plan) must cover:
+The `specs/` deltas and `design.md` (and, in Stage 2, the plan) must cover:
 - API impact classification (additive, breaking, partial)
 - DTO and Domain model changes required
 - Identify which layers are affected (data, domain, UI)

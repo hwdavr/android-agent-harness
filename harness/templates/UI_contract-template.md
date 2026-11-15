@@ -1,7 +1,7 @@
 # UI Contract — <feature>
 
 **Project design system**: `docs/product/design_system.md`
-**Related spec**: feature block `<feature-id>` in `docs/product/requirements/<capability>.md`
+**Related spec**: `design.md` Screen States and `specs/<capability>.md` in this workspace
 **Reference status**: Inventory / Pen design in progress / Awaiting approval / Approved
 
 ## Research Decisions

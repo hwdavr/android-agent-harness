@@ -3,12 +3,12 @@
 **Feature ID**: `<feature-id>`
 **Workspace**: `.scratch/<YYYY-MM-DD>-<feature-id>/`
 **Workflow**: harness-planning / bug-fixing / api-contract-update
-**Lane**: single / sliced *(fixed at Specify: no user stories → single; two or more → sliced)*
+**Lane**: single / sliced *(fixed at Specify in `design.md`: no user stories → single; two or more → sliced)*
 **Date**: YYYY-MM-DD
 **Status**: Draft / Approved — <user, YYYY-MM-DD>
 
 Use this template in the **Implementation Plan** stage of every lane. It is written once per workspace and
-revised in place; do not create `_v<N>` copies. The living capability files own product intent
+revised in place; do not create `_v<N>` copies. `intent.md`, `design.md`, and the `specs/` deltas own product intent
 (WHAT/WHY); this plan owns HOW, the Rule Applicability decisions, and verification ownership.
 `test-plan.md` owns everything about tests. The sliced lane adds `tasks.md` (ordered work per
 story) and `feature_list.json` (slice status and evidence); the single lane uses neither.
@@ -17,17 +17,20 @@ story) and `feature_list.json` (slice status and evidence); the single lane uses
 
 ## Product Requirements
 
-One row per capability file that carries this feature's block. The SHA-256 is computed over
-the text between `<!-- feature: <feature-id> -->` and `<!-- /feature: <feature-id> -->`
-(exclusive) and is recorded when the specification is approved. A changed block requires
-re-approval before the plan can pass the analyze gate.
+One row each for `intent.md`, `design.md`, and every `specs/<capability>.md` delta in this
+workspace. The SHA-256 covers the whole file (`intent.md` without its `**Status**` line) and is
+recorded when the change is approved; `python3 harness/scripts/tests/change_fixture.py "$FEATURE_DIR"`
+prints the rows with current hashes. A changed artifact requires re-approval before the plan can
+pass the analyze gate.
 
-| Capability file | Feature block | Requirement IDs | Approved block SHA-256 | Approved by / date |
+| Artifact | Capability file | Requirement IDs | Approved SHA-256 | Approved by / date |
 |---|---|---|---|---|
-| `docs/product/requirements/<capability>.md` | `<feature-id>` | FR-###, FR-### | `<64 hex characters>` | <user, YYYY-MM-DD> |
+| `intent.md` | — | SC-### | `<64 hex characters>` | <user, YYYY-MM-DD> |
+| `design.md` | — | — | `<64 hex characters>` | <user, YYYY-MM-DD> |
+| `specs/<capability>.md` | `docs/product/requirements/<capability>.md` | ADDED FR-###; MODIFIED FR-### | `<64 hex characters>` | <user, YYYY-MM-DD> |
 
-Bug-fixing lane without a block: write `none — restores <capability>.md#FR-###` in the
-Feature block column and `N/A` for the hash.
+Bug-fixing lane without a delta: one row with `none — restores FR-###` in the Artifact column,
+the capability file, and `N/A` for the hash.
 
 ## Summary
 

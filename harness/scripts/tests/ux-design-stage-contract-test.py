@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Contract-first UX: the UI state inventory precedes Pen design, completed references and
-registered components precede planning, and UX never edits the approved requirement block."""
+registered components precede planning, and UX never edits the approved intent, design, or spec deltas."""
 import os
 from pathlib import Path
 import struct
@@ -37,24 +37,20 @@ def png(path, width, height):
                      + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
-BLOCK = """<!-- feature: editor-save -->
-### editor-save — Save from the editor
+INTENT = "# editor-save — Save from the editor\n\n**Status**: Approved — user, 2026-11-09\n\n## Problem\n\nNo save.\n"
+DELTA = """## ADDED Requirements
 
-**Status**: Approved — user, 2026-11-09
+### Requirement: FR-001 Save button
+The app SHALL let users save from the editor.
 
-#### Requirements
-
-##### FR-001 — Save button (New)
-
-Users MUST be able to save from the editor.
-
-**Acceptance criteria**
-
-- **AC-001**: Given an edited note, when Save is tapped, then the note is persisted.
-SCREEN_STATES<!-- /feature: editor-save -->
+#### Scenario: AC-001 Save an edited note
+- **GIVEN** an edited note
+- **WHEN** Save is tapped
+- **THEN** the note is persisted
 """
+DESIGN = "# editor-save — Design\n\n**Lane**: single\n"
 SCREEN_STATES = """
-#### Screen States
+## Screen States
 
 | Screen | State ID | Requirement | Acceptance Criteria |
 |---|---|---|---|
@@ -76,7 +72,12 @@ with tempfile.TemporaryDirectory(prefix="ux-design-stage-") as temporary:
     (workspace / "design").mkdir(parents=True)
     (project / "docs/product/requirements").mkdir(parents=True)
     requirement = project / "docs/product/requirements/editor.md"
-    requirement.write_text("# Editor\n\n## Planned changes\n\n" + BLOCK.replace("SCREEN_STATES", SCREEN_STATES))
+    requirement.write_text("# Editor\n\n## Requirements\n\nNone yet.\n")
+    (workspace / "specs").mkdir()
+    (workspace / "intent.md").write_text(INTENT)
+    (workspace / "specs/editor.md").write_text(DELTA)
+    (workspace / "design.md").write_text(DESIGN + SCREEN_STATES)
+    approved = [workspace / "intent.md", workspace / "specs/editor.md", workspace / "design.md"]
     (project / "docs/product/design_system.md").write_text(
         "# Design System\n\n### Component Registry\n\n"
         "| Component | Pen component | Composable | Required testTag | Wraps Material |\n|---|---|---|---|---|\n"
@@ -87,7 +88,7 @@ with tempfile.TemporaryDirectory(prefix="ux-design-stage-") as temporary:
         "<!-- HARNESS_TRACKER_END -->\n")
     (workspace / "summary.md").write_text("# Summary\n")
     run_gate(project, "specify", workspace)
-    approved_block = requirement.read_text()
+    approved_block = [path.read_text() for path in approved]
 
     # Inventory before Pen: references may be Pending, components may be Pending.
     pending = "Pending | Pending | Pending | Pending"
@@ -114,11 +115,11 @@ with tempfile.TemporaryDirectory(prefix="ux-design-stage-") as temporary:
     run_gate(project, "ux-design", workspace, "missing or empty design PNG")
     png(workspace / "design/editor-ready.png", 430, 932)
 
-    # UX never rewrites the approved requirement block.
-    assert requirement.read_text() == approved_block
+    # UX never rewrites the approved change artifacts.
+    assert [path.read_text() for path in approved] == approved_block
 
     # Logic-only scope: UX stages are N/A.
-    requirement.write_text("# Editor\n\n## Planned changes\n\n" + BLOCK.replace("SCREEN_STATES", ""))
+    (workspace / "design.md").write_text(DESIGN)
     (workspace / "UI_contract.md").unlink()
     assert "N/A" in run_gate(project, "ui-contract", workspace)
     assert "N/A" in run_gate(project, "ux-design", workspace)

@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
-"""Compose the effective specification for one dated feature workspace.
+"""Compose the effective specification for one dated change workspace.
 
-The specification is not a workspace file: it is the approved feature block(s) under
-"## Planned changes" in docs/product/requirements/*.md, plus the canonical Rule Applicability
-matrix (and, for bug fixes, the Root Cause & Reproduction and optional Screen States sections)
-from the workspace's implementation-plan.md, plus the bug Reproduction Test and Exploratory QA
-Handoff sections from test-plan.md. Gates that need "the spec" read this composed view,
-so no checker re-implements block discovery.
+The specification is the change workspace itself: intent.md (what and why), design.md (lane,
+stories, navigation, screen states), and specs/<capability>.md requirement deltas, plus the
+canonical Rule Applicability matrix (and, for bug fixes, the Root Cause & Reproduction and optional
+Screen States sections) from implementation-plan.md, plus the bug Reproduction Test and Exploratory
+QA Handoff sections from test-plan.md. Gates that need "the spec" read this composed view, so no
+checker re-implements discovery.
+
+Composed requirement headings read `### FR-### — <Name> (<OP>, <capability>.md)` so section-based
+checkers can find them.
 
 Usage:
   python3 harness/scripts/compose-feature-spec.py <workspace> [--project-root DIR] [--out FILE]
   python3 harness/scripts/compose-feature-spec.py <workspace> --list-blocks
 
-Exit status: 0 on success; 1 when no feature block and no bug-fix plan section exists.
+--list-blocks prints the workspace's delta files (specs/*.md), one per line.
+
+Exit status: 0 on success; 1 when the workspace has no specs/ delta and no bug-fix plan section,
+or a delta file is malformed.
 """
 
 from __future__ import annotations
@@ -23,109 +29,85 @@ import re
 import sys
 from pathlib import Path
 
-WORKSPACE_NAME = re.compile(r"^(\d{4}-\d{2}-\d{2})-([a-z0-9][a-z0-9-]*)$")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import spec_change as sc  # noqa: E402
+
 PLAN_SECTIONS = ("Root Cause & Reproduction", "Screen States", "Navigation", "Rule Applicability")
 TEST_PLAN_SECTIONS = ("Reproduction Test", "Exploratory QA Handoff")
+SKIP_DESIGN = {"Review Checklist"}
+SKIP_INTENT = {"Review Checklist"}
 
 
-def feature_id_for(workspace: Path) -> str:
-    match = WORKSPACE_NAME.match(workspace.name)
-    if not match:
-        raise SystemExit(f"FAIL: workspace '{workspace.name}' must be named <YYYY-MM-DD>-<feature-id>")
-    return match.group(2)
+def strip_note(heading: str) -> str:
+    return re.sub(r"\s*\*\(.*\)\*\s*$", "", heading)
 
 
-def find_blocks(project_root: Path, feature_id: str) -> list[tuple[Path, str]]:
-    start, end = f"<!-- feature: {feature_id} -->", f"<!-- /feature: {feature_id} -->"
-    blocks = []
-    req_dir = project_root / "docs" / "product" / "requirements"
-    for path in sorted(req_dir.glob("*.md")):
-        text = path.read_text(encoding="utf-8")
-        if start not in text:
-            continue
-        if text.count(start) != 1 or text.count(end) != 1 or text.index(end) < text.index(start):
-            raise SystemExit(f"FAIL: {path} must contain exactly one '{start}' … '{end}' pair")
-        blocks.append((path, text[text.index(start) + len(start):text.index(end)]))
-    return blocks
-
-
-def promote(block: str) -> str:
-    """Lift block headings two levels (#### → ##) so section-based checkers can read them."""
-    def lift(match: re.Match[str]) -> str:
-        hashes = match.group(1)
-        return "#" * max(1, len(hashes) - 2) + match.group(2)
-    return re.sub(r"^(#{3,6})(\s.*)$", lift, block, flags=re.M)
-
-
-def split_sections(text: str) -> list[tuple[str, str]]:
-    """Return (heading, body) for each level-2 section, in order."""
-    parts = re.split(r"^## (.+)$", text, flags=re.M)
-    return [(parts[i].strip(), parts[i + 1]) for i in range(1, len(parts), 2)]
-
-
-def plan_section(plan_text: str, heading: str) -> str | None:
-    for title, body in split_sections(plan_text):
-        if re.sub(r"\s*\*\(.*\)\*\s*$", "", title) == heading:
-            return body
-    return None
+def composed_requirements(deltas: list[sc.Delta], root: Path) -> list[str]:
+    out: list[str] = []
+    for delta in deltas:
+        rel = delta.path.relative_to(root).as_posix() if delta.path.is_relative_to(root) else delta.path.name
+        out.append(f"<!-- source: {rel} -->")
+        for op in sc.OPS:
+            for req in delta.ops[op]:
+                body = sc.REQ_HEADING.sub("", req.text, count=1).strip()
+                out += [f"### {req.fr} — {req.name} ({op}, {delta.capability}.md)", "", body, ""]
+    return out
 
 
 def compose(workspace: Path, project_root: Path) -> tuple[str, list[Path]]:
-    feature_id = feature_id_for(workspace)
-    blocks = find_blocks(project_root, feature_id)
+    feature_id = sc.feature_id_for(workspace)
+    paths = sc.delta_files(workspace)
+    deltas = [sc.parse_delta(p) for p in paths]
+    errors = [e for d in deltas for e in d.errors]
+    if errors:
+        raise SystemExit("FAIL: " + "\nFAIL: ".join(errors))
+
+    def read(name: str) -> str:
+        path = workspace / name
+        return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+    intent, design = read("intent.md"), read("design.md")
     plan_path = workspace / "implementation-plan.md"
-    plan_text = plan_path.read_text(encoding="utf-8") if plan_path.is_file() else ""
-    test_plan_path = workspace / "test-plan.md"
-    test_plan_text = test_plan_path.read_text(encoding="utf-8") if test_plan_path.is_file() else ""
-
-    merged: dict[str, list[str]] = {}
-    order: list[str] = []
-    screen_rows: list[str] = []
-    screen_header: list[str] = []
-    for path, block in blocks:
-        rel = path.relative_to(project_root).as_posix()
-        for heading, body in split_sections(promote(block)):
-            key = re.sub(r"\s*\*\(.*\)\*\s*$", "", heading)
-            if key == "Screen States":
-                lines = body.splitlines()
-                table = [ln for ln in lines if ln.strip().startswith("|")]
-                if len(table) >= 2:
-                    screen_header = table[:2]
-                    screen_rows.extend(table[2:])
-                continue
-            if key not in merged:
-                merged[key] = []
-                order.append(key)
-            merged[key].append(f"<!-- source: {rel} -->\n{body.strip()}\n")
-
-    plan_parts = {name: plan_section(plan_text, name) for name in PLAN_SECTIONS}
-    plan_parts.update({name: plan_section(test_plan_text, name) for name in TEST_PLAN_SECTIONS})
-    if not blocks and not plan_parts["Root Cause & Reproduction"]:
+    plan_text, test_plan_text = read("implementation-plan.md"), read("test-plan.md")
+    plan_parts = {name: sc.section(plan_text, name) for name in PLAN_SECTIONS}
+    plan_parts.update({name: sc.section(test_plan_text, name) for name in TEST_PLAN_SECTIONS})
+    if not deltas and not plan_parts["Root Cause & Reproduction"]:
         raise SystemExit(
-            f"FAIL: no '<!-- feature: {feature_id} -->' block in docs/product/requirements/ and no "
-            f"bug-fix '## Root Cause & Reproduction' section in {plan_path}")
+            f"FAIL: no requirement delta in {workspace.name}/specs/ and no bug-fix "
+            f"'## Root Cause & Reproduction' section in {plan_path}")
 
     out = [f"# Composed specification — {feature_id}", "",
            "<!-- Generated by harness/scripts/compose-feature-spec.py. Do not edit or commit. -->", "",
            "## Product Requirements", ""]
-    out += [f"- `{p.relative_to(project_root).as_posix()}` — feature block `{feature_id}`" for p, _ in blocks] or \
+    out += [f"- `specs/{d.path.name}` → `docs/product/requirements/{d.capability}.md`" for d in deltas] or \
            ["- none — bug fix restores existing requirements (see Root Cause & Reproduction)"]
     out.append("")
-    for key in order:
-        out += [f"## {key}", "", "\n".join(merged[key]).rstrip(), ""]
-    if screen_rows or plan_parts["Screen States"]:
-        out += ["## Screen States", ""]
-        if screen_rows:
-            out += screen_header + screen_rows
-        else:
-            out.append(plan_parts["Screen States"].strip())
-        out.append("")
-    for name in ("Navigation", "Root Cause & Reproduction", "Reproduction Test", "Exploratory QA Handoff",
-                 "Rule Applicability"):
+
+    emitted: set[str] = set()
+    for heading, body in sc.sections(intent):
+        key = strip_note(heading)
+        if key in SKIP_INTENT or not body.strip():
+            continue
+        out += [f"## {key}", "", "<!-- source: intent.md -->", body.strip(), ""]
+        emitted.add(key)
+    if deltas:
+        out += ["## Requirements", ""] + composed_requirements(deltas, project_root)
+        emitted.add("Requirements")
+    for heading, body in sc.sections(design):
+        key = strip_note(heading)
+        if key == "User Flow and Navigation":
+            key = "Navigation"
+        if key in SKIP_DESIGN or not body.strip() or key in emitted:
+            continue
+        out += [f"## {key}", "", "<!-- source: design.md -->", body.strip(), ""]
+        emitted.add(key)
+    for name in ("Screen States", "Navigation", "Root Cause & Reproduction", "Reproduction Test",
+                 "Exploratory QA Handoff", "Rule Applicability"):
         body = plan_parts[name]
-        if body and name not in merged:
+        if body and name not in emitted:
             out += [f"## {name}", "", body.strip(), ""]
-    return "\n".join(out).rstrip() + "\n", [p for p, _ in blocks]
+            emitted.add(name)
+    return "\n".join(out).rstrip() + "\n", paths
 
 
 def main() -> int:
@@ -143,11 +125,12 @@ def main() -> int:
         return 1
     try:
         text, paths = compose(workspace, root)
-    except SystemExit as exc:
-        print(exc, file=sys.stderr)
+    except (SystemExit, ValueError) as exc:
+        message = str(exc)
+        print(message if message.startswith("FAIL") else f"FAIL: {message}", file=sys.stderr)
         return 1
     if args.list_blocks:
-        print("\n".join(p.relative_to(root).as_posix() for p in paths))
+        print("\n".join(p.relative_to(root).as_posix() if p.is_relative_to(root) else str(p) for p in paths))
     elif args.out:
         Path(args.out).write_text(text, encoding="utf-8")
     else:

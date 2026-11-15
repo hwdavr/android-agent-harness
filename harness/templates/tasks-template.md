@@ -1,7 +1,7 @@
 # Tasks — <Feature Name>
 
 **Feature ID**: `<feature-id>`
-**Input**: [`implementation-plan.md`](implementation-plan.md), the approved feature block(s) in `docs/product/requirements/`
+**Input**: [`implementation-plan.md`](implementation-plan.md), the approved `intent.md`, `design.md`, and `specs/` deltas
 **Slices**: [`feature_list.json`](feature_list.json) — one entry per slice below, each listing its tasks
 
 Use this template in the **Implementation Plan** stage, after `implementation-plan.md`.
@@ -112,7 +112,7 @@ acceptance tests pass with non-zero executed counts; the slice is independently 
 ### Final checks *(last slice only)*
 
 - [ ] T015 [US-3] Code quality: `ktlintCheck`, `detekt`, `lintDebug`, custom checks exit 0
-- [ ] T016 [US-3] Product Document Update: reconcile the feature block into `## Requirements` in place; record `## Product Requirement Reconciliation` in `summary.md`
+- [ ] T016 [US-3] Product Document Update: run `archive-change.py` to merge the `specs/` deltas into the capability files; record `## Product Requirement Reconciliation` in `summary.md`
 - [ ] T017 [US-3] Install the debug build when required (`./gradlew installDebug`)
 
 **Checkpoint**: all US-3 tasks are done and every slice passes independently.

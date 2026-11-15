@@ -14,7 +14,7 @@ Use this workflow when you are acting as the **Generator** (Implementer) agent. 
 
 ## Planning Authorization
 
-This workflow starts only after the user approves the sliced-lane package from `harness-planning` Stage 3 in one dated `.scratch/<YYYY-MM-DD>-<feature-id>/` workspace: the approved feature block(s), `implementation-plan.md`, `test-plan.md`, `tasks.md`, and `feature_list.json`. That approval authorizes implementation of the selected slice. Do not generate or request approval for a duplicate plan in this workflow; the slice's `feature_list.json` entry, its `tasks.md` phase, its `### US-n` acceptance tests in `test-plan.md`, the design, and the plan are the plan of record.
+This workflow starts only after the user approves the sliced-lane package from `harness-planning` Stage 3 in one dated `.scratch/<YYYY-MM-DD>-<feature-id>/` workspace: the approved `intent.md`, `design.md`, and `specs/` deltas, `implementation-plan.md`, `test-plan.md`, `tasks.md`, and `feature_list.json`. That approval authorizes implementation of the selected slice. Do not generate or request approval for a duplicate plan in this workflow; the slice's `feature_list.json` entry, its `tasks.md` phase, its `### US-n` acceptance tests in `test-plan.md`, the design, and the plan are the plan of record.
 
 Before implementation begins, preserve the approved Rule Applicability decisions from
 the feature specification in the slice evidence and carry each Required row into its
@@ -107,7 +107,7 @@ Update repository history, project task logs, and product documentation to refle
     2. Update `docs/product/product.md` directly:
         *   Reconcile affected living capability requirement files with verified behavior and link evidence.
         *   Update capability links in the overview only where navigation changes. Detailed behavior belongs in the existing capability files.
-        *   Update Planned changes inside each affected capability file; preserve undelivered scope and pending review explicitly.
+        *   Do not edit capability requirements per slice. When every slice is `passing`, run `python3 harness/scripts/archive-change.py "$FEATURE_DIR"` once to merge the `specs/` deltas; until then delivered-but-unarchived behavior stays in the workspace.
         *   Update the `*Document last updated*` date at the bottom of the file.
         *   If every feature in `$FEATURE_DIR/feature_list.json` is now `passing`, update the Harness Feature Tracker status to `To be reviewed` in place and update its date/notes (do not move or rename the workspace). **NEVER transition directly to `To be human reviewed`** — only the Evaluator agent (via `harness-evaluation`) is authorized to make that transition after scoring. Otherwise, keep the Harness Feature Tracker `In Progress` while slices remain.
         *   Run `bash harness/scripts/check-feature-lifecycle.sh` after the tracker update. Do not claim completion or commit if it fails.

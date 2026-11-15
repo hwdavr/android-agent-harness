@@ -13,8 +13,8 @@ An adversarial evaluator pass covering requirement-to-test traceability, test qu
 
 Identify the active workflow first. The test-review report is an **output**, never an input.
 
-- **Single-lane review**: the approved feature block(s), `$FEATURE_DIR/implementation-plan.md`, `test-plan.md`, `summary.md`, and any testing-stage evidence.
-- **Harness evaluation**: the approved feature block(s), `$FEATURE_DIR/implementation-plan.md`, the slice's `test-plan.md` section, `$FEATURE_DIR/feature_list.json`, the active slice summary, and testing-stage evidence recorded in `$FEATURE_DIR/summary.md` or the slice summary.
+- **Single-lane review**: the approved `intent.md`, `design.md`, and `specs/` deltas, `$FEATURE_DIR/implementation-plan.md`, `test-plan.md`, `summary.md`, and any testing-stage evidence.
+- **Harness evaluation**: the approved `intent.md`, `design.md`, and `specs/` deltas, `$FEATURE_DIR/implementation-plan.md`, the slice's `test-plan.md` section, `$FEATURE_DIR/feature_list.json`, the active slice summary, and testing-stage evidence recorded in `$FEATURE_DIR/summary.md` or the slice summary.
 - All test files mapped by the active test plan, plus the production files that implement the mapped behavior.
 - `rules/testing-strategy.md` is auto-loaded as a system rule — do not re-read. Also load `rules/testing-practices.md`,
   `harness/templates/test-review-template.md`, and
@@ -58,7 +58,7 @@ Kotlin method, a suite-scoped command, its declared scenario, and successful evi
 
 ### B2. Build complete requirement-to-test traceability
 
-List every functional requirement, acceptance criterion, and documented edge case from the approved feature block(s) and `test-plan.md`. Add one row per requirement to the review report with:
+List every functional requirement, acceptance criterion, and documented edge case from the approved `intent.md`, `design.md`, and `specs/` deltas and `test-plan.md`. Add one row per requirement to the review report with:
 
 | Source ID | Required behavior | Test file + method | Production trigger exercised | Observable assertion | Evidence status | Result |
 |---|---|---|---|---|---|---|

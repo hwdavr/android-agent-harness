@@ -17,7 +17,7 @@ Produce a reviewable plan before any code is written, in the dated workspace
 | `tasks.md` — ordered work per story | — | ✓ |
 | `feature_list.json` — slice contract for the generator | — | ✓ |
 
-The lane is fixed by the feature block: no user stories → single; two or more → sliced.
+The lane is fixed by `design.md`: no user stories → single; two or more → sliced.
 
 ## Load
 
@@ -25,7 +25,7 @@ The lane is fixed by the feature block: no user stories → single; two or more 
   and — sliced lane only — `harness/templates/tasks-template.md`,
   `harness/templates/feature_list_template.json`.
 - `harness/templates/rule-applicability-template.md` (decision vocabulary and triggers).
-- The feature block(s) in `docs/product/requirements/`, or for a bug the plan's Root Cause and the
+- `intent.md`, `design.md`, and the `specs/` deltas in the workspace, or for a bug the plan's Root Cause and the
   test plan's Reproduction Test. For UI scope, the approved `UI_contract.md`, its Pen references,
   and the design-system Component Registry.
 - `rules/testing-practices.md`. Load a conditional rule only when its row is `Required`, excepted,
@@ -38,9 +38,9 @@ The lane is fixed by the feature block: no user stories → single; two or more 
 
 Follow the template exactly. In particular:
 
-- **Product Requirements**: one row per capability file with the block ID; leave the SHA-256
-  column `<64 hex characters>` until approval. A bug restoring existing behavior writes
-  `none — restores <capability>.md#FR-###`.
+- **Product Requirements**: one row each for `intent.md`, `design.md`, and every
+  `specs/<capability>.md`; leave the SHA-256 column `<64 hex characters>` until approval. A bug
+  restoring existing behavior writes one `none — restores FR-###` row naming the capability file.
 - **Rule Applicability** is the rules gate: decide all ten rows before Phase 0 and re-check them
   after Phase 1. A deviation is an `Exception — approved by <user/date>` row stating its boundary.
   Every `Required` row needs planned work and a planned verification in `test-plan.md`; in the
@@ -116,8 +116,8 @@ Record the stage in `summary.md`.
 
 Present the package and wait for explicit approval. Do not create or edit source files before it.
 
-- **Single lane**: one review covers the feature block, the design (UI scope), and both plans.
-- **Sliced lane**: the block was approved earlier; this review covers both plans, `tasks.md`,
+- **Single lane**: one review covers `intent.md`, `design.md`, the `specs/` deltas, the visual design (UI scope), and both plans.
+- **Sliced lane**: the specification was approved earlier; this review covers both plans, `tasks.md`,
   `feature_list.json`, journey ownership, and the platform contract.
 
 Feedback routing: visual feedback → UX Design (design artifacts only); behavior, scope, data,
@@ -125,8 +125,9 @@ navigation, or state-inventory changes → `feature-specification`; plan-only fe
 
 On approval:
 
-1. Set the block **Status** to `Approved — <user>, <YYYY-MM-DD>` (single lane) and record each
-   block's SHA-256 (text between the markers) in Product Requirements; set the plan **Status**.
+1. Set the `intent.md` **Status** to `Approved — <user>, <YYYY-MM-DD>` (single lane) and record
+   each artifact's SHA-256 in Product Requirements (`python3 harness/scripts/tests/change_fixture.py
+   "$FEATURE_DIR"` prints the rows); set the plan **Status**.
 2. Move the tracker and run `bash harness/scripts/check-feature-lifecycle.sh`:
    - **Single lane**: `In Progress` — this session continues to Implementation.
    - **Sliced lane**: `Awaiting implementation approval`, then stop. The generator picks up the

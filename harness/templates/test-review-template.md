@@ -6,7 +6,7 @@
 |---|---|
 | Feature / slice | |
 | Current commit | |
-| Baselines reviewed | Approved requirement block(s), `implementation-plan.md` (Rule Applicability), `test-plan.md`, and `tasks.md` (sliced lane) |
+| Baselines reviewed | Approved `specs/` deltas, `intent.md`, `design.md`, `implementation-plan.md` (Rule Applicability), `test-plan.md`, and `tasks.md` (sliced lane) |
 | Changed production files reviewed | |
 | Changed test files reviewed | |
 
@@ -44,7 +44,7 @@ do not invent logging or analytics tests when the trigger is absent.
 
 ## Requirement-to-Test Traceability
 
-List every FR, AC, and documented edge case from the approved requirement block(s) and `test-plan.md`.
+List every FR, AC, and documented edge case from the approved `specs/` deltas and `test-plan.md`.
 
 | Source ID | Acceptance Test ID | Required behavior | Test file + method | Production trigger exercised | Observable assertion | Evidence status | Result |
 |---|---|---|---|---|---|---|---|

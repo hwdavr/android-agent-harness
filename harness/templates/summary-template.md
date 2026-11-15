@@ -16,11 +16,11 @@ the `harness-planning` profile; a single-lane feature appends the `single-lane-g
 that table, and a sliced-lane slice summary uses `sliced-lane-generator`. Do not load or
 copy inactive workflow profiles. A stage is complete only when its concise evidence appears below.
 Update this record at stage boundaries, approval, or a blocker. During UX visual iteration, keep
-the requirement block and summary stable and update only design artifacts.
+the approved change artifacts and summary stable and update only design artifacts.
 
 ## Context Provenance
 
-- Requirement block(s): `docs/product/requirements/<capability>.md` → `<feature-id>` (approved block SHA-256 in `implementation-plan.md`)
+- Change artifacts: `intent.md`, `design.md`, `specs/<capability>.md` (approved SHA-256 values in `implementation-plan.md`)
 - Rule Applicability: `implementation-plan.md#rule-applicability`
 - Slice metadata: `feature_list.json` → `<slice ID>` (sliced lane), or `N/A — single lane`
 - Source hashes at stage start: `<implementation-plan.md hash>`; `<test-plan.md hash>`

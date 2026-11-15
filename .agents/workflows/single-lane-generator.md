@@ -61,10 +61,16 @@ scripts (including the compose "Registered design-system components" rule) exit 
 
 ### Stage 8 — Product Document Update
 
-Reconcile the feature block into the living file: move each delivered `FR-###`/`AC-###` from
-`## Planned changes` into `## Requirements` in place — replace changed requirements, retire IDs a
-`Retires` relation names, and remove the block markers. Keep genuinely undelivered scope under
-`## Planned changes`, explicitly qualified. Update the product index only where its summary is stale.
+Archive the change: merge its `specs/` deltas into the living capability files.
+
+```bash
+python3 harness/scripts/archive-change.py "$FEATURE_DIR" --dry-run   # review the merge
+python3 harness/scripts/archive-change.py "$FEATURE_DIR"
+```
+
+It appends ADDED requirements, replaces MODIFIED ones in place, deletes REMOVED ones, and sets
+`intent.md` to `Archived`. Archive only delivered, verified scope. Add a newly created capability
+to the product index; otherwise update the index only where its summary is stale.
 
 In `summary.md` add `## Product Requirement Reconciliation` with columns `Capability file`,
 `Existing claim reviewed`, `Disposition` (`Replace`, `Retire`, `Retain`, `Confirm unchanged`),
@@ -92,7 +98,7 @@ When the feature affects UI, needs instrumented/platform verification, or the us
 
 | Failure | Return to |
 |---|---|
-| Behavior, scope, data, navigation, or state-inventory change | `harness-planning` Stage 1 (re-approval; the block hash changes) |
+| Behavior, scope, data, navigation, or state-inventory change | `harness-planning` Stage 1 (re-approval; the artifact hashes change) |
 | Visual design feedback | `harness-planning` Stage 2 |
 | Plan-only feedback or analyze inconsistency | `harness-planning` Stage 3 |
 | Compilation error | Stage 4 |

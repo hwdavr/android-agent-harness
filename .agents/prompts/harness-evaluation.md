@@ -7,7 +7,7 @@ Target feature for evaluation (auto-selected by `__AGENT_NAME__-harness-generato
 - Workspace: `__FEATURE_DIR__/`
 - Status: `To be reviewed` (all slices are passing)
 
-Read, in order: `AGENTS.md`, the workflow, the approved feature block(s) listed in
+Read, in order: `AGENTS.md`, the workflow, the approved `intent.md`, `design.md`, and `specs/` deltas listed in
 `__FEATURE_DIR__/implementation-plan.md`, that plan, `__FEATURE_DIR__/test-plan.md`,
 `__FEATURE_DIR__/feature_list.json`, `__FEATURE_DIR__/summary.md`, and
 `__FEATURE_DIR__/session-handoff.md`. Apply the AGENTS
