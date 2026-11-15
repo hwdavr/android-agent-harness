@@ -51,8 +51,11 @@ esac
 
 FEATURE_JSON="$FEATURE_DIR/feature_list.json"
 CONTRACT="$FEATURE_DIR/test-plan.md"
-[ -f "$FEATURE_JSON" ] || fail "missing $FEATURE_JSON"
 [ -f "$CONTRACT" ] || fail "missing $CONTRACT"
+if [ -f "$FEATURE_DIR/implementation-plan.md" ] && grep -Eq '^\*\*Lane\*\*:[[:space:]]*single([[:space:]]|$)' "$FEATURE_DIR/implementation-plan.md"; then
+  exec python3 "$SCRIPT_DIR/check-single-lane-traceability.py" "$FEATURE_DIR" "$MODE" "$PROJECT_ROOT"
+fi
+[ -f "$FEATURE_JSON" ] || fail "missing $FEATURE_JSON"
 
 # An acceptance row that claims opening or navigating to a route/destination
 # exercises the production navigation graph. Such a claim can only be owned by

@@ -248,3 +248,21 @@ expect_failure "must use the direct AndroidJUnitRunner wrapper" \
   bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
 
 echo "PASS: acceptance traceability validator rejects missing methods, scenario drift, and unscoped evidence."
+
+# Single-lane plans have flat test IDs and no feature_list.json.
+write_fixture
+rm "$FEATURE_DIR/feature_list.json"
+printf '%s\n' '**Lane**: single' > "$FEATURE_DIR/implementation-plan.md"
+sed 's/TC-US-1-01/TC-01/g' "$FEATURE_DIR/test-plan.md" > "$FEATURE_DIR/test-plan.tmp"
+mv "$FEATURE_DIR/test-plan.tmp" "$FEATURE_DIR/test-plan.md"
+mkdir -p "$FIXTURE_ROOT/reports"
+printf '%s\n' '<testsuite tests="1"><testcase classname="example.FixtureIntegrationTest" name="loadsSharedScenario"/></testsuite>' > "$FIXTURE_ROOT/reports/test.xml"
+printf '%s\n' '[{"test_id":"TC-01","executed_command":"./gradlew testDebugUnitTest --tests example.FixtureIntegrationTest","exit_status":0,"test_count":1,"junit_xml":"reports/test.xml"}]' > "$FEATURE_DIR/acceptance-evidence.json"
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --planning
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --test fixture
+HARNESS_PROJECT_ROOT="$FIXTURE_ROOT" bash "$VALIDATOR" .scratch/2026-09-01-fixture --evaluate fixture
+printf '%s\n' '<testsuite tests="1"><testcase classname="example.FixtureIntegrationTest" name="loadsSharedScenario"><skipped/></testcase></testsuite>' > "$FIXTURE_ROOT/reports/test.xml"
+expect_failure "has no passing JUnit test case" bash "$VALIDATOR" .scratch/2026-09-01-fixture --evaluate fixture
+rm "$FEATURE_DIR/acceptance-evidence.json"
+expect_failure "invalid acceptance-evidence.json" bash "$VALIDATOR" .scratch/2026-09-01-fixture --evaluate fixture
+echo "PASS: single-lane traceability validates evidence without sliced-lane metadata."
