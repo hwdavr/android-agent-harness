@@ -41,6 +41,7 @@ Before any task, identify its type, read the matching workflow or direct skill *
 |-----------|----------------------|
 | New feature or enhancement, any size (Specify picks the lane) | `.agents/workflows/harness-planning.md` |
 | Bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
+| Logic-only change/refactor passing its entry check | `.agents/workflows/quick-change.md` |
 | Appearance-only tweak an approved design or the design system already defines | `.agents/skills/design-to-ui/SKILL.md` (direct lane) |
 | Implement an approved single-lane feature | `.agents/workflows/single-lane-generator.md` |
 | Next slice of an approved sliced-lane feature | `.agents/workflows/sliced-lane-generator.md` |
@@ -71,8 +72,9 @@ Before any task, identify its type, read the matching workflow or direct skill *
 - **Every new feature must have tests**
 - **Platform-bound features** require a capability matrix and real instrumented boundary test; fake/JVM evidence is supplemental. Missing runtimes/devices/models/locales/permissions/services fail loudly, never PASS.
 - **No dummy production code** — every function/branch/callback implements its requirement. No TODO/stubs/no-op handlers; follow `.agents/rules/implementation-rules.md`.
-- **User approval before implementation** — approved `implementation-plan.md` + `test-plan.md` (intent/design/specs SHA-256 recorded); sliced lane adds `tasks.md` + `feature_list.json`; `sliced-lane-generator` never re-plans.
+- **User approval before implementation** — approved `implementation-plan.md` + `test-plan.md` (intent/design/specs SHA-256 recorded); sliced lane adds `tasks.md` + `feature_list.json`; `sliced-lane-generator` never re-plans; quick change: its Approved `intent.md`.
 - **Direct UI lane is appearance-only** — `android-ui-layer` must pass its entry check (no new state/interaction/navigation/data/API) and end with a `ui-verification` conformance review; else `harness-planning` or `bug-fixing`.
+- **Quick change** — logic-only; passes `check-quick-change.sh` and a fresh `review.md` PASS.
 - **UI appearance is approved by conformance review, never a screenshot golden** — Pen-frame captures, structure checks, registered components, user approval.
 - **Pass every stage gate before advancing**
 - **Invoke every stage skill through the available skill mechanism** (the Skill tool when exposed); otherwise read the full repository `SKILL.md`, follow it, and record the missing interface in stage evidence. Executable gates stay mandatory.
