@@ -59,6 +59,10 @@ class PreservationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "cannot read"):
             checker.read_json("/path/that/does/not/exist")
 
+    def test_missing_archive_fails_loudly(self):
+        with self.assertRaisesRegex(ValueError, "cannot parse archive"):
+            checker.archive_inventory("/path/that/does/not/exist.fig")
+
     def test_unexpected_or_missing_addition(self):
         with self.assertRaisesRegex(ValueError, "unexpected or missing diff hunks"):
             checker.check(BASE, BASE, DIFF, ["@@ /Page/Other added to #0:1 at 1"])
@@ -81,8 +85,15 @@ class LiveOpenPencilTest(unittest.TestCase):
                 return result.stdout
 
             run("openpencil", "convert", str(pen), "-o", str(original))
+            run("openpencil", "eval", str(original), "-w", "-c",
+                'let c=figma.createComponent();c.name="Saved component";'
+                'let r=figma.createRectangle();r.name="Component child";c.appendChild(r)')
             before = json.loads(json.loads(run("openpencil", "eval", str(original), "-c", SNAPSHOT).strip()))
             self.assertTrue(before, "live source must have persisted GUIDs")
+            archive_before = checker.archive_inventory(original)
+            component = next(n for n in archive_before if n["name"] == "Saved component")
+            self.assertNotIn(component["guid"], {n["guid"] for n in before},
+                             "fixture must reproduce the scene-graph omission")
             candidate = root / "candidate.fig"
             shutil.copyfile(original, candidate)
             run("openpencil", "eval", str(candidate), "-w", "-c",
@@ -93,6 +104,11 @@ class LiveOpenPencilTest(unittest.TestCase):
             self.assertEqual(len(allow), 1)
             self.assertIn("Added", allow[0])
             checker.check(before, after, diff, allow)
+            archive_after = checker.archive_inventory(candidate)
+            checker.check(archive_before, archive_after, diff, allow)
+            omitted_component = [n for n in archive_after if n["guid"] != component["guid"]]
+            with self.assertRaisesRegex(ValueError, "missing original GUID"):
+                checker.check(archive_before, omitted_component, diff, allow)
 
             for operation in ('n.resize(80,80)', 'n.remove()'):
                 altered = root / ("edit.fig" if "resize" in operation else "delete.fig")
