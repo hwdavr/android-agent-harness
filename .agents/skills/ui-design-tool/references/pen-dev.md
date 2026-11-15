@@ -134,3 +134,15 @@ Report the target `.pen` file and screen, exact node IDs and properties added or
 the edit was local or shared, structural and visual verification results, the promoted source
 path, retained screenshot path, cleaned intermediate paths, and any unresolved limitation. Do not
 claim a save, promotion, cleanup, or verification succeeded when it did not.
+
+## Extract layout
+
+Contract item 6 of `ui-design-tool` applies: each state needs `design/<state image stem>.layout.json`
+(`harness/templates/design-layout-template.json`, `tool: "pen.dev"`, `source_sha256` of the `.pen`
+file) holding the screen-frame's size and, per node, position, auto-layout gap/padding, and text
+size, line height and copy, read with the documented `execute` `Get` form.
+
+**Not yet verified**: no pen.dev extraction script exists in `harness/scripts/design_adapters/`
+(only `openpencil_layout.py`). On 2026-11-14 the headless shell refused every call because the
+account's plan limit was reached, so no command was confirmed. Until a script is added and tested,
+a pen.dev state's layout is unavailable and `check-ui-contract.py` fails; do not write the file by hand.

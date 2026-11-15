@@ -79,10 +79,11 @@ UI appearance is approved by a conformance review, never by a screenshot golden.
 and a Compose render differ in text rasterization, hinting, anti-aliasing, and stroke rounding, so a
 pixel comparison between them is not a fair or passable gate. For every `UI_contract.md` state:
 
-- **Review capture**: a JVM `*ReviewCaptureTest` under `app/src/test/java/<package>/review/` renders the
+- **Review capture**: a JVM `*ReviewCaptureTest` under `app/src/test/java/<package>/roborazzi/` renders the
   production Composable at the state's Viewport (the Pen frame's dp size and density, via `@Config`
   qualifiers) with its deterministic fixture, theme, locale, and font scale. Never resize a capture or
-  an export to make them match.
+  an export to make them match. Capture tests run only with `-Proborazzi.test.record=true`; normal
+  unit-test and CI runs exclude the `roborazzi` package. Structural tests stay outside that package.
 - **Structural check**: a JVM semantics or instrumented test asserts that required `testTag`s are
   present, ordered, visible, unclipped, and within the contract tolerance (default 4dp
   position/spacing, 5% size).

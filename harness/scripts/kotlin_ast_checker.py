@@ -1673,6 +1673,52 @@ def find_named_file(root: Path, name: str) -> Optional[Path]:
     return next((path for path in sorted(root.rglob(name)) if path.is_file()), None)
 
 
+STATE_SCREEN_ENUM = "AppScreen"
+
+
+def state_screen_entries(text: str) -> Optional[list[str]]:
+    """Return the entry names of `enum class AppScreen`, or None when the text does not declare it."""
+    match = re.search(rf"enum\s+class\s+{STATE_SCREEN_ENUM}\s*\{{([^}}]*)\}}", text)
+    if match is None:
+        return None
+    entries = [entry.strip() for entry in match.group(1).split(",")]
+    entries = [entry for entry in entries if re.fullmatch(r"[A-Za-z_]\w*", entry)]
+    return entries or None
+
+
+def find_state_screen_destinations(main_root: Path) -> Optional[Path]:
+    if not main_root.is_dir():
+        return None
+    return next(
+        (path for path in sorted(main_root.rglob("*.kt")) if state_screen_entries(path.read_text(encoding="utf-8")) is not None),
+        None,
+    )
+
+
+def find_state_screen_host(main_root: Path, destinations: Path) -> Optional[Path]:
+    """Find the composable host that branches (`AppScreen.<entry> ->`) on every destination entry."""
+    entries = state_screen_entries(destinations.read_text(encoding="utf-8")) or []
+    if not entries or not main_root.is_dir():
+        return None
+    for path in sorted(main_root.rglob("*.kt")):
+        text = path.read_text(encoding="utf-8")
+        if all(re.search(rf"\b{STATE_SCREEN_ENUM}\.{re.escape(entry)}\s*->", text) for entry in entries):
+            return path
+    return None
+
+
+def find_production_host_test(test_root: Path, host: Path) -> Optional[Path]:
+    """Find an instrumented test that mounts the production host Activity or composable."""
+    if not test_root.is_dir():
+        return None
+    token = re.escape(host.stem)
+    mount = re.compile(rf"createAndroidComposeRule<{token}>|launchActivity<{token}>|\b{token}::class")
+    return next(
+        (path for path in sorted(test_root.rglob("*.kt")) if mount.search(path.read_text(encoding="utf-8"))),
+        None,
+    )
+
+
 def navigation_source_files(project_root: Path) -> tuple[Optional[Path], Optional[Path], Optional[Path], Optional[Path], Optional[Path]]:
     main_root = project_root / "app" / "src" / "main" / "java"
     test_root = project_root / "app" / "src" / "androidTest"
@@ -1681,6 +1727,18 @@ def navigation_source_files(project_root: Path) -> tuple[Optional[Path], Optiona
     host = find_named_file(main_root, "AppNavigationHost.kt")
     navigation_test = find_named_file(test_root, "NavigationTest.kt")
     contract_test = find_named_file(test_root, "NavigationContractTest.kt")
+    if destinations is None and graph is None and host is None:
+        # State-driven navigation: destinations are an `enum class AppScreen` and the
+        # host is the composable that branches on every entry. Navigation Compose
+        # files are not required in this layout.
+        state_destinations = find_state_screen_destinations(main_root)
+        if state_destinations is not None:
+            destinations = state_destinations
+            host = find_state_screen_host(main_root, state_destinations)
+            graph = host
+            production_test = find_production_host_test(test_root, host) if host is not None else None
+            navigation_test = production_test
+            contract_test = production_test
     return destinations, graph, host, navigation_test, contract_test
 
 
@@ -1714,14 +1772,17 @@ def run_navigation(args: argparse.Namespace) -> int:
     source_root = project_root / "app" / "src"
     destinations_path, graph_path, host_path, navigation_test_path, contract_test_path = navigation_source_files(project_root)
     rules_path = project_root / ".agents" / "rules" / "navigation-rules.md"
-    for required_path, label in (
-        (rules_path, "navigation rules file"),
-        (destinations_path, "route definition file"),
-        (graph_path, "navigation graph file"),
-        (host_path, "navigation host file"),
-    ):
-        if required_path is None or not required_path.is_file():
-            result.add_path(required_path or project_root, 1, f"{label} is missing")
+    def check_required_files() -> None:
+        for required_path, label in (
+            (rules_path, "navigation rules file"),
+            (destinations_path, "route definition file"),
+            (graph_path, "navigation graph file"),
+            (host_path, "navigation host file"),
+        ):
+            if required_path is None or not required_path.is_file():
+                result.add_path(required_path or project_root, 1, f"{label} is missing")
+
+    visit_rule(result, "Required navigation source files", check_required_files)
 
     route_names = {
         "onboarding",
@@ -1745,7 +1806,9 @@ def run_navigation(args: argparse.Namespace) -> int:
 
     def check_destinations_declaration() -> None:
         if destination_ast is None or not any(
-            candidate.name == "Destinations" and "sealed" in candidate.modifiers for candidate in destination_ast.classes
+            (candidate.name == "Destinations" and "sealed" in candidate.modifiers)
+            or (candidate.name == STATE_SCREEN_ENUM and "enum" in candidate.modifiers)
+            for candidate in destination_ast.classes
         ):
             result.add_path(destinations_path or project_root, 1, "route definitions must use the Destinations sealed class")
 
@@ -1806,8 +1869,14 @@ def run_navigation(args: argparse.Namespace) -> int:
         "VoiceRecorder": {"noteId", "source", "focusedBlockId"},
     }
 
+    # Route-argument contracts only exist for the Navigation Compose DSL. State-driven
+    # navigation (`enum class AppScreen`) has no route arguments to validate.
+    state_driven_navigation = destination_ast is not None and not any(
+        candidate.name == "Destinations" for candidate in destination_ast.classes
+    )
+
     def check_route_arguments() -> None:
-        if host_ast is None:
+        if host_ast is None or state_driven_navigation:
             return
         route_blocks = [call for call in host_ast.calls if call.name == "composable"]
         for destination, names in required_arguments.items():
@@ -1853,14 +1922,16 @@ def run_navigation(args: argparse.Namespace) -> int:
 
     visit_rule(result, "Route argument defaults", check_route_arguments)
 
+    host_token = host_path.stem if host_path is not None else "AppNavigationHost"
+
     def check_navigation_tests() -> None:
         for path, label in ((navigation_test_path, "production navigation test"), (contract_test_path, "navigation contract test")):
             if path is None or not path.is_file():
                 result.add_path(path or project_root, 1, f"{label} is missing")
                 continue
             test_ast = KotlinFile(path)
-            if not any(token.text == "AppNavigationHost" for token in test_ast.tokens):
-                result.add_path(path, 1, f"{label} must mount AppNavigationHost")
+            if not any(token.text == host_token for token in test_ast.tokens):
+                result.add_path(path, 1, f"{label} must mount {host_token}")
 
     visit_rule(result, "Production navigation test mounting", check_navigation_tests)
     return finish(result, "navigation")

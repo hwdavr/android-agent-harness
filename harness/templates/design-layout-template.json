@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "tool": "openpencil",
+  "source": "UX/<App>.fig",
+  "source_sha256": "<sha256 of the source file when extracted>",
+  "frame": {"id": "<top-level screen-frame node id>", "name": "<frame name>", "width": 430, "height": 932},
+  "nodes": [
+    {
+      "id": "<node id>", "path": "<frame>/<child>/...", "name": "<node name>", "type": "FRAME",
+      "x": 0, "y": 0, "width": 430, "height": 932,
+      "layout": {"mode": "VERTICAL", "gap": 12, "padding": [12, 16, 24, 16]},
+      "text": {"characters": "<copy>", "fontFamily": "<family>", "fontStyle": "<style>", "fontSize": 12, "lineHeight": "auto"}
+    }
+  ]
+}

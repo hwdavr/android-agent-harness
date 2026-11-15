@@ -37,14 +37,21 @@ Whatever the tool, the run must:
    as PNG and view it). A check that cannot run is reported as unavailable, never as passed.
 5. **Promote only after explicit user approval** of that exact candidate, then reopen the promoted
    source and render it once more.
+6. **Extract layout** for every contract state: run the adapter's extraction script to write
+   `design/<state image stem>.layout.json` (`harness/templates/design-layout-template.json`) from
+   the screen-frame node. The layout, not the PNG, is the design reference for implementation and
+   structural tests. Any change to the source file invalidates it (`check-ui-contract.py` compares
+   `source_sha256`), so re-extract after each promotion. If the adapter's tool or script cannot run,
+   report the state as unavailable; never fill the file by hand or from the PNG.
 
 ## 3. Feature delivery
 
 When invoked by `ux-design` (harness-planning Stage 2), require the `UI_contract.md` inventory gate
-to pass first. For each contract state, create one top-level screen frame at the state's Viewport
-from the design system's registered components, then fill the row: `Design source` (the configured
+to pass first. For each contract state, create one top-level screen frame at the state's Viewport,
+following the common-component reuse rule in `ux-design`, then fill the row: `Design source` (the configured
 `source`), `Design node ID`, `Design node role` = `screen-frame`, and `Design image` (the PNG export
-at `design/mockup_<screen_state>.png`). `check-ui-contract.py` accepts `.pen` and `.fig` sources.
+at `design/mockup_<screen_state>.png`), then extract its layout (contract item 6).
+`check-ui-contract.py` accepts `.pen` and `.fig` sources.
 
 ## Report
 

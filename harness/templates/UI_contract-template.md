@@ -30,14 +30,27 @@ rendered and inspected, replace them with the canonical source, unique top-level
 `screen-frame` role, and full-viewport PNG. A supplied approved image can use `external` and
 `external-screen`. A control-only crop is not a full-screen reference.
 
+The **Design image** is a review aid. Each state's design reference is `<Design image stem>.layout.json`
+(`design-layout-template.json`), extracted from the design source by the tool adapter
+(`ui-design-tool`); `check-ui-contract.py` rejects a missing, stale, or mismatched layout.
+
 **Reused components** lists the design-system Component Registry entries the state uses (taken from
-the component instances in the Pen design), or `None — <reason>`. A design element that matches no
-registry entry is either a new shared component (add it to the registry with approval) or an
-approved exception. It may stay `Pending` only at the inventory gate.
+the component instances in the Pen design), or `None — <reason>` when no registered common component
+applies. Screen-specific elements need no registry entry or exception. Follow the common-component
+reuse rule in `ux-design`. This field may stay `Pending` only at the inventory gate.
 
 | Screen | State ID | Design source | Design node ID | Design node role | Design image | Viewport | Required regions | State controls | Reused components | Runtime fixture | Plan stage |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | <screen> | <screen-state> | Pending | Pending | Pending | Pending | 390x844 | primary-content; state-controls; persistent-controls | <named controls, selection/disabled status, toolbar or sheet when present> | `TopActionBar`, `NoteCard` | <fixture ID> | UI-01 |
+
+## System Chrome
+
+State the status bar height measured from the design frames (dp) and whether any state shows a dialog or
+sheet that dims the screen. The review captures simulate both, apply the status-bar inset through the app
+Scaffold, and label the chrome as review-only. Screens must consume the inset (`parentPadding`).
+
+- Status bar height: <dp, measured from the first content row of the design frames>
+- Dim scrim states: <state IDs, or None>
 
 ## IME State Coverage
 
@@ -48,6 +61,9 @@ alone is not editable input.
 Closed, open, and dismissed states use the same full-window viewport. Add `system-ime` to the
 open state's Required regions. Dismissed may reuse closed when identical. Required visible tags
 includes the focused input and all content/actions that must remain reachable above the IME.
+
+A real-IME open or dismissed state without a design uses `instrumented-only` in its column. The IME
+Production Boundary test must cover that input (approved 2026-11-13).
 
 Keyboard behavior is exactly one of:
 - `screen-no-toolbar`: screen input with no bottom toolbar.
@@ -86,7 +102,7 @@ and one structural-check method per state).
 ## Verification Quickstart
 
 1. Before Pen: run the `ui-contract` stage gate (`--inventory` checks the state contract).
-2. Generate/edit Pen frames from those rows using registered components, render and inspect them,
+2. Generate/edit Pen frames from those rows following `ux-design` common-component reuse, render and inspect them,
    then complete the reference fields and Reused components.
 3. Run the `ux-design` gate (validates components against the registry) and obtain design approval.
 4. After implementation: render each state at its Viewport, place it beside the approved design,

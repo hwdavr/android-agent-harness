@@ -60,7 +60,7 @@ Sliced lane: ⛔ STOP for block approval. Single lane: continue; approval comes 
    IME behavior; design references and reused components may be `Pending`). Gate:
    `check-stage-artifacts.sh harness-planning ui-contract "$FEATURE_DIR"`.
 2. **INVOKE** `ui-design-tool` with that contract; it drives the tool set in `UX/design-tool.json`
-   (pen.dev or OpenPencil). Design from registered components; record each state's design node,
+   (pen.dev or OpenPencil). Follow the `ux-design` common-component reuse rule; record each state's design node,
    export, and reused components. Gate:
    `check-stage-artifacts.sh harness-planning ux-design "$FEATURE_DIR"`.
 

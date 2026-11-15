@@ -31,7 +31,7 @@ valid() {
   "state_results": [{
     "screen": "Share Invite", "state_id": "invite-expiry-selected", "design_image": "design/share-invite.png",
     "review_capture": "evidence/ui/invite-expiry-selected.png",
-    "review_capture_test": "app/src/test/java/example/review/ShareInviteReviewCaptureTest.kt#expirySelected",
+    "review_capture_test": "app/src/test/java/example/roborazzi/ShareInviteReviewCaptureTest.kt#expirySelected",
     "structural_check": "app/src/test/java/example/ShareInviteStructureTest.kt#expirySelected",
     "structural_result": "PASS", "reused_components": ["TopActionBar"],
     "review_decision": "approved", "approved_by": "user", "approved_on": "2026-11-09",

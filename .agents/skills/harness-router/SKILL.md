@@ -79,7 +79,7 @@ After the scope check, choose using the evidence:
 
 | Route | Evidence supporting the choice |
 |---|---|
-| Direct UI lane: `android-ui-layer` | Appearance only (spacing, color, icon, copy wording, reorder, design-system alignment) on an existing screen; no new state, interaction, navigation, data, or API; an approved design or the design system already defines the target. |
+| Direct UI lane: `design-to-ui` | Appearance only (spacing, color, icon, copy wording, reorder, design-system alignment) on an existing screen; no new state, interaction, navigation, data, or API; an approved design or the design system already defines the target. |
 | Feature Delivery | Any new or changed behavior. Its Specify stage fixes the lane: one deliverable change → single lane; two or more independently deliverable stories → sliced lane (harness generator). The router does not pre-decide the lane. |
 | Bug Fixing | Observed behavior contradicts an existing requirement or expectation. |
 
@@ -101,7 +101,8 @@ requires a handoff. Apply the root `AGENTS.md` if this map becomes stale.
 | App bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
 | New feature or bounded enhancement | `.agents/workflows/harness-planning.md` |
 | Appearance-only adjustment to an existing screen that passes the direct-lane entry check | `.agents/skills/android-ui-layer/SKILL.md` (direct lane; ends with the `ui-verification` conformance review) |
-| UI implementation from a screenshot/mockup, or any UI change with new states or behavior | `.agents/workflows/harness-planning.md` (the mockup is the UX Design input) |
+| Match an existing screen to a frame the user names in the configured design source (appearance-only) | `.agents/skills/design-to-ui/SKILL.md` (wraps the `android-ui-layer` direct lane and `ui-verification`) |
+| UI implementation from a screenshot/mockup without a design-source frame, or any UI change with new states or behavior | `.agents/workflows/harness-planning.md` (the mockup is the UX Design input) |
 | Large feature with independently deliverable stories | `.agents/workflows/harness-planning.md` (Specify selects the sliced lane) |
 | Implement an approved single-lane feature | `.agents/workflows/single-lane-generator.md` |
 | Implement the next slice of an approved sliced-lane feature | `.agents/workflows/sliced-lane-generator.md` |

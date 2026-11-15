@@ -3,6 +3,7 @@
 
 import os
 import struct
+import sys
 import subprocess
 import tempfile
 import unittest
@@ -17,6 +18,10 @@ STATE_HEADER = "| Screen | State ID | Design source | Design node ID | Design no
 RULES = ("ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC")
 IME_HEADER = "| Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Keyboard behavior | Required visible tags |"
 BOUNDARY_HEADER = "| Screen | Input tag | Production activity | Open test | Dismiss test | Command | Result XML |"
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from design_layout_fixture import write_layout  # noqa: E402
 
 
 class ImeContractTest(unittest.TestCase):
@@ -40,6 +45,8 @@ class ImeContractTest(unittest.TestCase):
         (self.workspace / f"design/mockup_{name}.png").write_bytes(
             b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">II", width, height)
         )
+        write_layout(self.workspace / "design/source.pen", f"{name}-node", width // 2, height // 2,
+                     self.workspace / f"design/mockup_{name}.layout.json")
 
     def write_contract(self, inventory=True, open_state=True, window="430x932", ime_region=True):
         rows = [STATE_HEADER, "|" + "---|" * 12]
@@ -131,6 +138,21 @@ class SearchImeTest {
     def test_input_state_mapping_passes(self):
         result = self.check()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_instrumented_only_open_and_dismissed_pass(self):
+        self.write_contract(open_state=False)
+        text = self.contract.read_text().replace(
+            "| closed | open | closed | resize |", "| closed | instrumented-only | instrumented-only | resize |")
+        self.contract.write_text(text)
+        result = self.check()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_instrumented_only_closed_rejected(self):
+        self.write_contract(open_state=False)
+        text = self.contract.read_text().replace(
+            "| closed | open | closed | resize |", "| instrumented-only | instrumented-only | closed | resize |")
+        self.contract.write_text(text)
+        self.rejected(self.check(), "keyboard-closed state needs a design")
 
     def test_missing_open_design_rejected(self):
         self.write_contract(open_state=False)
@@ -252,10 +274,10 @@ class SearchImeTest {
             "Setup and action | Required assertions | Exact command |\n|---|---|---|---|---|---|---|---|\n"
             f"| TC-01 | AC-001 | Instrumented UI | `{self.test_file}#opensAboveIme` | N/A — no API | Open IME | Results above IME | `bash run` |\n"
             "\n## UI State Verification\n\n| Stage ID | Review capture (test#method) | Structural check (test#method) | Command |\n|---|---|---|---|\n"
-            "| UI-01 | `app/src/test/java/example/review/SearchReviewCaptureTest.kt#closed` | `app/src/test/java/example/SearchStructureTest.kt#closed` | "
-            "`./gradlew testDebugUnitTest --tests example.SearchStructureTest --tests example.review.SearchReviewCaptureTest` |\n"
-            "| UI-02 | `app/src/test/java/example/review/SearchReviewCaptureTest.kt#open` | `app/src/test/java/example/SearchStructureTest.kt#open` | "
-            "`./gradlew testDebugUnitTest --tests example.SearchStructureTest --tests example.review.SearchReviewCaptureTest` |\n"))
+            "| UI-01 | `app/src/test/java/example/roborazzi/SearchReviewCaptureTest.kt#closed` | `app/src/test/java/example/SearchStructureTest.kt#closed` | "
+            "`./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests example.SearchStructureTest --tests example.roborazzi.SearchReviewCaptureTest` |\n"
+            "| UI-02 | `app/src/test/java/example/roborazzi/SearchReviewCaptureTest.kt#open` | `app/src/test/java/example/SearchStructureTest.kt#open` | "
+            "`./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests example.SearchStructureTest --tests example.roborazzi.SearchReviewCaptureTest` |\n"))
 
     def stage(self, stage):
         return subprocess.run(["bash", str(GATE), "bug-fixing", stage, str(self.workspace)],

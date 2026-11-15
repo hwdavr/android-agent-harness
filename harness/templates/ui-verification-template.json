@@ -22,10 +22,13 @@
       "state_id": "<state ID from UI_contract.md>",
       "design_image": "design/<approved state image>.png",
       "review_capture": "evidence/ui/<state-id>.png",
-      "review_capture_test": "app/src/test/java/<package>/review/<Feature>ReviewCaptureTest.kt#<method>",
+      "comparison_image": "evidence/ui/compare/<state-id>.png",
+      "review_capture_test": "app/src/test/java/<package>/roborazzi/<Feature>ReviewCaptureTest.kt#<method>",
       "structural_check": "app/src/test/java/<package>/<Feature>StructureTest.kt#<method>",
       "structural_result": "PASS",
-      "reused_components": ["<registered component from UI_contract.md>"],
+      "reused_components": [
+        "<registered component from UI_contract.md>"
+      ],
       "review_decision": "approved",
       "approved_by": "<user>",
       "approved_on": "YYYY-MM-DD",

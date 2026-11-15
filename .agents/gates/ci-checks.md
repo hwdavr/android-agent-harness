@@ -17,9 +17,9 @@ Defines the minimum set of checks that must pass before a change is considered r
 ```bash
 ./gradlew testDebugUnitTest
 ```
-**Must pass.** All tests in `app/src/test/` must be green, including the UI review-capture tests
-under `app/src/test/java/**/review/` (they render captures for the conformance review; no golden is
-recorded or compared).
+**Must pass.** Unit, integration, and JVM structural tests run normally. Roborazzi capture tests live
+under `app/src/test/java/<package>/roborazzi/` and run only with `-Proborazzi.test.record=true`; the
+default unit-test run excludes them. 
 
 ### 3. Coverage
 ```bash

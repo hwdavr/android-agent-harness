@@ -41,7 +41,7 @@ Before any task, identify its type, read the matching workflow or direct skill *
 |-----------|----------------------|
 | New feature or enhancement, any size (Specify picks the lane) | `.agents/workflows/harness-planning.md` |
 | Bug, crash, regression, or unexpected behavior | `.agents/workflows/bug-fixing.md` |
-| Appearance-only tweak an approved design or the design system already defines | `.agents/skills/android-ui-layer/SKILL.md` (direct lane) |
+| Appearance-only tweak an approved design or the design system already defines | `.agents/skills/design-to-ui/SKILL.md` (direct lane) |
 | Implement an approved single-lane feature | `.agents/workflows/single-lane-generator.md` |
 | Next slice of an approved sliced-lane feature | `.agents/workflows/sliced-lane-generator.md` |
 | Sliced-lane evaluator findings (`To be fixed`) | `.agents/workflows/harness-fix.md` |
@@ -55,7 +55,7 @@ Before any task, identify its type, read the matching workflow or direct skill *
 
 ## Skills Index (`.agents/skills/`)
 - **Planning & Requirements**: `spec-driven-development`, `feature-specification`, `implementation-plan`
-- **UX & Design**: `ux-design`
+- **UX & Design**: `ux-design`, `design-to-ui`
 - **Implementation**: `android-implementation`, `android-ui-layer`, `api-contract-update`
 - **Testing & Verification**: `android-testing`, `ui-verification`, `android-unit-test`, `shared-json-scenarios`
 - **Review & Quality**: `code-quality-fix`, `android-code-review`, `code-review-and-quality`, `android-test-review`, `android-code-quality-checks`

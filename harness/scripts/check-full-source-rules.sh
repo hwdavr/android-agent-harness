@@ -28,7 +28,7 @@ usage() {
   cat >&2 <<'USAGE'
 Usage: check-full-source-rules.sh [--project-root <path>]
 
-Runs architecture, Compose, localization, navigation, test-assertion, and
+Runs architecture, Compose, localization, navigation, edge-to-edge inset, test-assertion, and
 Android UI-test HTTP boundary checkers against the complete source tree,
 followed by the AI/WebView security evaluator and its contract tests. Every checker runs; the command returns
 non-zero when one or more checkers report violations.
@@ -87,6 +87,11 @@ run_check "Localization rules (full source)" \
 run_check "Navigation rules (full source)" \
   bash "$SCRIPT_DIR/check-navigation-rules.sh" \
   --project-root "$PROJECT_ROOT"
+run_check "Edge-to-edge insets (full source)" \
+  bash "$SCRIPT_DIR/check-edge-to-edge-insets.sh" \
+  --project-root "$PROJECT_ROOT"
+run_check "Edge-to-edge insets contract" \
+  bash "$SCRIPT_DIR/tests/edge-to-edge-insets-contract-test.sh"
 run_check "Test assertion rules (full test source)" \
   bash "$SCRIPT_DIR/check-test-assertions-quality.sh" \
   --project-root "$PROJECT_ROOT"

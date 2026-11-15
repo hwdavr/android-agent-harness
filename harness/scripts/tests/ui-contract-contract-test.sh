@@ -39,10 +39,12 @@ PY
 
 W="$FIXTURE/.scratch/2026-11-09-transform"
 mkdir -p "$W/design" "$W/evidence/ui" "$FIXTURE/docs/product" "$FIXTURE/app/src/main/java/example" \
-  "$FIXTURE/app/src/test/java/example/review" "$FIXTURE/app/src/androidTest/java/example"
+  "$FIXTURE/app/src/test/java/example/roborazzi" "$FIXTURE/app/src/androidTest/java/example"
 printf 'Pen fixture' > "$W/design/source.pen"
 png "$W/design/mockup_crop.png" 430 932
 png "$W/design/mockup_rotate.png" 430 932
+python3 "$ROOT/harness/scripts/tests/design_layout_fixture.py" "$W/design/source.pen" crop-node 430 932 "$W/design/mockup_crop.layout.json"
+python3 "$ROOT/harness/scripts/tests/design_layout_fixture.py" "$W/design/source.pen" rotate-node 430 932 "$W/design/mockup_rotate.layout.json"
 cat > "$FIXTURE/docs/product/design_system.md" <<'MD'
 # Design System
 
@@ -99,25 +101,33 @@ cat > "$W/test-plan.md" <<'MD'
 
 | Stage ID | Review capture (test#method) | Structural check (test#method) | Command |
 |---|---|---|---|
-| UI-01 | `app/src/test/java/example/review/TransformReviewCaptureTest.kt#crop` | `app/src/test/java/example/TransformStructureTest.kt#crop` | `./gradlew testDebugUnitTest --tests "example.TransformStructureTest" --tests "example.review.TransformReviewCaptureTest"` |
-| UI-02 | `app/src/test/java/example/review/TransformReviewCaptureTest.kt#rotate` | `app/src/androidTest/java/example/TransformRotateTest.kt#rotate` | `./gradlew testDebugUnitTest --tests "example.review.TransformReviewCaptureTest"` and `ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.TransformRotateTest#rotate` |
+| UI-01 | `app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#crop` | `app/src/test/java/example/TransformStructureTest.kt#crop` | `./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests "example.TransformStructureTest" --tests "example.roborazzi.TransformReviewCaptureTest"` |
+| UI-02 | `app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#rotate` | `app/src/androidTest/java/example/TransformRotateTest.kt#rotate` | `./gradlew testDebugUnitTest -Proborazzi.test.record=true --tests "example.roborazzi.TransformReviewCaptureTest"` and `ANDROID_SERIAL=emulator-5554 bash harness/scripts/run-android-instrumented-tests.sh --class example.TransformRotateTest#rotate` |
 MD
 printf 'fun TransformScreen() {\n    ToolDial(value)\n    ActionChip(label)\n}\n' > "$FIXTURE/app/src/main/java/example/TransformScreen.kt"
-touch "$FIXTURE/app/src/test/java/example/review/TransformReviewCaptureTest.kt" \
+touch "$FIXTURE/app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt" \
   "$FIXTURE/app/src/test/java/example/TransformStructureTest.kt" \
   "$FIXTURE/app/src/androidTest/java/example/TransformRotateTest.kt"
 png "$W/evidence/ui/crop.png" 860 1864
 png "$W/evidence/ui/rotate.png" 860 1864
+mkdir -p "$W/evidence/ui/compare"
+for state in crop rotate; do
+  png "$W/evidence/ui/compare/$state.png" 1780 1864
+  touch -t 203001010000 "$W/evidence/ui/compare/$state.png"  # future mtime: never older than its inputs
+done
+printf '### crop\n\nNone\n\n### rotate\n\nNone\n' > "$W/evidence/ui/compare/findings.md"
 cat > "$W/ui_verification.json" <<'JSON'
 {"version": 1, "state_results": [
   {"screen": "Transform", "state_id": "crop", "design_image": "design/mockup_crop.png",
    "review_capture": "evidence/ui/crop.png",
-   "review_capture_test": "app/src/test/java/example/review/TransformReviewCaptureTest.kt#crop",
+   "comparison_image": "evidence/ui/compare/crop.png",
+   "review_capture_test": "app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#crop",
    "structural_check": "app/src/test/java/example/TransformStructureTest.kt#crop", "structural_result": "PASS",
    "review_decision": "approved", "approved_by": "user", "approved_on": "2026-11-09", "result": "PASS"},
   {"screen": "Transform", "state_id": "rotate", "design_image": "design/mockup_rotate.png",
    "review_capture": "evidence/ui/rotate.png",
-   "review_capture_test": "app/src/test/java/example/review/TransformReviewCaptureTest.kt#rotate",
+   "comparison_image": "evidence/ui/compare/rotate.png",
+   "review_capture_test": "app/src/test/java/example/roborazzi/TransformReviewCaptureTest.kt#rotate",
    "structural_check": "app/src/androidTest/java/example/TransformRotateTest.kt#rotate", "structural_result": "PASS",
    "review_decision": "approved", "approved_by": "user", "approved_on": "2026-11-09", "result": "PASS"}
 ]}
@@ -146,12 +156,31 @@ sed 's|design/source.pen|../UI_design/../../design/source.pen|' "$FIXTURE/origin
 expect_failure "unsafe design path" python3 "$CHECK" "$C"
 # OpenPencil sources (.fig) are design-tool sources too; a screen-frame node is still required.
 printf 'Fig fixture' > "$W/design/source.fig"
+layout() { python3 "$ROOT/harness/scripts/tests/design_layout_fixture.py" "$@"; }
+layout "$W/design/source.fig" crop-node 430 932 "$W/design/mockup_crop.layout.json"
+layout "$W/design/source.fig" rotate-node 430 932 "$W/design/mockup_rotate.layout.json"
 sed 's|design/source.pen|design/source.fig|g' "$FIXTURE/original-contract" > "$C"
 python3 "$CHECK" "$C" >/dev/null
 sed -e 's|design/source.pen|design/source.fig|g' -e 's/| crop-node | screen-frame |/| crop-node | component |/' "$FIXTURE/original-contract" > "$C"
 expect_failure "design-tool state crop needs a top-level screen-frame node" python3 "$CHECK" "$C"
 rm "$W/design/source.fig"
 cp "$FIXTURE/original-contract" "$C"
+# The layout is extracted from the design source (tool-neutral): a layout of another tool's source,
+# a stale source hash, a missing file, another node, or another frame size is rejected.
+expect_failure "must be version 1 for tool pen.dev" python3 "$CHECK" "$C"
+layout "$W/design/source.pen" crop-node 430 932 "$W/design/mockup_crop.layout.json"
+layout "$W/design/source.pen" rotate-node 430 932 "$W/design/mockup_rotate.layout.json"
+python3 "$CHECK" "$C" >/dev/null
+printf 'Pen fixture, edited' > "$W/design/source.pen"
+expect_failure "was extracted from an older design/source.pen" python3 "$CHECK" "$C"
+printf 'Pen fixture' > "$W/design/source.pen"
+layout "$W/design/source.pen" stale-node 430 932 "$W/design/mockup_crop.layout.json"
+expect_failure "differs from design node ID crop-node" python3 "$CHECK" "$C"
+layout "$W/design/source.pen" crop-node 430 900 "$W/design/mockup_crop.layout.json"
+expect_failure "but the viewport is 430x932" python3 "$CHECK" "$C"
+rm "$W/design/mockup_crop.layout.json"
+expect_failure "needs design/mockup_crop.layout.json" python3 "$CHECK" "$C"
+layout "$W/design/source.pen" crop-node 430 932 "$W/design/mockup_crop.layout.json"
 mv "$W/design/mockup_rotate.png" "$FIXTURE/rotate.bak"
 expect_failure "missing or empty design PNG" python3 "$CHECK" "$C"
 mv "$FIXTURE/rotate.bak" "$W/design/mockup_rotate.png"
@@ -178,8 +207,21 @@ expect_failure "UI state UI-01 lists ToolDial, but no UI file" full
 printf 'fun TransformScreen() {\n    ToolDial(value)\n    ActionChip(label)\n}\n' > "$FIXTURE/app/src/main/java/example/TransformScreen.kt"
 
 # Test plan verification targets
-sed 's@example/review/TransformReviewCaptureTest.kt#crop@example/TransformCaptureTest.kt#crop@' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
-expect_failure "review capture must be app/src/test/java/<package>/review/" full
+sed 's@example/roborazzi/TransformReviewCaptureTest.kt#crop@example/TransformCaptureTest.kt#crop@' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+expect_failure "review capture must be app/src/test/java/<package>/roborazzi/" full
+cp "$FIXTURE/original-test-plan" "$W/test-plan.md"
+
+# Capture commands must actually enable the opted-out capture package.
+for value in false tru; do
+  sed "s/-Proborazzi.test.record=true/-Proborazzi.test.record=$value/g" "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+  expect_failure "review capture command must enable -Proborazzi.test.record=true" full
+done
+sed 's/ -Proborazzi.test.record=true//g' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+expect_failure "review capture command must enable -Proborazzi.test.record=true" full
+# A debug-only JVM structural test (src/testDebug) is a valid JVM target.
+sed 's@app/src/test/java/example/TransformStructureTest.kt@app/src/testDebug/java/example/TransformStructureTest.kt@' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
+python3 "$CHECK" "$C" --spec "$FIXTURE/spec.md" --design-system "$DS" --plan "$W/implementation-plan.md" \
+  --test-plan "$W/test-plan.md" --project-root "$FIXTURE" >/dev/null
 sed 's@run-android-instrumented-tests.sh@run-tests.sh@' "$FIXTURE/original-test-plan" > "$W/test-plan.md"
 expect_failure "needs the direct AndroidJUnitRunner wrapper" full
 cp "$FIXTURE/original-test-plan" "$W/test-plan.md"
@@ -197,6 +239,21 @@ p = sys.argv[1]; d = json.load(open(p)); d["state_results"][0]["review_decision"
 PY
 expect_failure "needs review_decision 'approved'" full
 cp "$FIXTURE/original-report" "$W/ui_verification.json"
+
+# Side-by-side comparison and pre-review findings
+mv "$W/evidence/ui/compare/rotate.png" "$FIXTURE/rotate-compare.bak"
+expect_failure "missing side-by-side comparison for rotate" full
+mv "$FIXTURE/rotate-compare.bak" "$W/evidence/ui/compare/rotate.png"
+touch -t 200001010000 "$W/evidence/ui/compare/crop.png"
+expect_failure "comparison is older than its design or capture" full
+touch -t 203001010000 "$W/evidence/ui/compare/crop.png"
+cp "$W/evidence/ui/compare/findings.md" "$FIXTURE/findings.bak"
+printf '### crop\n\nNone\n' > "$W/evidence/ui/compare/findings.md"
+expect_failure "UI state rotate has no '### rotate' entry" full
+cp "$FIXTURE/findings.bak" "$W/evidence/ui/compare/findings.md"
+rm "$W/evidence/ui/compare/findings.md"
+expect_failure "record the pre-review findings for every state" full
+cp "$FIXTURE/findings.bak" "$W/evidence/ui/compare/findings.md"
 png "$W/evidence/ui/crop.png" 1080 1080
 expect_failure "was not rendered at the contract viewport 430x932" full
 png "$W/evidence/ui/crop.png" 860 1864

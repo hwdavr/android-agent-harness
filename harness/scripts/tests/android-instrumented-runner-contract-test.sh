@@ -14,6 +14,15 @@ cat > "$FIXTURE_ROOT/project/gradlew" <<'EOF'
 set -euo pipefail
 printf '%s\n' "$*" >> "$FAKE_GRADLE_LOG"
 mkdir -p app/build/outputs/apk/debug app/build/outputs/apk/androidTest/debug
+mkdir -p app/build/intermediates/packaged_manifests/debugAndroidTest/processDebugAndroidTestManifest
+printf '%s\n' '{"applicationId":"com.example.notesapp"}' > app/build/outputs/apk/debug/output-metadata.json
+printf '%s\n' '{"applicationId":"com.example.notesapp.test"}' > app/build/outputs/apk/androidTest/debug/output-metadata.json
+cat > app/build/intermediates/packaged_manifests/debugAndroidTest/processDebugAndroidTestManifest/AndroidManifest.xml <<'XML'
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"><instrumentation android:name="com.example.notesapp.HiltTestRunner" android:targetPackage="com.example.notesapp" /></manifest>
+XML
+if [ "${FAKE_WRONG_TARGET:-false}" = true ]; then
+  sed -i.bak 's/targetPackage="com.example.notesapp"/targetPackage="other.app"/' app/build/intermediates/packaged_manifests/debugAndroidTest/processDebugAndroidTestManifest/AndroidManifest.xml
+fi
 touch app/build/outputs/apk/debug/app-debug.apk
 touch app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 EOF
@@ -75,6 +84,13 @@ export FAKE_ADB_LOG="$FIXTURE_ROOT/adb.log"
 export FAKE_GRADLE_LOG="$FIXTURE_ROOT/gradle.log"
 export ANDROID_TEST_PROJECT_ROOT="$FIXTURE_ROOT/project"
 export ANDROID_SERIAL="fixture-device"
+
+if FAKE_WRONG_TARGET=true bash "$RUNNER" --class com.example.notesapp.ExampleTest#firstCase > "$FIXTURE_ROOT/wrong-target.out" 2>&1; then
+  echo 'FAIL: inconsistent built instrumentation target was accepted' >&2
+  exit 1
+fi
+grep -Fq 'instrumentation target does not match' "$FIXTURE_ROOT/wrong-target.out" \
+  || { echo 'FAIL: mismatch did not report the target error' >&2; exit 1; }
 
 success_log="$FIXTURE_ROOT/success"
 bash "$RUNNER" --class com.example.notesapp.ExampleTest#firstCase --output-dir "$success_log" \
@@ -153,5 +169,15 @@ if FAKE_APP_MISSING=true bash "$RUNNER" --class com.example.notesapp.ExampleTest
 fi
 grep -Fq 'is not installed after instrumentation' "$FIXTURE_ROOT/missing-package.out" \
   || { echo 'FAIL: missing package did not produce the expected failure' >&2; exit 1; }
+
+# A second consuming app must use its own build identities, not the notes-app defaults.
+sed 's/com\.example\.notesapp/com.example.photo/g' "$FIXTURE_ROOT/project/gradlew" > "$FIXTURE_ROOT/project/gradlew-alt"
+chmod +x "$FIXTURE_ROOT/project/gradlew-alt"
+sed 's/com\.example\.notesapp/com.example.photo/g' "$FIXTURE_ROOT/bin/adb" > "$FIXTURE_ROOT/bin/adb-alt"
+chmod +x "$FIXTURE_ROOT/bin/adb-alt"
+ANDROID_TEST_GRADLEW="$FIXTURE_ROOT/project/gradlew-alt" ANDROID_TEST_ADB="$FIXTURE_ROOT/bin/adb-alt" \
+  bash "$RUNNER" --class com.example.photo.ExampleTest --output-dir "$FIXTURE_ROOT/alternate" > "$FIXTURE_ROOT/alternate.out"
+grep -Fq 'shell am instrument -w -r -e class com.example.photo.ExampleTest com.example.photo.test/com.example.photo.HiltTestRunner' "$FAKE_ADB_LOG" \
+  || { echo 'FAIL: runner did not use alternate app instrumentation identity' >&2; exit 1; }
 
 echo 'PASS: direct AndroidJUnitRunner preserves package state and rejects failed/empty runs.'

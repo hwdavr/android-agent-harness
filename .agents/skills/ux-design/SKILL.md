@@ -1,6 +1,6 @@
 ---
 name: ux-design
-description: Define UI_contract states, design them in the configured design tool from registered components, get approval.
+description: Define UI_contract states, reuse applicable registered common components, and get design approval.
 ---
 
 # Skill — UX Design
@@ -84,9 +84,10 @@ fresh-reopen, and visual inspection requirements. Preserve the existing design u
 authorizes a change to it.
 
 Create one complete top-level screen frame per contract row, using the declared viewport,
-content, controls, and keyboard behavior. Build every state from design-tool component instances that
-match the Component Registry. An element that matches no registry entry is either proposed as a new
-shared component (registry entry approved with the design) or recorded as an approved exception.
+content, controls, and keyboard behavior. Reuse registered common components as design-tool instances
+where applicable. Screen-specific elements may remain local without registration or an exception.
+Propose a new registry entry when an element is intended to be a common component; approve that entry
+with the design. Deviations from an applicable registered component require an approved exception.
 Record each state's reused components in the contract. Update only that row's design source, node ID, node role,
 and exported PNG after rendering and inspecting it. A control-only crop cannot replace a complete
 screen reference. The design source (`.pen` or `.fig`) contains the actual visual design; the PNG is its review export.
