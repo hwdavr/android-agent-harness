@@ -258,7 +258,8 @@ bash harness/scripts/check-keyboard-mockup-contract.sh "$FEATURE_DIR"
 ```
 **Must pass during harness planning.** This compatibility command validates UI_contract.md through
 the shared UI checker. Before Pen, pass `--inventory`: closed/open/dismissed state mappings and
-explicit `screen-no-toolbar`, `screen-toolbar-dismissed`, or `sheet-stays-open` behavior are required.
+explicit `screen-no-toolbar`, `screen-toolbar-dismissed`, `screen-toolbar-stays-visible` (only with a
+documented `- Toolbar stays visible (<input tag>): <reason>` line), or `sheet-stays-open` behavior are required.
 After Pen, run without that flag to require distinct, full-window reference exports. The contract
 also checks the focused input/required tags and the IME visible region. No design.md is read.
 

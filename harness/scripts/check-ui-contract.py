@@ -194,6 +194,25 @@ def complete_regions(value, state_id):
         fail(f"state {state_id} is missing required visible regions: {', '.join(missing)}")
 
 
+KEYBOARD_BEHAVIORS = {"screen-no-toolbar", "screen-toolbar-dismissed", "screen-toolbar-stays-visible", "sheet-stays-open"}
+
+
+def toolbar_reason(contract, input_tag):
+    """A documented reason for keeping a screen bottom toolbar above the keyboard."""
+    lines = contract.read_text(encoding="utf-8").splitlines()
+    start = heading_index(lines, "IME State Coverage")
+    if start is None:
+        return False
+    level = len(lines[start].split(" ", 1)[0])
+    pattern = re.compile(rf"^- Toolbar stays visible \(`?{re.escape(input_tag)}`?\): \S.{{9,}}$")
+    for line in lines[start + 1:]:
+        if re.match(rf"^#{{1,{level}}} ", line):
+            break
+        if pattern.match(line.strip()):
+            return True
+    return False
+
+
 def ime_states(contract, rows):
     input_screens = {
         row["Screen"] for row in rows
@@ -238,15 +257,24 @@ def ime_states(contract, rows):
         if item["Layout policy"] not in {"resize", "pan", "overlay"}:
             fail("IME Layout policy must be resize, pan, or overlay")
         behavior = item["Keyboard behavior"]
-        if behavior not in {"screen-no-toolbar", "screen-toolbar-dismissed", "sheet-stays-open"}:
-            fail("IME Keyboard behavior must be screen-no-toolbar, screen-toolbar-dismissed, or sheet-stays-open")
+        if behavior not in KEYBOARD_BEHAVIORS:
+            fail("IME Keyboard behavior must be screen-no-toolbar, screen-toolbar-dismissed, "
+                 "screen-toolbar-stays-visible, or sheet-stays-open")
         input_states = {item[column] for column in ("Keyboard closed state", "Keyboard open state", "Dismissed state")}
         controls = " ".join(row["State controls"] for row in rows
                             if row["Screen"] == item["Screen"] and row["State ID"] in input_states)
         if re.search(r"bottom[ -]*sheet", controls, re.I) and behavior != "sheet-stays-open":
             fail("bottom-sheet input must declare sheet-stays-open")
-        if not re.search(r"bottom[ -]*sheet", controls, re.I) and re.search(r"bottom[ -]*(?:tool)?bar", controls, re.I) and behavior != "screen-toolbar-dismissed":
-            fail("screen input with a bottom toolbar must declare screen-toolbar-dismissed")
+        has_toolbar = (not re.search(r"bottom[ -]*sheet", controls, re.I)
+                       and re.search(r"bottom[ -]*(?:tool)?bar", controls, re.I))
+        if has_toolbar and behavior not in {"screen-toolbar-dismissed", "screen-toolbar-stays-visible"}:
+            fail("screen input with a bottom toolbar must declare screen-toolbar-dismissed or screen-toolbar-stays-visible")
+        if behavior == "screen-toolbar-stays-visible":
+            if not has_toolbar:
+                fail("screen-toolbar-stays-visible requires a screen bottom toolbar in the input states' controls")
+            if not toolbar_reason(contract, item["Input tag"]):
+                fail(f"screen-toolbar-stays-visible for {item['Input tag']} needs a documented reason line "
+                     f"'- Toolbar stays visible ({item['Input tag']}): <reason>' under ## IME State Coverage")
         visible = {tag.strip() for tag in item["Required visible tags"].split(";")}
         if item["Input tag"] not in visible:
             fail("IME Required visible tags must include the focused Input tag")

@@ -348,6 +348,54 @@ class SearchImeTest {
         self.contract.write_text(self.contract.read_text().replace("screen-no-toolbar", "Pending"))
         self.rejected(self.check(), "IME Keyboard behavior must be")
 
+    REASON = "- Toolbar stays visible (search_input): app bottom navigation stays above the keyboard to match existing app behavior\n"
+
+    def stays_visible(self, toolbar=True, reason=True):
+        text = self.contract.read_text()
+        if toolbar:
+            text = text.replace("Search field", "Search field; bottom toolbar")
+        text = text.replace("screen-no-toolbar", "screen-toolbar-stays-visible")
+        if reason:
+            text += "\n" + self.REASON
+        self.contract.write_text(text)
+
+    def test_screen_toolbar_may_stay_visible_with_documented_reason(self):
+        self.stays_visible()
+        result = self.check()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.check("--inventory").returncode, 0)
+
+    def test_toolbar_stays_visible_requires_documented_reason(self):
+        self.stays_visible(reason=False)
+        self.rejected(self.check(), "needs a documented reason line")
+
+    def test_toolbar_stays_visible_rejects_placeholder_reason(self):
+        self.stays_visible(reason=False)
+        self.contract.write_text(self.contract.read_text() + "\n- Toolbar stays visible (search_input): tbd\n")
+        self.rejected(self.check(), "needs a documented reason line")
+
+    def test_toolbar_stays_visible_reason_must_name_the_input(self):
+        self.stays_visible(reason=False)
+        self.contract.write_text(self.contract.read_text() + "\n- Toolbar stays visible (other_input): matches existing app behavior\n")
+        self.rejected(self.check(), "needs a documented reason line")
+
+    def test_toolbar_stays_visible_requires_a_bottom_toolbar(self):
+        self.stays_visible(toolbar=False)
+        self.rejected(self.check(), "requires a screen bottom toolbar")
+
+    def test_sheet_input_cannot_declare_toolbar_stays_visible(self):
+        self.stays_visible(toolbar=False)
+        self.contract.write_text(self.contract.read_text().replace("Search field", "Bottom sheet search field"))
+        self.rejected(self.check(), "bottom-sheet input must declare sheet-stays-open")
+
+    def test_toolbar_still_rejects_screen_no_toolbar(self):
+        self.contract.write_text(self.contract.read_text().replace("Search field", "Search field; bottom toolbar"))
+        self.rejected(self.check(), "must declare screen-toolbar-dismissed or screen-toolbar-stays-visible")
+
+    def test_unknown_toolbar_variant_still_rejected(self):
+        self.contract.write_text(self.contract.read_text().replace("screen-no-toolbar", "screen-toolbar-overlaps"))
+        self.rejected(self.check(), "IME Keyboard behavior must be")
+
 
 if __name__ == "__main__":
     unittest.main()
