@@ -29,13 +29,13 @@ Do not load or execute a Data, Domain, or UI section merely because another laye
 
 **Single lane** (`single-lane-generator`, `bug-fixing`), all in `$FEATURE_DIR`:
 - `implementation-plan.md` — the approved plan: Rule Applicability, file list, UiState, UI State Stages and their reused registered components
-- The approved feature block(s) in `docs/product/requirements/` — requirements, acceptance criteria, Screen States, Navigation (bugs: the plan's Root Cause section)
+- The approved `specs/` deltas, `intent.md`, and `design.md` in `$FEATURE_DIR` — requirements, scenarios, Screen States, navigation (bugs: the plan's Root Cause section)
 - `UI_contract.md` — state behavior, controls, copy, fixtures, reused components, and Pen/reference mappings (if UI changes involved)
 - `design/` — `*.layout.json` (extracted from the design source: the sizes, gaps, paddings, text sizes, line heights and copy to implement) and the PNG exports (review aid only; view them, never measure them)
 
 **Sliced lane** (`sliced-lane-generator`):
 - Run `bash harness/scripts/print-context-index.sh --feature-dir "$FEATURE_DIR" --slice "$FEATURE_ID"` and use its hashes and source pointers.
-- Read only the selected story's `tasks.md` section, its mapped requirement rows in the feature block, and its `### US-n` acceptance rows in `test-plan.md`. Read the selected `feature_list.json` entry for execution flags and verification IDs.
+- Read only the selected story's `tasks.md` section, its mapped requirements in the `specs/` deltas, and its `### US-n` acceptance rows in `test-plan.md`. Read the selected `feature_list.json` entry for execution flags and verification IDs.
 - Work the slice's tasks in order (Prerequisites, Implementation, Tests, Final checks). When a task is finished, set `done: true` in the slice's `tasks` in `feature_list.json` and tick its checkbox in `tasks.md`; a slice cannot be `passing` while any of its tasks is not done.
 - Read the summary only for execution-stage evidence, blockers, and decisions made after approval; never treat it as a second requirement source.
 

@@ -30,7 +30,7 @@ Pipeline: Bug Context & Root Cause → Bug Reproduction (TDD) → Fix Plan & Ana
 
 **Workspace**: `FEATURE_DIR=.scratch/<YYYY-MM-DD>-fix-<short-name>/`, created in Stage 1 with
 `summary.md` (bug-fixing stage profile) and a Harness Feature Tracker row (status `Planning`). A bug
-that restores already-specified behavior adds no requirement block: `implementation-plan.md` cites the
+that restores already-specified behavior adds no `intent.md` or `specs/` delta: `implementation-plan.md` cites the
 violated `<capability>.md#FR-###`. A bug that reveals an unspecified or wrong requirement is a
 behavior change — route that part through `harness-planning`.
 

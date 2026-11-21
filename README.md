@@ -97,12 +97,17 @@ Keep one living Markdown file per product capability in the consuming project's
 change. Keep the product overview and single Harness Feature Tracker in
 `docs/product/product.md`.
 
-A change's specification is its **feature block** under `## Planned changes` in the affected
-capability file (`harness/templates/requirement-delta-template.md`), with `FR-###`/`AC-###` IDs that
-are never reused. Plans, design, approvals, summaries, and evidence live in one dated workspace per
-feature or bug fix, `.scratch/<YYYY-MM-DD>-<feature-id>/`, retained in version control; location does
-not define lifecycle status (`docs/current/` is retired). `implementation-plan.md` records each
-block's approval-time SHA-256, so a later edit to the block requires re-approval. Follow
+Capability files state delivered behavior only (`harness/templates/capability-spec-template.md`:
+`### Requirement: FR-###` with `#### Scenario: AC-###`). A change's specification lives in its dated
+workspace `.scratch/<YYYY-MM-DD>-<feature-id>/`, OpenSpec-style: `intent.md` (problem, outcome,
+constraints), `design.md` (lane, stories, flow, screen states, product decisions), and one
+`specs/<capability>.md` delta per affected capability (`## ADDED` / `## MODIFIED` /
+`## REMOVED Requirements`). IDs are never reused. Plans, approvals, summaries, and evidence live in
+the same workspace, retained in version control; location does not define lifecycle status
+(`docs/current/` is retired). `implementation-plan.md` records each artifact's approval-time
+SHA-256, so a later edit requires re-approval. After delivery,
+`python3 harness/scripts/archive-change.py <workspace>` merges the deltas into the capability files
+and marks `intent.md` Archived. Follow
 [Product documentation flow](.agents/rules/product-documentation.md), and run
 `python3 harness/scripts/check-product-docs.py --change-dir <workspace> --summary <workspace>/summary.md`
 before closing a behavior change. The summary records each affected prior requirement claim and
@@ -112,15 +117,15 @@ whether it was replaced, retired, retained, or confirmed unchanged.
 
 Every feature enters through **`harness-planning.md`**:
 
-1. **Specify & Clarify** (`feature-specification`) — write the feature block, resolve every
+1. **Specify & Clarify** (`feature-specification`) — write `intent.md`, `design.md`, and the `specs/` deltas, resolve every
    `[NEEDS CLARIFICATION]`, and decide the lane: no user stories → **single lane**; two or more
    independently deliverable stories → **sliced lane**.
 2. **UX Design** (`ux-design`, UI scope) — `UI_contract.md` first, then a Pen design built from the
    design-system Component Registry.
 3. **Implementation Plan & Analyze** (`implementation-plan`) — `implementation-plan.md` (HOW +
    Rule Applicability) and `test-plan.md` (all test material); the sliced lane adds `tasks.md` and
-   `feature_list.json`. The analyze gate checks they agree with the approved block.
-4. **Single lane**: one approval (block + design + plans), then `single-lane-generator.md` runs implementation → UI conformance
+   `feature_list.json`. The analyze gate checks they agree with the approved change.
+4. **Single lane**: one approval (intent + design + specs + plans), then `single-lane-generator.md` runs implementation → UI conformance
    review → testing → quality → product-doc reconciliation → install.
    **Sliced lane**: `sliced-lane-generator.md` implements one slice per story,
    `harness-evaluation.md` reviews it, `harness-fix.md` resolves findings below 5.0/5.
@@ -149,7 +154,8 @@ The harness includes validation scripts located in `harness/scripts/`:
 | `check-feature-lifecycle.sh` | Validates feature tracking state and artifact integrity |
 | `check-product-docs.py` | Validates living capability documents, index coverage, scratch workspace placement, local references, and an optional requirement-reconciliation table in the change summary |
 | `check-visual-evidence-contract.sh` | Enforces the UI conformance review (no pixel goldens) |
-| `check-spec-plan-consistency.sh` | Analyze gate: feature block ↔ implementation plan ↔ test plan ↔ tasks/slices |
+| `check-spec-plan-consistency.sh` | Analyze gate: intent/design/specs ↔ implementation plan ↔ test plan ↔ tasks/slices |
+| `archive-change.py` | Merges a delivered change's `specs/` deltas into the capability files and archives its intent |
 | `compose-feature-spec.py` | Assembles a workspace's effective spec for the stage gates |
 | `check-acceptance-test-traceability.sh` | Verifies acceptance IDs map to real Kotlin methods, scenarios, scoped commands, and evidence |
 | `check-evaluation-fix-contract.sh` | Enforces deterministic evaluator scoring, evidence, and fix-stage routing |

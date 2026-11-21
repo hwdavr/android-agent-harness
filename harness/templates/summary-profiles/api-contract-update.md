@@ -2,7 +2,7 @@
 
 | Stage | Status | Timestamp | Notes |
 |---|---|---|---|
-| Specify & Clarify | Pending | — | Feature block under `## Planned changes` for the contract change. |
+| Specify & Clarify | Pending | — | `intent.md`, `design.md`, and `specs/` deltas for the contract change. |
 | Implementation Plan & Analyze | Pending | — | User approval required before implementation. |
 | Data Layer | Pending | — | |
 | Domain Layer | Pending | — | |

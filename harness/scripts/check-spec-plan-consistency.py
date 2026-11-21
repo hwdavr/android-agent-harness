@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Analyze gate (Spec Kit /analyze): cross-artifact consistency for one dated feature workspace.
 
-Single lane (no user stories): the approved feature block(s), implementation-plan.md, and
-test-plan.md agree — every AC-### has a primary acceptance test, Rule Applicability is complete.
+Single lane (no user stories): the approved change artifacts (intent.md, design.md, and the
+specs/<capability>.md requirement deltas), implementation-plan.md, and test-plan.md agree — every
+ADDED/MODIFIED AC-### has a primary acceptance test, Rule Applicability is complete.
 
 Every Required rule has planned work and a planned verification (test-plan.md). In the sliced lane
 each Required rule other than the standing ARCH/IMPL/TEST also tags at least one task in tasks.md.
@@ -11,8 +12,8 @@ Sliced lane (two or more user stories): additionally tasks.md and feature_list.j
 stories, the Spec Coverage Matrix, the per-story acceptance tests, and the journey contract; every
 task belongs to exactly one slice, and each slice's tasks match in both files.
 
---pre-approval runs every check except the approval fields (block **Status** Approved and the
-recorded block SHA-256), so the package can be analyzed before it is presented for approval.
+--pre-approval runs every check except the approval fields (intent.md **Status** Approved and the
+recorded artifact SHA-256 values), so the package can be analyzed before it is presented for approval.
 
 Usage:
   python3 harness/scripts/check-spec-plan-consistency.py <feature-dir> [--project-root <dir>] [--pre-approval]
@@ -28,13 +29,16 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import spec_change as sc  # noqa: E402
+
 RULE_IDS = ["ARCH", "IMPL", "TEST", "SUI", "L10N", "NAV", "API", "OBS", "ANL", "SEC"]
 # Always-loaded rules that apply to every line of code: verified by Final checks and review, so a
 # Required row needs planned work and a test mapping but no dedicated tagged task.
 STANDING_RULES = {"ARCH", "IMPL", "TEST"}
 RULE_TAG = re.compile(r"\[(" + "|".join(RULE_IDS) + r")\]")
-FR_DEF = re.compile(r"^#{3,6}\s+(FR-\d{3})\b", re.M)
-AC_DEF = re.compile(r"\*\*(AC-\d{3})\*\*")
+FR_DEF = re.compile(r"^#{3,6}\s+(?:Requirement:\s*)?(FR-\d{3})\b", re.M)
+AC_DEF = re.compile(r"\*\*(AC-\d{3})\*\*|^#### Scenario:\s*(AC-\d{3})\b", re.M)
 SC_DEF = re.compile(r"\*\*(SC-\d{3})\*\*")
 US_DEF = re.compile(r"^#{3,6}\s+(US-\d+)\b", re.M)
 TC_ID = re.compile(r"^TC-[A-Z0-9-]+$")
@@ -86,86 +90,144 @@ def duplicates(values: list[str]) -> list[str]:
     return sorted(dup)
 
 
-def extract_block(text: str, feature_id: str) -> tuple[str | None, str]:
-    start, end = f"<!-- feature: {feature_id} -->", f"<!-- /feature: {feature_id} -->"
-    if text.count(start) != 1 or text.count(end) != 1:
-        return None, (f"expected exactly one '{start}' and one '{end}' marker "
-                      f"(found {text.count(start)} and {text.count(end)})")
-    s, e = text.index(start) + len(start), text.index(end)
-    if e < s:
-        return None, "closing marker precedes opening marker"
-    return text[s:e], ""
+def ac_ids(text: str) -> list[str]:
+    return [a or b for a, b in AC_DEF.findall(text)]
 
 
 class Spec:
-    """Requirement IDs and stories collected from every capability file the plan lists."""
+    """Requirement IDs and stories collected from the change workspace."""
 
     def __init__(self) -> None:
-        self.required: dict[str, dict[str, set[str]]] = {}  # capability name -> kind -> IDs in block
-        self.known_acs: set[str] = set()                     # every AC defined in those files
-        self.stories: dict[str, set[str]] = {}               # US-n -> FRs it owns
+        self.required: dict[str, dict[str, set[str]]] = {}  # capability file name -> kind -> IDs to verify
+        self.known_acs: set[str] = set()                     # every AC in the listed capabilities and deltas
+        self.stories: dict[str, set[str]] = {}               # US-n -> {'<capability>.md#FR-###'}
         self.files: list[str] = []
+        self.lane = ""
 
 
-def read_requirements(r: Report, plan: str, feature_id: str, root: Path, pre_approval: bool = False) -> Spec:
+APPROVED_ARTIFACTS = ("intent.md", "design.md")
+
+
+def check_hash(r: Report, path: Path, recorded: str, label: str, pre_approval: bool) -> None:
+    actual = sc.artifact_hash(path)
+    if pre_approval:
+        return
+    if not SHA.match(recorded):
+        r.fail(f"{label}: approved SHA-256 is not recorded in implementation-plan.md (current: {actual})")
+    elif recorded != actual:
+        r.fail(f"{label} changed after approval (recorded {recorded}, current {actual}); re-approve the change")
+
+
+def read_requirements(r: Report, plan: str, feature_id: str, root: Path, workspace: Path,
+                      pre_approval: bool = False) -> Spec:
     spec = Spec()
-    rows = [row for row in table_rows(section(plan, "Product Requirements"))
-            if row and "docs/product/requirements/" in row[0]]
-    if not rows:
-        r.fail("implementation-plan.md '## Product Requirements' needs a row per capability file")
-    for row in rows:
-        if len(row) < 4:
-            r.fail(f"Product Requirements row has too few columns: {row}")
-            continue
-        rel, block_cell, recorded = unquote(row[0]), unquote(row[1]), unquote(row[3])
-        path = root / rel
+    rows = [row for row in table_rows(section(plan, "Product Requirements")) if row]
+    rows = [row for row in rows if row[0] and not row[0].startswith("Artifact")]
+    by_artifact = {unquote(row[0]): row for row in rows}
+    deltas = sc.delta_files(workspace)
+
+    # Bug fix restoring delivered behavior: no change artifacts, one 'none' row per capability.
+    restore_rows = [row for row in rows if any(unquote(c).lower().startswith("none") for c in row[:2])]
+    if restore_rows and not deltas:
+        for row in restore_rows:
+            cap = next((unquote(c) for c in row[:2] if "docs/product/requirements/" in c), "")
+            if not re.search(r"FR-\d{3}", " ".join(row)):
+                r.fail(f"{cap or 'Product Requirements'}: a row without a delta must cite the restored FR-###")
+            if cap:
+                spec.files.append(cap)
+                if (root / cap).is_file():
+                    spec.known_acs |= set(ac_ids((root / cap).read_text(encoding="utf-8")))
+        return spec
+
+    if not deltas:
+        r.fail(f"{workspace.name}/specs/ has no requirement delta; Specify writes specs/<capability>.md")
+    for name in APPROVED_ARTIFACTS:
+        path = workspace / name
         if not path.is_file():
-            r.fail(f"capability file not found: {rel}")
+            r.fail(f"missing {name} in {workspace.name}")
             continue
-        text = path.read_text(encoding="utf-8")
-        spec.files.append(rel)
-        spec.known_acs |= set(AC_DEF.findall(text))
-        for pattern in (FR_DEF, AC_DEF, SC_DEF):
-            for dup in duplicates(pattern.findall(text)):
-                r.fail(f"{rel}: {dup} is defined more than once; IDs are never reused")
+        row = by_artifact.get(name)
+        if not row or len(row) < 4:
+            r.fail(f"implementation-plan.md '## Product Requirements' needs a `{name}` row with its approved SHA-256")
+        else:
+            check_hash(r, path, unquote(row[3]), name, pre_approval)
+        if "[NEEDS CLARIFICATION" in path.read_text(encoding="utf-8"):
+            r.fail(f"{name} still contains [NEEDS CLARIFICATION] markers")
+    status = sc.intent_status(workspace)
+    if not pre_approval and not re.search(r"\b(Approved|Archived)\b", status):
+        r.fail("intent.md **Status** is not Approved")
+    intent_path = workspace / "intent.md"
+    intent = intent_path.read_text(encoding="utf-8") if intent_path.is_file() else ""
+    spec.required["intent.md"] = {"FR": set(), "AC": set(), "SC": set(SC_DEF.findall(intent))}
+    for dup in duplicates(SC_DEF.findall(intent)):
+        r.fail(f"intent.md: {dup} is defined more than once")
 
-        if block_cell.lower().startswith("none"):
-            if not re.search(r"FR-\d{3}", block_cell):
-                r.fail(f"{rel}: a row without a feature block must cite the restored FR-###")
-            continue
-        if block_cell != feature_id:
-            r.fail(f"{rel}: feature block '{block_cell}' does not match feature ID '{feature_id}'")
-        block, error = extract_block(text, feature_id)
-        if block is None:
-            r.fail(f"{rel}: {error}")
-            continue
-        actual = hashlib.sha256(block.encode("utf-8")).hexdigest()
-        if pre_approval:
-            pass
-        elif not SHA.match(recorded):
-            r.fail(f"{rel}: approved block SHA-256 is not recorded in implementation-plan.md (current: {actual})")
-        elif recorded != actual:
-            r.fail(f"{rel}: feature block changed after approval (recorded {recorded}, current {actual}); re-approve the specification")
-        if "[NEEDS CLARIFICATION" in block:
-            r.fail(f"{rel}: feature block still contains [NEEDS CLARIFICATION] markers")
-        if not pre_approval and not re.search(r"^\*\*Status\*\*:.*\bApproved\b", block, re.M):
-            r.fail(f"{rel}: feature block **Status** is not Approved")
+    # After archive-change.py the deltas are merged, so living-file ID comparisons no longer apply.
+    archived = "Archived" in status
+    listed = {f"specs/{p.name}" for p in deltas}
+    for artifact in sorted(set(by_artifact) - listed - set(APPROVED_ARTIFACTS)):
+        if artifact.startswith("specs/"):
+            r.fail(f"implementation-plan.md lists {artifact}, which does not exist in {workspace.name}")
+    for path in deltas:
+        rel = f"specs/{path.name}"
+        delta = sc.parse_delta(path)
+        for error in delta.errors:
+            r.fail(error)
+        if "[NEEDS CLARIFICATION" in path.read_text(encoding="utf-8"):
+            r.fail(f"{rel} still contains [NEEDS CLARIFICATION] markers")
+        row = by_artifact.get(rel)
+        if not row or len(row) < 4:
+            r.fail(f"implementation-plan.md '## Product Requirements' needs a `{rel}` row with its approved SHA-256")
+        else:
+            check_hash(r, path, unquote(row[3]), rel, pre_approval)
+            if f"docs/product/requirements/{path.name}" not in row[1]:
+                r.fail(f"implementation-plan.md row {rel} must name docs/product/requirements/{path.name}")
+        cap_path = sc.capability_path(root, delta.capability)
+        cap_rel = cap_path.relative_to(root).as_posix()
+        spec.files.append(cap_rel)
+        living_frs: set[str] = set()
+        if archived:
+            if cap_path.is_file():
+                spec.known_acs |= set(ac_ids(cap_path.read_text(encoding="utf-8")))
+        elif cap_path.is_file():
+            text = cap_path.read_text(encoding="utf-8")
+            living_frs = set(FR_DEF.findall(text))
+            living_acs = set(ac_ids(text))
+            spec.known_acs |= living_acs
+            for ids in (FR_DEF.findall(text), ac_ids(text)):
+                for dup in duplicates(ids):
+                    r.fail(f"{cap_rel}: {dup} is defined more than once; IDs are never reused")
+            for ac in sorted(delta.scenarios("ADDED") & living_acs):
+                r.fail(f"{rel}: ADDED scenario {ac} already exists in {cap_rel}; IDs are never reused")
+        elif delta.ids("MODIFIED", "REMOVED"):
+            r.fail(f"{rel}: MODIFIED/REMOVED requires an existing {cap_rel}")
+        elif not delta.title or not delta.user_goal:
+            r.fail(f"{rel}: a new capability delta needs a '# <Title>' line and a '**User goal**:' line")
+        for fr in sorted(set() if archived else delta.ids("ADDED") & living_frs):
+            r.fail(f"{rel}: ADDED {fr} already exists in {cap_rel}; continue the file's FR sequence")
+        for fr in sorted(set() if archived else delta.ids("MODIFIED", "REMOVED") - living_frs):
+            r.fail(f"{rel}: {fr} is not a '### Requirement:' in {cap_rel}; convert the capability file "
+                   f"to capability-spec-template.md format or fix the ID")
+        spec.known_acs |= delta.scenarios()
+        spec.required[path.name] = {"FR": delta.ids("ADDED", "MODIFIED"),
+                                    "AC": delta.scenarios("ADDED", "MODIFIED"), "SC": set()}
 
-        frs = set(FR_DEF.findall(block))
-        if not frs:
-            r.fail(f"{rel}: feature block defines no FR-### requirement")
-        spec.required[path.name] = {"FR": frs, "AC": set(AC_DEF.findall(block)), "SC": set(SC_DEF.findall(block))}
-        for story in US_DEF.findall(block):
-            body = re.search(rf"^#{{3,6}}\s+{story}\b.*?(?=^#{{3,6}}\s|\Z)", block, re.M | re.S).group(0)
-            req = re.search(r"^\*\*Requirements\*\*:(.*)$", body, re.M)
-            if not req:
-                r.fail(f"{rel}: {story} must list its **Requirements**")
-                spec.stories.setdefault(story, set())
-                continue
-            listed = set(re.findall(r"FR-\d{3}", req.group(1)))
-            for fr in sorted(listed - frs):
-                r.fail(f"{rel}: {story} lists {fr}, which this feature block does not define")
-            spec.stories.setdefault(story, set()).update(listed)
+    default_cap = deltas[0].stem if len(deltas) == 1 else None
+    stories, errors = sc.design_stories(workspace, default_cap)
+    for error in errors:
+        r.fail(error)
+    for story, refs in stories.items():
+        qualified = set()
+        for ref in sorted(refs):
+            cap, fr = ref.split("#")
+            kinds = spec.required.get(f"{cap}.md")
+            if kinds is None or fr not in kinds["FR"]:
+                r.fail(f"design.md: {story} lists {cap}.md#{fr}, which no ADDED/MODIFIED delta defines")
+            qualified.add(f"{cap}.md#{fr}")
+        spec.stories[story] = qualified
+    spec.lane = sc.design_lane(workspace)
+    if (workspace / "design.md").is_file() and not spec.lane:
+        r.fail("design.md must declare '**Lane**: single' or '**Lane**: sliced'")
     return spec
 
 
@@ -229,7 +291,7 @@ def check_coverage(r: Report, spec: Spec, covers: dict[str, set[str]]) -> None:
             r.fail(f"test-plan.md has no acceptance test covering {cap}#{ac}")
     for tc, acs in sorted(covers.items()):
         for ac in sorted(acs - spec.known_acs):
-            r.fail(f"test-plan.md {tc} cites {ac}, which no listed capability file defines")
+            r.fail(f"test-plan.md {tc} cites {ac}, which no listed capability file or delta defines")
 
 
 def check_single(r: Report, spec: Spec, test_plan: str, workspace: Path, decisions: dict[str, str]) -> None:
@@ -254,8 +316,9 @@ def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path, decisio
         r.fail("sliced lane needs two or more user stories; a single deliverable change uses the single lane")
     owned = set().union(*spec.stories.values()) if spec.stories else set()
     for cap, kinds in spec.required.items():
-        for fr in sorted(kinds["FR"] - owned):
-            r.fail(f"{cap}: {fr} is not owned by any user story")
+        for fr in sorted(kinds["FR"]):
+            if f"{cap}#{fr}" not in owned:
+                r.fail(f"{cap}: {fr} is not owned by any user story")
 
     # Acceptance tests per story in test-plan.md.
     covers: dict[str, set[str]] = {}
@@ -265,7 +328,7 @@ def check_sliced(r: Report, spec: Spec, test_plan: str, workspace: Path, decisio
         r.fail(f"test-plan.md '## Acceptance Test Cases' has no '### {story}' subsection")
     for story, body in per_story.items():
         if story not in stories:
-            r.fail(f"test-plan.md '### {story}' is not a user story in any approved feature block")
+            r.fail(f"test-plan.md '### {story}' is not a user story in design.md")
         for tc in test_cases(r, table_rows(body), story, covers):
             tc_story[tc] = story
     check_coverage(r, spec, covers)
@@ -335,7 +398,7 @@ def check_tasks_md(r: Report, stories: set[str], workspace: Path,
     for story in sorted(stories - set(order)):
         r.fail(f"tasks.md has no '## {story}:' section")
     for story in sorted(set(order) - stories):
-        r.fail(f"tasks.md section {story} is not a user story in any approved feature block")
+        r.fail(f"tasks.md section {story} is not a user story in design.md")
 
     by_story: dict[str, dict[str, bool]] = {}
     tagged: set[str] = set()
@@ -480,7 +543,9 @@ def check(workspace: Path, root: Path, pre_approval: bool = False) -> Report:
         r.fail("implementation-plan.md must declare '**Lane**: single' or '**Lane**: sliced'")
         return r
 
-    spec = read_requirements(r, plan, feature_id, root, pre_approval)
+    spec = read_requirements(r, plan, feature_id, root, workspace, pre_approval)
+    if spec.lane and spec.lane != m.group(1):
+        r.fail(f"design.md **Lane** is {spec.lane}, but implementation-plan.md declares {m.group(1)}")
     decisions = check_rules(r, plan)
     check_rule_test_mapping(r, test_plan, decisions)
     (check_single if m.group(1) == "single" else check_sliced)(r, spec, test_plan, workspace, decisions)
@@ -492,7 +557,7 @@ def main() -> int:
     parser.add_argument("feature_dir")
     parser.add_argument("--project-root", default=os.environ.get("HARNESS_PROJECT_ROOT", os.getcwd()))
     parser.add_argument("--pre-approval", action="store_true",
-                        help="skip the approval fields (block Status and recorded SHA-256)")
+                        help="skip the approval fields (intent.md Status and recorded SHA-256 values)")
     args = parser.parse_args()
     root = Path(args.project_root).resolve()
     workspace = Path(args.feature_dir)
@@ -503,7 +568,7 @@ def main() -> int:
     if report.failures:
         print(f"FAIL: analyze gate found {len(report.failures)} inconsistency(ies) in {workspace.name}", file=sys.stderr)
         return 1
-    suffix = " (pre-approval: block Status and SHA-256 not yet required)" if args.pre_approval else ""
+    suffix = " (pre-approval: intent Status and SHA-256 not yet required)" if args.pre_approval else ""
     print(f"OK: requirements and plans are consistent for {workspace.name}{suffix}")
     return 0
 

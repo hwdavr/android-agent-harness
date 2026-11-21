@@ -139,9 +139,9 @@ maps every Required row, and the stage gate rejects incomplete matrices.
 ```bash
 python3 harness/scripts/tests/ux-design-stage-contract-test.py
 ```
-**Must pass.** The feature block's Screen States lead to a complete UI_contract inventory before Pen
+**Must pass.** The `design.md` Screen States lead to a complete UI_contract inventory before Pen
 generation. Inventory gates allow only design-reference fields and Reused components to be Pending;
-full UX/planning gates require completed references and registered components. No design.md is required.
+full UX/planning gates require completed references and registered components. No visual feature-design document is required.
 
 ### 9b. Dated Workspace and Analyze Gates
 ```bash
@@ -149,7 +149,7 @@ bash harness/scripts/tests/stage-artifacts-lanes-contract-test.sh
 bash harness/scripts/tests/spec-plan-consistency-contract-test.sh
 ```
 **Must pass.** Every lane works in one `.scratch/<YYYY-MM-DD>-<feature-id>/` workspace; the analyze
-gate keeps the approved feature block(s), `implementation-plan.md`, `test-plan.md`, and (sliced lane)
+gate keeps the approved `intent.md`, `design.md`, and `specs/` deltas, `implementation-plan.md`, `test-plan.md`, and (sliced lane)
 `tasks.md` and `feature_list.json` consistent.
 
 ### 10. Acceptance-Test Traceability Contract
@@ -258,7 +258,8 @@ bash harness/scripts/check-keyboard-mockup-contract.sh "$FEATURE_DIR"
 ```
 **Must pass during harness planning.** This compatibility command validates UI_contract.md through
 the shared UI checker. Before Pen, pass `--inventory`: closed/open/dismissed state mappings and
-explicit `screen-no-toolbar`, `screen-toolbar-dismissed`, or `sheet-stays-open` behavior are required.
+explicit `screen-no-toolbar`, `screen-toolbar-dismissed`, `screen-toolbar-stays-visible` (only with a
+documented `- Toolbar stays visible (<input tag>): <reason>` line), or `sheet-stays-open` behavior are required.
 After Pen, run without that flag to require distinct, full-window reference exports. The contract
 also checks the focused input/required tags and the IME visible region. No design.md is read.
 

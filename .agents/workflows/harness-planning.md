@@ -44,16 +44,16 @@ for Stages 1–3 in both lanes. Execution stages are added only by the selected 
 
 ### Stage 1 — Specify & Clarify
 
-**INVOKE** `feature-specification`. It writes the feature block under `## Planned changes` of the
-affected capability file(s), resolves every `[NEEDS CLARIFICATION]`, decides the lane, and creates
+**INVOKE** `feature-specification`. It writes `intent.md`, `design.md`, and one
+`specs/<capability>.md` delta per affected capability in the workspace, resolves every `[NEEDS CLARIFICATION]`, decides the lane, and creates
 the workspace, `summary.md`, and the tracker row.
 
 Gate: `bash harness/scripts/check-stage-artifacts.sh harness-planning specify "$FEATURE_DIR"`.
-Sliced lane: ⛔ STOP for block approval. Single lane: continue; approval comes at Stage 3.
+Sliced lane: ⛔ STOP for specification approval. Single lane: continue; approval comes at Stage 3.
 
 ### Stage 2 — UX Design *(UI scope; otherwise record N/A)*
 
-**INVOKE** `ux-design`. Input: the block's Screen States and Navigation, supplied visual inputs, and
+**INVOKE** `ux-design`. Input: the `design.md` Screen States and navigation, supplied visual inputs, and
 `docs/product/design_system.md` with its Component Registry.
 
 1. Write `$FEATURE_DIR/UI_contract.md` (every state, viewport = design frame size, controls, fixtures,
@@ -72,7 +72,7 @@ to Stage 1.
 
 **INVOKE** `implementation-plan`. It writes `implementation-plan.md` and `test-plan.md` (plus
 `tasks.md` and `feature_list.json` in the sliced lane), runs the `analyze` gate, presents the
-package, and on approval records the block SHA-256, sets Status, moves the tracker, and runs:
+package, and on approval records the artifact SHA-256 values, sets Status, moves the tracker, and runs:
 
 ```bash
 bash harness/scripts/check-stage-artifacts.sh harness-planning implementation-plan "$FEATURE_DIR"
@@ -95,7 +95,7 @@ Planning is complete only when the Stage 3 gate exits 0. Then continue in exactl
 
 | Failure | Return to |
 |---|---|
-| Behavior, scope, data, navigation, or state-inventory change | Stage 1 (re-approval; the block hash changes) |
+| Behavior, scope, data, navigation, or state-inventory change | Stage 1 (re-approval; the artifact hashes change) |
 | Visual design feedback | Stage 2 |
 | Plan-only feedback or analyze inconsistency | Stage 3 |
 

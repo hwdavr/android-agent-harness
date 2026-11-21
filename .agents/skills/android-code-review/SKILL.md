@@ -21,9 +21,9 @@ static quality after Test Review. The canonical report structure and per-rule ch
   scope.
 - `rules/android-security.md` only when the approved scope or diff touches a security boundary.
 - The active diff, merge base/reviewed commit, changed production files, and mapped tests.
-- Single-lane baseline: the approved feature block(s), `$FEATURE_DIR/implementation-plan.md`,
+- Single-lane baseline: the approved `intent.md`, `design.md`, and `specs/` deltas, `$FEATURE_DIR/implementation-plan.md`,
   `test-plan.md`, and `test_review.md`.
-- Sliced-lane baseline: the approved feature block(s), optional design, `implementation-plan.md`,
+- Sliced-lane baseline: the approved `intent.md`, `design.md`, and `specs/` deltas, optional design, `implementation-plan.md`,
   the slice's `test-plan.md` section and `tasks.md` phase, selected slice metadata/summary, and
   `test_review_{feature_id}.md`.
 

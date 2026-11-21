@@ -1,20 +1,8 @@
-# <Capability name>
+# Product Requirements Template
 
-**Capability ID**: `<stable-kebab-case-id>`
-**Updated**: YYYY-MM-DD
+A new capability file is created by `harness/scripts/archive-change.py` from the change's
+`specs/<capability>.md` delta (title and `**User goal**:` line), in the format defined by
+[`capability-spec-template.md`](capability-spec-template.md). Do not hand-write a capability file
+for planned behavior: the living file states delivered behavior only.
 
-## User goal
-
-Describe the user's outcome.
-
-## Requirements
-
-List current behavior, states, boundaries, failure behavior, and constraints. Keep stable IDs for requirements that are traced by changes and tests. Link shared requirements rather than copying them.
-
-## Planned changes
-
-Label proposals and approved-but-undelivered scope explicitly. Keep completed behavior in Requirements after verification; an approval is not delivery evidence.
-
-## References
-
-Link relevant capabilities, approved designs, `.scratch/` change workspaces, and verification records. Lifecycle remains in `docs/product/product.md`.
+Lifecycle remains in `docs/product/product.md`; add the new capability to that index after archiving.

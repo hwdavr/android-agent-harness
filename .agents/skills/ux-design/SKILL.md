@@ -8,24 +8,24 @@ description: Define UI_contract states, reuse applicable registered common compo
 ## Purpose and entry
 
 Run the separate UX stage after Specify & Clarify and before the implementation plan. Use the
-feature block's Screen States and Navigation, supplied visual inputs, and the design system with its
+`design.md` Screen States and navigation, supplied visual inputs, and the design system with its
 Component Registry. UI_contract.md owns the UI
 state inventory and behavior-to-reference mapping; the design-tool source file owns the actual visual design.
-Do not generate a separate design.md.
+Do not write visual design into `design.md`; it lists the states only.
 
 ## Artifact ownership
 
-Do not create, version, or edit the requirement block or summary during visual iteration.
+Do not create, version, or edit `intent.md`, `design.md`, the `specs/` deltas, or the summary during visual iteration.
 UX owns `UI_contract.md`, design-tool candidates, and review exports in `$FEATURE_DIR`.
 
 Spacing, hierarchy, color, typography, icons, and copy preserving approved meaning stay within UX.
 A behavior, scope, data, navigation, or required state-inventory change returns to Specify &
-Clarify; reconcile only the affected block sections and contract rows. Record summary/progress
+Clarify; reconcile only the affected spec or design sections and contract rows. Record summary/progress
 evidence at stage completion, approval, or blockers. Design approval does not authorize app code.
 
 ## Load
 
-- The feature block (Screen States, Navigation) and supplied visual inputs
+- `design.md` (Screen States, navigation) and supplied visual inputs
 - `docs/product/design_system.md`, including its Component Registry
 - `harness/templates/UI_contract-template.md`
 - `harness/templates/visual-target-template.json` only when generating mockups with `visual-target-prompt.sh`
@@ -51,11 +51,10 @@ components are the only deferred fields; user behavior and keyboard coverage can
 
 Inventory every editable input in `## IME State Coverage`, including closed, open, and dismissed
 states at the same full-window viewport. Declare resize/pan/overlay and the keyboard behavior:
-`screen-no-toolbar`, `screen-toolbar-dismissed`, or `sheet-stays-open`. Show the focused field,
-required controls, and real IME together; a bottom sheet remains open while typing and a screen's
-bottom toolbar is dismissed. Use authentic keyboard assets for the target device/appearance.
-When a real-IME state has no design (approved 2026-11-13), write `instrumented-only` in its open or dismissed
-column; the IME Production Boundary test must then cover that input, and the closed state still needs a design.
+`screen-no-toolbar`, `screen-toolbar-dismissed`, `screen-toolbar-stays-visible`, or `sheet-stays-open`.
+Show the focused field, required controls, and real IME together; a bottom sheet remains open while
+typing and a screen's bottom toolbar is dismissed, or, only with a documented reason line
+(`- Toolbar stays visible (<input tag>): <reason>`), stays visible above the keyboard. Use authentic keyboard assets for the target device/appearance.
 
 Classify supplied images as approved references or defect evidence. Preserve approved inputs
 unchanged and keep defect evidence separate. Existing approved references can fill completed rows.

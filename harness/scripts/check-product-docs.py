@@ -90,6 +90,35 @@ def check_requirement_reconciliation(root, summary):
         fail(f"{summary_path.name}: reconciliation table must contain at least one claim row")
 
 
+REQ_HEADING = re.compile(r"^### Requirement:\s*(FR-\d{3})\b", re.M)
+SCENARIO_HEADING = re.compile(r"^#### Scenario:\s*(AC-\d{3})\b", re.M)
+
+
+def check_structured_requirements(path, text):
+    """Capability files in capability-spec-template.md format: unique IDs, a scenario per requirement,
+    no unmerged delta headings."""
+    if re.search(r"^## (ADDED|MODIFIED|REMOVED|RENAMED) Requirements", text, re.M):
+        fail(f"{path.name}: contains an unmerged delta heading; run archive-change.py")
+    if re.search(r"<!-- feature: ", text):
+        fail(f"{path.name}: inline feature blocks are retired; move the block to the change's specs/{path.name}")
+    reqs = list(REQ_HEADING.finditer(text))
+    if not reqs:
+        return
+    ids = [m.group(1) for m in reqs]
+    acs = SCENARIO_HEADING.findall(text)
+    for kind, values in (("requirement", ids), ("scenario", acs)):
+        for value in sorted({v for v in values if values.count(v) > 1}):
+            fail(f"{path.name}: {kind} {value} is defined more than once")
+    for i, m in enumerate(reqs):
+        end = reqs[i + 1].start() if i + 1 < len(reqs) else len(text)
+        body = text[m.end():end]
+        body = body[: re.search(r"^## ", body, re.M).start()] if re.search(r"^## ", body, re.M) else body
+        if not SCENARIO_HEADING.search(body):
+            fail(f"{path.name}: {m.group(1)} needs at least one '#### Scenario: AC-###'")
+        if not re.search(r"\bSHALL\b", body):
+            fail(f"{path.name}: {m.group(1)} must state its behavior with SHALL")
+
+
 def check(root, change_dir=None, summary=None):
     product = root / "docs/product"
     requirements = product / "requirements"
@@ -108,10 +137,11 @@ def check(root, change_dir=None, summary=None):
         identity = re.search(r"^\*\*Capability ID\*\*: `([a-z0-9]+(?:-[a-z0-9]+)*)`", text, re.M)
         if not identity or identity.group(1) != path.stem:
             fail(f"{path.name}: Capability ID must match the filename")
-        for heading in ("User goal", "Requirements", "Planned changes", "References"):
+        for heading in ("User goal", "Requirements", "References"):
             match = re.search(r"^## " + heading + r"\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
             if not match or not match.group(1).strip():
                 fail(f"{path.name}: nonempty {heading} section is required")
+        check_structured_requirements(path, text)
         if f"requirements/{path.name}" not in index_text:
             fail(f"{path.name}: capability is missing from the product index")
     for path in [index, requirements / "README.md", *capabilities]:
@@ -145,7 +175,8 @@ def check(root, change_dir=None, summary=None):
         if not refs:
             fail("Product Requirements must reference an existing capability file")
         for ref in refs:
-            if not (requirements / ref).is_file() or ref == "README.md":
+            created_here = (workspace / "specs" / ref).is_file()
+            if ref == "README.md" or not ((requirements / ref).is_file() or created_here):
                 fail("unknown capability reference: " + ref)
     return len(capabilities)
 

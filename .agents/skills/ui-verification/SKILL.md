@@ -104,7 +104,7 @@ state in `$FEATURE_DIR/evidence/ui/compare/findings.md` under a `### <state-id>`
 visible difference with its severity (table below), or `None`. Then fix the Critical and Major
 differences that have an obvious fix in the planned UI files, recapture, regenerate the
 comparison, and re-check. At most 3 fix loops; what remains is listed as `needs user decision`.
-Limits: never change the requirement block, the state inventory, the approved designs, or the
+Limits: never change `intent.md`, `design.md`, the `specs/` deltas, the state inventory, the approved designs, or the
 design system, and never add a design-system exception; a difference that needs any of those, or
 has no clean fix, is recorded as `needs user decision`, not guessed. Minor differences are noted
 and left alone. Rerun the structural checks and affected instrumented journeys after every fix.

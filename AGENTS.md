@@ -26,7 +26,7 @@ Load no unrelated context. Reconcile all ten triggers in requirements/planning/r
 | `harness/templates/` | Output formats for plans, reviews, tests. |
 | `harness/scripts/` | Validation and contract-test scripts. |
 | `.scratch/<YYYY-MM-DD>-<feature-id>/` | Dated workspace per feature/bug fix: plans, summary, design, evidence. |
-| `docs/product/requirements/` | One file per capability; a change's spec is its `## Planned changes` feature block. |
+| `docs/product/requirements/` | One file per capability (delivered behavior); a change's spec is its `intent.md`, `design.md`, `specs/`. |
 | `docs/knowledge/` | Past bugs, pitfalls, architecture decisions (L3). |
 | `docs/changes/` | Audit trail — one directory per delivered change. |
 | `docs/product/product.md` | Capabilities, roadmap, and the authoritative Harness Feature Tracker. |
@@ -71,19 +71,19 @@ Before any task, identify its type, read the matching workflow or direct skill *
 - **Every new feature must have tests**
 - **Platform-bound features** require a capability matrix and real instrumented boundary test; fake/JVM evidence is supplemental. Missing runtimes/devices/models/locales/permissions/services fail loudly, never PASS.
 - **No dummy production code** — every function/branch/callback implements its requirement. No TODO/stubs/no-op handlers; follow `.agents/rules/implementation-rules.md`.
-- **User approval before implementation** — approved `implementation-plan.md` + `test-plan.md` (feature-block SHA-256 recorded); sliced lane adds `tasks.md` + `feature_list.json`; `sliced-lane-generator` never re-plans.
+- **User approval before implementation** — approved `implementation-plan.md` + `test-plan.md` (intent/design/specs SHA-256 recorded); sliced lane adds `tasks.md` + `feature_list.json`; `sliced-lane-generator` never re-plans.
 - **Direct UI lane is appearance-only** — `android-ui-layer` must pass its entry check (no new state/interaction/navigation/data/API) and end with a `ui-verification` conformance review; else `harness-planning` or `bug-fixing`.
 - **UI appearance is approved by conformance review, never a screenshot golden** — Pen-frame captures, structure checks, registered components, user approval.
 - **Pass every stage gate before advancing**
 - **Invoke every stage skill through the available skill mechanism** (the Skill tool when exposed); otherwise read the full repository `SKILL.md`, follow it, and record the missing interface in stage evidence. Executable gates stay mandatory.
 - **Every implementation plan has all ten Rule Applicability rows** (`harness/templates/rule-applicability-template.md`): `Required`, `Not applicable — <feature-specific reason>`, or `Exception — approved by <user/date>`. The approved `implementation-plan.md` is canonical; `test-plan.md` links its `#rule-applicability` and maps Required rows to evidence. Reviews reconcile all ten.
-- **Approval evidence lives on disk**, never memory: the approved feature block in `docs/product/requirements/` and the dated `.scratch/` workspace (`docs/current/` is retired). Re-run the owning stage for missing artifacts.
+- **Approval evidence lives on disk**, never memory: the approved `intent.md`, `design.md`, and `specs/` deltas in the dated `.scratch/` workspace (`docs/current/` is retired). Re-run the owning stage for missing artifacts.
 - **Validate lifecycle state** — run `bash harness/scripts/check-feature-lifecycle.sh` before selecting tracked work and after each tracker transition. Status lives in the tracker and per-slice evidence, never folder location.
 - **Stage completion requires evidence** — `summary.md` (or slice summary) cites an existing artifact path and one-line excerpt per completed stage. Link canonical scope/Rule Applicability; do not duplicate matrices, acceptance criteria, or slice metadata.
 - **Fix root causes; no suppressions** (`@Suppress`, `@SuppressLint`, `tools:ignore`, ktlint/detekt disables, baselines, broader excludes) without explicit user approval of a documented false positive.
 - **Instruction-file changes require approval** — before editing `.agents/rules/`, `.agents/workflows/`, or `.agents/skills/`, present the exact file list and proposed changes and get explicit user approval. Approval applies only to listed files; ask again if scope changes.
 - **Fix instruction mismatches through a PR** — state conflicts/staleness across rules/workflows/skills/gates/templates and why repair is needed; raise a PR correcting the authoritative source. Fix harness bugs immediately; log recurring risks in `docs/knowledge/pitfalls/`.
-- **Product docs** — follow `.agents/rules/product-documentation.md`: the requirements feature block is the spec, plans/evidence stay in `.scratch/`, and keep `docs/product/product.md` current as the capability index and sole lifecycle tracker.
+- **Product docs** — follow `.agents/rules/product-documentation.md`: the `.scratch/` change is the spec; `archive-change.py` merges it after delivery, and keep `docs/product/product.md` current as the capability index and sole lifecycle tracker.
 
 ---
 ## Build Commands — run from project root

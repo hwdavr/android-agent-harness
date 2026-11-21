@@ -36,11 +36,13 @@ create_fixture() {
   local nav_decision="$3"
   local ws="$fixture/.scratch/2026-11-09-fixture"
   mkdir -p "$ws" "$fixture/docs/product/requirements"
-  printf '%s\n' '# Capability' '' '## Planned changes' '' '<!-- feature: fixture -->' \
-    '### fixture — Stage gate fixture' '' '**Status**: Approved — user, 2026-11-09' '' \
-    '#### Requirements' '' '##### FR-001 — Fixture behavior (New)' '' '**Acceptance criteria**' '' \
-    '- **AC-001**: Given the fixture, when the gate runs, then it validates the stage.' \
-    '<!-- /feature: fixture -->' > "$fixture/docs/product/requirements/fixture.md"
+  printf '%s\n' '# Capability' '' '## Requirements' '' 'None yet.' > "$fixture/docs/product/requirements/fixture.md"
+  mkdir -p "$ws/specs"
+  printf '%s\n' '# fixture — Stage gate fixture' '' '**Status**: Approved — user, 2026-11-09' > "$ws/intent.md"
+  printf '%s\n' '# fixture — Design' '' '**Lane**: single' > "$ws/design.md"
+  printf '%s\n' '## ADDED Requirements' '' '### Requirement: FR-001 Fixture behavior' \
+    'The app SHALL validate the stage.' '' '#### Scenario: AC-001 Gate runs' \
+    '- **WHEN** the gate runs' '- **THEN** it validates the stage' > "$ws/specs/fixture.md"
   printf '%s\n' '# Stage Summary' > "$ws/summary.md"
   cat > "$ws/implementation-plan.md" <<EOF
 # Implementation Plan

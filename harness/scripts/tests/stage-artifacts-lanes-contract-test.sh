@@ -34,13 +34,43 @@ open(path, "wb").write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBB
 PY
 }
 
-block_hash() {  # capability feature-id
-  python3 - "$1" "$2" <<'PY'
-import hashlib, sys
-t = open(sys.argv[1], encoding="utf-8").read()
-s, e = f"<!-- feature: {sys.argv[2]} -->", f"<!-- /feature: {sys.argv[2]} -->"
-print(hashlib.sha256(t[t.index(s) + len(s):t.index(e)].encode()).hexdigest())
-PY
+write_change() {  # intent.md, design.md, and specs/note-sharing.md for share-expiry
+  mkdir -p "$W/specs"
+  cat > "$W/intent.md" <<'MD'
+# share-expiry — Expiring invitations
+
+**Status**: Approved — user, 2026-11-09
+
+## Problem
+
+Invitations never expire.
+
+## Proposed Outcome
+
+- Owners choose an invitation expiry.
+MD
+  cat > "$W/design.md" <<'MD'
+# share-expiry — Design
+
+**Lane**: single
+
+## Screen States
+
+| Screen | State ID | Requirement | Acceptance Criteria |
+|---|---|---|---|
+| Share Invite | invite-expiry-selected | FR-002 | AC-002 |
+MD
+  cat > "$W/specs/note-sharing.md" <<'MD'
+## ADDED Requirements
+
+### Requirement: FR-002 Invitation expiry
+The app SHALL let users choose an invitation expiry.
+
+#### Scenario: AC-002 Choose an expiry
+- **GIVEN** the invite screen
+- **WHEN** the owner picks 7 days
+- **THEN** the row shows the expiry
+MD
 }
 
 rules() {  # SUI decision
@@ -97,35 +127,13 @@ MD
 
 ## Requirements
 
-### FR-001 — Open sharing
+### Requirement: FR-001 Open sharing
+The app SHALL open Shared Users when Share is selected on an editable note.
 
-**Acceptance criteria**
-
-- **AC-001**: Given an editable note, when Share is selected, then Shared Users opens.
-
-## Planned changes
-
-<!-- feature: share-expiry -->
-### share-expiry — Expiring invitations
-
-**Status**: Approved — user, 2026-11-09
-
-#### Requirements *(mandatory)*
-
-##### FR-002 — Invitation expiry (New)
-
-Users MUST be able to choose an invitation expiry.
-
-**Acceptance criteria**
-
-- **AC-002**: Given the invite screen, when the owner picks 7 days, then the row shows the expiry.
-
-#### Screen States *(include when the change has UI; remove otherwise)*
-
-| Screen | State ID | Requirement | Acceptance Criteria |
-|---|---|---|---|
-| Share Invite | invite-expiry-selected | FR-002 | AC-002 |
-<!-- /feature: share-expiry -->
+#### Scenario: AC-001 Share an editable note
+- **GIVEN** an editable note
+- **WHEN** Share is selected
+- **THEN** Shared Users opens
 MD
   cat > "$ROOT/docs/product/product.md" <<'MD'
 # Product
@@ -141,6 +149,7 @@ MD
   B="$ROOT/.scratch/2026-11-09-fix-share-crash"
   mkdir -p "$W/design" "$W/evidence" "$B"
   echo "# Summary" > "$W/summary.md"
+  write_change
 }
 
 write_feature_plans() {
@@ -152,9 +161,7 @@ write_feature_plans() {
 
 ## Product Requirements
 
-| Capability file | Feature block | Requirement IDs | Approved block SHA-256 | Approved by / date |
-|---|---|---|---|---|
-| \`docs/product/requirements/note-sharing.md\` | \`share-expiry\` | FR-002 | \`$(block_hash "$ROOT/docs/product/requirements/note-sharing.md" share-expiry)\` | user, 2026-11-09 |
+$(python3 "$SCRIPT_DIR/change_fixture.py" "$W")
 
 $(rules Required)
 
@@ -316,9 +323,9 @@ cat > "$B/implementation-plan.md" <<MD
 
 ## Product Requirements
 
-| Capability file | Feature block | Requirement IDs | Approved block SHA-256 | Approved by / date |
+| Artifact | Capability file | Requirement IDs | Approved SHA-256 | Approved by / date |
 |---|---|---|---|---|
-| \`docs/product/requirements/note-sharing.md\` | none — restores FR-001 | FR-001 | N/A | N/A |
+| none — restores FR-001 | \`docs/product/requirements/note-sharing.md\` | FR-001 | N/A | N/A |
 
 ## Root Cause & Reproduction
 

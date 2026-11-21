@@ -30,7 +30,7 @@ true. The index is derived from the approved contract; it does not replace it.
 
 ## Execute
 
-This is a gated spec-driven workflow: the feature block(s) in `docs/product/requirements/` (Specify) and `$FEATURE_DIR/implementation-plan.md`, `test-plan.md`, `tasks.md`, and `feature_list.json` (Plan) are already user-approved. Orient to them — never re-open approved requirements or re-plan the slices. A changed block (its SHA-256 no longer matches the plan) is a blocker that returns to Specify.
+This is a gated spec-driven workflow: `intent.md`, `design.md`, and the `specs/` deltas in `$FEATURE_DIR` (Specify) and `$FEATURE_DIR/implementation-plan.md`, `test-plan.md`, `tasks.md`, and `feature_list.json` (Plan) are already user-approved. Orient to them — never re-open approved requirements or re-plan the slices. A changed block (its SHA-256 no longer matches the plan) is a blocker that returns to Specify.
 
 Before making any changes or planning code, gather complete session and git context:
 

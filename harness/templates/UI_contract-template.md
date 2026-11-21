@@ -1,7 +1,7 @@
 # UI Contract — <feature>
 
 **Project design system**: `docs/product/design_system.md`
-**Related spec**: feature block `<feature-id>` in `docs/product/requirements/<capability>.md`
+**Related spec**: `design.md` Screen States and `specs/<capability>.md` in this workspace
 **Reference status**: Inventory / Pen design in progress / Awaiting approval / Approved
 
 ## Research Decisions
@@ -68,11 +68,15 @@ Production Boundary test must cover that input (approved 2026-11-13).
 Keyboard behavior is exactly one of:
 - `screen-no-toolbar`: screen input with no bottom toolbar.
 - `screen-toolbar-dismissed`: screen bottom toolbar is dismissed while the keyboard is visible.
+- `screen-toolbar-stays-visible`: screen bottom toolbar stays visible above the keyboard
+  (`adjustResize`/`imePadding`), never behind it and never overlapping the focused field; the results
+  region stays scrollable. Valid only with a reason line below the table:
+  `- Toolbar stays visible (<input tag>): <documented reason>`.
 - `sheet-stays-open`: the modal bottom sheet remains open while typing; it covers the screen toolbar.
 
 | Screen | Input tag | Window viewport | Keyboard closed state | Keyboard open state | Dismissed state | Layout policy | Keyboard behavior | Required visible tags |
 |---|---|---|---|---|---|---|---|---|
-| <screen> | <input testTag> | 430x932 | <closed ID> | <open ID> | <closed or dismissed ID> | resize / pan / overlay | screen-no-toolbar / screen-toolbar-dismissed / sheet-stays-open | <input tag; submit tag; results tag> |
+| <screen> | <input testTag> | 430x932 | <closed ID> | <open ID> | <closed or dismissed ID> | resize / pan / overlay | screen-no-toolbar / screen-toolbar-dismissed / screen-toolbar-stays-visible / sheet-stays-open | <input tag; submit tag; results tag> |
 
 ## State Details
 

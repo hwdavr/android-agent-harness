@@ -8,7 +8,7 @@
 #   bug-fixing:        bug-context | bug-reproduction | analyze | implementation-plan | ui-verification | testing
 #
 # analyze             = every planning check before the package is presented for approval
-#                       (block Status and recorded SHA-256 not yet required)
+#                       (intent.md Status and recorded SHA-256 values not yet required)
 # implementation-plan = the same checks after approval, including the approval fields
 #
 # implementation-plan.md owns how the code changes and the Rule Applicability matrix; test-plan.md
@@ -18,8 +18,8 @@
 #   api-contract-update maps to harness-planning for planning stages and to
 #   single-lane-generator for testing and ui-verification.
 #
-# The specification is the approved feature block(s) in docs/product/requirements/*.md plus the
-# implementation plan's Rule Applicability; compose-feature-spec.py assembles that view.
+# The specification is the change workspace (intent.md, design.md, specs/<capability>.md deltas)
+# plus the implementation plan's Rule Applicability; compose-feature-spec.py assembles that view.
 # Exits 0 when the stage's artifacts are present and valid, 1 otherwise, 2 on usage errors.
 # Designed to run on macOS /bin/bash (Bash 3.2) — no mapfile, no arrays with set -u.
 
@@ -132,20 +132,22 @@ compose_spec() {
 
 require_specified_blocks() {
   local blocks
+  require_file "intent.md" "change intent (what, why, constraints)"
+  require_file "design.md" "change design (lane, stories, flow, screen states)"
   blocks="$(python3 "$SCRIPT_DIR/compose-feature-spec.py" "$DOCS_DIR" --project-root "$PROJECT_ROOT" --list-blocks)"
   if [ -z "$blocks" ]; then
-    echo "FAIL: no feature block for $WORKSPACE_NAME under '## Planned changes' in docs/product/requirements/." >&2
+    echo "FAIL: no requirement delta in $WORKSPACE_NAME/specs/; Specify writes specs/<capability>.md." >&2
     exit 1
   fi
   if grep -Fq "[NEEDS CLARIFICATION" "$COMPOSED_SPEC"; then
-    echo "FAIL: the feature block still contains [NEEDS CLARIFICATION] markers; resolve them in the Clarifications log." >&2
+    echo "FAIL: the change still contains [NEEDS CLARIFICATION] markers; resolve them in intent.md Clarifications." >&2
     exit 1
   fi
   if ! grep -Eq '^#{2,4}[[:space:]]+FR-[0-9]{3}' "$COMPOSED_SPEC"; then
-    echo "FAIL: the feature block defines no FR-### requirement." >&2
+    echo "FAIL: the change's specs/ deltas define no FR-### requirement." >&2
     exit 1
   fi
-  echo "OK: feature block(s) specified in: $(printf '%s' "$blocks" | tr '\n' ' ')"
+  echo "OK: requirement delta(s) specified in: $(printf '%s' "$blocks" | tr '\n' ' ')"
 }
 
 spec_has_ui() {
@@ -465,7 +467,7 @@ case "$WORKFLOW/$STAGE" in
         require_ui_contract "$COMPOSED_SPEC"
       fi
     else
-      echo "N/A: the feature block has no Screen States (no UI scope)."
+      echo "N/A: design.md has no Screen States (no UI scope)."
     fi
     ;;
   harness-planning/analyze|bug-fixing/analyze|harness-planning/implementation-plan|bug-fixing/implementation-plan)
