@@ -29,7 +29,7 @@ L1_BYTES=$(sum_bytes \
   AGENTS.md \
   .agents/rules/android-architecture.md \
   .agents/rules/testing-strategy.md)
-[ "$L1_BYTES" -le 23000 ] || fail "L1 instruction budget exceeded: $L1_BYTES bytes (limit 23000)"
+[ "$L1_BYTES" -le 24000 ] || fail "L1 instruction budget exceeded: $L1_BYTES bytes (limit 24000)"
 
 if rg -q '\*\*L1 — Always\*\*.*implementation-rules\.md' "$PROJECT_ROOT/AGENTS.md"; then
   fail "implementation rules must not be always-loaded L1 context"

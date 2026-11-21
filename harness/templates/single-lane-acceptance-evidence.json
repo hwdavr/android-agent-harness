@@ -1,0 +1,9 @@
+[
+  {
+    "test_id": "TC-01",
+    "executed_command": "./gradlew testDebugUnitTest --tests example.ExampleTest",
+    "exit_status": 0,
+    "test_count": 1,
+    "junit_xml": "app/build/test-results/testDebugUnitTest/TEST-example.ExampleTest.xml"
+  }
+]

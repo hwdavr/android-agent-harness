@@ -3,6 +3,8 @@
 
 import argparse
 import json
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +18,22 @@ def read_json(path):
         return value
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot read {path}: {exc}") from exc
+
+
+def archive_inventory(path):
+    """Read saved records directly; scene-graph inventories can omit components."""
+    node, cli = shutil.which("node"), shutil.which("openpencil")
+    if not node or not cli:
+        raise ValueError("node and openpencil are required to read archive identities")
+    helper = Path(__file__).with_name("openpencil-archive-inventory.mjs")
+    try:
+        result = subprocess.run([node, str(helper), cli, str(path)], capture_output=True,
+                                text=True, timeout=120, check=False)
+        if result.returncode:
+            raise ValueError(f"cannot parse archive {path}: {result.stderr.strip()}")
+        return json.loads(result.stdout)
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read archive {path}: {exc}") from exc
 
 
 def inventory(value, label):
@@ -70,14 +88,14 @@ def check(before, after, diff, allowlist):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--before", required=True)
-    parser.add_argument("--after", required=True)
+    parser.add_argument("--before-archive", required=True)
+    parser.add_argument("--after-archive", required=True)
     parser.add_argument("--diff", required=True)
     parser.add_argument("--allowlist", required=True)
     args = parser.parse_args()
     try:
-        count, hunks = check(*(read_json(getattr(args, name)) for name in
-                               ("before", "after", "diff", "allowlist")))
+        count, hunks = check(archive_inventory(args.before_archive), archive_inventory(args.after_archive),
+                             read_json(args.diff), read_json(args.allowlist))
     except ValueError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1

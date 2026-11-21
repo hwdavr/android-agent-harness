@@ -52,16 +52,22 @@ openpencil eval <candidate.fig> -w -c '<minimal Figma Plugin API change>'
   as its own change before building the candidate. Do not try to "repair" these layers in the
   candidate with `resize` (the next write relays them out again) or by fixing text sizing.
 - **Structural**: compare the (normalized) source and freshly reopened candidate using
-  `openpencil diff files <source.fig> <candidate.fig> --json` and persisted source-GUID
-  inventories captured from each document. Every pre-existing unrelated saved layer must retain
-  its source GUID, name, type, and parent source GUID; the structural diff must show no changes
-  to unrelated layers. Inspect each allowed change and ensure new nodes have the intended parent.
-  Scene-graph IDs displayed by OpenPencil may be generated afresh on load and are not a substitute
-  for persisted source GUIDs. Resolve the actual candidate screen node IDs after the fresh reopen,
-  ensure they are unique and valid, and record those IDs in the UI contract. If persisted source
-  GUIDs, the structural diff, or their interpretation cannot be obtained, fail the check rather
-  than assuming preservation. `openpencil lint <candidate.fig> --json` must report no new findings
-  in the edited frames.
+  `openpencil diff files <source.fig> <candidate.fig> --json`. Inspect each allowed change,
+  ensure new nodes have the intended parent, and save the exact reviewed hunk headers as a JSON
+  array. Run the archive-based identity check:
+
+  ```bash
+  python3 harness/scripts/check-openpencil-preservation.py \
+    --before-archive <source.fig> --after-archive <candidate.fig> \
+    --diff <diff.json> --allowlist <reviewed-hunks.json>
+  ```
+
+  Every pre-existing saved record must retain its GUID, name, type, and parent GUID; the diff
+  must show no unrelated changes. Scene-graph IDs may be regenerated, and scene-graph source-ID
+  inventories can omit saved component records; neither proves archive preservation. If the
+  archive check, structural diff, or their interpretation is unavailable, fail the check.
+  Resolve unique, valid candidate screen node IDs after fresh reopen and record them in the UI
+  contract. `openpencil lint <candidate.fig> --json` must report no new findings in edited frames.
 - **Visual**: `openpencil export <candidate.fig> --node <frame-id> -o <png>`, then view the PNG.
   Export at scale 1 so the PNG matches the frame's dp size (the Viewport in `UI_contract.md`).
 - Re-read the candidate in a fresh command (for example `openpencil info <candidate.fig>`) to prove
